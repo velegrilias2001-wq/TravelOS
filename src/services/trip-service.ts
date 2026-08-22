@@ -3,6 +3,7 @@ import * as Crypto from 'expo-crypto';
 import type {
   Accommodation,
   Booking,
+  BookingId,
   Budget,
   Memory,
   TravelBook,
@@ -33,23 +34,20 @@ export interface TripWorkspace {
 
   budget: Budget | null;
 
-  runtimeState:
-    TripRuntimeState | null;
+  runtimeState: TripRuntimeState | null;
 
   memories: Memory[];
 
-  travelBook:
-    TravelBook | null;
+  travelBook: TravelBook | null;
 }
 
 function addDays(
   date: string,
   amount: number,
 ): string {
-  const [year, month, day] =
-    date
-      .split('-')
-      .map(Number);
+  const [year, month, day] = date
+    .split('-')
+    .map(Number);
 
   const value = new Date(
     Date.UTC(
@@ -77,8 +75,7 @@ function daysBetweenInclusive(
   );
 
   const milliseconds =
-    end.getTime() -
-    start.getTime();
+    end.getTime() - start.getTime();
 
   return (
     Math.floor(
@@ -90,8 +87,7 @@ function daysBetweenInclusive(
 export class TripService {
   constructor(
     private readonly repo:
-      RepositoryRegistry =
-      repositories,
+      RepositoryRegistry = repositories,
   ) {}
 
   async listTrips(): Promise<Trip[]> {
@@ -101,26 +97,20 @@ export class TripService {
   async getTrip(
     id: TripId,
   ): Promise<Trip | null> {
-    return this.repo.trip.getById(
-      id,
-    );
+    return this.repo.trip.getById(id);
   }
 
   async getWorkspace(
     id: TripId,
   ): Promise<TripWorkspace | null> {
     const trip =
-      await this.repo.trip.getById(
-        id,
-      );
+      await this.repo.trip.getById(id);
 
     if (!trip) {
       return null;
     }
 
-    await this.ensureTripDays(
-      trip,
-    );
+    await this.ensureTripDays(trip);
 
     const [
       days,
@@ -134,55 +124,26 @@ export class TripService {
       travelBook,
     ] = await Promise.all([
       this.repo.trip.getDays(id),
-
       this.repo.trip.getStops(id),
-
-      this.repo.booking.getByTripId(
-        id,
-      ),
-
-      this.repo.accommodation.getByTripId(
-        id,
-      ),
-
-      this.repo.traveler.getByTripId(
-        id,
-      ),
-
-      this.repo.budget.getByTripId(
-        id,
-      ),
-
-      this.repo.runtimeState.getByTripId(
-        id,
-      ),
-
-      this.repo.memory.getByTripId(
-        id,
-      ),
-
-      this.repo.travelBook.getByTripId(
-        id,
-      ),
+      this.repo.booking.getByTripId(id),
+      this.repo.accommodation.getByTripId(id),
+      this.repo.traveler.getByTripId(id),
+      this.repo.budget.getByTripId(id),
+      this.repo.runtimeState.getByTripId(id),
+      this.repo.memory.getByTripId(id),
+      this.repo.travelBook.getByTripId(id),
     ]);
 
     return {
       trip,
-
       days,
       stops,
-
       bookings,
       accommodations,
-
       travelers,
-
       budget,
-
       runtimeState,
-
       memories,
-
       travelBook,
     };
   }
@@ -191,9 +152,7 @@ export class TripService {
     trip: Trip,
   ): Promise<void> {
     const existing =
-      await this.repo.trip.getDays(
-        trip.id,
-      );
+      await this.repo.trip.getDays(trip.id);
 
     if (existing.length > 0) {
       return;
@@ -223,25 +182,20 @@ export class TripService {
           index,
         ),
 
-        dayNumber:
-          index + 1,
+        dayNumber: index + 1,
 
         createdAt: now,
         updatedAt: now,
       };
 
-      await this.repo.trip.saveDay(
-        day,
-      );
+      await this.repo.trip.saveDay(day);
     }
   }
 
   async addStop(
     stop: TripStop,
   ): Promise<void> {
-    await this.repo.trip.saveStop(
-      stop,
-    );
+    await this.repo.trip.saveStop(stop);
   }
 
   async updateStop(
@@ -249,7 +203,6 @@ export class TripService {
   ): Promise<void> {
     await this.repo.trip.saveStop({
       ...stop,
-
       updatedAt:
         new Date().toISOString(),
     });
@@ -277,28 +230,58 @@ export class TripService {
       await this.repo.trip.saveStop({
         ...stops[index],
 
-        order:
-          index + 1,
+        order: index + 1,
 
         updatedAt: now,
       });
     }
   }
 
+  async addBooking(
+    booking: Booking,
+  ): Promise<void> {
+    await this.repo.booking.save(
+      booking,
+    );
+  }
+
+  async updateBooking(
+    booking: Booking,
+  ): Promise<void> {
+    await this.repo.booking.save({
+      ...booking,
+
+      updatedAt:
+        new Date().toISOString(),
+    });
+  }
+
+  async deleteBooking(
+    bookingId: BookingId,
+  ): Promise<void> {
+    await this.repo.booking.delete(
+      bookingId,
+    );
+  }
+
+  async getBooking(
+    bookingId: BookingId,
+  ): Promise<Booking | null> {
+    return this.repo.booking.getById(
+      bookingId,
+    );
+  }
+
   async saveTrip(
     trip: Trip,
   ): Promise<void> {
-    await this.repo.trip.save(
-      trip,
-    );
+    await this.repo.trip.save(trip);
   }
 
   async deleteTrip(
     id: TripId,
   ): Promise<void> {
-    await this.repo.trip.delete(
-      id,
-    );
+    await this.repo.trip.delete(id);
   }
 }
 

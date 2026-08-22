@@ -1,49 +1,2413 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as Crypto from 'expo-crypto';
+import { useLocalSearchParams } from 'expo-router';
+
 import {
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    View,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
+
+import {
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
-export default function BookingsScreen() {
-  return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.content}>
-        <Text style={styles.eyebrow}>
-          TRAVEL OS · TRIP
-        </Text>
+import { Screen } from '@/components/ui/screen';
 
-        <Text style={styles.title}>
-          Bookings
-        </Text>
-      </View>
-    </SafeAreaView>
+import type {
+  Booking,
+  BookingStatus,
+  BookingType,
+} from '@/domain/entities';
+
+import {
+  tripService,
+  type TripWorkspace,
+} from '@/services/trip-service';
+
+import {
+  colors,
+  fontFamily,
+  fontSize,
+  lineHeight,
+  radius,
+  shadows,
+  spacing,
+} from '@/theme';
+
+const BOOKING_TYPES: {
+  label: string;
+  value: BookingType;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  {
+    label: 'Flight',
+    value: 'flight',
+    icon: 'airplane-outline',
+  },
+  {
+    label: 'Train',
+    value: 'train',
+    icon: 'train-outline',
+  },
+  {
+    label: 'Bus',
+    value: 'bus',
+    icon: 'bus-outline',
+  },
+  {
+    label: 'Ferry',
+    value: 'ferry',
+    icon: 'boat-outline',
+  },
+  {
+    label: 'Car',
+    value: 'car',
+    icon: 'car-outline',
+  },
+  {
+    label: 'Hotel',
+    value: 'accommodation',
+    icon: 'bed-outline',
+  },
+  {
+    label: 'Activity',
+    value: 'activity',
+    icon: 'sparkles-outline',
+  },
+  {
+    label: 'Restaurant',
+    value: 'restaurant',
+    icon: 'restaurant-outline',
+  },
+  {
+    label: 'Ticket',
+    value: 'ticket',
+    icon: 'ticket-outline',
+  },
+  {
+    label: 'Other',
+    value: 'other',
+    icon: 'briefcase-outline',
+  },
+];
+
+const BOOKING_STATUSES: {
+  label: string;
+  value: BookingStatus;
+}[] = [
+  {
+    label: 'Planned',
+    value: 'planned',
+  },
+  {
+    label: 'Confirmed',
+    value: 'confirmed',
+  },
+  {
+    label: 'Completed',
+    value: 'completed',
+  },
+  {
+    label: 'Cancelled',
+    value: 'cancelled',
+  },
+];
+
+function getBookingIcon(
+  type: BookingType,
+): keyof typeof Ionicons.glyphMap {
+  return (
+    BOOKING_TYPES.find(
+      (item) => item.value === type,
+    )?.icon ?? 'briefcase-outline'
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#F7F5EF',
-  },
+function formatDateTime(
+  value?: string,
+): string | null {
+  if (!value) {
+    return null;
+  }
 
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 28,
-  },
+  const date = new Date(value);
 
-  eyebrow: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 2,
-    color: '#8A7350',
-    marginBottom: 10,
-  },
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
 
-  title: {
-    fontSize: 38,
-    fontWeight: '700',
-    color: '#173C38',
-  },
-});
+  return date.toLocaleString(
+    'en-GB',
+    {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    },
+  );
+}
+
+export default function BookingsScreen() {
+  const { tripId } =
+    useLocalSearchParams<{
+      tripId: string;
+    }>();
+
+  const [
+    workspace,
+    setWorkspace,
+  ] =
+    useState<TripWorkspace | null>(
+      null,
+    );
+
+  const [
+    isLoading,
+    setIsLoading,
+  ] =
+    useState(true);
+
+  const [
+    modalVisible,
+    setModalVisible,
+  ] =
+    useState(false);
+
+  const [
+    editingBooking,
+    setEditingBooking,
+  ] =
+    useState<Booking | null>(
+      null,
+    );
+
+  const [
+    type,
+    setType,
+  ] =
+    useState<BookingType>(
+      'flight',
+    );
+
+  const [
+    status,
+    setStatus,
+  ] =
+    useState<BookingStatus>(
+      'confirmed',
+    );
+
+  const [
+    title,
+    setTitle,
+  ] =
+    useState('');
+
+  const [
+    provider,
+    setProvider,
+  ] =
+    useState('');
+
+  const [
+    confirmationCode,
+    setConfirmationCode,
+  ] =
+    useState('');
+
+  const [
+    startAt,
+    setStartAt,
+  ] =
+    useState('');
+
+  const [
+    endAt,
+    setEndAt,
+  ] =
+    useState('');
+
+  const [
+    amount,
+    setAmount,
+  ] =
+    useState('');
+
+  const [
+    currency,
+    setCurrency,
+  ] =
+    useState('EUR');
+
+  const [
+    isPaid,
+    setIsPaid,
+  ] =
+    useState(false);
+
+  const [
+    notes,
+    setNotes,
+  ] =
+    useState('');
+
+  const [
+    isSaving,
+    setIsSaving,
+  ] =
+    useState(false);
+
+  const loadWorkspace =
+    useCallback(
+      async () => {
+        if (!tripId) {
+          return;
+        }
+
+        try {
+          setIsLoading(true);
+
+          const result =
+            await tripService.getWorkspace(
+              tripId,
+            );
+
+          setWorkspace(
+            result,
+          );
+        } catch (error) {
+          console.error(
+            '[Bookings] Load error:',
+            error,
+          );
+
+          Alert.alert(
+            'Could not load bookings',
+            'Travel OS could not load your bookings.',
+          );
+        } finally {
+          setIsLoading(false);
+        }
+      },
+      [tripId],
+    );
+
+  useEffect(() => {
+    void loadWorkspace();
+  }, [loadWorkspace]);
+
+  const resetForm = () => {
+    setEditingBooking(null);
+
+    setType('flight');
+    setStatus('confirmed');
+
+    setTitle('');
+    setProvider('');
+    setConfirmationCode('');
+
+    setStartAt('');
+    setEndAt('');
+
+    setAmount('');
+
+    setCurrency(
+      workspace?.trip
+        .accountingCurrency ??
+        'EUR',
+    );
+
+    setIsPaid(false);
+    setNotes('');
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setModalVisible(true);
+  };
+
+  const openEdit = (
+    booking: Booking,
+  ) => {
+    setEditingBooking(
+      booking,
+    );
+
+    setType(
+      booking.type,
+    );
+
+    setStatus(
+      booking.status,
+    );
+
+    setTitle(
+      booking.title,
+    );
+
+    setProvider(
+      booking.provider ?? '',
+    );
+
+    setConfirmationCode(
+      booking.confirmationCode ??
+        '',
+    );
+
+    setStartAt(
+      booking.startAt ?? '',
+    );
+
+    setEndAt(
+      booking.endAt ?? '',
+    );
+
+    setAmount(
+      booking.amount !==
+      undefined
+        ? String(
+            booking.amount,
+          )
+        : '',
+    );
+
+    setCurrency(
+      booking.currencyCode ??
+        workspace?.trip
+          .accountingCurrency ??
+        'EUR',
+    );
+
+    setIsPaid(
+      booking.isPaid ?? false,
+    );
+
+    setNotes(
+      booking.notes ?? '',
+    );
+
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+    resetForm();
+  };
+
+  const saveBooking =
+    async () => {
+      if (!workspace) {
+        return;
+      }
+
+      const cleanTitle =
+        title.trim();
+
+      if (!cleanTitle) {
+        Alert.alert(
+          'Add a booking name',
+          'Give this booking a clear name.',
+        );
+
+        return;
+      }
+
+      const parsedAmount =
+        amount.trim() === ''
+          ? undefined
+          : Number(
+              amount.replace(
+                ',',
+                '.',
+              ),
+            );
+
+      if (
+        parsedAmount !==
+          undefined &&
+        (
+          Number.isNaN(
+            parsedAmount,
+          ) ||
+          parsedAmount < 0
+        )
+      ) {
+        Alert.alert(
+          'Check the amount',
+          'Enter a valid booking amount.',
+        );
+
+        return;
+      }
+
+      const now =
+        new Date()
+          .toISOString();
+
+      try {
+        setIsSaving(true);
+
+        if (editingBooking) {
+          await tripService.updateBooking(
+            {
+              ...editingBooking,
+
+              type,
+              status,
+
+              title:
+                cleanTitle,
+
+              provider:
+                provider.trim() ||
+                undefined,
+
+              confirmationCode:
+                confirmationCode.trim() ||
+                undefined,
+
+              startAt:
+                startAt.trim() ||
+                undefined,
+
+              endAt:
+                endAt.trim() ||
+                undefined,
+
+              amount:
+                parsedAmount,
+
+              currencyCode:
+                currency
+                  .trim()
+                  .toUpperCase() ||
+                workspace.trip
+                  .accountingCurrency,
+
+              isPaid,
+
+              notes:
+                notes.trim() ||
+                undefined,
+            },
+          );
+        } else {
+          const booking:
+            Booking = {
+              id:
+                Crypto.randomUUID(),
+
+              tripId:
+                workspace.trip.id,
+
+              type,
+              status,
+
+              title:
+                cleanTitle,
+
+              provider:
+                provider.trim() ||
+                undefined,
+
+              confirmationCode:
+                confirmationCode.trim() ||
+                undefined,
+
+              startAt:
+                startAt.trim() ||
+                undefined,
+
+              endAt:
+                endAt.trim() ||
+                undefined,
+
+              amount:
+                parsedAmount,
+
+              currencyCode:
+                currency
+                  .trim()
+                  .toUpperCase() ||
+                workspace.trip
+                  .accountingCurrency,
+
+              isPaid,
+
+              notes:
+                notes.trim() ||
+                undefined,
+
+              createdAt:
+                now,
+
+              updatedAt:
+                now,
+            };
+
+          await tripService.addBooking(
+            booking,
+          );
+        }
+
+        closeModal();
+
+        await loadWorkspace();
+      } catch (error) {
+        console.error(
+          '[Bookings] Save error:',
+          error,
+        );
+
+        Alert.alert(
+          'Could not save booking',
+          'Please try again.',
+        );
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
+  const deleteBooking = (
+    booking: Booking,
+  ) => {
+    Alert.alert(
+      'Delete booking?',
+      `Remove "${booking.title}" from this trip?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+
+          onPress:
+            async () => {
+              try {
+                await tripService.deleteBooking(
+                  booking.id,
+                );
+
+                await loadWorkspace();
+              } catch (
+                error
+              ) {
+                console.error(
+                  '[Bookings] Delete error:',
+                  error,
+                );
+
+                Alert.alert(
+                  'Could not delete booking',
+                  'Please try again.',
+                );
+              }
+            },
+        },
+      ],
+    );
+  };
+
+  if (
+    isLoading ||
+    !workspace
+  ) {
+    return (
+      <Screen>
+        <View
+          style={
+            styles.center
+          }
+        >
+          <Text
+            style={
+              styles.loading
+            }
+          >
+            Loading your bookings…
+          </Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  const confirmedCount =
+    workspace.bookings.filter(
+      (booking) =>
+        booking.status ===
+        'confirmed',
+    ).length;
+
+  const paidCount =
+    workspace.bookings.filter(
+      (booking) =>
+        booking.isPaid === true,
+    ).length;
+
+  return (
+    <>
+      <Screen scroll>
+        <View
+          style={styles.header}
+        >
+          <View
+            style={styles.headerCopy}
+          >
+            <Text
+              style={styles.eyebrow}
+            >
+              {
+                workspace.trip
+                  .destinations[0]
+                  ?.name.toUpperCase() ??
+                'YOUR TRIP'
+              }
+            </Text>
+
+            <Text
+              style={styles.pageTitle}
+            >
+              Bookings
+            </Text>
+
+            <Text
+              style={styles.subtitle}
+            >
+              Keep every confirmation,
+              reservation and payment in
+              one place.
+            </Text>
+          </View>
+
+          <Pressable
+            style={styles.addButton}
+            onPress={openCreate}
+          >
+            <Ionicons
+              name="add"
+              size={24}
+              color={
+                colors.textInverse
+              }
+            />
+          </Pressable>
+        </View>
+
+        <View
+          style={styles.statsRow}
+        >
+          <View
+            style={styles.statCard}
+          >
+            <Text
+              style={styles.statValue}
+            >
+              {
+                workspace.bookings
+                  .length
+              }
+            </Text>
+
+            <Text
+              style={styles.statLabel}
+            >
+              BOOKINGS
+            </Text>
+          </View>
+
+          <View
+            style={styles.statCard}
+          >
+            <Text
+              style={styles.statValue}
+            >
+              {confirmedCount}
+            </Text>
+
+            <Text
+              style={styles.statLabel}
+            >
+              CONFIRMED
+            </Text>
+          </View>
+
+          <View
+            style={styles.statCard}
+          >
+            <Text
+              style={styles.statValue}
+            >
+              {paidCount}
+            </Text>
+
+            <Text
+              style={styles.statLabel}
+            >
+              PAID
+            </Text>
+          </View>
+        </View>
+
+        {workspace.bookings
+          .length === 0 ? (
+          <View
+            style={styles.emptyCard}
+          >
+            <View
+              style={styles.emptyIcon}
+            >
+              <Ionicons
+                name="ticket-outline"
+                size={28}
+                color={colors.brand}
+              />
+            </View>
+
+            <Text
+              style={styles.emptyTitle}
+            >
+              Nothing to keep track of
+              yet.
+            </Text>
+
+            <Text
+              style={styles.emptyBody}
+            >
+              Add flights, hotels,
+              transport, restaurants,
+              activities and tickets.
+            </Text>
+
+            <Pressable
+              style={
+                styles.primaryButton
+              }
+              onPress={openCreate}
+            >
+              <Ionicons
+                name="add"
+                size={20}
+                color={
+                  colors.textInverse
+                }
+              />
+
+              <Text
+                style={
+                  styles.primaryButtonText
+                }
+              >
+                Add booking
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View
+            style={styles.bookingList}
+          >
+            {workspace.bookings.map(
+              (booking) => {
+                const dateLabel =
+                  formatDateTime(
+                    booking.startAt,
+                  );
+
+                return (
+                  <Pressable
+                    key={booking.id}
+                    style={({
+                      pressed,
+                    }) => [
+                      styles.bookingCard,
+
+                      pressed &&
+                        styles.pressed,
+                    ]}
+                    onPress={() =>
+                      openEdit(
+                        booking,
+                      )
+                    }
+                  >
+                    <View
+                      style={
+                        styles.bookingIcon
+                      }
+                    >
+                      <Ionicons
+                        name={getBookingIcon(
+                          booking.type,
+                        )}
+                        size={22}
+                        color={
+                          colors.teal
+                        }
+                      />
+                    </View>
+
+                    <View
+                      style={
+                        styles.bookingContent
+                      }
+                    >
+                      <View
+                        style={
+                          styles.bookingTop
+                        }
+                      >
+                        <View
+                          style={
+                            styles.bookingTitleWrap
+                          }
+                        >
+                          <Text
+                            style={
+                              styles.bookingTitle
+                            }
+                          >
+                            {
+                              booking.title
+                            }
+                          </Text>
+
+                          {booking.provider && (
+                            <Text
+                              style={
+                                styles.provider
+                              }
+                            >
+                              {
+                                booking.provider
+                              }
+                            </Text>
+                          )}
+                        </View>
+
+                        <View
+                          style={[
+                            styles.statusPill,
+
+                            booking.status ===
+                              'cancelled' &&
+                              styles.statusCancelled,
+
+                            booking.status ===
+                              'completed' &&
+                              styles.statusCompleted,
+                          ]}
+                        >
+                          <Text
+                            style={
+                              styles.statusText
+                            }
+                          >
+                            {booking.status.toUpperCase()}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {dateLabel && (
+                        <View
+                          style={
+                            styles.metaRow
+                          }
+                        >
+                          <Ionicons
+                            name="calendar-outline"
+                            size={15}
+                            color={
+                              colors.textMuted
+                            }
+                          />
+
+                          <Text
+                            style={
+                              styles.metaText
+                            }
+                          >
+                            {dateLabel}
+                          </Text>
+                        </View>
+                      )}
+
+                      {booking.confirmationCode && (
+                        <View
+                          style={
+                            styles.metaRow
+                          }
+                        >
+                          <Ionicons
+                            name="key-outline"
+                            size={15}
+                            color={
+                              colors.textMuted
+                            }
+                          />
+
+                          <Text
+                            style={
+                              styles.metaText
+                            }
+                          >
+                            {
+                              booking.confirmationCode
+                            }
+                          </Text>
+                        </View>
+                      )}
+
+                      <View
+                        style={
+                          styles.bookingFooter
+                        }
+                      >
+                        <View
+                          style={
+                            styles.priceWrap
+                          }
+                        >
+                          {booking.amount !==
+                            undefined && (
+                            <Text
+                              style={
+                                styles.amount
+                              }
+                            >
+                              {
+                                booking.amount
+                              }{' '}
+                              {
+                                booking.currencyCode ??
+                                workspace.trip
+                                  .accountingCurrency
+                              }
+                            </Text>
+                          )}
+
+                          <Text
+                            style={[
+                              styles.paymentStatus,
+
+                              booking.isPaid &&
+                                styles.paymentPaid,
+                            ]}
+                          >
+                            {booking.isPaid
+                              ? 'PAID'
+                              : 'UNPAID'}
+                          </Text>
+                        </View>
+
+                        <Pressable
+                          style={
+                            styles.deleteButton
+                          }
+                          onPress={() =>
+                            deleteBooking(
+                              booking,
+                            )
+                          }
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={17}
+                            color={
+                              colors.danger
+                            }
+                          />
+                        </Pressable>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              },
+            )}
+          </View>
+        )}
+
+        <View
+          style={styles.bottomSpace}
+        />
+      </Screen>
+
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={
+          closeModal
+        }
+      >
+        <View
+          style={
+            styles.modalBackdrop
+          }
+        >
+          <View
+            style={styles.sheet}
+          >
+            <View
+              style={
+                styles.sheetHandle
+              }
+            />
+
+            <View
+              style={
+                styles.sheetHeader
+              }
+            >
+              <View>
+                <Text
+                  style={
+                    styles.sheetEyebrow
+                  }
+                >
+                  TRIP BOOKING
+                </Text>
+
+                <Text
+                  style={
+                    styles.sheetTitle
+                  }
+                >
+                  {editingBooking
+                    ? 'Edit booking'
+                    : 'Add booking'}
+                </Text>
+              </View>
+
+              <Pressable
+                style={
+                  styles.closeButton
+                }
+                onPress={
+                  closeModal
+                }
+              >
+                <Ionicons
+                  name="close"
+                  size={21}
+                  color={
+                    colors.brand
+                  }
+                />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={
+                false
+              }
+              keyboardShouldPersistTaps="handled"
+            >
+              <Text
+                style={
+                  styles.fieldLabel
+                }
+              >
+                TYPE
+              </Text>
+
+              <View
+                style={
+                  styles.typeGrid
+                }
+              >
+                {BOOKING_TYPES.map(
+                  (item) => {
+                    const selected =
+                      type ===
+                      item.value;
+
+                    return (
+                      <Pressable
+                        key={
+                          item.value
+                        }
+                        style={[
+                          styles.typeButton,
+
+                          selected &&
+                            styles.typeButtonSelected,
+                        ]}
+                        onPress={() =>
+                          setType(
+                            item.value,
+                          )
+                        }
+                      >
+                        <Ionicons
+                          name={
+                            item.icon
+                          }
+                          size={19}
+                          color={
+                            selected
+                              ? colors.textInverse
+                              : colors.brand
+                          }
+                        />
+
+                        <Text
+                          style={[
+                            styles.typeText,
+
+                            selected &&
+                              styles.typeTextSelected,
+                          ]}
+                        >
+                          {
+                            item.label
+                          }
+                        </Text>
+                      </Pressable>
+                    );
+                  },
+                )}
+              </View>
+
+              <Text
+                style={
+                  styles.fieldLabel
+                }
+              >
+                STATUS
+              </Text>
+
+              <View
+                style={
+                  styles.statusSelector
+                }
+              >
+                {BOOKING_STATUSES.map(
+                  (item) => {
+                    const selected =
+                      status ===
+                      item.value;
+
+                    return (
+                      <Pressable
+                        key={
+                          item.value
+                        }
+                        style={[
+                          styles.statusOption,
+
+                          selected &&
+                            styles.statusOptionSelected,
+                        ]}
+                        onPress={() =>
+                          setStatus(
+                            item.value,
+                          )
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.statusOptionText,
+
+                            selected &&
+                              styles.statusOptionTextSelected,
+                          ]}
+                        >
+                          {
+                            item.label
+                          }
+                        </Text>
+                      </Pressable>
+                    );
+                  },
+                )}
+              </View>
+
+              <Field
+                label="BOOKING NAME"
+                placeholder="Flight to Tokyo"
+                value={title}
+                onChangeText={
+                  setTitle
+                }
+              />
+
+              <Field
+                label="PROVIDER"
+                placeholder="Emirates, Booking.com…"
+                value={provider}
+                onChangeText={
+                  setProvider
+                }
+              />
+
+              <Field
+                label="CONFIRMATION CODE"
+                placeholder="ABC123"
+                value={
+                  confirmationCode
+                }
+                onChangeText={
+                  setConfirmationCode
+                }
+                autoCapitalize="characters"
+              />
+
+              <Field
+                label="START"
+                placeholder="2026-09-01T10:30:00"
+                value={startAt}
+                onChangeText={
+                  setStartAt
+                }
+                autoCapitalize="none"
+              />
+
+              <Field
+                label="END"
+                placeholder="2026-09-01T14:30:00"
+                value={endAt}
+                onChangeText={
+                  setEndAt
+                }
+                autoCapitalize="none"
+              />
+
+              <View
+                style={
+                  styles.amountRow
+                }
+              >
+                <View
+                  style={
+                    styles.amountField
+                  }
+                >
+                  <Field
+                    label="AMOUNT"
+                    placeholder="450"
+                    value={amount}
+                    onChangeText={
+                      setAmount
+                    }
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+
+                <View
+                  style={
+                    styles.currencyField
+                  }
+                >
+                  <Field
+                    label="CURRENCY"
+                    placeholder="EUR"
+                    value={currency}
+                    onChangeText={
+                      setCurrency
+                    }
+                    autoCapitalize="characters"
+                  />
+                </View>
+              </View>
+
+              <View
+                style={
+                  styles.paidRow
+                }
+              >
+                <View
+                  style={
+                    styles.paidCopy
+                  }
+                >
+                  <Text
+                    style={
+                      styles.paidTitle
+                    }
+                  >
+                    Paid
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.paidDescription
+                    }
+                  >
+                    Mark this booking as
+                    already paid.
+                  </Text>
+                </View>
+
+                <Switch
+                  value={isPaid}
+                  onValueChange={
+                    setIsPaid
+                  }
+                  trackColor={{
+                    false:
+                      colors.borderStrong,
+
+                    true:
+                      colors.teal,
+                  }}
+                />
+              </View>
+
+              <Field
+                label="NOTES"
+                placeholder="Seat, terminal, check-in notes…"
+                value={notes}
+                onChangeText={
+                  setNotes
+                }
+                multiline
+              />
+
+              <Pressable
+                disabled={isSaving}
+                style={[
+                  styles.saveButton,
+
+                  isSaving &&
+                    styles.disabled,
+                ]}
+                onPress={
+                  saveBooking
+                }
+              >
+                <Text
+                  style={
+                    styles.saveButtonText
+                  }
+                >
+                  {isSaving
+                    ? 'Saving…'
+                    : editingBooking
+                      ? 'Save changes'
+                      : 'Add booking'}
+                </Text>
+
+                {!isSaving && (
+                  <Ionicons
+                    name="arrow-forward"
+                    size={19}
+                    color={
+                      colors.textInverse
+                    }
+                  />
+                )}
+              </Pressable>
+
+              <View
+                style={
+                  styles.sheetBottomSpace
+                }
+              />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+interface FieldProps {
+  label: string;
+  placeholder: string;
+  value: string;
+
+  onChangeText(
+    value: string,
+  ): void;
+
+  autoCapitalize?:
+    | 'none'
+    | 'sentences'
+    | 'words'
+    | 'characters';
+
+  keyboardType?:
+    | 'default'
+    | 'decimal-pad'
+    | 'numeric';
+
+  multiline?: boolean;
+}
+
+function Field({
+  label,
+  placeholder,
+  value,
+  onChangeText,
+  autoCapitalize = 'sentences',
+  keyboardType = 'default',
+  multiline = false,
+}: FieldProps) {
+  return (
+    <View style={styles.field}>
+      <Text
+        style={styles.fieldLabel}
+      >
+        {label}
+      </Text>
+
+      <TextInput
+        value={value}
+        onChangeText={
+          onChangeText
+        }
+        placeholder={
+          placeholder
+        }
+        placeholderTextColor={
+          colors.textMuted
+        }
+        autoCapitalize={
+          autoCapitalize
+        }
+        keyboardType={
+          keyboardType
+        }
+        multiline={
+          multiline
+        }
+        style={[
+          styles.input,
+
+          multiline &&
+            styles.multilineInput,
+        ]}
+      />
+    </View>
+  );
+}
+
+const styles =
+  StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+    },
+
+    loading: {
+      fontFamily:
+        fontFamily.sansMedium,
+      fontSize:
+        fontSize.bodySmall,
+      color:
+        colors.textMuted,
+    },
+
+    header: {
+      flexDirection: 'row',
+      alignItems:
+        'flex-start',
+      justifyContent:
+        'space-between',
+
+      paddingTop:
+        spacing[6],
+
+      paddingBottom:
+        spacing[8],
+    },
+
+    headerCopy: {
+      flex: 1,
+
+      paddingRight:
+        spacing[6],
+    },
+
+    eyebrow: {
+      fontFamily:
+        fontFamily.sansBold,
+
+      fontSize:
+        fontSize.micro,
+
+      letterSpacing: 1.8,
+
+      color:
+        colors.brass,
+
+      marginBottom:
+        spacing[2],
+    },
+
+    pageTitle: {
+      fontFamily:
+        fontFamily.serifSemiBold,
+
+      fontSize:
+        fontSize.display,
+
+      lineHeight:
+        lineHeight.display,
+
+      color:
+        colors.textPrimary,
+    },
+
+    subtitle: {
+      fontFamily:
+        fontFamily.sansRegular,
+
+      fontSize:
+        fontSize.bodySmall,
+
+      lineHeight:
+        lineHeight.bodySmall,
+
+      color:
+        colors.textSecondary,
+
+      marginTop:
+        spacing[3],
+    },
+
+    addButton: {
+      width: 48,
+      height: 48,
+
+      borderRadius:
+        radius.pill,
+
+      backgroundColor:
+        colors.brand,
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      ...shadows.subtle,
+    },
+
+    statsRow: {
+      flexDirection: 'row',
+
+      gap:
+        spacing[2],
+
+      marginBottom:
+        spacing[6],
+    },
+
+    statCard: {
+      flex: 1,
+
+      minHeight: 92,
+
+      backgroundColor:
+        colors.surface,
+
+      borderWidth: 1,
+
+      borderColor:
+        colors.border,
+
+      borderRadius:
+        radius.md,
+
+      padding:
+        spacing[4],
+
+      ...shadows.subtle,
+    },
+
+    statValue: {
+      fontFamily:
+        fontFamily.serifSemiBold,
+
+      fontSize:
+        fontSize.title,
+
+      color:
+        colors.textPrimary,
+    },
+
+    statLabel: {
+      fontFamily:
+        fontFamily.sansBold,
+
+      fontSize:
+        fontSize.micro,
+
+      letterSpacing: 1.1,
+
+      color:
+        colors.textMuted,
+
+      marginTop:
+        spacing[2],
+    },
+
+    emptyCard: {
+      backgroundColor:
+        colors.surfaceWarm,
+
+      borderRadius:
+        radius.xl,
+
+      borderWidth: 1,
+
+      borderColor:
+        colors.border,
+
+      padding:
+        spacing[7],
+
+      ...shadows.subtle,
+    },
+
+    emptyIcon: {
+      width: 56,
+      height: 56,
+
+      borderRadius:
+        radius.md,
+
+      backgroundColor:
+        colors.brandSoft,
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      marginBottom:
+        spacing[6],
+    },
+
+    emptyTitle: {
+      fontFamily:
+        fontFamily.serifSemiBold,
+
+      fontSize:
+        fontSize.title,
+
+      lineHeight:
+        lineHeight.title,
+
+      color:
+        colors.textPrimary,
+
+      marginBottom:
+        spacing[3],
+    },
+
+    emptyBody: {
+      fontFamily:
+        fontFamily.sansRegular,
+
+      fontSize:
+        fontSize.bodySmall,
+
+      lineHeight:
+        lineHeight.bodySmall,
+
+      color:
+        colors.textSecondary,
+
+      marginBottom:
+        spacing[6],
+    },
+
+    primaryButton: {
+      height: 54,
+
+      borderRadius:
+        radius.md,
+
+      backgroundColor:
+        colors.brand,
+
+      flexDirection:
+        'row',
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      gap:
+        spacing[2],
+    },
+
+    primaryButtonText: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+
+      fontSize:
+        fontSize.body,
+
+      color:
+        colors.textInverse,
+    },
+
+    bookingList: {
+      gap:
+        spacing[4],
+    },
+
+    bookingCard: {
+      backgroundColor:
+        colors.surface,
+
+      borderWidth: 1,
+
+      borderColor:
+        colors.border,
+
+      borderRadius:
+        radius.lg,
+
+      flexDirection:
+        'row',
+
+      padding:
+        spacing[4],
+
+      ...shadows.subtle,
+    },
+
+    bookingIcon: {
+      width: 46,
+      height: 46,
+
+      borderRadius:
+        radius.md,
+
+      backgroundColor:
+        colors.tealSoft,
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      marginRight:
+        spacing[4],
+    },
+
+    bookingContent: {
+      flex: 1,
+    },
+
+    bookingTop: {
+      flexDirection:
+        'row',
+
+      justifyContent:
+        'space-between',
+
+      gap:
+        spacing[3],
+    },
+
+    bookingTitleWrap: {
+      flex: 1,
+    },
+
+    bookingTitle: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+
+      fontSize:
+        fontSize.body,
+
+      color:
+        colors.textPrimary,
+    },
+
+    provider: {
+      fontFamily:
+        fontFamily.sansRegular,
+
+      fontSize:
+        fontSize.caption,
+
+      color:
+        colors.textMuted,
+
+      marginTop: 3,
+    },
+
+    statusPill: {
+      alignSelf:
+        'flex-start',
+
+      backgroundColor:
+        colors.tealSoft,
+
+      borderRadius:
+        radius.pill,
+
+      paddingHorizontal:
+        spacing[2],
+
+      paddingVertical:
+        spacing[1],
+    },
+
+    statusCancelled: {
+      backgroundColor:
+        colors.coralSoft,
+    },
+
+    statusCompleted: {
+      backgroundColor:
+        colors.brandSoft,
+    },
+
+    statusText: {
+      fontFamily:
+        fontFamily.sansBold,
+
+      fontSize: 9,
+
+      color:
+        colors.textSecondary,
+
+      letterSpacing: 0.6,
+    },
+
+    metaRow: {
+      flexDirection:
+        'row',
+
+      alignItems:
+        'center',
+
+      gap:
+        spacing[2],
+
+      marginTop:
+        spacing[3],
+    },
+
+    metaText: {
+      fontFamily:
+        fontFamily.sansRegular,
+
+      fontSize:
+        fontSize.caption,
+
+      color:
+        colors.textSecondary,
+    },
+
+    bookingFooter: {
+      flexDirection:
+        'row',
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'space-between',
+
+      marginTop:
+        spacing[4],
+
+      paddingTop:
+        spacing[4],
+
+      borderTopWidth: 1,
+
+      borderTopColor:
+        colors.border,
+    },
+
+    priceWrap: {
+      flexDirection:
+        'row',
+
+      alignItems:
+        'center',
+
+      gap:
+        spacing[3],
+    },
+
+    amount: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+
+      fontSize:
+        fontSize.bodySmall,
+
+      color:
+        colors.textPrimary,
+    },
+
+    paymentStatus: {
+      fontFamily:
+        fontFamily.sansBold,
+
+      fontSize:
+        fontSize.micro,
+
+      color:
+        colors.warning,
+
+      letterSpacing: 0.8,
+    },
+
+    paymentPaid: {
+      color:
+        colors.success,
+    },
+
+    deleteButton: {
+      width: 34,
+      height: 34,
+
+      borderRadius:
+        radius.pill,
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      backgroundColor:
+        colors.coralSoft,
+    },
+
+    pressed: {
+      opacity: 0.82,
+    },
+
+    modalBackdrop: {
+      flex: 1,
+
+      justifyContent:
+        'flex-end',
+
+      backgroundColor:
+        colors.overlay,
+    },
+
+    sheet: {
+      maxHeight: '92%',
+
+      backgroundColor:
+        colors.background,
+
+      borderTopLeftRadius:
+        radius.xxl,
+
+      borderTopRightRadius:
+        radius.xxl,
+
+      paddingHorizontal:
+        spacing[6],
+
+      paddingBottom:
+        spacing[4],
+    },
+
+    sheetHandle: {
+      width: 42,
+      height: 5,
+
+      borderRadius:
+        radius.pill,
+
+      backgroundColor:
+        colors.borderStrong,
+
+      alignSelf:
+        'center',
+
+      marginTop:
+        spacing[3],
+
+      marginBottom:
+        spacing[5],
+    },
+
+    sheetHeader: {
+      flexDirection:
+        'row',
+
+      alignItems:
+        'flex-start',
+
+      justifyContent:
+        'space-between',
+
+      marginBottom:
+        spacing[6],
+    },
+
+    sheetEyebrow: {
+      fontFamily:
+        fontFamily.sansBold,
+
+      fontSize:
+        fontSize.micro,
+
+      letterSpacing: 1.5,
+
+      color:
+        colors.brass,
+    },
+
+    sheetTitle: {
+      fontFamily:
+        fontFamily.serifSemiBold,
+
+      fontSize:
+        fontSize.title,
+
+      color:
+        colors.textPrimary,
+
+      marginTop:
+        spacing[1],
+    },
+
+    closeButton: {
+      width: 40,
+      height: 40,
+
+      borderRadius:
+        radius.pill,
+
+      backgroundColor:
+        colors.surface,
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+    },
+
+    field: {
+      gap:
+        spacing[2],
+
+      marginBottom:
+        spacing[4],
+    },
+
+    fieldLabel: {
+      fontFamily:
+        fontFamily.sansBold,
+
+      fontSize:
+        fontSize.micro,
+
+      letterSpacing: 1.3,
+
+      color:
+        colors.brass,
+
+      marginBottom:
+        spacing[2],
+    },
+
+    input: {
+      minHeight: 54,
+
+      borderRadius:
+        radius.md,
+
+      backgroundColor:
+        colors.surface,
+
+      borderWidth: 1,
+
+      borderColor:
+        colors.border,
+
+      paddingHorizontal:
+        spacing[4],
+
+      fontFamily:
+        fontFamily.sansMedium,
+
+      fontSize:
+        fontSize.body,
+
+      color:
+        colors.textPrimary,
+    },
+
+    multilineInput: {
+      minHeight: 96,
+
+      paddingTop:
+        spacing[4],
+
+      textAlignVertical:
+        'top',
+    },
+
+    typeGrid: {
+      flexDirection:
+        'row',
+
+      flexWrap:
+        'wrap',
+
+      gap:
+        spacing[2],
+
+      marginBottom:
+        spacing[6],
+    },
+
+    typeButton: {
+      width: '31%',
+
+      minHeight: 64,
+
+      borderRadius:
+        radius.md,
+
+      borderWidth: 1,
+
+      borderColor:
+        colors.border,
+
+      backgroundColor:
+        colors.surface,
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      gap: 4,
+    },
+
+    typeButtonSelected: {
+      backgroundColor:
+        colors.brand,
+
+      borderColor:
+        colors.brand,
+    },
+
+    typeText: {
+      fontFamily:
+        fontFamily.sansMedium,
+
+      fontSize:
+        fontSize.micro,
+
+      color:
+        colors.textPrimary,
+    },
+
+    typeTextSelected: {
+      color:
+        colors.textInverse,
+    },
+
+    statusSelector: {
+      flexDirection:
+        'row',
+
+      flexWrap:
+        'wrap',
+
+      gap:
+        spacing[2],
+
+      marginBottom:
+        spacing[6],
+    },
+
+    statusOption: {
+      borderRadius:
+        radius.pill,
+
+      borderWidth: 1,
+
+      borderColor:
+        colors.border,
+
+      backgroundColor:
+        colors.surface,
+
+      paddingHorizontal:
+        spacing[3],
+
+      paddingVertical:
+        spacing[2],
+    },
+
+    statusOptionSelected: {
+      backgroundColor:
+        colors.brand,
+
+      borderColor:
+        colors.brand,
+    },
+
+    statusOptionText: {
+      fontFamily:
+        fontFamily.sansMedium,
+
+      fontSize:
+        fontSize.caption,
+
+      color:
+        colors.textSecondary,
+    },
+
+    statusOptionTextSelected: {
+      color:
+        colors.textInverse,
+    },
+
+    amountRow: {
+      flexDirection:
+        'row',
+
+      gap:
+        spacing[3],
+    },
+
+    amountField: {
+      flex: 2,
+    },
+
+    currencyField: {
+      flex: 1,
+    },
+
+    paidRow: {
+      flexDirection:
+        'row',
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'space-between',
+
+      backgroundColor:
+        colors.surface,
+
+      borderWidth: 1,
+
+      borderColor:
+        colors.border,
+
+      borderRadius:
+        radius.md,
+
+      padding:
+        spacing[4],
+
+      marginBottom:
+        spacing[5],
+    },
+
+    paidCopy: {
+      flex: 1,
+
+      paddingRight:
+        spacing[4],
+    },
+
+    paidTitle: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+
+      fontSize:
+        fontSize.body,
+
+      color:
+        colors.textPrimary,
+    },
+
+    paidDescription: {
+      fontFamily:
+        fontFamily.sansRegular,
+
+      fontSize:
+        fontSize.caption,
+
+      color:
+        colors.textMuted,
+
+      marginTop: 3,
+    },
+
+    saveButton: {
+      height: 56,
+
+      borderRadius:
+        radius.md,
+
+      backgroundColor:
+        colors.brand,
+
+      flexDirection:
+        'row',
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      gap:
+        spacing[3],
+
+      marginTop:
+        spacing[3],
+    },
+
+    saveButtonText: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+
+      fontSize:
+        fontSize.body,
+
+      color:
+        colors.textInverse,
+    },
+
+    disabled: {
+      opacity: 0.6,
+    },
+
+    bottomSpace: {
+      height:
+        spacing[12],
+    },
+
+    sheetBottomSpace: {
+      height:
+        spacing[10],
+    },
+  });
