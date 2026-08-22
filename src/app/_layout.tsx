@@ -1,6 +1,7 @@
 import {
   DarkTheme,
   DefaultTheme,
+  Stack,
   ThemeProvider,
 } from 'expo-router';
 
@@ -9,27 +10,13 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
-import {
-  AnimatedSplashOverlay,
-} from '@/components/animated-icon';
-
-import AppTabs from '@/components/app-tabs';
-
-import {
-  travelOSDatabase,
-} from '@/data/database/expo-sqlite-database';
-
-import {
-  runPersistenceSelfTestOnce,
-} from '@/lib/persistence-self-test';
-
-import {
-  useTripStore,
-} from '@/store/trip-store';
+import { travelOSDatabase } from '@/data/database/expo-sqlite-database';
+import { runPersistenceSelfTestOnce } from '@/lib/persistence-self-test';
+import { useTripStore } from '@/store/trip-store';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
+export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
@@ -45,18 +32,18 @@ export default function TabLayout() {
           );
         }
 
-        await useTripStore
-          .getState()
-          .loadTrips();
+        await useTripStore.getState().loadTrips();
 
-        console.log(
-          '[TravelOS] Bootstrap ready',
-        );
+        console.log('[TravelOS] Bootstrap ready');
+
+        await SplashScreen.hideAsync();
       } catch (error) {
         console.error(
           '[TravelOS] Bootstrap failed:',
           error,
         );
+
+        await SplashScreen.hideAsync();
       }
     };
 
@@ -71,8 +58,16 @@ export default function TabLayout() {
           : DefaultTheme
       }
     >
-      <AnimatedSplashOverlay />
-      <AppTabs />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+
+        <Stack.Screen
+          name="trip/[tripId]"
+          options={{
+            presentation: 'card',
+          }}
+        />
+      </Stack>
     </ThemeProvider>
   );
 }
