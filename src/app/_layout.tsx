@@ -1,11 +1,31 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from 'expo-router';
+
 import * as SplashScreen from 'expo-splash-screen';
+
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import {
+  AnimatedSplashOverlay,
+} from '@/components/animated-icon';
+
 import AppTabs from '@/components/app-tabs';
-import { travelOSDatabase } from '@/data/database/expo-sqlite-database';
+
+import {
+  travelOSDatabase,
+} from '@/data/database/expo-sqlite-database';
+
+import {
+  runPersistenceSelfTestOnce,
+} from '@/lib/persistence-self-test';
+
+import {
+  useTripStore,
+} from '@/store/trip-store';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -13,46 +33,44 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    const initializeDatabase = async () => {
+    const bootstrap = async () => {
       try {
         await travelOSDatabase.initialize();
 
-        const version =
-          await travelOSDatabase.queryFirst<{ user_version: number }>(
-            'PRAGMA user_version;'
+        if (__DEV__) {
+          await runPersistenceSelfTestOnce();
+
+          console.log(
+            '[TravelOS] Persistence self-test: PASS',
           );
+        }
 
-        const accommodationColumns =
-          await travelOSDatabase.query<{ name: string }>(
-            'PRAGMA table_info(accommodations);'
-          );
+        await useTripStore
+          .getState()
+          .loadTrips();
 
-        const hasStopId = accommodationColumns.some(
-          (column) => column.name === 'stop_id'
-        );
-
-        console.log('[TravelOS] SQLite ready: true');
         console.log(
-          '[TravelOS] Database version:',
-          version?.user_version
-        );
-        console.log(
-          '[TravelOS] accommodations.stop_id:',
-          hasStopId
+          '[TravelOS] Bootstrap ready',
         );
       } catch (error) {
         console.error(
-          '[TravelOS] SQLite initialization failed:',
-          error
+          '[TravelOS] Bootstrap failed:',
+          error,
         );
       }
     };
 
-    initializeDatabase();
+    void bootstrap();
   }, []);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider
+      value={
+        colorScheme === 'dark'
+          ? DarkTheme
+          : DefaultTheme
+      }
+    >
       <AnimatedSplashOverlay />
       <AppTabs />
     </ThemeProvider>
