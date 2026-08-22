@@ -17,14 +17,28 @@ export default function TabLayout() {
       try {
         await travelOSDatabase.initialize();
 
-        const tripsTable =
-          await travelOSDatabase.queryFirst<{ name: string }>(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'trips';"
+        const version =
+          await travelOSDatabase.queryFirst<{ user_version: number }>(
+            'PRAGMA user_version;'
           );
 
+        const accommodationColumns =
+          await travelOSDatabase.query<{ name: string }>(
+            'PRAGMA table_info(accommodations);'
+          );
+
+        const hasStopId = accommodationColumns.some(
+          (column) => column.name === 'stop_id'
+        );
+
+        console.log('[TravelOS] SQLite ready: true');
         console.log(
-          '[TravelOS] SQLite ready:',
-          tripsTable?.name === 'trips'
+          '[TravelOS] Database version:',
+          version?.user_version
+        );
+        console.log(
+          '[TravelOS] accommodations.stop_id:',
+          hasStopId
         );
       } catch (error) {
         console.error(

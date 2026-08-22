@@ -131,6 +131,7 @@ CREATE TABLE IF NOT EXISTS bookings (
 CREATE TABLE IF NOT EXISTS accommodations (
   id TEXT PRIMARY KEY NOT NULL,
   trip_id TEXT NOT NULL,
+  stop_id TEXT,
   booking_id TEXT,
   name TEXT NOT NULL,
   type TEXT NOT NULL,
@@ -148,6 +149,10 @@ CREATE TABLE IF NOT EXISTS accommodations (
   FOREIGN KEY (trip_id)
     REFERENCES trips(id)
     ON DELETE CASCADE,
+
+  FOREIGN KEY (stop_id)
+    REFERENCES trip_stops(id)
+    ON DELETE SET NULL,
 
   FOREIGN KEY (booking_id)
     REFERENCES bookings(id)

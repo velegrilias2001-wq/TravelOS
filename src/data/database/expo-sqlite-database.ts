@@ -1,10 +1,8 @@
 import * as SQLite from 'expo-sqlite';
 
 import type { Database } from './database';
-import {
-    DATABASE_NAME,
-    DATABASE_SCHEMA,
-} from './schema';
+import { migrateDatabase } from './migrations';
+import { DATABASE_NAME } from './schema';
 
 export class ExpoSQLiteDatabase implements Database {
   private database: SQLite.SQLiteDatabase | null = null;
@@ -21,7 +19,7 @@ export class ExpoSQLiteDatabase implements Database {
   async initialize(): Promise<void> {
     const db = await this.getDatabase();
 
-    await db.execAsync(DATABASE_SCHEMA);
+    await migrateDatabase(db);
   }
 
   async execute(
