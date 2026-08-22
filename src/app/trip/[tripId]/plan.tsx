@@ -15,11 +15,16 @@ import {
   Alert,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+
+import {
+  pickLocation,
+} from 'expo-location-picker';
 
 import {
   Screen,
@@ -57,25 +62,33 @@ const STOP_TYPES: {
     value: 'place',
     icon: 'location-outline',
   },
-
   {
     label: 'Activity',
     value: 'activity',
     icon: 'sparkles-outline',
   },
-
   {
     label: 'Food',
     value: 'food',
     icon: 'restaurant-outline',
   },
-
   {
     label: 'Transport',
     value: 'transport',
     icon: 'car-outline',
   },
 ];
+
+type StopLocation =
+  NonNullable<
+    TripStop['location']
+  >;
+
+type MappedLocation =
+  StopLocation & {
+    latitude: number;
+    longitude: number;
+  };
 
 function formatDayDate(
   date: string,
@@ -101,6 +114,20 @@ function getStopIcon(
         item.value === type,
     )?.icon ??
     'location-outline'
+  );
+}
+
+function hasCoordinates(
+  location:
+    | TripStop['location']
+    | null
+    | undefined,
+): location is MappedLocation {
+  return (
+    typeof location?.latitude ===
+      'number' &&
+    typeof location?.longitude ===
+      'number'
   );
 }
 
@@ -161,6 +188,20 @@ export default function PlanScreen() {
     );
 
   const [
+    pickedLocation,
+    setPickedLocation,
+  ] =
+    useState<StopLocation | null>(
+      null,
+    );
+
+  const [
+    isPickingLocation,
+    setIsPickingLocation,
+  ] =
+    useState(false);
+
+  const [
     isSaving,
     setIsSaving,
   ] =
@@ -205,6 +246,19 @@ export default function PlanScreen() {
     void loadPlan();
   }, [loadPlan]);
 
+  const resetModal = () => {
+    setSelectedDay(null);
+
+    setEditingStop(null);
+
+    setTitle('');
+    setTime('');
+
+    setType('place');
+
+    setPickedLocation(null);
+  };
+
   const openCreate = (
     day: TripDay,
   ) => {
@@ -216,6 +270,8 @@ export default function PlanScreen() {
     setTime('');
 
     setType('place');
+
+    setPickedLocation(null);
   };
 
   const openEdit = (
@@ -237,17 +293,160 @@ export default function PlanScreen() {
     setType(
       stop.type,
     );
+
+    setPickedLocation(
+      stop.location ?? null,
+    );
   };
 
   const closeModal = () => {
-    setSelectedDay(null);
+    if (
+      isSaving ||
+      isPickingLocation
+    ) {
+      return;
+    }
 
-    setEditingStop(null);
+    resetModal();
+  };
 
-    setTitle('');
-    setTime('');
+  const chooseLocation =
+    async () => {
+      if (!workspace) {
+        return;
+      }
 
-    setType('place');
+      const destination =
+        workspace.trip
+          .destinations[0];
+
+      const initialLatitude =
+        pickedLocation
+          ?.latitude ??
+        destination
+          ?.latitude;
+
+      const initialLongitude =
+        pickedLocation
+          ?.longitude ??
+        destination
+          ?.longitude;
+
+      try {
+        setIsPickingLocation(
+          true,
+        );
+
+        const result =
+          await pickLocation({
+            title:
+              'Choose location',
+
+            doneButtonTitle:
+              'Use location',
+
+            cancelButtonTitle:
+              'Cancel',
+
+            searchPlaceholder:
+              'Search places or addresses…',
+
+            initialRadiusMeters:
+              5000,
+
+            disableCurrentLocation:
+              true,
+
+            ...(typeof initialLatitude ===
+              'number' &&
+            typeof initialLongitude ===
+              'number'
+              ? {
+                  initialLatitude,
+                  initialLongitude,
+                }
+              : {}),
+
+            theme: {
+              primary:
+                colors.brand,
+
+              pin:
+                colors.coral,
+
+              colorScheme:
+                'light',
+            },
+          });
+
+        if (!result) {
+          return;
+        }
+
+        const resultName =
+          result.name
+            ?.trim();
+
+        const resultAddress =
+          result.formattedAddress
+            ?.trim();
+
+        const locationName =
+          resultName ||
+          resultAddress ||
+          title.trim() ||
+          'Selected location';
+
+        const location:
+          StopLocation = {
+            name:
+              locationName,
+
+            address:
+              resultAddress ||
+              undefined,
+
+            latitude:
+              result.latitude,
+
+            longitude:
+              result.longitude,
+          };
+
+        setPickedLocation(
+          location,
+        );
+
+        if (resultName) {
+          setTitle(
+            resultName,
+          );
+        } else if (
+          !title.trim()
+        ) {
+          setTitle(
+            locationName,
+          );
+        }
+      } catch (error) {
+        console.error(
+          '[Plan] Location picker error:',
+          error,
+        );
+
+        Alert.alert(
+          'Could not open map',
+          'Travel OS could not open the location picker. Please try again.',
+        );
+      } finally {
+        setIsPickingLocation(
+          false,
+        );
+      }
+    };
+
+  const removeLocation = () => {
+    setPickedLocation(null);
   };
 
   const saveStop =
@@ -287,6 +486,10 @@ export default function PlanScreen() {
               startTime:
                 time.trim() ||
                 undefined,
+
+              location:
+                pickedLocation ??
+                undefined,
             },
           );
         } else {
@@ -325,6 +528,10 @@ export default function PlanScreen() {
                 time.trim() ||
                 undefined,
 
+              location:
+                pickedLocation ??
+                undefined,
+
               createdAt:
                 now,
 
@@ -337,7 +544,7 @@ export default function PlanScreen() {
           );
         }
 
-        closeModal();
+        resetModal();
 
         await loadPlan();
       } catch (error) {
@@ -745,6 +952,34 @@ export default function PlanScreen() {
                                     stop.type
                                   }
                                 </Text>
+
+                                {hasCoordinates(
+                                  stop.location,
+                                ) && (
+                                  <View
+                                    style={
+                                      styles.mappedRow
+                                    }
+                                  >
+                                    <Ionicons
+                                      name="map-outline"
+                                      size={
+                                        13
+                                      }
+                                      color={
+                                        colors.teal
+                                      }
+                                    />
+
+                                    <Text
+                                      style={
+                                        styles.mappedText
+                                      }
+                                    >
+                                      Mapped
+                                    </Text>
+                                  </View>
+                                )}
                               </View>
                             </Pressable>
 
@@ -927,164 +1162,398 @@ export default function PlanScreen() {
               </Pressable>
             </View>
 
-            <Text
-              style={
-                styles.fieldLabel
+            <ScrollView
+              showsVerticalScrollIndicator={
+                false
               }
+              keyboardShouldPersistTaps="handled"
             >
-              TYPE
-            </Text>
+              <Text
+                style={
+                  styles.fieldLabel
+                }
+              >
+                TYPE
+              </Text>
 
-            <View
-              style={
-                styles.typeRow
-              }
-            >
-              {STOP_TYPES.map(
-                (item) => {
-                  const selected =
-                    type ===
-                    item.value;
+              <View
+                style={
+                  styles.typeRow
+                }
+              >
+                {STOP_TYPES.map(
+                  (item) => {
+                    const selected =
+                      type ===
+                      item.value;
 
-                  return (
-                    <Pressable
-                      key={
-                        item.value
+                    return (
+                      <Pressable
+                        key={
+                          item.value
+                        }
+                        style={[
+                          styles.typeButton,
+
+                          selected &&
+                            styles.typeButtonSelected,
+                        ]}
+                        onPress={() =>
+                          setType(
+                            item.value,
+                          )
+                        }
+                      >
+                        <Ionicons
+                          name={
+                            item.icon
+                          }
+                          size={18}
+                          color={
+                            selected
+                              ? colors.textInverse
+                              : colors.brand
+                          }
+                        />
+
+                        <Text
+                          style={[
+                            styles.typeText,
+
+                            selected &&
+                              styles.typeTextSelected,
+                          ]}
+                        >
+                          {
+                            item.label
+                          }
+                        </Text>
+                      </Pressable>
+                    );
+                  },
+                )}
+              </View>
+
+              <View
+                style={
+                  styles.field
+                }
+              >
+                <Text
+                  style={
+                    styles.fieldLabel
+                  }
+                >
+                  NAME
+                </Text>
+
+                <TextInput
+                  value={title}
+                  onChangeText={
+                    setTitle
+                  }
+                  placeholder="Museum, dinner, temple…"
+                  placeholderTextColor={
+                    colors.textMuted
+                  }
+                  style={
+                    styles.input
+                  }
+                />
+              </View>
+
+              <View
+                style={
+                  styles.field
+                }
+              >
+                <View
+                  style={
+                    styles.locationLabelRow
+                  }
+                >
+                  <Text
+                    style={
+                      styles.fieldLabel
+                    }
+                  >
+                    LOCATION
+                  </Text>
+
+                  {hasCoordinates(
+                    pickedLocation,
+                  ) && (
+                    <Text
+                      style={
+                        styles.locationReady
                       }
-                      style={[
-                        styles.typeButton,
+                    >
+                      READY FOR MAP
+                    </Text>
+                  )}
+                </View>
 
-                        selected &&
-                          styles.typeButtonSelected,
-                      ]}
-                      onPress={() =>
-                        setType(
-                          item.value,
-                        )
+                {pickedLocation ? (
+                  <View
+                    style={
+                      styles.locationCard
+                    }
+                  >
+                    <View
+                      style={
+                        styles.locationIcon
                       }
                     >
                       <Ionicons
-                        name={
-                          item.icon
-                        }
-                        size={18}
+                        name="location"
+                        size={21}
                         color={
-                          selected
-                            ? colors.textInverse
-                            : colors.brand
+                          colors.teal
                         }
                       />
+                    </View>
 
+                    <View
+                      style={
+                        styles.locationCopy
+                      }
+                    >
                       <Text
-                        style={[
-                          styles.typeText,
-
-                          selected &&
-                            styles.typeTextSelected,
-                        ]}
+                        numberOfLines={
+                          1
+                        }
+                        style={
+                          styles.locationName
+                        }
                       >
                         {
-                          item.label
+                          pickedLocation.name
                         }
                       </Text>
+
+                      {pickedLocation.address && (
+                        <Text
+                          numberOfLines={
+                            2
+                          }
+                          style={
+                            styles.locationAddress
+                          }
+                        >
+                          {
+                            pickedLocation.address
+                          }
+                        </Text>
+                      )}
+
+                      {hasCoordinates(
+                        pickedLocation,
+                      ) && (
+                        <Text
+                          style={
+                            styles.coordinateText
+                          }
+                        >
+                          {pickedLocation.latitude.toFixed(
+                            5,
+                          )}
+                          {'  ·  '}
+                          {pickedLocation.longitude.toFixed(
+                            5,
+                          )}
+                        </Text>
+                      )}
+                    </View>
+
+                    {hasCoordinates(
+                      pickedLocation,
+                    ) && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={22}
+                        color={
+                          colors.teal
+                        }
+                      />
+                    )}
+                  </View>
+                ) : (
+                  <View
+                    style={
+                      styles.locationEmpty
+                    }
+                  >
+                    <Ionicons
+                      name="map-outline"
+                      size={22}
+                      color={
+                        colors.textMuted
+                      }
+                    />
+
+                    <View
+                      style={
+                        styles.locationEmptyCopy
+                      }
+                    >
+                      <Text
+                        style={
+                          styles.locationEmptyTitle
+                        }
+                      >
+                        No location selected
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.locationEmptyBody
+                        }
+                      >
+                        Choose a real place to show it on your trip map.
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                <View
+                  style={
+                    styles.locationActions
+                  }
+                >
+                  <Pressable
+                    disabled={
+                      isPickingLocation
+                    }
+                    style={[
+                      styles.locationButton,
+
+                      isPickingLocation &&
+                        styles.disabled,
+                    ]}
+                    onPress={
+                      chooseLocation
+                    }
+                  >
+                    <Ionicons
+                      name={
+                        pickedLocation
+                          ? 'map-outline'
+                          : 'search-outline'
+                      }
+                      size={18}
+                      color={
+                        colors.textInverse
+                      }
+                    />
+
+                    <Text
+                      style={
+                        styles.locationButtonText
+                      }
+                    >
+                      {isPickingLocation
+                        ? 'Opening map…'
+                        : pickedLocation
+                          ? 'Change location'
+                          : 'Choose location'}
+                    </Text>
+                  </Pressable>
+
+                  {pickedLocation && (
+                    <Pressable
+                      style={
+                        styles.removeLocationButton
+                      }
+                      onPress={
+                        removeLocation
+                      }
+                    >
+                      <Ionicons
+                        name="close"
+                        size={18}
+                        color={
+                          colors.danger
+                        }
+                      />
                     </Pressable>
-                  );
-                },
-              )}
-            </View>
+                  )}
+                </View>
+              </View>
 
-            <View
-              style={
-                styles.field
-              }
-            >
-              <Text
+              <View
                 style={
-                  styles.fieldLabel
+                  styles.field
                 }
               >
-                NAME
-              </Text>
+                <Text
+                  style={
+                    styles.fieldLabel
+                  }
+                >
+                  TIME
+                </Text>
 
-              <TextInput
-                value={title}
-                onChangeText={
-                  setTitle
-                }
-                placeholder="Museum, dinner, temple…"
-                placeholderTextColor={
-                  colors.textMuted
-                }
-                style={
-                  styles.input
-                }
-              />
-            </View>
-
-            <View
-              style={
-                styles.field
-              }
-            >
-              <Text
-                style={
-                  styles.fieldLabel
-                }
-              >
-                TIME
-              </Text>
-
-              <TextInput
-                value={time}
-                onChangeText={
-                  setTime
-                }
-                placeholder="10:30"
-                placeholderTextColor={
-                  colors.textMuted
-                }
-                style={
-                  styles.input
-                }
-              />
-            </View>
-
-            <Pressable
-              disabled={
-                isSaving
-              }
-              style={[
-                styles.saveButton,
-
-                isSaving &&
-                  styles.disabled,
-              ]}
-              onPress={
-                saveStop
-              }
-            >
-              <Text
-                style={
-                  styles.saveButtonText
-                }
-              >
-                {isSaving
-                  ? 'Saving…'
-                  : editingStop
-                    ? 'Save changes'
-                    : 'Add to itinerary'}
-              </Text>
-
-              {!isSaving && (
-                <Ionicons
-                  name="arrow-forward"
-                  size={19}
-                  color={
-                    colors.textInverse
+                <TextInput
+                  value={time}
+                  onChangeText={
+                    setTime
+                  }
+                  placeholder="10:30"
+                  placeholderTextColor={
+                    colors.textMuted
+                  }
+                  style={
+                    styles.input
                   }
                 />
-              )}
-            </Pressable>
+              </View>
+
+              <Pressable
+                disabled={
+                  isSaving ||
+                  isPickingLocation
+                }
+                style={[
+                  styles.saveButton,
+
+                  (isSaving ||
+                    isPickingLocation) &&
+                    styles.disabled,
+                ]}
+                onPress={
+                  saveStop
+                }
+              >
+                <Text
+                  style={
+                    styles.saveButtonText
+                  }
+                >
+                  {isSaving
+                    ? 'Saving…'
+                    : editingStop
+                      ? 'Save changes'
+                      : 'Add to itinerary'}
+                </Text>
+
+                {!isSaving &&
+                  !isPickingLocation && (
+                    <Ionicons
+                      name="arrow-forward"
+                      size={19}
+                      color={
+                        colors.textInverse
+                      }
+                    />
+                  )}
+              </Pressable>
+
+              <View
+                style={
+                  styles.sheetBottomSpace
+                }
+              />
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1335,6 +1804,27 @@ const styles =
         'capitalize',
     },
 
+    mappedRow: {
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      gap: 4,
+      marginTop: 5,
+    },
+
+    mappedText: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 0.6,
+      color:
+        colors.teal,
+      textTransform:
+        'uppercase',
+    },
+
     stopActions: {
       flexDirection:
         'row',
@@ -1363,6 +1853,8 @@ const styles =
     },
 
     sheet: {
+      maxHeight: '92%',
+
       backgroundColor:
         colors.background,
 
@@ -1376,7 +1868,7 @@ const styles =
         spacing[6],
 
       paddingBottom:
-        spacing[8],
+        spacing[4],
     },
 
     sheetHandle: {
@@ -1570,6 +2062,244 @@ const styles =
         colors.textPrimary,
     },
 
+    locationLabelRow: {
+      flexDirection:
+        'row',
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'space-between',
+    },
+
+    locationReady: {
+      fontFamily:
+        fontFamily.sansBold,
+
+      fontSize:
+        fontSize.micro,
+
+      letterSpacing: 0.7,
+
+      color:
+        colors.teal,
+    },
+
+    locationCard: {
+      minHeight: 88,
+
+      backgroundColor:
+        colors.surface,
+
+      borderWidth: 1,
+
+      borderColor:
+        colors.border,
+
+      borderRadius:
+        radius.md,
+
+      flexDirection:
+        'row',
+
+      alignItems:
+        'center',
+
+      padding:
+        spacing[4],
+    },
+
+    locationIcon: {
+      width: 42,
+      height: 42,
+
+      borderRadius:
+        radius.sm,
+
+      backgroundColor:
+        colors.tealSoft,
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      marginRight:
+        spacing[3],
+    },
+
+    locationCopy: {
+      flex: 1,
+
+      paddingRight:
+        spacing[3],
+    },
+
+    locationName: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+
+      fontSize:
+        fontSize.bodySmall,
+
+      color:
+        colors.textPrimary,
+    },
+
+    locationAddress: {
+      fontFamily:
+        fontFamily.sansRegular,
+
+      fontSize:
+        fontSize.caption,
+
+      lineHeight: 18,
+
+      color:
+        colors.textSecondary,
+
+      marginTop: 3,
+    },
+
+    coordinateText: {
+      fontFamily:
+        fontFamily.sansMedium,
+
+      fontSize:
+        fontSize.micro,
+
+      color:
+        colors.textMuted,
+
+      marginTop:
+        spacing[2],
+    },
+
+    locationEmpty: {
+      minHeight: 82,
+
+      borderRadius:
+        radius.md,
+
+      borderWidth: 1,
+
+      borderStyle:
+        'dashed',
+
+      borderColor:
+        colors.borderStrong,
+
+      flexDirection:
+        'row',
+
+      alignItems:
+        'center',
+
+      padding:
+        spacing[4],
+    },
+
+    locationEmptyCopy: {
+      flex: 1,
+
+      marginLeft:
+        spacing[3],
+    },
+
+    locationEmptyTitle: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+
+      fontSize:
+        fontSize.bodySmall,
+
+      color:
+        colors.textPrimary,
+    },
+
+    locationEmptyBody: {
+      fontFamily:
+        fontFamily.sansRegular,
+
+      fontSize:
+        fontSize.caption,
+
+      color:
+        colors.textMuted,
+
+      marginTop: 2,
+    },
+
+    locationActions: {
+      flexDirection:
+        'row',
+
+      gap:
+        spacing[2],
+
+      marginTop:
+        spacing[3],
+    },
+
+    locationButton: {
+      flex: 1,
+
+      height: 50,
+
+      borderRadius:
+        radius.md,
+
+      backgroundColor:
+        colors.teal,
+
+      flexDirection:
+        'row',
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      gap:
+        spacing[2],
+    },
+
+    locationButtonText: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+
+      fontSize:
+        fontSize.bodySmall,
+
+      color:
+        colors.textInverse,
+    },
+
+    removeLocationButton: {
+      width: 50,
+      height: 50,
+
+      borderRadius:
+        radius.md,
+
+      borderWidth: 1,
+
+      borderColor:
+        colors.border,
+
+      backgroundColor:
+        colors.surface,
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+    },
+
     saveButton: {
       height: 56,
 
@@ -1613,5 +2343,10 @@ const styles =
     bottomSpace: {
       height:
         spacing[12],
+    },
+
+    sheetBottomSpace: {
+      height:
+        spacing[6],
     },
   });
