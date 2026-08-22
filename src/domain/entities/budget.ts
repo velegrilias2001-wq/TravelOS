@@ -21,7 +21,8 @@ export type BudgetItemStatus =
 
 export interface BudgetItem {
   id: BudgetItemId;
-
+  budgetId: BudgetId;
+  
   tripId: TripId;
   bookingId?: BookingId;
   stopId?: TripStopId;

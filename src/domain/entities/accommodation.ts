@@ -1,5 +1,6 @@
 import type { BookingId } from './booking';
 import type { TripId } from './trip';
+import type { TripStopId } from './trip-stop';
 
 export type AccommodationId = string;
 
@@ -15,6 +16,7 @@ export type AccommodationType =
 export interface Accommodation {
   id: AccommodationId;
   tripId: TripId;
+  stopId?: TripStopId;
   bookingId?: BookingId;
 
   name: string;
