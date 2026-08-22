@@ -1,56 +1,104 @@
-# Welcome to your Expo app 👋
+# TravelOS
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+TravelOS is a premium native travel operating system for planning trips, acting on the right context during travel, and preserving memories afterward. This repository is the native implementation source of truth; the earlier PWA at https://travelos3.netlify.app/ is a functional and UX reference only.
 
-## Get started
+## Current status
 
-1. Install dependencies
+The app is a working native foundation and vertical prototype. It currently includes:
 
-   ```bash
-   npm install
-   ```
+- Home, Trips, and persisted trip creation.
+- Trip Space with Today, Plan, Map, Bookings, and a placeholder More tab.
+- SQLite-backed trips, automatic days, itinerary-stop CRUD/reorder, bookings, and payment status.
+- Truth-aware upcoming/active/completed Today behavior.
+- Android Google Maps, native location selection, persisted coordinates, and stop pins.
+- Domain, repository, service, and Zustand UI/session layers.
 
-2. Start the app
+Discover, World, Profile, budget, accommodation UI, travelers, full Companion, Memories, Travel Book, sync, tests, and release infrastructure are not complete. See docs/CURRENT_STATE.md for the verified implementation snapshot.
 
-   ```bash
-   npx expo start
-   ```
+## Stack
 
-In the output, you'll find options to open the app in a
+- Expo SDK 57 and React Native 0.86
+- TypeScript
+- Expo Router
+- SQLite through expo-sqlite
+- Zustand for UI/session state
+- react-native-maps and expo-location-picker
+- Expo development builds
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Before changing code or dependencies, use the exact Expo SDK 57 documentation: https://docs.expo.dev/versions/v57.0.0/.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Local development
 
-## Get a fresh project
+### Prerequisites
 
-When you're ready, run:
+- Node.js 22.13 or newer for the Expo SDK 57 toolchain.
+- npm.
+- Android Studio, an Android SDK, and an emulator or connected device.
+- JDK 17 for local Android builds.
+- macOS with Xcode for local iOS builds.
 
-```bash
-npm run reset-project
-```
+This project includes native modules and is developed with a development build, not Expo Go.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Install
 
-### Other setup steps
+    npm install
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+### Environment
 
-## Learn more
+Create an uncommitted .env.local file containing the required variable:
 
-To learn more about developing your project with Expo, look at the following resources:
+| Variable | Purpose |
+| --- | --- |
+| GOOGLE_MAPS_API_KEY | Android Google Maps and native place-search configuration |
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Do not commit, print, or share the value. app.config.js requires the variable while resolving native configuration. The Google Cloud project must enable the services used by the app, currently Maps SDK for Android and Places API (New), and the key should be appropriately restricted.
 
-## Join the community
+### Build and run on Android
 
-Join our community of developers creating universal apps.
+Build and install the development client:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+    npm run android
+
+For later JavaScript-only iterations with the development client already installed:
+
+    npm start
+
+Then open the project from the installed TravelOS development build.
+
+### Build and run on iOS
+
+On macOS:
+
+    npm run ios
+
+iOS maps, bundle configuration, permissions, and release behavior are not yet considered production-ready. Treat iOS work as an explicit platform-hardening task.
+
+## Validation
+
+Run the current safe baseline checks:
+
+    npx tsc --noEmit
+    git diff --check
+    git status --short
+
+The package contains an Expo lint script, but no non-interactive lint configuration is committed yet. Do not let the lint command initialize or rewrite configuration during a verification-only task. There is currently no automated test suite.
+
+## Project shape
+
+- src/app/ — Expo Router screens and layouts
+- src/domain/ — canonical travel entities and repository contracts
+- src/data/ — SQLite database, migrations, and repositories
+- src/services/ — application orchestration
+- src/store/ — Zustand UI/session state
+- src/components/ and src/theme/ — shared UI and design foundations
+- docs/ — product contract, verified state, roadmap, and web-reference guidance
+
+## Documentation
+
+- AGENTS.md — permanent engineering contract
+- docs/PRODUCT_VISION.md — full lifecycle and product principles
+- docs/CURRENT_STATE.md — verified implementation and risks
+- docs/ROADMAP.md — ordered delivery sequence
+- docs/WEB_REFERENCE.md — how to use the PWA reference safely
+
+SQLite is the durable source of truth. Zustand is not a database. Preserve explicit IDs, existing user data, working functionality, and forward-only migration history.
