@@ -1,9 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
+
 import {
   useLocalSearchParams,
   useRouter,
 } from 'expo-router';
-import { useEffect } from 'react';
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import {
   Pressable,
@@ -13,7 +20,17 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
-import { useTripStore } from '@/store/trip-store';
+
+import type {
+  TripDay,
+  TripStop,
+  TripStopType,
+} from '@/domain/entities';
+
+import {
+  tripService,
+  type TripWorkspace,
+} from '@/services/trip-service';
 
 import {
   colors,
@@ -25,52 +42,220 @@ import {
   spacing,
 } from '@/theme';
 
+type JourneyMoment =
+  | 'upcoming'
+  | 'today'
+  | 'completed';
+
+function getLocalDateKey(): string {
+  const now = new Date();
+
+  const year = now.getFullYear();
+
+  const month = String(
+    now.getMonth() + 1,
+  ).padStart(2, '0');
+
+  const day = String(
+    now.getDate(),
+  ).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatDayDate(
+  date: string,
+): string {
+  return new Date(
+    `${date}T12:00:00`,
+  ).toLocaleDateString(
+    'en-GB',
+    {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    },
+  );
+}
+
+function formatTripDate(
+  date: string,
+): string {
+  return new Date(
+    `${date}T12:00:00`,
+  ).toLocaleDateString(
+    'en-GB',
+    {
+      day: 'numeric',
+      month: 'short',
+    },
+  );
+}
+
+function getStopIcon(
+  type: TripStopType,
+): keyof typeof Ionicons.glyphMap {
+  switch (type) {
+    case 'food':
+      return 'restaurant-outline';
+
+    case 'activity':
+      return 'sparkles-outline';
+
+    case 'transport':
+      return 'car-outline';
+
+    case 'accommodation':
+      return 'bed-outline';
+
+    case 'place':
+      return 'location-outline';
+
+    default:
+      return 'ellipse-outline';
+  }
+}
+
+function resolveJourneyDay(
+  workspace: TripWorkspace,
+): {
+  moment: JourneyMoment;
+  day: TripDay | null;
+} {
+  const today =
+    getLocalDateKey();
+
+  const days = [
+    ...workspace.days,
+  ].sort(
+    (a, b) =>
+      a.dayNumber -
+      b.dayNumber,
+  );
+
+  if (days.length === 0) {
+    return {
+      moment: 'upcoming',
+      day: null,
+    };
+  }
+
+  if (
+    today <
+    workspace.trip.startDate
+  ) {
+    return {
+      moment: 'upcoming',
+      day: days[0],
+    };
+  }
+
+  if (
+    today >
+    workspace.trip.endDate
+  ) {
+    return {
+      moment: 'completed',
+      day:
+        days[
+          days.length - 1
+        ],
+    };
+  }
+
+  const currentDay =
+    days.find(
+      (day) =>
+        day.date === today,
+    ) ?? null;
+
+  return {
+    moment: 'today',
+    day: currentDay,
+  };
+}
+
 export default function TodayScreen() {
-  const router = useRouter();
+  const router =
+    useRouter();
 
   const { tripId } =
     useLocalSearchParams<{
       tripId: string;
     }>();
 
-  const activeTrip = useTripStore(
-    (state) => state.activeTrip,
-  );
+  const [
+    workspace,
+    setWorkspace,
+  ] =
+    useState<TripWorkspace | null>(
+      null,
+    );
 
-  const activeTripId = useTripStore(
-    (state) => state.activeTripId,
-  );
+  const [
+    isLoading,
+    setIsLoading,
+  ] =
+    useState(true);
 
-  const openTrip = useTripStore(
-    (state) => state.openTrip,
-  );
+  const loadWorkspace =
+    useCallback(
+      async () => {
+        if (!tripId) {
+          return;
+        }
 
-  const isLoading = useTripStore(
-    (state) => state.isLoading,
-  );
+        try {
+          setIsLoading(true);
+
+          const result =
+            await tripService.getWorkspace(
+              tripId,
+            );
+
+          setWorkspace(
+            result,
+          );
+        } catch (error) {
+          console.error(
+            '[Today] Load error:',
+            error,
+          );
+        } finally {
+          setIsLoading(false);
+        }
+      },
+      [tripId],
+    );
 
   useEffect(() => {
-    if (
-      tripId &&
-      activeTripId !== tripId
-    ) {
-      void openTrip(tripId);
-    }
-  }, [
-    tripId,
-    activeTripId,
-    openTrip,
-  ]);
+    void loadWorkspace();
+  }, [loadWorkspace]);
+
+  const journey =
+    useMemo(
+      () =>
+        workspace
+          ? resolveJourneyDay(
+              workspace,
+            )
+          : null,
+      [workspace],
+    );
 
   if (
     isLoading ||
-    !activeTrip ||
-    activeTrip.id !== tripId
+    !workspace ||
+    !journey
   ) {
     return (
       <Screen>
-        <View style={styles.center}>
-          <Text style={styles.loading}>
+        <View
+          style={styles.center}
+        >
+          <Text
+            style={styles.loading}
+          >
             Loading your trip…
           </Text>
         </View>
@@ -79,15 +264,53 @@ export default function TodayScreen() {
   }
 
   const destination =
-    activeTrip.destinations[0]?.name ??
+    workspace.trip
+      .destinations[0]
+      ?.name ??
     'Your destination';
+
+  const selectedDay =
+    journey.day;
+
+  const stops: TripStop[] =
+    selectedDay
+      ? workspace.stops
+          .filter(
+            (stop) =>
+              stop.dayId ===
+              selectedDay.id,
+          )
+          .sort(
+            (a, b) =>
+              a.order -
+              b.order,
+          )
+      : [];
+
+  const momentLabel =
+    journey.moment === 'today'
+      ? 'TODAY'
+      : journey.moment ===
+          'upcoming'
+        ? 'UP NEXT'
+        : 'JOURNEY COMPLETE';
+
+  const dayTitle =
+    journey.moment === 'today'
+      ? 'Today'
+      : journey.moment ===
+          'upcoming'
+        ? 'Your first day'
+        : 'Your final day';
 
   return (
     <Screen scroll>
       <View style={styles.topBar}>
         <Pressable
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() =>
+            router.back()
+          }
         >
           <Ionicons
             name="arrow-back"
@@ -100,7 +323,9 @@ export default function TodayScreen() {
           TRIP
         </Text>
 
-        <View style={styles.topSpacer} />
+        <View
+          style={styles.topSpacer}
+        />
       </View>
 
       <View style={styles.hero}>
@@ -109,7 +334,7 @@ export default function TodayScreen() {
         </Text>
 
         <Text style={styles.title}>
-          {activeTrip.title}
+          {workspace.trip.title}
         </Text>
 
         <View style={styles.dateRow}>
@@ -120,217 +345,622 @@ export default function TodayScreen() {
           />
 
           <Text style={styles.dateText}>
-            {activeTrip.startDate}
+            {formatTripDate(
+              workspace.trip.startDate,
+            )}
             {'  —  '}
-            {activeTrip.endDate}
+            {formatTripDate(
+              workspace.trip.endDate,
+            )}
           </Text>
         </View>
       </View>
 
-      <View style={styles.todayCard}>
-        <View style={styles.todayHeader}>
+      <View style={styles.dayCard}>
+        <View style={styles.dayTop}>
           <View>
-            <Text style={styles.todayEyebrow}>
-              YOUR JOURNEY
+            <Text
+              style={
+                styles.momentLabel
+              }
+            >
+              {momentLabel}
             </Text>
 
-            <Text style={styles.todayTitle}>
-              Today
+            <Text
+              style={
+                styles.dayTitle
+              }
+            >
+              {dayTitle}
             </Text>
           </View>
 
-          <View style={styles.statusBadge}>
-            <View style={styles.statusDot} />
-
-            <Text style={styles.statusText}>
-              {activeTrip.status.toUpperCase()}
-            </Text>
-          </View>
+          {selectedDay && (
+            <View
+              style={
+                styles.dayBadge
+              }
+            >
+              <Text
+                style={
+                  styles.dayBadgeText
+                }
+              >
+                DAY{' '}
+                {
+                  selectedDay.dayNumber
+                }
+              </Text>
+            </View>
+          )}
         </View>
 
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIcon}>
-            <Ionicons
-              name="sunny-outline"
-              size={25}
-              color={colors.brand}
-            />
+        {selectedDay && (
+          <Text
+            style={
+              styles.dayDate
+            }
+          >
+            {formatDayDate(
+              selectedDay.date,
+            )}
+          </Text>
+        )}
+
+        <View
+          style={
+            styles.divider
+          }
+        />
+
+        {stops.length === 0 ? (
+          <View
+            style={
+              styles.emptyState
+            }
+          >
+            <View
+              style={
+                styles.emptyIcon
+              }
+            >
+              <Ionicons
+                name={
+                  journey.moment ===
+                  'upcoming'
+                    ? 'sparkles-outline'
+                    : 'sunny-outline'
+                }
+                size={25}
+                color={
+                  colors.brand
+                }
+              />
+            </View>
+
+            <Text
+              style={
+                styles.emptyTitle
+              }
+            >
+              {journey.moment ===
+              'upcoming'
+                ? 'Your first day is ready to take shape.'
+                : 'Nothing planned for this day yet.'}
+            </Text>
+
+            <Text
+              style={
+                styles.emptyBody
+              }
+            >
+              Add places,
+              activities, food and
+              transport from your
+              Plan.
+            </Text>
           </View>
+        ) : (
+          <View
+            style={
+              styles.stopList
+            }
+          >
+            {stops.map(
+              (
+                stop,
+                index,
+              ) => (
+                <View
+                  key={
+                    stop.id
+                  }
+                  style={
+                    styles.stopRow
+                  }
+                >
+                  <View
+                    style={
+                      styles.timelineColumn
+                    }
+                  >
+                    <View
+                      style={
+                        styles.stopDot
+                      }
+                    />
 
-          <Text style={styles.emptyTitle}>
-            Your day is ready to take shape.
+                    {index <
+                      stops.length -
+                        1 && (
+                      <View
+                        style={
+                          styles.timelineLine
+                        }
+                      />
+                    )}
+                  </View>
+
+                  <View
+                    style={
+                      styles.stopCard
+                    }
+                  >
+                    <View
+                      style={
+                        styles.stopIcon
+                      }
+                    >
+                      <Ionicons
+                        name={getStopIcon(
+                          stop.type,
+                        )}
+                        size={19}
+                        color={
+                          colors.teal
+                        }
+                      />
+                    </View>
+
+                    <View
+                      style={
+                        styles.stopCopy
+                      }
+                    >
+                      <Text
+                        style={
+                          styles.stopTitle
+                        }
+                      >
+                        {
+                          stop.title
+                        }
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.stopMeta
+                        }
+                      >
+                        {stop.startTime
+                          ? `${stop.startTime} · `
+                          : ''}
+
+                        {stop.type}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ),
+            )}
+          </View>
+        )}
+
+        <Pressable
+          style={
+            styles.planButton
+          }
+          onPress={() =>
+            router.push({
+              pathname:
+                '/trip/[tripId]/plan',
+
+              params: {
+                tripId:
+                  workspace.trip.id,
+              },
+            })
+          }
+        >
+          <Text
+            style={
+              styles.planButtonText
+            }
+          >
+            Open full plan
           </Text>
 
-          <Text style={styles.emptyBody}>
-            Add places, activities and moments
-            to build the itinerary for this trip.
-          </Text>
-        </View>
+          <Ionicons
+            name="arrow-forward"
+            size={18}
+            color={
+              colors.textInverse
+            }
+          />
+        </Pressable>
       </View>
 
-      <View style={styles.bottomSpace} />
+      <View
+        style={styles.bottomSpace}
+      />
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+const styles =
+  StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+    },
 
-  loading: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.bodySmall,
-    color: colors.textMuted,
-  },
+    loading: {
+      fontFamily:
+        fontFamily.sansMedium,
+      fontSize:
+        fontSize.bodySmall,
+      color:
+        colors.textMuted,
+    },
 
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing[3],
-  },
+    topBar: {
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      justifyContent:
+        'space-between',
+      paddingTop:
+        spacing[3],
+    },
 
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.subtle,
-  },
+    backButton: {
+      width: 42,
+      height: 42,
+      borderRadius:
+        radius.pill,
+      backgroundColor:
+        colors.surface,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+      ...shadows.subtle,
+    },
 
-  topLabel: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.8,
-    color: colors.brass,
-  },
+    topLabel: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 1.8,
+      color:
+        colors.brass,
+    },
 
-  topSpacer: {
-    width: 42,
-  },
+    topSpacer: {
+      width: 42,
+    },
 
-  hero: {
-    paddingTop: spacing[10],
-    paddingBottom: spacing[8],
-  },
+    hero: {
+      paddingTop:
+        spacing[10],
+      paddingBottom:
+        spacing[8],
+    },
 
-  eyebrow: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.8,
-    color: colors.brass,
-    marginBottom: spacing[3],
-  },
+    eyebrow: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 1.8,
+      color:
+        colors.brass,
+      marginBottom:
+        spacing[3],
+    },
 
-  title: {
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.display,
-    lineHeight: lineHeight.display,
-    color: colors.textPrimary,
-  },
+    title: {
+      fontFamily:
+        fontFamily.serifSemiBold,
+      fontSize:
+        fontSize.display,
+      lineHeight:
+        lineHeight.display,
+      color:
+        colors.textPrimary,
+    },
 
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    marginTop: spacing[4],
-  },
+    dateRow: {
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      gap:
+        spacing[2],
+      marginTop:
+        spacing[4],
+    },
 
-  dateText: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.bodySmall,
-    color: colors.textSecondary,
-  },
+    dateText: {
+      fontFamily:
+        fontFamily.sansMedium,
+      fontSize:
+        fontSize.bodySmall,
+      color:
+        colors.textSecondary,
+    },
 
-  todayCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing[6],
-    ...shadows.subtle,
-  },
+    dayCard: {
+      backgroundColor:
+        colors.surface,
+      borderRadius:
+        radius.xl,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+      padding:
+        spacing[6],
+      ...shadows.subtle,
+    },
 
-  todayHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
+    dayTop: {
+      flexDirection:
+        'row',
+      alignItems:
+        'flex-start',
+      justifyContent:
+        'space-between',
+    },
 
-  todayEyebrow: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.5,
-    color: colors.brass,
-    marginBottom: spacing[2],
-  },
+    momentLabel: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 1.5,
+      color:
+        colors.brass,
+      marginBottom:
+        spacing[2],
+    },
 
-  todayTitle: {
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.title,
-    color: colors.textPrimary,
-  },
+    dayTitle: {
+      fontFamily:
+        fontFamily.serifSemiBold,
+      fontSize:
+        fontSize.title,
+      lineHeight:
+        lineHeight.title,
+      color:
+        colors.textPrimary,
+    },
 
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    backgroundColor: colors.tealSoft,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-  },
+    dayBadge: {
+      paddingHorizontal:
+        spacing[3],
+      paddingVertical:
+        spacing[2],
+      borderRadius:
+        radius.pill,
+      backgroundColor:
+        colors.tealSoft,
+    },
 
-  statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: radius.pill,
-    backgroundColor: colors.teal,
-  },
+    dayBadgeText: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 1,
+      color:
+        colors.teal,
+    },
 
-  statusText: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    color: colors.teal,
-  },
+    dayDate: {
+      fontFamily:
+        fontFamily.sansMedium,
+      fontSize:
+        fontSize.bodySmall,
+      color:
+        colors.textSecondary,
+      marginTop:
+        spacing[3],
+    },
 
-  emptyState: {
-    marginTop: spacing[10],
-  },
+    divider: {
+      height: 1,
+      backgroundColor:
+        colors.border,
+      marginVertical:
+        spacing[6],
+    },
 
-  emptyIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: radius.md,
-    backgroundColor: colors.brandSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing[5],
-  },
+    emptyState: {
+      paddingVertical:
+        spacing[3],
+    },
 
-  emptyTitle: {
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.titleSmall,
-    lineHeight: lineHeight.titleSmall,
-    color: colors.textPrimary,
-    marginBottom: spacing[3],
-  },
+    emptyIcon: {
+      width: 50,
+      height: 50,
+      borderRadius:
+        radius.md,
+      backgroundColor:
+        colors.brandSoft,
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+      marginBottom:
+        spacing[5],
+    },
 
-  emptyBody: {
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.bodySmall,
-    lineHeight: lineHeight.bodySmall,
-    color: colors.textSecondary,
-  },
+    emptyTitle: {
+      fontFamily:
+        fontFamily.serifSemiBold,
+      fontSize:
+        fontSize.titleSmall,
+      lineHeight:
+        lineHeight.titleSmall,
+      color:
+        colors.textPrimary,
+      marginBottom:
+        spacing[3],
+    },
 
-  bottomSpace: {
-    height: spacing[12],
-  },
-});
+    emptyBody: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.bodySmall,
+      lineHeight:
+        lineHeight.bodySmall,
+      color:
+        colors.textSecondary,
+    },
+
+    stopList: {
+      gap: 0,
+    },
+
+    stopRow: {
+      flexDirection:
+        'row',
+      alignItems:
+        'stretch',
+    },
+
+    timelineColumn: {
+      width: 24,
+      alignItems:
+        'center',
+    },
+
+    stopDot: {
+      width: 9,
+      height: 9,
+      borderRadius:
+        radius.pill,
+      backgroundColor:
+        colors.teal,
+      marginTop: 25,
+    },
+
+    timelineLine: {
+      flex: 1,
+      width: 1,
+      backgroundColor:
+        colors.borderStrong,
+      marginVertical: 4,
+    },
+
+    stopCard: {
+      flex: 1,
+      minHeight: 72,
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      marginLeft:
+        spacing[2],
+      marginBottom:
+        spacing[3],
+      borderRadius:
+        radius.md,
+      backgroundColor:
+        colors.surfaceWarm,
+      paddingHorizontal:
+        spacing[4],
+    },
+
+    stopIcon: {
+      width: 38,
+      height: 38,
+      borderRadius:
+        radius.sm,
+      backgroundColor:
+        colors.tealSoft,
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+    },
+
+    stopCopy: {
+      flex: 1,
+      marginLeft:
+        spacing[3],
+    },
+
+    stopTitle: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize:
+        fontSize.body,
+      color:
+        colors.textPrimary,
+    },
+
+    stopMeta: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.caption,
+      color:
+        colors.textMuted,
+      marginTop: 3,
+      textTransform:
+        'capitalize',
+    },
+
+    planButton: {
+      height: 54,
+      marginTop:
+        spacing[6],
+      borderRadius:
+        radius.md,
+      backgroundColor:
+        colors.brand,
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+      gap:
+        spacing[3],
+    },
+
+    planButtonText: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize:
+        fontSize.bodySmall,
+      color:
+        colors.textInverse,
+    },
+
+    bottomSpace: {
+      height:
+        spacing[12],
+    },
+  });

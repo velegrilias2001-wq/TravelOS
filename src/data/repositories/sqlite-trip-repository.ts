@@ -2,17 +2,18 @@ import type { Database } from '../database/database';
 import { travelOSDatabase } from '../database/expo-sqlite-database';
 
 import type {
-    Trip,
-    TripDestination,
-    TripId,
-    TripStatus,
+  Trip,
+  TripDestination,
+  TripId,
+  TripStatus,
 } from '../../domain/entities/trip';
 
 import type { TripDay } from '../../domain/entities/trip-day';
 
 import type {
-    TripStop,
-    TripStopType,
+  TripStop,
+  TripStopId,
+  TripStopType,
 } from '../../domain/entities/trip-stop';
 
 import type { TripRepository } from '../../domain/repositories/trip-repository';
@@ -57,6 +58,7 @@ interface TripStopRow {
   id: string;
   trip_id: string;
   day_id: string;
+
   title: string;
   type: string;
   position: number;
@@ -69,6 +71,7 @@ interface TripStopRow {
 
   start_time: string | null;
   end_time: string | null;
+
   notes: string | null;
 
   booking_id: string | null;
@@ -78,36 +81,47 @@ interface TripStopRow {
   updated_at: string;
 }
 
-function optional<T>(value: T | null): T | undefined {
+function optional<T>(
+  value: T | null,
+): T | undefined {
   return value ?? undefined;
 }
 
-export class SQLiteTripRepository implements TripRepository {
+export class SQLiteTripRepository
+  implements TripRepository
+{
   constructor(
-    private readonly database: Database = travelOSDatabase,
+    private readonly database: Database =
+      travelOSDatabase,
   ) {}
 
   async getAll(): Promise<Trip[]> {
-    const rows = await this.database.query<TripRow>(`
-      SELECT *
-      FROM trips
-      ORDER BY start_date ASC;
-    `);
+    const rows =
+      await this.database.query<TripRow>(`
+        SELECT *
+        FROM trips
+        ORDER BY start_date ASC;
+      `);
 
     return Promise.all(
-      rows.map((row) => this.hydrateTrip(row)),
+      rows.map((row) =>
+        this.hydrateTrip(row),
+      ),
     );
   }
 
-  async getById(id: TripId): Promise<Trip | null> {
-    const row = await this.database.queryFirst<TripRow>(
-      `
-        SELECT *
-        FROM trips
-        WHERE id = ?;
-      `,
-      [id],
-    );
+  async getById(
+    id: TripId,
+  ): Promise<Trip | null> {
+    const row =
+      await this.database.queryFirst<TripRow>(
+        `
+          SELECT *
+          FROM trips
+          WHERE id = ?;
+        `,
+        [id],
+      );
 
     if (!row) {
       return null;
@@ -116,7 +130,9 @@ export class SQLiteTripRepository implements TripRepository {
     return this.hydrateTrip(row);
   }
 
-  private async hydrateTrip(row: TripRow): Promise<Trip> {
+  private async hydrateTrip(
+    row: TripRow,
+  ): Promise<Trip> {
     const destinations =
       await this.database.query<DestinationRow>(
         `
@@ -151,14 +167,31 @@ export class SQLiteTripRepository implements TripRepository {
       status: row.status as TripStatus,
 
       destinations: destinations.map(
-        (destination): TripDestination => ({
+        (
+          destination,
+        ): TripDestination => ({
           id: destination.id,
           name: destination.name,
-          countryCode: optional(destination.country_code),
-          latitude: optional(destination.latitude),
-          longitude: optional(destination.longitude),
-          timezone: optional(destination.timezone),
-          currencyCode: optional(destination.currency_code),
+
+          countryCode: optional(
+            destination.country_code,
+          ),
+
+          latitude: optional(
+            destination.latitude,
+          ),
+
+          longitude: optional(
+            destination.longitude,
+          ),
+
+          timezone: optional(
+            destination.timezone,
+          ),
+
+          currencyCode: optional(
+            destination.currency_code,
+          ),
         }),
       ),
 
@@ -166,131 +199,159 @@ export class SQLiteTripRepository implements TripRepository {
       endDate: row.end_date,
 
       travelerIds: travelers.map(
-        (traveler) => traveler.traveler_id,
+        (traveler) =>
+          traveler.traveler_id,
       ),
 
-      accountingCurrency: row.accounting_currency,
+      accountingCurrency:
+        row.accounting_currency,
 
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
   }
 
-  async save(trip: Trip): Promise<void> {
-    await this.database.transaction(async () => {
-      await this.database.execute(
-        `
-          INSERT INTO trips (
-            id,
-            title,
-            status,
-            start_date,
-            end_date,
-            accounting_currency,
-            created_at,
-            updated_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(id) DO UPDATE SET
-            title = excluded.title,
-            status = excluded.status,
-            start_date = excluded.start_date,
-            end_date = excluded.end_date,
-            accounting_currency = excluded.accounting_currency,
-            updated_at = excluded.updated_at;
-        `,
-        [
-          trip.id,
-          trip.title,
-          trip.status,
-          trip.startDate,
-          trip.endDate,
-          trip.accountingCurrency,
-          trip.createdAt,
-          trip.updatedAt,
-        ],
-      );
-
-      await this.database.execute(
-        `
-          DELETE FROM trip_destinations
-          WHERE trip_id = ?;
-        `,
-        [trip.id],
-      );
-
-      for (
-        let position = 0;
-        position < trip.destinations.length;
-        position += 1
-      ) {
-        const destination = trip.destinations[position];
+  async save(
+    trip: Trip,
+  ): Promise<void> {
+    await this.database.transaction(
+      async () => {
+        await this.database.execute(
+          `
+            INSERT INTO trips (
+              id,
+              title,
+              status,
+              start_date,
+              end_date,
+              accounting_currency,
+              created_at,
+              updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+              title = excluded.title,
+              status = excluded.status,
+              start_date = excluded.start_date,
+              end_date = excluded.end_date,
+              accounting_currency =
+                excluded.accounting_currency,
+              updated_at =
+                excluded.updated_at;
+          `,
+          [
+            trip.id,
+            trip.title,
+            trip.status,
+            trip.startDate,
+            trip.endDate,
+            trip.accountingCurrency,
+            trip.createdAt,
+            trip.updatedAt,
+          ],
+        );
 
         await this.database.execute(
           `
-            INSERT INTO trip_destinations (
-              id,
-              trip_id,
-              name,
-              country_code,
-              latitude,
-              longitude,
-              timezone,
-              currency_code,
-              position
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            DELETE FROM trip_destinations
+            WHERE trip_id = ?;
           `,
-          [
-            destination.id,
-            trip.id,
-            destination.name,
-            destination.countryCode ?? null,
-            destination.latitude ?? null,
-            destination.longitude ?? null,
-            destination.timezone ?? null,
-            destination.currencyCode ?? null,
-            position,
-          ],
+          [trip.id],
         );
-      }
 
-      await this.database.execute(
-        `
-          DELETE FROM trip_travelers
-          WHERE trip_id = ?;
-        `,
-        [trip.id],
-      );
+        for (
+          let position = 0;
+          position <
+          trip.destinations.length;
+          position += 1
+        ) {
+          const destination =
+            trip.destinations[position];
 
-      for (const travelerId of trip.travelerIds) {
-        const travelerExists =
-          await this.database.queryFirst<{ id: string }>(
-            `
-              SELECT id
-              FROM travelers
-              WHERE id = ?;
-            `,
-            [travelerId],
-          );
-
-        if (travelerExists) {
           await this.database.execute(
             `
-              INSERT INTO trip_travelers (
+              INSERT INTO trip_destinations (
+                id,
                 trip_id,
-                traveler_id
+                name,
+                country_code,
+                latitude,
+                longitude,
+                timezone,
+                currency_code,
+                position
               )
-              VALUES (?, ?);
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
             `,
-            [trip.id, travelerId],
+            [
+              destination.id,
+              trip.id,
+              destination.name,
+
+              destination.countryCode ??
+                null,
+
+              destination.latitude ??
+                null,
+
+              destination.longitude ??
+                null,
+
+              destination.timezone ??
+                null,
+
+              destination.currencyCode ??
+                null,
+
+              position,
+            ],
           );
         }
-      }
-    });
+
+        await this.database.execute(
+          `
+            DELETE FROM trip_travelers
+            WHERE trip_id = ?;
+          `,
+          [trip.id],
+        );
+
+        for (const travelerId of trip.travelerIds) {
+          const travelerExists =
+            await this.database.queryFirst<{
+              id: string;
+            }>(
+              `
+                SELECT id
+                FROM travelers
+                WHERE id = ?;
+              `,
+              [travelerId],
+            );
+
+          if (travelerExists) {
+            await this.database.execute(
+              `
+                INSERT INTO trip_travelers (
+                  trip_id,
+                  traveler_id
+                )
+                VALUES (?, ?);
+              `,
+              [
+                trip.id,
+                travelerId,
+              ],
+            );
+          }
+        }
+      },
+    );
   }
 
-  async delete(id: TripId): Promise<void> {
+  async delete(
+    id: TripId,
+  ): Promise<void> {
     await this.database.execute(
       `
         DELETE FROM trips
@@ -300,30 +361,38 @@ export class SQLiteTripRepository implements TripRepository {
     );
   }
 
-  async getDays(tripId: TripId): Promise<TripDay[]> {
-    const rows = await this.database.query<TripDayRow>(
-      `
-        SELECT *
-        FROM trip_days
-        WHERE trip_id = ?
-        ORDER BY day_number ASC;
-      `,
-      [tripId],
-    );
+  async getDays(
+    tripId: TripId,
+  ): Promise<TripDay[]> {
+    const rows =
+      await this.database.query<TripDayRow>(
+        `
+          SELECT *
+          FROM trip_days
+          WHERE trip_id = ?
+          ORDER BY day_number ASC;
+        `,
+        [tripId],
+      );
 
     return rows.map((row) => ({
       id: row.id,
       tripId: row.trip_id,
+
       date: row.date,
       dayNumber: row.day_number,
+
       title: optional(row.title),
       notes: optional(row.notes),
+
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));
   }
 
-  async saveDay(day: TripDay): Promise<void> {
+  async saveDay(
+    day: TripDay,
+  ): Promise<void> {
     await this.database.execute(
       `
         INSERT INTO trip_days (
@@ -358,39 +427,42 @@ export class SQLiteTripRepository implements TripRepository {
     );
   }
 
-  async getStops(tripId: TripId): Promise<TripStop[]> {
-    const rows = await this.database.query<TripStopRow>(
-      `
-        SELECT
-          s.*,
+  async getStops(
+    tripId: TripId,
+  ): Promise<TripStop[]> {
+    const rows =
+      await this.database.query<TripStopRow>(
+        `
+          SELECT
+            s.*,
 
-          (
-            SELECT b.id
-            FROM bookings b
-            WHERE b.stop_id = s.id
-            LIMIT 1
-          ) AS booking_id,
+            (
+              SELECT b.id
+              FROM bookings b
+              WHERE b.stop_id = s.id
+              LIMIT 1
+            ) AS booking_id,
 
-          (
-            SELECT a.id
-            FROM accommodations a
-            WHERE a.stop_id = s.id
-            LIMIT 1
-          ) AS accommodation_id
+            (
+              SELECT a.id
+              FROM accommodations a
+              WHERE a.stop_id = s.id
+              LIMIT 1
+            ) AS accommodation_id
 
-        FROM trip_stops s
+          FROM trip_stops s
 
-        LEFT JOIN trip_days d
-          ON d.id = s.day_id
+          LEFT JOIN trip_days d
+            ON d.id = s.day_id
 
-        WHERE s.trip_id = ?
+          WHERE s.trip_id = ?
 
-        ORDER BY
-          d.day_number ASC,
-          s.position ASC;
-      `,
-      [tripId],
-    );
+          ORDER BY
+            d.day_number ASC,
+            s.position ASC;
+        `,
+        [tripId],
+      );
 
     return rows.map((row) => ({
       id: row.id,
@@ -404,27 +476,51 @@ export class SQLiteTripRepository implements TripRepository {
       location: row.location_name
         ? {
             name: row.location_name,
-            address: optional(row.address),
-            latitude: optional(row.latitude),
-            longitude: optional(row.longitude),
-            placeId: optional(row.place_id),
+
+            address: optional(
+              row.address,
+            ),
+
+            latitude: optional(
+              row.latitude,
+            ),
+
+            longitude: optional(
+              row.longitude,
+            ),
+
+            placeId: optional(
+              row.place_id,
+            ),
           }
         : undefined,
 
-      startTime: optional(row.start_time),
-      endTime: optional(row.end_time),
+      startTime: optional(
+        row.start_time,
+      ),
+
+      endTime: optional(
+        row.end_time,
+      ),
 
       notes: optional(row.notes),
 
-      bookingId: optional(row.booking_id),
-      accommodationId: optional(row.accommodation_id),
+      bookingId: optional(
+        row.booking_id,
+      ),
+
+      accommodationId: optional(
+        row.accommodation_id,
+      ),
 
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));
   }
 
-  async saveStop(stop: TripStop): Promise<void> {
+  async saveStop(
+    stop: TripStop,
+  ): Promise<void> {
     await this.database.execute(
       `
         INSERT INTO trip_stops (
@@ -455,7 +551,8 @@ export class SQLiteTripRepository implements TripRepository {
           title = excluded.title,
           type = excluded.type,
           position = excluded.position,
-          location_name = excluded.location_name,
+          location_name =
+            excluded.location_name,
           address = excluded.address,
           latitude = excluded.latitude,
           longitude = excluded.longitude,
@@ -463,29 +560,50 @@ export class SQLiteTripRepository implements TripRepository {
           start_time = excluded.start_time,
           end_time = excluded.end_time,
           notes = excluded.notes,
-          updated_at = excluded.updated_at;
+          updated_at =
+            excluded.updated_at;
       `,
       [
         stop.id,
         stop.tripId,
         stop.dayId,
+
         stop.title,
         stop.type,
         stop.order,
 
         stop.location?.name ?? null,
         stop.location?.address ?? null,
-        stop.location?.latitude ?? null,
-        stop.location?.longitude ?? null,
-        stop.location?.placeId ?? null,
+
+        stop.location?.latitude ??
+          null,
+
+        stop.location?.longitude ??
+          null,
+
+        stop.location?.placeId ??
+          null,
 
         stop.startTime ?? null,
         stop.endTime ?? null,
+
         stop.notes ?? null,
 
         stop.createdAt,
         stop.updatedAt,
       ],
+    );
+  }
+
+  async deleteStop(
+    id: TripStopId,
+  ): Promise<void> {
+    await this.database.execute(
+      `
+        DELETE FROM trip_stops
+        WHERE id = ?;
+      `,
+      [id],
     );
   }
 }

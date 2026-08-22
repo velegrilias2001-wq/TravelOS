@@ -12,6 +12,7 @@ import type {
   TripId,
   TripRuntimeState,
   TripStop,
+  TripStopId,
 } from '@/domain/entities';
 
 import {
@@ -21,50 +22,76 @@ import {
 
 export interface TripWorkspace {
   trip: Trip;
+
   days: TripDay[];
   stops: TripStop[];
+
   bookings: Booking[];
   accommodations: Accommodation[];
+
   travelers: Traveler[];
+
   budget: Budget | null;
-  runtimeState: TripRuntimeState | null;
+
+  runtimeState:
+    TripRuntimeState | null;
+
   memories: Memory[];
-  travelBook: TravelBook | null;
+
+  travelBook:
+    TravelBook | null;
 }
 
 function addDays(
   date: string,
   amount: number,
 ): string {
-  const [year, month, day] = date
-    .split('-')
-    .map(Number);
+  const [year, month, day] =
+    date
+      .split('-')
+      .map(Number);
 
   const value = new Date(
-    Date.UTC(year, month - 1, day + amount),
+    Date.UTC(
+      year,
+      month - 1,
+      day + amount,
+    ),
   );
 
-  return value.toISOString().slice(0, 10);
+  return value
+    .toISOString()
+    .slice(0, 10);
 }
 
 function daysBetweenInclusive(
   startDate: string,
   endDate: string,
 ): number {
-  const start = new Date(`${startDate}T00:00:00Z`);
-  const end = new Date(`${endDate}T00:00:00Z`);
+  const start = new Date(
+    `${startDate}T00:00:00Z`,
+  );
+
+  const end = new Date(
+    `${endDate}T00:00:00Z`,
+  );
 
   const milliseconds =
-    end.getTime() - start.getTime();
+    end.getTime() -
+    start.getTime();
 
-  return Math.floor(
-    milliseconds / 86_400_000,
-  ) + 1;
+  return (
+    Math.floor(
+      milliseconds / 86_400_000,
+    ) + 1
+  );
 }
 
 export class TripService {
   constructor(
-    private readonly repo: RepositoryRegistry = repositories,
+    private readonly repo:
+      RepositoryRegistry =
+      repositories,
   ) {}
 
   async listTrips(): Promise<Trip[]> {
@@ -74,19 +101,26 @@ export class TripService {
   async getTrip(
     id: TripId,
   ): Promise<Trip | null> {
-    return this.repo.trip.getById(id);
+    return this.repo.trip.getById(
+      id,
+    );
   }
 
   async getWorkspace(
     id: TripId,
   ): Promise<TripWorkspace | null> {
-    const trip = await this.repo.trip.getById(id);
+    const trip =
+      await this.repo.trip.getById(
+        id,
+      );
 
     if (!trip) {
       return null;
     }
 
-    await this.ensureTripDays(trip);
+    await this.ensureTripDays(
+      trip,
+    );
 
     const [
       days,
@@ -100,26 +134,55 @@ export class TripService {
       travelBook,
     ] = await Promise.all([
       this.repo.trip.getDays(id),
+
       this.repo.trip.getStops(id),
-      this.repo.booking.getByTripId(id),
-      this.repo.accommodation.getByTripId(id),
-      this.repo.traveler.getByTripId(id),
-      this.repo.budget.getByTripId(id),
-      this.repo.runtimeState.getByTripId(id),
-      this.repo.memory.getByTripId(id),
-      this.repo.travelBook.getByTripId(id),
+
+      this.repo.booking.getByTripId(
+        id,
+      ),
+
+      this.repo.accommodation.getByTripId(
+        id,
+      ),
+
+      this.repo.traveler.getByTripId(
+        id,
+      ),
+
+      this.repo.budget.getByTripId(
+        id,
+      ),
+
+      this.repo.runtimeState.getByTripId(
+        id,
+      ),
+
+      this.repo.memory.getByTripId(
+        id,
+      ),
+
+      this.repo.travelBook.getByTripId(
+        id,
+      ),
     ]);
 
     return {
       trip,
+
       days,
       stops,
+
       bookings,
       accommodations,
+
       travelers,
+
       budget,
+
       runtimeState,
+
       memories,
+
       travelBook,
     };
   }
@@ -128,18 +191,22 @@ export class TripService {
     trip: Trip,
   ): Promise<void> {
     const existing =
-      await this.repo.trip.getDays(trip.id);
+      await this.repo.trip.getDays(
+        trip.id,
+      );
 
     if (existing.length > 0) {
       return;
     }
 
-    const count = daysBetweenInclusive(
-      trip.startDate,
-      trip.endDate,
-    );
+    const count =
+      daysBetweenInclusive(
+        trip.startDate,
+        trip.endDate,
+      );
 
-    const now = new Date().toISOString();
+    const now =
+      new Date().toISOString();
 
     for (
       let index = 0;
@@ -148,30 +215,92 @@ export class TripService {
     ) {
       const day: TripDay = {
         id: Crypto.randomUUID(),
+
         tripId: trip.id,
-        date: addDays(trip.startDate, index),
-        dayNumber: index + 1,
+
+        date: addDays(
+          trip.startDate,
+          index,
+        ),
+
+        dayNumber:
+          index + 1,
+
         createdAt: now,
         updatedAt: now,
       };
 
-      await this.repo.trip.saveDay(day);
+      await this.repo.trip.saveDay(
+        day,
+      );
     }
   }
 
   async addStop(
     stop: TripStop,
   ): Promise<void> {
-    await this.repo.trip.saveStop(stop);
+    await this.repo.trip.saveStop(
+      stop,
+    );
   }
 
-  async saveTrip(trip: Trip): Promise<void> {
-    await this.repo.trip.save(trip);
+  async updateStop(
+    stop: TripStop,
+  ): Promise<void> {
+    await this.repo.trip.saveStop({
+      ...stop,
+
+      updatedAt:
+        new Date().toISOString(),
+    });
   }
 
-  async deleteTrip(id: TripId): Promise<void> {
-    await this.repo.trip.delete(id);
+  async deleteStop(
+    stopId: TripStopId,
+  ): Promise<void> {
+    await this.repo.trip.deleteStop(
+      stopId,
+    );
+  }
+
+  async reorderStops(
+    stops: TripStop[],
+  ): Promise<void> {
+    const now =
+      new Date().toISOString();
+
+    for (
+      let index = 0;
+      index < stops.length;
+      index += 1
+    ) {
+      await this.repo.trip.saveStop({
+        ...stops[index],
+
+        order:
+          index + 1,
+
+        updatedAt: now,
+      });
+    }
+  }
+
+  async saveTrip(
+    trip: Trip,
+  ): Promise<void> {
+    await this.repo.trip.save(
+      trip,
+    );
+  }
+
+  async deleteTrip(
+    id: TripId,
+  ): Promise<void> {
+    await this.repo.trip.delete(
+      id,
+    );
   }
 }
 
-export const tripService = new TripService();
+export const tripService =
+  new TripService();

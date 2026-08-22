@@ -1,6 +1,9 @@
 import type { Trip, TripId } from '../entities/trip';
 import type { TripDay } from '../entities/trip-day';
-import type { TripStop } from '../entities/trip-stop';
+import type {
+  TripStop,
+  TripStopId,
+} from '../entities/trip-stop';
 
 export interface TripRepository {
   getAll(): Promise<Trip[]>;
@@ -18,4 +21,6 @@ export interface TripRepository {
   getStops(tripId: TripId): Promise<TripStop[]>;
 
   saveStop(stop: TripStop): Promise<void>;
+
+  deleteStop(id: TripStopId): Promise<void>;
 }
