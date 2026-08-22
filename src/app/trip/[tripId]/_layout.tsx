@@ -1,5 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+
+import {
+  Tabs,
+  useLocalSearchParams,
+} from 'expo-router';
 
 import {
   colors,
@@ -9,6 +13,11 @@ import {
 } from '@/theme';
 
 export default function TripSpaceLayout() {
+  const { tripId } =
+    useLocalSearchParams<{
+      tripId: string;
+    }>();
+
   return (
     <Tabs
       screenOptions={{
@@ -41,6 +50,12 @@ export default function TripSpaceLayout() {
         name="index"
         options={{
           title: 'Today',
+
+          href: {
+            pathname: '/trip/[tripId]',
+            params: { tripId },
+          },
+
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={
@@ -59,6 +74,12 @@ export default function TripSpaceLayout() {
         name="plan"
         options={{
           title: 'Plan',
+
+          href: {
+            pathname: '/trip/[tripId]/plan',
+            params: { tripId },
+          },
+
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={
@@ -77,6 +98,12 @@ export default function TripSpaceLayout() {
         name="map"
         options={{
           title: 'Map',
+
+          href: {
+            pathname: '/trip/[tripId]/map',
+            params: { tripId },
+          },
+
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={
@@ -95,6 +122,12 @@ export default function TripSpaceLayout() {
         name="bookings"
         options={{
           title: 'Bookings',
+
+          href: {
+            pathname: '/trip/[tripId]/bookings',
+            params: { tripId },
+          },
+
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={
@@ -113,6 +146,12 @@ export default function TripSpaceLayout() {
         name="more"
         options={{
           title: 'More',
+
+          href: {
+            pathname: '/trip/[tripId]/more',
+            params: { tripId },
+          },
+
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={

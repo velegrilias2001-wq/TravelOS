@@ -116,12 +116,14 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" />
+
         <Stack.Screen
           name="new-trip"
           options={{
             presentation: 'card',
           }}
         />
+
         <Stack.Screen
           name="trip/[tripId]"
           options={{
