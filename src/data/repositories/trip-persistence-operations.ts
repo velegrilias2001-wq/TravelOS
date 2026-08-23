@@ -160,6 +160,19 @@ export async function deleteCanonicalTrip(
   );
 }
 
+export async function deleteCanonicalTripStop(
+  database: Database,
+  id: TripStop['id'],
+): Promise<void> {
+  // Booking.stopId and the other optional stop links use
+  // ON DELETE SET NULL, so SQLite preserves and unlinks
+  // related records atomically with this one statement.
+  await database.execute(
+    `DELETE FROM trip_stops WHERE id = ?;`,
+    [id],
+  );
+}
+
 function assertUnique<
   Value extends string | number,
 >(

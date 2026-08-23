@@ -25,6 +25,9 @@ import {
   buildUpdatedTrip,
   type TripDetailsInput,
 } from './trip-details';
+import {
+  validateBookingStopRelationship,
+} from './booking-stop-relationship';
 
 export interface TripWorkspace {
   trip: Trip;
@@ -172,6 +175,8 @@ export class TripService {
   async addBooking(
     booking: Booking,
   ): Promise<void> {
+    await this.validateBookingStop(booking);
+
     await this.repo.booking.save(
       booking,
     );
@@ -180,6 +185,8 @@ export class TripService {
   async updateBooking(
     booking: Booking,
   ): Promise<void> {
+    await this.validateBookingStop(booking);
+
     await this.repo.booking.save({
       ...booking,
 
@@ -201,6 +208,21 @@ export class TripService {
   ): Promise<Booking | null> {
     return this.repo.booking.getById(
       bookingId,
+    );
+  }
+
+  private async validateBookingStop(
+    booking: Booking,
+  ): Promise<void> {
+    const stop = booking.stopId
+      ? await this.repo.trip.getStopById(
+          booking.stopId,
+        )
+      : null;
+
+    validateBookingStopRelationship(
+      booking,
+      stop,
     );
   }
 

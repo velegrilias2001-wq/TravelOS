@@ -2,8 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 
 import {
+  useEffect,
+  useRef,
   useState,
 } from 'react';
+
+import {
+  useLocalSearchParams,
+  useRouter,
+} from 'expo-router';
 
 import {
   Alert,
@@ -34,6 +41,10 @@ import {
   useTripWorkspace,
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
+
+import {
+  bookingsLinkedToStop,
+} from '@/services/booking-stop-relationship';
 
 import {
   colors,
@@ -126,6 +137,23 @@ function hasCoordinates(
 }
 
 export default function PlanScreen() {
+  const router = useRouter();
+
+  const routeParams =
+    useLocalSearchParams<{
+      stopId?: string | string[];
+    }>();
+
+  const requestedStopId =
+    Array.isArray(
+      routeParams.stopId,
+    )
+      ? routeParams.stopId[0]
+      : routeParams.stopId;
+
+  const handledStopIdRef =
+    useRef<string | null>(null);
+
   const {
     workspace,
     actions,
@@ -251,7 +279,54 @@ export default function PlanScreen() {
     }
 
     resetModal();
+
+    if (requestedStopId) {
+      handledStopIdRef.current =
+        null;
+
+      router.setParams({
+        stopId: '',
+      });
+    }
   };
+
+  useEffect(() => {
+    if (
+      !requestedStopId ||
+      handledStopIdRef.current ===
+        requestedStopId
+    ) {
+      return;
+    }
+
+    const stop =
+      workspace.stops.find(
+        (item) =>
+          item.id ===
+          requestedStopId,
+      );
+
+    const day = stop
+      ? workspace.days.find(
+          (item) =>
+            item.id ===
+            stop.dayId,
+        )
+      : undefined;
+
+    if (!stop || !day) {
+      return;
+    }
+
+    handledStopIdRef.current =
+      requestedStopId;
+
+    openEdit(day, stop);
+  }, [
+    requestedStopId,
+    workspace.days,
+    workspace.stops,
+  ]);
 
   const chooseLocation =
     async () => {
@@ -506,9 +581,25 @@ export default function PlanScreen() {
   const deleteStop = (
     stop: TripStop,
   ) => {
+    const linkedBookings =
+      bookingsLinkedToStop(
+        workspace.bookings,
+        stop.id,
+      );
+
+    const unlinkMessage =
+      linkedBookings.length > 0
+        ? `\n\n${linkedBookings.length} linked ${
+            linkedBookings.length ===
+            1
+              ? 'booking'
+              : 'bookings'
+          } will remain saved and become unlinked.`
+        : '';
+
     Alert.alert(
       'Remove from itinerary?',
-      `Remove "${stop.title}" from this day?`,
+      `Remove "${stop.title}" from this day?${unlinkMessage}`,
       [
         {
           text: 'Cancel',
@@ -799,15 +890,22 @@ export default function PlanScreen() {
                         (
                           stop,
                           index,
-                        ) => (
-                          <View
-                            key={
-                              stop.id
-                            }
-                            style={
-                              styles.stopCard
-                            }
-                          >
+                        ) => {
+                          const linkedBookings =
+                            bookingsLinkedToStop(
+                              workspace.bookings,
+                              stop.id,
+                            );
+
+                          return (
+                            <View
+                              key={
+                                stop.id
+                              }
+                              style={
+                                styles.stopCard
+                              }
+                            >
                             <Pressable
                               style={
                                 styles.stopMain
@@ -893,6 +991,37 @@ export default function PlanScreen() {
                                     </Text>
                                   </View>
                                 )}
+
+                                {linkedBookings.length >
+                                  0 && (
+                                  <View
+                                    style={
+                                      styles.linkedBookingRow
+                                    }
+                                  >
+                                    <Ionicons
+                                      name="ticket-outline"
+                                      size={13}
+                                      color={
+                                        colors.brass
+                                      }
+                                    />
+
+                                    <Text
+                                      style={
+                                        styles.linkedBookingText
+                                      }
+                                    >
+                                      {
+                                        linkedBookings.length
+                                      }{' '}
+                                      {linkedBookings.length ===
+                                      1
+                                        ? 'booking'
+                                        : 'bookings'}
+                                    </Text>
+                                  </View>
+                                )}
                               </View>
                             </Pressable>
 
@@ -901,6 +1030,42 @@ export default function PlanScreen() {
                                 styles.stopActions
                               }
                             >
+                              {linkedBookings.length >
+                                0 && (
+                                <Pressable
+                                  accessibilityLabel="Open linked bookings"
+                                  style={
+                                    styles.smallAction
+                                  }
+                                  onPress={() =>
+                                    router.push({
+                                      pathname:
+                                        '/trip/[tripId]/bookings',
+                                      params: {
+                                        tripId:
+                                          workspace.trip.id,
+                                        ...(linkedBookings.length ===
+                                        1
+                                          ? {
+                                              bookingId:
+                                                linkedBookings[0]
+                                                  .id,
+                                            }
+                                          : {}),
+                                      },
+                                    })
+                                  }
+                                >
+                                  <Ionicons
+                                    name="ticket-outline"
+                                    size={17}
+                                    color={
+                                      colors.brass
+                                    }
+                                  />
+                                </Pressable>
+                              )}
+
                               <Pressable
                                 disabled={
                                   index ===
@@ -986,8 +1151,9 @@ export default function PlanScreen() {
                                 />
                               </Pressable>
                             </View>
-                          </View>
-                        ),
+                            </View>
+                          );
+                        },
                       )}
                     </View>
                   )}
@@ -1717,6 +1883,27 @@ const styles =
       letterSpacing: 0.6,
       color:
         colors.teal,
+      textTransform:
+        'uppercase',
+    },
+
+    linkedBookingRow: {
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      gap: 4,
+      marginTop: 5,
+    },
+
+    linkedBookingText: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 0.5,
+      color:
+        colors.brass,
       textTransform:
         'uppercase',
     },

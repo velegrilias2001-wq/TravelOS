@@ -24,6 +24,8 @@ export interface TripRepository {
 
   getStops(tripId: TripId): Promise<TripStop[]>;
 
+  getStopById(id: TripStopId): Promise<TripStop | null>;
+
   saveStop(stop: TripStop): Promise<void>;
 
   reorderStops(

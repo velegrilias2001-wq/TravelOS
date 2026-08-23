@@ -230,6 +230,76 @@ test(
 );
 
 test(
+  'booking-stop link mutations refresh Plan, Today, Map and Bookings from one snapshot',
+  async () => {
+    const durableTruth = makeWorkspace();
+    durableTruth.stops.push({
+      id: 'stop-1',
+      tripId: 'trip-1',
+      dayId: 'day-1',
+      title: 'Museum',
+      type: 'activity',
+      order: 1,
+      createdAt: TIMESTAMP,
+      updatedAt: TIMESTAMP,
+    });
+    durableTruth.bookings.push({
+      id: 'booking-1',
+      tripId: 'trip-1',
+      type: 'activity',
+      status: 'confirmed',
+      title: 'Museum ticket',
+      createdAt: TIMESTAMP,
+      updatedAt: TIMESTAMP,
+    });
+
+    const lifecycle =
+      new TripWorkspaceLifecycle(
+        'trip-1',
+        async () =>
+          clone(durableTruth),
+      );
+
+    await lifecycle.refreshIfNeeded();
+
+    await lifecycle.runMutation(
+      async () => {
+        durableTruth.bookings[0]
+          .stopId = 'stop-1';
+      },
+    );
+
+    const linkedSnapshot =
+      lifecycle.getSnapshot();
+
+    assert.equal(
+      linkedSnapshot.workspace
+        .bookings[0].stopId,
+      'stop-1',
+    );
+    assert.equal(
+      linkedSnapshot.workspace
+        .stops[0].id,
+      'stop-1',
+    );
+
+    await lifecycle.runMutation(
+      async () => {
+        durableTruth.bookings[0]
+          .stopId = undefined;
+      },
+    );
+
+    assert.equal(
+      lifecycle.getSnapshot()
+        .workspace.bookings[0]
+        .stopId,
+      undefined,
+    );
+  },
+);
+
+test(
   'a Trip Details update refreshes every workspace consumer',
   async () => {
     const durableTruth = makeWorkspace();

@@ -47,13 +47,6 @@ export interface TripStop {
   notes?: string;
 
   /**
-   * Used later for links with bookings,
-   * accommodation and runtime companion state.
-   */
-  bookingId?: string;
-  accommodationId?: string;
-
-  /**
    * ISO timestamps.
    */
   createdAt: string;

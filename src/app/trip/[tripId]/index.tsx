@@ -32,6 +32,10 @@ import type {
 } from '@/services/trip-service';
 
 import {
+  bookingsLinkedToStop,
+} from '@/services/booking-stop-relationship';
+
+import {
   colors,
   fontFamily,
   fontSize,
@@ -397,15 +401,26 @@ export default function TodayScreen() {
               (
                 stop,
                 index,
-              ) => (
-                <View
-                  key={
-                    stop.id
-                  }
-                  style={
-                    styles.stopRow
-                  }
-                >
+              ) => {
+                const confirmedBookings =
+                  bookingsLinkedToStop(
+                    workspace.bookings,
+                    stop.id,
+                  ).filter(
+                    (booking) =>
+                      booking.status ===
+                      'confirmed',
+                  );
+
+                return (
+                  <View
+                    key={
+                      stop.id
+                    }
+                    style={
+                      styles.stopRow
+                    }
+                  >
                   <View
                     style={
                       styles.timelineColumn
@@ -475,10 +490,64 @@ export default function TodayScreen() {
 
                         {stop.type}
                       </Text>
+
+                      {confirmedBookings.length >
+                        0 && (
+                        <Pressable
+                          accessibilityLabel="Open confirmed booking"
+                          style={
+                            styles.bookingContext
+                          }
+                          onPress={() =>
+                            router.push({
+                              pathname:
+                                '/trip/[tripId]/bookings',
+                              params: {
+                                tripId:
+                                  workspace.trip.id,
+                                ...(confirmedBookings.length ===
+                                1
+                                  ? {
+                                      bookingId:
+                                        confirmedBookings[0]
+                                          .id,
+                                    }
+                                  : {}),
+                              },
+                            })
+                          }
+                        >
+                          <Ionicons
+                            name="ticket-outline"
+                            size={13}
+                            color={
+                              colors.brass
+                            }
+                          />
+
+                          <Text
+                            numberOfLines={
+                              1
+                            }
+                            style={
+                              styles.bookingContextText
+                            }
+                          >
+                            {confirmedBookings.length ===
+                            1
+                              ? confirmedBookings[0]
+                                  .confirmationCode
+                                ? `Confirmed · ${confirmedBookings[0].confirmationCode}`
+                                : 'Confirmed booking'
+                              : `${confirmedBookings.length} confirmed bookings`}
+                          </Text>
+                        </Pressable>
+                      )}
                     </View>
                   </View>
-                </View>
-              ),
+                  </View>
+                );
+              },
             )}
           </View>
         )}
@@ -839,6 +908,35 @@ const styles =
       marginTop: 3,
       textTransform:
         'capitalize',
+    },
+
+    bookingContext: {
+      alignSelf:
+        'flex-start',
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      gap: 5,
+      marginTop:
+        spacing[2],
+      paddingHorizontal:
+        spacing[2],
+      paddingVertical: 4,
+      borderRadius:
+        radius.pill,
+      backgroundColor:
+        colors.brassSoft,
+    },
+
+    bookingContextText: {
+      flexShrink: 1,
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize:
+        fontSize.micro,
+      color:
+        colors.brass,
     },
 
     planButton: {

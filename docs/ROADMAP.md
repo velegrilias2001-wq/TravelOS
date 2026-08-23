@@ -29,9 +29,9 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 
 ### Remaining Phase 0 work
 
-- [ ] Decide and enforce remaining relationship invariants and cardinality for bookings, accommodations, stops, memories, runtime state, and workspace aggregates.
+- [ ] Decide and enforce remaining relationship invariants and cardinality for accommodations, memories, runtime state, and other workspace aggregates. Booking ↔ Stop is now explicitly zero-or-one from Booking and zero-to-many from TripStop, with same-trip enforcement.
 - [ ] Remove N+1 loading patterns from the trip list and other obvious aggregate reads.
-- [ ] Expand automated coverage to stop deletion, repository relationships/cascades, and upcoming/active/completed trip-state logic.
+- [ ] Expand automated coverage for the remaining repository relationships/cascades and upcoming/active/completed trip-state logic. Booking deletion and linked-stop unlink cascades are now covered.
 - [ ] Rehearse migration version 3 against Expo SQLite on an iOS development build.
 - [ ] Commit a non-interactive lint configuration and add baseline CI checks.
 
@@ -49,7 +49,7 @@ Goal: turn the current vertical prototype into a coherent pre-trip workspace.
 - [ ] Define a real FX-rate source, rate timestamp, conversion policy, user override, and provenance model before foreign currencies can enter accounting-currency totals.
 - [ ] Complete destination add/remove/reorder and location-aware replacement, then define how multi-destination truth is presented across Create Trip, Today, Plan, Map, and Bookings.
 - [ ] Replace free-form Create Trip and remaining booking/stop date-time fields with appropriate native inputs and domain validation.
-- Implement booking-to-stop linking by ID.
+- [x] Implement Booking ↔ Stop linking by exact ID, including optional native link/relink/unlink UX, Plan/Today/Map context, zero-to-many reverse cardinality, same-trip validation, safe stop deletion, migration version 5, automated tests, and isolated Android verification.
 - Implement accommodation management and accommodation-to-stop linking by ID.
 - Implement traveler management and explicit trip membership.
 - Define trip timezone, destination timezone behavior, and TripRuntimeState responsibilities.

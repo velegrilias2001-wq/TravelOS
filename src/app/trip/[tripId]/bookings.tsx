@@ -2,8 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 
 import {
+  useEffect,
+  useRef,
   useState,
 } from 'react';
+
+import {
+  useLocalSearchParams,
+  useRouter,
+} from 'expo-router';
 
 import {
   Alert,
@@ -29,6 +36,9 @@ import {
   useTripWorkspace,
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
+import {
+  buildItineraryStopContexts,
+} from '@/services/booking-stop-relationship';
 
 import {
   colors,
@@ -154,13 +164,44 @@ function formatDateTime(
   );
 }
 
+function formatStopDate(
+  value: string,
+): string {
+  return new Date(
+    `${value}T12:00:00`,
+  ).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
 export default function BookingsScreen() {
+  const router = useRouter();
+  const routeParams =
+    useLocalSearchParams<{
+      bookingId?: string | string[];
+    }>();
+
   const {
     workspace,
     actions,
   } = useTripWorkspace();
 
   useTripWorkspaceFocusRefresh();
+
+  const requestedBookingId =
+    Array.isArray(routeParams.bookingId)
+      ? routeParams.bookingId[0]
+      : routeParams.bookingId;
+
+  const handledBookingId =
+    useRef<string | null>(null);
+
+  const stopContexts =
+    buildItineraryStopContexts(
+      workspace.days,
+      workspace.stops,
+    );
 
   const [
     modalVisible,
@@ -211,6 +252,18 @@ export default function BookingsScreen() {
     useState('');
 
   const [
+    stopId,
+    setStopId,
+  ] = useState<string | undefined>(
+    undefined,
+  );
+
+  const [
+    stopPickerOpen,
+    setStopPickerOpen,
+  ] = useState(false);
+
+  const [
     startAt,
     setStartAt,
   ] =
@@ -252,6 +305,14 @@ export default function BookingsScreen() {
   ] =
     useState(false);
 
+  const selectedStopContext =
+    stopId
+      ? stopContexts.find(
+          (context) =>
+            context.stop.id === stopId,
+        )
+      : undefined;
+
   const resetForm = () => {
     setEditingBooking(null);
 
@@ -261,6 +322,8 @@ export default function BookingsScreen() {
     setTitle('');
     setProvider('');
     setConfirmationCode('');
+    setStopId(undefined);
+    setStopPickerOpen(false);
 
     setStartAt('');
     setEndAt('');
@@ -310,6 +373,9 @@ export default function BookingsScreen() {
         '',
     );
 
+    setStopId(booking.stopId);
+    setStopPickerOpen(false);
+
     setStartAt(
       booking.startAt ?? '',
     );
@@ -348,7 +414,43 @@ export default function BookingsScreen() {
   const closeModal = () => {
     setModalVisible(false);
     resetForm();
+
+    if (requestedBookingId) {
+      router.setParams({
+        bookingId: '',
+      });
+    }
+
+    handledBookingId.current = null;
   };
+
+  useEffect(() => {
+    if (
+      !requestedBookingId ||
+      handledBookingId.current ===
+        requestedBookingId
+    ) {
+      return;
+    }
+
+    const requestedBooking =
+      workspace.bookings.find(
+        (booking) =>
+          booking.id ===
+          requestedBookingId,
+      );
+
+    if (!requestedBooking) {
+      return;
+    }
+
+    handledBookingId.current =
+      requestedBookingId;
+    openEdit(requestedBooking);
+  }, [
+    requestedBookingId,
+    workspace.bookings,
+  ]);
 
   const saveBooking =
     async () => {
@@ -422,6 +524,8 @@ export default function BookingsScreen() {
                 confirmationCode.trim() ||
                 undefined,
 
+              stopId,
+
               startAt:
                 startAt.trim() ||
                 undefined,
@@ -470,6 +574,8 @@ export default function BookingsScreen() {
                 confirmationCode.trim() ||
                 undefined,
 
+              stopId,
+
               startAt:
                 startAt.trim() ||
                 undefined,
@@ -516,7 +622,12 @@ export default function BookingsScreen() {
 
         Alert.alert(
           'Could not save booking',
-          'Please try again.',
+          error instanceof Error &&
+          error.message.includes(
+            'itinerary stop',
+          )
+            ? 'The selected itinerary stop is no longer available for this trip. Choose another stop or leave the booking unlinked.'
+            : 'Please try again.',
         );
       } finally {
         setIsSaving(false);
@@ -744,6 +855,15 @@ export default function BookingsScreen() {
                     booking.startAt,
                   );
 
+                const linkedStopContext =
+                  booking.stopId
+                    ? stopContexts.find(
+                        (context) =>
+                          context.stop.id ===
+                          booking.stopId,
+                      )
+                    : undefined;
+
                 return (
                   <Pressable
                     key={booking.id}
@@ -886,6 +1006,60 @@ export default function BookingsScreen() {
                             }
                           </Text>
                         </View>
+                      )}
+
+                      {linkedStopContext && (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Open ${linkedStopContext.stop.title} in Plan`}
+                          style={styles.linkedStopRow}
+                          onPress={() =>
+                            router.push({
+                              pathname:
+                                '/trip/[tripId]/plan',
+                              params: {
+                                tripId:
+                                  workspace.trip.id,
+                                stopId:
+                                  linkedStopContext.stop.id,
+                              },
+                            })
+                          }
+                        >
+                          <View
+                            style={styles.linkedStopIcon}
+                          >
+                            <Ionicons
+                              name="git-merge-outline"
+                              size={15}
+                              color={colors.teal}
+                            />
+                          </View>
+
+                          <View
+                            style={styles.linkedStopCopy}
+                          >
+                            <Text
+                              style={styles.linkedStopLabel}
+                            >
+                              {linkedStopContext.day
+                                ? `DAY ${linkedStopContext.day.dayNumber} · ${formatStopDate(linkedStopContext.day.date)}`
+                                : 'ITINERARY STOP'}
+                            </Text>
+                            <Text
+                              numberOfLines={1}
+                              style={styles.linkedStopTitle}
+                            >
+                              {linkedStopContext.stop.title}
+                            </Text>
+                          </View>
+
+                          <Ionicons
+                            name="arrow-forward"
+                            size={16}
+                            color={colors.teal}
+                          />
+                        </Pressable>
                       )}
 
                       <View
@@ -1182,6 +1356,174 @@ export default function BookingsScreen() {
                 }
                 autoCapitalize="characters"
               />
+
+              <Text style={styles.fieldLabel}>
+                ITINERARY LINK
+              </Text>
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Choose itinerary stop"
+                accessibilityState={{
+                  expanded: stopPickerOpen,
+                }}
+                style={styles.stopPickerSummary}
+                onPress={() =>
+                  setStopPickerOpen(
+                    (current) => !current,
+                  )
+                }
+              >
+                <View style={styles.stopPickerIcon}>
+                  <Ionicons
+                    name={
+                      selectedStopContext
+                        ? 'git-merge-outline'
+                        : 'unlink-outline'
+                    }
+                    size={19}
+                    color={colors.teal}
+                  />
+                </View>
+
+                <View style={styles.stopPickerCopy}>
+                  <Text
+                    style={styles.stopPickerLabel}
+                  >
+                    {selectedStopContext?.day
+                      ? `DAY ${selectedStopContext.day.dayNumber} · ${formatStopDate(selectedStopContext.day.date)}`
+                      : selectedStopContext
+                        ? 'ITINERARY STOP'
+                        : 'NOT LINKED'}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={styles.stopPickerTitle}
+                  >
+                    {selectedStopContext?.stop.title ??
+                      'Keep this booking independent'}
+                  </Text>
+                </View>
+
+                <Ionicons
+                  name={
+                    stopPickerOpen
+                      ? 'chevron-up'
+                      : 'chevron-down'
+                  }
+                  size={18}
+                  color={colors.textSecondary}
+                />
+              </Pressable>
+
+              {stopPickerOpen && (
+                <View style={styles.stopChoices}>
+                  <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{
+                      checked: stopId === undefined,
+                    }}
+                    style={[
+                      styles.stopChoice,
+                      stopId === undefined &&
+                        styles.stopChoiceSelected,
+                    ]}
+                    onPress={() => {
+                      setStopId(undefined);
+                      setStopPickerOpen(false);
+                    }}
+                  >
+                    <View style={styles.stopChoiceIcon}>
+                      <Ionicons
+                        name="unlink-outline"
+                        size={17}
+                        color={colors.teal}
+                      />
+                    </View>
+                    <View style={styles.stopChoiceCopy}>
+                      <Text style={styles.stopChoiceTitle}>
+                        No itinerary stop
+                      </Text>
+                      <Text style={styles.stopChoiceMeta}>
+                        Keep this booking unlinked
+                      </Text>
+                    </View>
+                    {stopId === undefined && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={20}
+                        color={colors.teal}
+                      />
+                    )}
+                  </Pressable>
+
+                  {stopContexts.map((context) => {
+                    const selected =
+                      stopId === context.stop.id;
+
+                    return (
+                      <Pressable
+                        key={context.stop.id}
+                        accessibilityRole="radio"
+                        accessibilityState={{
+                          checked: selected,
+                        }}
+                        style={[
+                          styles.stopChoice,
+                          selected &&
+                            styles.stopChoiceSelected,
+                        ]}
+                        onPress={() => {
+                          setStopId(context.stop.id);
+                          setStopPickerOpen(false);
+                        }}
+                      >
+                        <View style={styles.stopChoiceIcon}>
+                          <Ionicons
+                            name="location-outline"
+                            size={17}
+                            color={colors.teal}
+                          />
+                        </View>
+                        <View style={styles.stopChoiceCopy}>
+                          <Text
+                            numberOfLines={1}
+                            style={styles.stopChoiceTitle}
+                          >
+                            {context.stop.title}
+                          </Text>
+                          <Text style={styles.stopChoiceMeta}>
+                            {context.day
+                              ? `Day ${context.day.dayNumber} · ${formatStopDate(context.day.date)} · `
+                              : ''}
+                            {context.stop.startTime
+                              ? `${context.stop.startTime} · `
+                              : ''}
+                            {context.stop.type}
+                          </Text>
+                        </View>
+                        {selected && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color={colors.teal}
+                          />
+                        )}
+                      </Pressable>
+                    );
+                  })}
+
+                  {stopContexts.length === 0 && (
+                    <Text style={styles.stopChoicesEmpty}>
+                      Add itinerary stops in Plan before linking this booking.
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              <Text style={styles.relationshipHelp}>
+                Links use the exact itinerary stop. TravelOS never matches bookings by name or location text.
+              </Text>
 
               <Field
                 label="START"
@@ -1819,6 +2161,45 @@ const styles =
         colors.textSecondary,
     },
 
+    linkedStopRow: {
+      minHeight: 58,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[3],
+      marginTop: spacing[4],
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      borderRadius: radius.md,
+      backgroundColor: colors.tealSoft,
+    },
+
+    linkedStopIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    linkedStopCopy: {
+      flex: 1,
+    },
+
+    linkedStopLabel: {
+      fontFamily: fontFamily.sansBold,
+      fontSize: fontSize.micro,
+      letterSpacing: 0.8,
+      color: colors.teal,
+    },
+
+    linkedStopTitle: {
+      marginTop: 2,
+      fontFamily: fontFamily.sansMedium,
+      fontSize: fontSize.caption,
+      color: colors.textPrimary,
+    },
+
     bookingFooter: {
       flexDirection:
         'row',
@@ -2031,6 +2412,116 @@ const styles =
 
       marginBottom:
         spacing[2],
+    },
+
+    stopPickerSummary: {
+      minHeight: 66,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[3],
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surface,
+    },
+
+    stopPickerIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: radius.sm,
+      backgroundColor: colors.tealSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    stopPickerCopy: {
+      flex: 1,
+    },
+
+    stopPickerLabel: {
+      fontFamily: fontFamily.sansBold,
+      fontSize: fontSize.micro,
+      letterSpacing: 0.8,
+      color: colors.teal,
+    },
+
+    stopPickerTitle: {
+      marginTop: 3,
+      fontFamily: fontFamily.sansMedium,
+      fontSize: fontSize.bodySmall,
+      color: colors.textPrimary,
+    },
+
+    stopChoices: {
+      gap: spacing[2],
+      marginTop: spacing[2],
+      padding: spacing[2],
+      borderRadius: radius.md,
+      backgroundColor: colors.backgroundSoft,
+    },
+
+    stopChoice: {
+      minHeight: 58,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[3],
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: 'transparent',
+      backgroundColor: colors.surface,
+    },
+
+    stopChoiceSelected: {
+      borderColor: colors.teal,
+      backgroundColor: colors.tealSoft,
+    },
+
+    stopChoiceIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.sm,
+      backgroundColor: colors.backgroundSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    stopChoiceCopy: {
+      flex: 1,
+    },
+
+    stopChoiceTitle: {
+      fontFamily: fontFamily.sansSemiBold,
+      fontSize: fontSize.bodySmall,
+      color: colors.textPrimary,
+    },
+
+    stopChoiceMeta: {
+      marginTop: 3,
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.micro,
+      color: colors.textMuted,
+      textTransform: 'capitalize',
+    },
+
+    stopChoicesEmpty: {
+      padding: spacing[4],
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+      color: colors.textSecondary,
+    },
+
+    relationshipHelp: {
+      marginTop: spacing[2],
+      marginBottom: spacing[5],
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+      color: colors.textMuted,
     },
 
     input: {

@@ -35,6 +35,10 @@ import {
 } from '@/features/trip-workspace/trip-workspace-context';
 
 import {
+  bookingsLinkedToStop,
+} from '@/services/booking-stop-relationship';
+
+import {
   colors,
   fontFamily,
   fontSize,
@@ -46,6 +50,7 @@ import {
 interface MappedStop {
   stop: TripStop;
   coordinate: LatLng;
+  bookingCount: number;
 }
 
 const WORLD_REGION: Region = {
@@ -97,6 +102,12 @@ export default function TripMapScreen() {
           )
           .map((stop) => ({
             stop,
+
+            bookingCount:
+              bookingsLinkedToStop(
+                workspace.bookings,
+                stop.id,
+              ).length,
 
             coordinate: {
               latitude:
@@ -290,7 +301,11 @@ export default function TripMapScreen() {
         )}
 
         {mappedStops.map(
-          ({ stop, coordinate }) => (
+          ({
+            stop,
+            coordinate,
+            bookingCount,
+          }) => (
             <Marker
               key={stop.id}
               coordinate={
@@ -298,9 +313,20 @@ export default function TripMapScreen() {
               }
               title={stop.title}
               description={
-                stop.startTime
-                  ? `${stop.startTime} · ${stop.type}`
-                  : stop.type
+                `${
+                  stop.startTime
+                    ? `${stop.startTime} · `
+                    : ''
+                }${stop.type}${
+                  bookingCount > 0
+                    ? ` · ${bookingCount} linked ${
+                        bookingCount ===
+                        1
+                          ? 'booking'
+                          : 'bookings'
+                      }`
+                    : ''
+                }`
               }
             />
           ),
@@ -568,6 +594,37 @@ export default function TripMapScreen() {
                           .type
                       }
                     </Text>
+
+                    {item.bookingCount >
+                      0 && (
+                      <View
+                        style={
+                          styles.bookingRow
+                        }
+                      >
+                        <Ionicons
+                          name="ticket-outline"
+                          size={13}
+                          color={
+                            colors.brass
+                          }
+                        />
+
+                        <Text
+                          style={
+                            styles.bookingText
+                          }
+                        >
+                          {
+                            item.bookingCount
+                          }{' '}
+                          {item.bookingCount ===
+                          1
+                            ? 'booking'
+                            : 'bookings'}
+                        </Text>
+                      </View>
+                    )}
                   </Pressable>
                 ),
               )}
@@ -965,5 +1022,24 @@ const styles =
         'capitalize',
 
       marginTop: 3,
+    },
+
+    bookingRow: {
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      gap: 5,
+      marginTop:
+        spacing[2],
+    },
+
+    bookingText: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize:
+        fontSize.micro,
+      color:
+        colors.brass,
     },
   });

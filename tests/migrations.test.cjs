@@ -722,7 +722,7 @@ test(
 
       assert.equal(
         version.user_version,
-        4,
+        DATABASE_VERSION,
       );
 
       const columns = await database.query(
@@ -795,6 +795,262 @@ test(
         );
 
       assert.equal(afterRepeat.count, 1);
+    } finally {
+      database.close();
+    }
+  },
+);
+
+test(
+  'migration v5 archives invalid cross-trip links, preserves bookings and enforces same-trip links',
+  async () => {
+    const database =
+      new NodeSQLiteDatabase();
+
+    try {
+      await database.execAsync(
+        DATABASE_SCHEMA,
+      );
+      await database.execAsync(
+        'PRAGMA user_version = 4;',
+      );
+
+      for (const tripId of [
+        'trip-a',
+        'trip-b',
+      ]) {
+        await database.runAsync(
+          `
+            INSERT INTO trips (
+              id,
+              title,
+              status,
+              start_date,
+              end_date,
+              accounting_currency,
+              created_at,
+              updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+          `,
+          [
+            tripId,
+            tripId,
+            'planned',
+            '2026-09-01',
+            '2026-09-01',
+            'EUR',
+            TIMESTAMP,
+            TIMESTAMP,
+          ],
+        );
+
+        await database.runAsync(
+          `
+            INSERT INTO trip_days (
+              id,
+              trip_id,
+              date,
+              day_number,
+              created_at,
+              updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?);
+          `,
+          [
+            `day-${tripId}`,
+            tripId,
+            '2026-09-01',
+            1,
+            TIMESTAMP,
+            TIMESTAMP,
+          ],
+        );
+
+        await database.runAsync(
+          `
+            INSERT INTO trip_stops (
+              id,
+              trip_id,
+              day_id,
+              title,
+              type,
+              position,
+              created_at,
+              updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+          `,
+          [
+            `stop-${tripId}`,
+            tripId,
+            `day-${tripId}`,
+            tripId,
+            'place',
+            1,
+            TIMESTAMP,
+            TIMESTAMP,
+          ],
+        );
+      }
+
+      await database.runAsync(
+        `
+          INSERT INTO bookings (
+            id,
+            trip_id,
+            stop_id,
+            type,
+            status,
+            title,
+            confirmation_code,
+            notes,
+            created_at,
+            updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        `,
+        [
+          'legacy-booking',
+          'trip-a',
+          'stop-trip-b',
+          'activity',
+          'confirmed',
+          'Preserved booking',
+          'KEEP-ME',
+          'Preserved notes',
+          TIMESTAMP,
+          TIMESTAMP,
+        ],
+      );
+
+      await migrateDatabase(database);
+
+      const version =
+        await database.queryFirst(
+          'PRAGMA user_version;',
+        );
+      const booking =
+        await database.queryFirst(
+          `
+            SELECT
+              stop_id,
+              title,
+              confirmation_code,
+              notes
+            FROM bookings
+            WHERE id = ?;
+          `,
+          ['legacy-booking'],
+        );
+      const archived =
+        await database.queryFirst(
+          `
+            SELECT
+              booking_trip_id,
+              stop_id,
+              stop_trip_id
+            FROM
+              migration_v5_invalid_booking_stop_links
+            WHERE booking_id = ?;
+          `,
+          ['legacy-booking'],
+        );
+
+      assert.equal(
+        version.user_version,
+        DATABASE_VERSION,
+      );
+      assert.deepEqual(
+        { ...booking },
+        {
+          stop_id: null,
+          title: 'Preserved booking',
+          confirmation_code: 'KEEP-ME',
+          notes: 'Preserved notes',
+        },
+      );
+      assert.deepEqual(
+        { ...archived },
+        {
+          booking_trip_id: 'trip-a',
+          stop_id: 'stop-trip-b',
+          stop_trip_id: 'trip-b',
+        },
+      );
+
+      const triggers =
+        await database.query(
+          `
+            SELECT name
+            FROM sqlite_master
+            WHERE
+              type = 'trigger' AND
+              name LIKE
+                'validate_booking_stop_%'
+            ORDER BY name ASC;
+          `,
+        );
+
+      assert.deepEqual(
+        triggers.map(
+          (trigger) =>
+            trigger.name,
+        ),
+        [
+          'validate_booking_stop_insert',
+          'validate_booking_stop_update',
+        ],
+      );
+
+      await assert.rejects(
+        database.runAsync(
+          `
+            UPDATE bookings
+            SET stop_id = ?
+            WHERE id = ?;
+          `,
+          [
+            'stop-trip-b',
+            'legacy-booking',
+          ],
+        ),
+        /booking stop must belong/,
+      );
+
+      await database.runAsync(
+        `
+          UPDATE bookings
+          SET stop_id = ?
+          WHERE id = ?;
+        `,
+        [
+          'stop-trip-a',
+          'legacy-booking',
+        ],
+      );
+
+      await migrateDatabase(database);
+
+      const afterRepeat =
+        await database.queryFirst(
+          `
+            SELECT
+              stop_id,
+              title
+            FROM bookings
+            WHERE id = ?;
+          `,
+          ['legacy-booking'],
+        );
+
+      assert.deepEqual(
+        { ...afterRepeat },
+        {
+          stop_id: 'stop-trip-a',
+          title: 'Preserved booking',
+        },
+      );
     } finally {
       database.close();
     }

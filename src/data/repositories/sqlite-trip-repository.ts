@@ -20,6 +20,7 @@ import type { TripRepository } from '../../domain/repositories/trip-repository';
 
 import {
   deleteCanonicalTrip,
+  deleteCanonicalTripStop,
   ensureCanonicalTripDays,
   reorderTripStops,
   saveCanonicalTrip,
@@ -81,9 +82,6 @@ interface TripStopRow {
 
   notes: string | null;
 
-  booking_id: string | null;
-  accommodation_id: string | null;
-
   created_at: string;
   updated_at: string;
 }
@@ -92,6 +90,33 @@ function optional<T>(
   value: T | null,
 ): T | undefined {
   return value ?? undefined;
+}
+
+function mapTripStop(
+  row: TripStopRow,
+): TripStop {
+  return {
+    id: row.id,
+    tripId: row.trip_id,
+    dayId: row.day_id,
+    title: row.title,
+    type: row.type as TripStopType,
+    order: row.position,
+    location: row.location_name
+      ? {
+          name: row.location_name,
+          address: optional(row.address),
+          latitude: optional(row.latitude),
+          longitude: optional(row.longitude),
+          placeId: optional(row.place_id),
+        }
+      : undefined,
+    startTime: optional(row.start_time),
+    endTime: optional(row.end_time),
+    notes: optional(row.notes),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 export class SQLiteTripRepository
@@ -317,23 +342,7 @@ export class SQLiteTripRepository
     const rows =
       await this.database.query<TripStopRow>(
         `
-          SELECT
-            s.*,
-
-            (
-              SELECT b.id
-              FROM bookings b
-              WHERE b.stop_id = s.id
-              LIMIT 1
-            ) AS booking_id,
-
-            (
-              SELECT a.id
-              FROM accommodations a
-              WHERE a.stop_id = s.id
-              LIMIT 1
-            ) AS accommodation_id
-
+          SELECT s.*
           FROM trip_stops s
 
           LEFT JOIN trip_days d
@@ -348,58 +357,23 @@ export class SQLiteTripRepository
         [tripId],
       );
 
-    return rows.map((row) => ({
-      id: row.id,
-      tripId: row.trip_id,
-      dayId: row.day_id,
+    return rows.map(mapTripStop);
+  }
 
-      title: row.title,
-      type: row.type as TripStopType,
-      order: row.position,
+  async getStopById(
+    id: TripStopId,
+  ): Promise<TripStop | null> {
+    const row =
+      await this.database.queryFirst<TripStopRow>(
+        `
+          SELECT *
+          FROM trip_stops
+          WHERE id = ?;
+        `,
+        [id],
+      );
 
-      location: row.location_name
-        ? {
-            name: row.location_name,
-
-            address: optional(
-              row.address,
-            ),
-
-            latitude: optional(
-              row.latitude,
-            ),
-
-            longitude: optional(
-              row.longitude,
-            ),
-
-            placeId: optional(
-              row.place_id,
-            ),
-          }
-        : undefined,
-
-      startTime: optional(
-        row.start_time,
-      ),
-
-      endTime: optional(
-        row.end_time,
-      ),
-
-      notes: optional(row.notes),
-
-      bookingId: optional(
-        row.booking_id,
-      ),
-
-      accommodationId: optional(
-        row.accommodation_id,
-      ),
-
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    }));
+    return row ? mapTripStop(row) : null;
   }
 
   async saveStop(
@@ -491,12 +465,9 @@ export class SQLiteTripRepository
   async deleteStop(
     id: TripStopId,
   ): Promise<void> {
-    await this.database.execute(
-      `
-        DELETE FROM trip_stops
-        WHERE id = ?;
-      `,
-      [id],
+    await deleteCanonicalTripStop(
+      this.database,
+      id,
     );
   }
 }

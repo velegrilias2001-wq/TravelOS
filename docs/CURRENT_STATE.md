@@ -6,17 +6,18 @@ This file describes verified implementation, not intended behavior. Unknown or u
 
 ## Repository checkpoint
 
-- Current development branch: feature/trip-details
+- Current development branch: feature/booking-stop-integration
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
 - Budget & Expenses checkpoint: 65b7f33 — Add native trip budget and expenses
+- Trip Details and More checkpoint: ac21422 — Add native trip details and management hub
 - The native architecture checkpoint remains ec0b28a — Add native location picker and mapped itinerary stops.
 - No Git remote or upstream branch was configured during the audit.
 - .env.local exists and is ignored. Its contents were not read.
 
-The working tree contains the verified but uncommitted Trip Details and More implementation described below.
+The working tree contains the verified but uncommitted Booking ↔ Stop integration described below.
 
-Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, truth-aware Today, bookings, Google Maps on Android, the location picker, persistence hardening, the shared TripWorkspace lifecycle, and Budget & Expenses.
+Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, truth-aware Today, bookings, Google Maps on Android, the location picker, persistence hardening, the shared TripWorkspace lifecycle, Budget & Expenses, Trip Details, and explicit Booking ↔ Stop relationships.
 
 ## Stack and runtime
 
@@ -64,15 +65,15 @@ Verified domain entities include:
 - Memory
 - TravelBook
 
-Entities use explicit IDs. The model distinguishes the trip's accounting currency from destination currency concepts. Booking and accommodation records can persist stop relationships, although the booking-to-stop and accommodation user experiences are not yet implemented.
+Entities use explicit IDs. The model distinguishes the trip's accounting currency from destination currency concepts. `Booking.stopId` is the canonical optional relationship to an itinerary stop: each booking has zero or one stop, while each stop can have zero, one, or many bookings. Links are never inferred from names or other text and must stay within one Trip. Accommodation records can also persist a stop relationship, but the accommodation product flow is not yet implemented.
 
 ## SQLite and migrations
 
 The database is the current durable source of truth. Verified characteristics include:
 
 - SQLite WAL mode and foreign-key enforcement are enabled.
-- The current database version is 4.
-- The core schema contains 14 tables covering trips and related travel data; migration version 3 adds one recovery archive table for reconciled duplicate TripDays.
+- The current database version is 5.
+- The core schema contains 14 tables covering trips and related travel data; migrations add recovery archives for reconciled duplicate TripDays and invalid historical Booking ↔ Stop links.
 - Repository queries use bound parameters.
 - Historical version 1 and version 2 migration behavior remains unchanged.
 - Migration version 3 converges the accommodation stop relationship and index even when a version-2 database reflects the earlier baseline drift.
@@ -84,6 +85,9 @@ The database is the current durable source of truth. Verified characteristics in
 - Stop reorder validates the complete TripDay stop set and changes only ordering metadata in one atomic transaction.
 - Migration version 4 adds a nullable user-selected expense date to budget items without fabricating dates for legacy records.
 - Migration version 4 adds indexes for trip/date expense reads and optional booking/stop relationships.
+- Migration version 5 archives and unlinks only invalid historical booking links whose stop is missing or belongs to another trip; valid and unlinked bookings are preserved.
+- Migration version 5 adds database triggers that reject new or updated cross-trip Booking ↔ Stop links. Repository and service validation provide earlier application-level errors for the same invariant.
+- Deleting a linked stop is one atomic SQLite delete. Existing `ON DELETE SET NULL` behavior preserves every linked booking and unlinks it; deleting a booking never deletes or mutates its stop.
 - Each trip can persist one budget header, protected by the existing unique trip relationship. Plan updates preserve the canonical budget ID and existing expenses.
 - Budget expense create, edit, and delete preserve original currency, explicit booking/stop IDs, and the user-selected expense date.
 - Canonical Trip updates persist the trip row, ordered destination records, and traveler links in one transaction while preserving destination IDs and metadata.
@@ -94,10 +98,10 @@ Important remaining gaps:
 - Cross-table invariants do not yet prove that a stop's trip ID matches its TripDay's trip ID.
 - Memories and TripRuntimeState day/stop references are not fully protected by foreign keys.
 - Trip-list loading performs repeated related-data queries and will not scale well.
-- Repository relationship cardinality and service aggregation need explicit decisions where schemas can hold multiple records but the aggregate exposes one.
+- Relationship cardinality and service aggregation still need explicit decisions for accommodations, memories, runtime state, and other aggregates. Booking ↔ Stop cardinality is now explicit and no longer uses arbitrary singular hydration.
 - TripDay records outside an edited trip date range are preserved and placed after the canonical range; no product flow exists yet for resolving them.
 - Archived migration-v3 duplicate-day metadata is retained for recovery but has no user-facing inspection tool.
-- Migration and transaction behavior is covered by Node SQLite tests and was rehearsed with Expo SQLite 57 on an Android x86_64 emulator. The Android rehearsal migrated an isolated version-2 database to version 3, verified all version-3 indexes, preserved and loaded a seeded existing trip, repaired its partial TripDay set, preserved stop content through reorder, and removed only the isolated test database. The Budget rehearsal upgraded the existing development database to version 4, verified the new indexes, preserved the pre-existing trip, and removed only its reserved test trip. Equivalent iOS rehearsals are still outstanding.
+- Migration and transaction behavior is covered by Node SQLite tests and was rehearsed with Expo SQLite 57 on an Android x86_64 emulator. The Android rehearsal migrated an isolated version-2 database to version 3, verified all version-3 indexes, preserved and loaded a seeded existing trip, repaired its partial TripDay set, preserved stop content through reorder, and removed only the isolated test database. The Budget rehearsal upgraded the existing development database to version 4, verified the new indexes, preserved the pre-existing trip, and removed only its reserved test trip. Booking ↔ Stop verification upgraded the live development database to version 5, verified the valid WAL state reports `user_version = 5`, and confirmed the two validation triggers plus the invalid-link archive and index exist. Equivalent iOS rehearsals are still outstanding.
 
 Historical migrations must not be edited to repair remaining issues. Corrections require new migrations.
 
@@ -180,7 +184,7 @@ This is truth-aware compared with a static mock, but not yet Companion-grade:
 - It does not use the destination or trip timezone.
 - It does not consume persisted TripRuntimeState.
 - It does not derive current and next stop phases.
-- Booking and accommodation context is not integrated.
+- Confirmed bookings linked by exact stop ID can surface compact confirmation context on the relevant Today stop and open the booking. Unlinked, cancelled, or differently linked bookings are not presented as that stop's context.
 - Trip-level loading, refresh, not-found, and recoverable read-error behavior is shared with the other Trip Space screens.
 
 ### Plan
@@ -193,15 +197,14 @@ Implemented behavior includes:
 - Native real-location selection.
 - Persisted stop name, address, latitude, and longitude.
 
-Current limitations include free-form time input, limited stop-type UI, no route or transit model, no booking linkage UI, no place-provider ID persisted from the picker, and large screen-level implementations with duplicated presentation patterns.
+Current limitations include free-form time input, limited stop-type UI, no route or transit model, no place-provider ID persisted from the picker, and large screen-level implementations with duplicated presentation patterns. Plan now shows a restrained booking count and a contextual action for relationships resolved by exact stop ID.
 
 ### Bookings
 
-Implemented behavior includes persistent create, edit, delete, status, payment status, amount, currency, reference, location, and date/time fields.
+Implemented behavior includes persistent create, edit, delete, status, payment status, amount, currency, reference, location, and date/time fields. Add/Edit Booking includes an optional native itinerary-stop selector with real day, date, title, type, and time context. Users can link, relink, or explicitly return a booking to the valid unlinked state. Booking cards show their linked stop and can open its exact Plan context.
 
 The flow is not yet production complete:
 
-- Booking-to-stop linkage exists in persistence but is not exposed in the UI.
 - Accommodation is a separate persisted domain without a dedicated UI.
 - Date/time validation and native input are incomplete.
 - External action links and provider-specific details are absent.
@@ -215,6 +218,7 @@ Implemented behavior includes:
 - Pins for stops with persisted coordinates.
 - Camera framing from real stop coordinates.
 - A native location picker that returns a real selected location.
+- Linked booking counts appear only on mapped TripStops resolved through exact IDs. Booking coordinates are not stored, copied, guessed, or invented.
 
 Platform state:
 
@@ -245,7 +249,7 @@ These are foundations, not shipped features. Their repository existence does not
 
 - Today, Plan, Map, Bookings, Budget, More, and Trip Details share one route-scoped TripWorkspace lifecycle above the nested tabs.
 - Initial loading, ready, refreshing, not-found, and recoverable error states are explicit.
-- Stop, booking, Trip Details, and trip-delete mutations use the existing TripService, while budget mutations use BudgetService; all invalidate and reload the shared aggregate from SQLite.
+- Stop, booking, Booking ↔ Stop, Trip Details, and trip-delete mutations use the existing TripService, while budget mutations use BudgetService; all invalidate and reload the shared aggregate from SQLite.
 - Focus-aware refresh retries invalid or failed snapshots but skips database reads when the shared revision is already current.
 - Missing and unknown trip IDs render a native not-found state with a safe route back to Trips instead of waiting indefinitely.
 - Fatal database, persistence self-test, or initial trip-list bootstrap failures render a retryable root state rather than opening the application against an unverified database.
@@ -267,9 +271,9 @@ It is still an early design system:
 
 ## Testing and release readiness
 
-Verified checks through the Trip Details and More implementation:
+Verified checks through the Booking ↔ Stop implementation:
 
-- npm test runs twenty-four automated tests covering persistence, migrations, Budget calculations, Trip Details validation/persistence/cascades, and TripWorkspace lifecycle behavior.
+- npm test runs thirty-two automated tests covering persistence, migrations, Budget calculations, Trip Details validation/persistence/cascades, Booking ↔ Stop invariants and deletion behavior, and TripWorkspace lifecycle behavior.
 - Fresh database migration, version-2 drift repair, migration rollback, fresh/partial/repeated TripDay generation, concurrent idempotency, and stop reorder rollback are covered.
 - Workspace initial loading, not-found behavior, revision-aware refresh, shared-consumer mutation propagation, recoverable retry, and mutation-during-load invalidation are covered.
 - The Android debug build compiles, installs, launches, and reaches both the development persistence self-test and bootstrap-ready state on an x86_64 emulator.
@@ -277,6 +281,7 @@ Verified checks through the Trip Details and More implementation:
 - Phase 0B Android runtime verification created and opened an isolated trip, selected and persisted a real mapped stop, observed it and its edited title on Map after tab navigation, preserved a booking across tab changes, and confirmed an unknown trip route reaches the native not-found state. Only the isolated verification trip was removed afterwards; the pre-existing trip remained visible.
 - Budget Android runtime verification created an isolated EUR trip, set a €1,000 plan, added accounting- and foreign-currency expenses, verified the foreign amount stayed outside EUR totals, edited an expense to produce €350 spent and €650 remaining, deleted an expense, cold-relaunched the app, and confirmed the budget and edited expense persisted. Expo SQLite reported `PRAGMA user_version = 4` and all three Budget indexes. Only the reserved test trip was removed; the pre-existing trip remained visible.
 - Trip Details Android runtime verification edited an existing trip title and date range, rejected an invalid reversed range, safely changed accounting currency on a trip without a persisted Budget, observed the saved values immediately in More and Today, and confirmed them after a cold process relaunch. The original trip values were restored afterwards. A separate `DeleteE2E` trip exercised the destructive confirmation and cascade path; it disappeared from Trips while the original trip and its itinerary remained. A clean restart reported `Persistence self-test: PASS` and `Bootstrap ready`.
+- Booking ↔ Stop Android verification used one isolated trip to create two stops, link and relink a confirmed booking, explicitly unlink it, link two bookings to one stop, observe exact relationship context in Bookings, Plan, and Today, and delete the linked stop after an explicit two-booking warning. Both bookings survived unlinked, the other stop remained, and all results persisted through a cold relaunch. The isolated trip was deleted afterwards, while the unrelated existing trip remained visible. The native build compiled and launched, and repeated startup logs reported `Persistence self-test: PASS` and `Bootstrap ready`.
 - npx tsc --noEmit passes for the application.
 - npm ls --depth=0 passed at the takeover audit.
 - git diff --check is part of the required completion checks.
@@ -314,6 +319,7 @@ Missing release foundations:
 - Separate accounting-currency concept.
 - A service-backed Budget & Expenses flow with truthful same-currency aggregation and original-currency preservation.
 - A service-backed canonical Trip Details editor with strict date validation, metadata-preserving destination handling, budget-aware accounting-currency safety, and verified cascade deletion.
+- An explicit zero-or-one Booking → TripStop relationship with same-trip enforcement, zero-to-many reverse cardinality, lossless stop deletion, service/repository validation, and contextual TripWorkspace-backed UI.
 - A functional More hub that distinguishes implemented navigation from planned modules.
 - A coherent early visual language.
 
@@ -324,7 +330,7 @@ These pieces are promising foundations; they do not make the app production-read
 - Create Trip input and validation.
 - Multi-destination add/remove/reorder and structured destination replacement.
 - Today as a full Companion.
-- Booking-stop and accommodation workflows.
+- Accommodation workflows and the remaining advanced booking actions/date-time validation.
 - Map intelligence, routes, and offline behavior.
 - Travelers, runtime state, memories, and Travel Book UI.
 - Discover, World, and Profile.
@@ -334,4 +340,4 @@ These pieces are promising foundations; they do not make the app production-read
 
 ## Overall assessment
 
-TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, Budget & Expenses is the first complete Phase 1 product slice, and Trip Details now makes the canonical Trip safely editable. The next priorities are closing the remaining Phase 0 engineering gaps while completing multi-destination rules, upgrading Create Trip inputs, and continuing Phase 1 through explicit booking/stop relationships, accommodations, and travelers. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.
+TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, Budget & Expenses is the first complete Phase 1 product slice, Trip Details makes the canonical Trip safely editable, and Booking ↔ Stop integration now connects itinerary and reservation truth through explicit IDs. The next priorities are closing the remaining Phase 0 engineering gaps while completing multi-destination rules, upgrading Create Trip and booking date-time inputs, and continuing Phase 1 through accommodations and travelers. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.

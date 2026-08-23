@@ -2,7 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { DATABASE_SCHEMA } from './schema';
 
-export const DATABASE_VERSION = 4;
+export const DATABASE_VERSION = 5;
 
 interface UserVersionRow {
   user_version: number;
@@ -27,6 +27,13 @@ interface MigrationTripDayRow {
 interface MigrationStopRow {
   id: string;
   day_id: string;
+}
+
+interface InvalidBookingStopLinkRow {
+  booking_id: string;
+  booking_trip_id: string;
+  stop_id: string;
+  stop_trip_id: string | null;
 }
 
 async function ensureAccommodationStopLink(
@@ -311,6 +318,132 @@ async function normalizeStopPositions(
   }
 }
 
+async function reconcileBookingStopLinks(
+  db: SQLiteDatabase,
+): Promise<void> {
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS
+      migration_v5_invalid_booking_stop_links (
+        booking_id TEXT PRIMARY KEY NOT NULL,
+        booking_trip_id TEXT NOT NULL,
+        stop_id TEXT NOT NULL,
+        stop_trip_id TEXT,
+        archived_at TEXT NOT NULL
+      );
+
+    CREATE INDEX IF NOT EXISTS
+      idx_migration_v5_invalid_booking_stop_links_stop_id
+    ON migration_v5_invalid_booking_stop_links(stop_id);
+  `);
+
+  const invalidLinks =
+    await db.getAllAsync<InvalidBookingStopLinkRow>(
+      `
+        SELECT
+          b.id AS booking_id,
+          b.trip_id AS booking_trip_id,
+          b.stop_id,
+          s.trip_id AS stop_trip_id
+        FROM bookings b
+        LEFT JOIN trip_stops s
+          ON s.id = b.stop_id
+        WHERE
+          b.stop_id IS NOT NULL AND
+          (
+            s.id IS NULL OR
+            s.trip_id <> b.trip_id
+          );
+      `,
+    );
+
+  const archivedAt =
+    new Date().toISOString();
+
+  for (const link of invalidLinks) {
+    await db.runAsync(
+      `
+        INSERT INTO
+          migration_v5_invalid_booking_stop_links (
+            booking_id,
+            booking_trip_id,
+            stop_id,
+            stop_trip_id,
+            archived_at
+          )
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(booking_id) DO UPDATE SET
+          booking_trip_id =
+            excluded.booking_trip_id,
+          stop_id = excluded.stop_id,
+          stop_trip_id =
+            excluded.stop_trip_id,
+          archived_at = excluded.archived_at;
+      `,
+      [
+        link.booking_id,
+        link.booking_trip_id,
+        link.stop_id,
+        link.stop_trip_id,
+        archivedAt,
+      ],
+    );
+  }
+
+  await db.execAsync(`
+    UPDATE bookings
+    SET stop_id = NULL
+    WHERE
+      stop_id IS NOT NULL AND
+      NOT EXISTS (
+        SELECT 1
+        FROM trip_stops s
+        WHERE
+          s.id = bookings.stop_id AND
+          s.trip_id = bookings.trip_id
+      );
+
+    CREATE TRIGGER IF NOT EXISTS
+      validate_booking_stop_insert
+    BEFORE INSERT ON bookings
+    WHEN NEW.stop_id IS NOT NULL
+    BEGIN
+      SELECT CASE
+        WHEN NOT EXISTS (
+          SELECT 1
+          FROM trip_stops s
+          WHERE
+            s.id = NEW.stop_id AND
+            s.trip_id = NEW.trip_id
+        )
+        THEN RAISE(
+          ABORT,
+          'booking stop must belong to booking trip'
+        )
+      END;
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS
+      validate_booking_stop_update
+    BEFORE UPDATE OF trip_id, stop_id ON bookings
+    WHEN NEW.stop_id IS NOT NULL
+    BEGIN
+      SELECT CASE
+        WHEN NOT EXISTS (
+          SELECT 1
+          FROM trip_stops s
+          WHERE
+            s.id = NEW.stop_id AND
+            s.trip_id = NEW.trip_id
+        )
+        THEN RAISE(
+          ABORT,
+          'booking stop must belong to booking trip'
+        )
+      END;
+    END;
+  `);
+}
+
 export async function migrateDatabase(
   db: SQLiteDatabase,
 ): Promise<void> {
@@ -486,6 +619,27 @@ export async function migrateDatabase(
 
           PRAGMA user_version = 4;
         `);
+      },
+    );
+  }
+
+  /**
+   * Version 5
+   * Make Booking.stopId the canonical many-to-one
+   * Booking -> TripStop relationship. Historical
+   * cross-trip links are archived and unlinked before
+   * database triggers enforce same-trip ownership.
+   */
+  if (currentVersion < 5) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await reconcileBookingStopLinks(
+          transaction,
+        );
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 5;',
+        );
       },
     );
   }
