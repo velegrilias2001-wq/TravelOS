@@ -18,9 +18,17 @@ export interface TripRepository {
 
   saveDay(day: TripDay): Promise<void>;
 
+  ensureDays(
+    days: TripDay[],
+  ): Promise<void>;
+
   getStops(tripId: TripId): Promise<TripStop[]>;
 
   saveStop(stop: TripStop): Promise<void>;
+
+  reorderStops(
+    stops: TripStop[],
+  ): Promise<void>;
 
   deleteStop(id: TripStopId): Promise<void>;
 }

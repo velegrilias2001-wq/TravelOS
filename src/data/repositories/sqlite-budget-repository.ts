@@ -1,4 +1,7 @@
-import type { Database } from '../database/database';
+import type {
+  Database,
+  DatabaseConnection,
+} from '../database/database';
 import { travelOSDatabase } from '../database/expo-sqlite-database';
 
 import type {
@@ -92,8 +95,8 @@ export class SQLiteBudgetRepository implements BudgetRepository {
   }
 
   async save(budget: Budget): Promise<void> {
-    await this.database.transaction(async () => {
-      await this.database.execute(
+    await this.database.transaction(async (transaction) => {
+      await transaction.execute(
         `
           INSERT INTO budgets (
             id, trip_id, currency_code,
@@ -116,19 +119,32 @@ export class SQLiteBudgetRepository implements BudgetRepository {
         ],
       );
 
-      await this.database.execute(
+      await transaction.execute(
         `DELETE FROM budget_items WHERE budget_id = ?;`,
         [budget.id],
       );
 
       for (const item of budget.items) {
-        await this.insertItem(item);
+        await this.insertItem(
+          transaction,
+          item,
+        );
       }
     });
   }
 
   async saveItem(item: BudgetItem): Promise<void> {
-    await this.database.execute(
+    await this.insertItem(
+      this.database,
+      item,
+    );
+  }
+
+  private async insertItem(
+    connection: DatabaseConnection,
+    item: BudgetItem,
+  ): Promise<void> {
+    await connection.execute(
       `
         INSERT INTO budget_items (
           id, budget_id, trip_id, booking_id, stop_id,
@@ -165,10 +181,6 @@ export class SQLiteBudgetRepository implements BudgetRepository {
         item.updatedAt,
       ],
     );
-  }
-
-  private async insertItem(item: BudgetItem): Promise<void> {
-    await this.saveItem(item);
   }
 
   async deleteItem(id: BudgetItemId): Promise<void> {

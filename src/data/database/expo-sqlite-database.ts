@@ -1,11 +1,17 @@
 import * as SQLite from 'expo-sqlite';
 
-import type { Database } from './database';
+import type {
+  Database,
+  DatabaseConnection,
+} from './database';
 import { migrateDatabase } from './migrations';
 import { DATABASE_NAME } from './schema';
 
 export class ExpoSQLiteDatabase implements Database {
   private database: SQLite.SQLiteDatabase | null = null;
+
+  private transactionTail: Promise<void> =
+    Promise.resolve();
 
   private async getDatabase(): Promise<SQLite.SQLiteDatabase> {
     if (!this.database) {
@@ -59,17 +65,64 @@ export class ExpoSQLiteDatabase implements Database {
   }
 
   async transaction<T>(
-    operation: () => Promise<T>,
+    operation: (
+      transaction: DatabaseConnection,
+    ) => Promise<T>,
   ): Promise<T> {
-    const db = await this.getDatabase();
+    const run = this.transactionTail.then(
+      async () => {
+        const db = await this.getDatabase();
 
-    let result: T;
+        let result: T | undefined;
 
-    await db.withTransactionAsync(async () => {
-      result = await operation();
-    });
+        await db.withExclusiveTransactionAsync(
+          async (transaction) => {
+            const connection: DatabaseConnection = {
+              execute: async (
+                sql,
+                params = [],
+              ) => {
+                await transaction.runAsync(
+                  sql,
+                  params as SQLite.SQLiteBindParams,
+                );
+              },
 
-    return result!;
+              query: <Row>(
+                sql: string,
+                params: unknown[] = [],
+              ) =>
+                transaction.getAllAsync<Row>(
+                  sql,
+                  params as SQLite.SQLiteBindParams,
+                ),
+
+              queryFirst: <Row>(
+                sql: string,
+                params: unknown[] = [],
+              ) =>
+                transaction.getFirstAsync<Row>(
+                  sql,
+                  params as SQLite.SQLiteBindParams,
+                ),
+            };
+
+            result = await operation(
+              connection,
+            );
+          },
+        );
+
+        return result as T;
+      },
+    );
+
+    this.transactionTail = run.then(
+      () => undefined,
+      () => undefined,
+    );
+
+    return run;
   }
 }
 

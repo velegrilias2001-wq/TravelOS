@@ -20,6 +20,7 @@ import {
   repositories,
   type RepositoryRegistry,
 } from './repository-registry';
+import { buildCanonicalTripDays } from './trip-day-generation';
 
 export interface TripWorkspace {
   trip: Trip;
@@ -39,49 +40,6 @@ export interface TripWorkspace {
   memories: Memory[];
 
   travelBook: TravelBook | null;
-}
-
-function addDays(
-  date: string,
-  amount: number,
-): string {
-  const [year, month, day] = date
-    .split('-')
-    .map(Number);
-
-  const value = new Date(
-    Date.UTC(
-      year,
-      month - 1,
-      day + amount,
-    ),
-  );
-
-  return value
-    .toISOString()
-    .slice(0, 10);
-}
-
-function daysBetweenInclusive(
-  startDate: string,
-  endDate: string,
-): number {
-  const start = new Date(
-    `${startDate}T00:00:00Z`,
-  );
-
-  const end = new Date(
-    `${endDate}T00:00:00Z`,
-  );
-
-  const milliseconds =
-    end.getTime() - start.getTime();
-
-  return (
-    Math.floor(
-      milliseconds / 86_400_000,
-    ) + 1
-  );
 }
 
 export class TripService {
@@ -151,45 +109,19 @@ export class TripService {
   async ensureTripDays(
     trip: Trip,
   ): Promise<void> {
-    const existing =
-      await this.repo.trip.getDays(trip.id);
-
-    if (existing.length > 0) {
-      return;
-    }
-
-    const count =
-      daysBetweenInclusive(
-        trip.startDate,
-        trip.endDate,
-      );
-
     const now =
       new Date().toISOString();
 
-    for (
-      let index = 0;
-      index < count;
-      index += 1
-    ) {
-      const day: TripDay = {
-        id: Crypto.randomUUID(),
+    const days =
+      buildCanonicalTripDays(
+        trip,
+        () => Crypto.randomUUID(),
+        now,
+      );
 
-        tripId: trip.id,
-
-        date: addDays(
-          trip.startDate,
-          index,
-        ),
-
-        dayNumber: index + 1,
-
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      await this.repo.trip.saveDay(day);
-    }
+    await this.repo.trip.ensureDays(
+      days,
+    );
   }
 
   async addStop(
@@ -222,19 +154,15 @@ export class TripService {
     const now =
       new Date().toISOString();
 
-    for (
-      let index = 0;
-      index < stops.length;
-      index += 1
-    ) {
-      await this.repo.trip.saveStop({
-        ...stops[index],
-
-        order: index + 1,
-
-        updatedAt: now,
-      });
-    }
+    await this.repo.trip.reorderStops(
+      stops.map(
+        (stop, index) => ({
+          ...stop,
+          order: index + 1,
+          updatedAt: now,
+        }),
+      ),
+    );
   }
 
   async addBooking(

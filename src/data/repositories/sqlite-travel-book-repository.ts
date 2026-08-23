@@ -82,8 +82,8 @@ export class SQLiteTravelBookRepository
   }
 
   async save(book: TravelBook): Promise<void> {
-    await this.database.transaction(async () => {
-      await this.database.execute(
+    await this.database.transaction(async (transaction) => {
+      await transaction.execute(
         `
           INSERT INTO travel_books (
             id, trip_id, title, cover_image_uri,
@@ -111,7 +111,7 @@ export class SQLiteTravelBookRepository
         ],
       );
 
-      await this.database.execute(
+      await transaction.execute(
         `
           DELETE FROM travel_book_memories
           WHERE travel_book_id = ?;
@@ -126,7 +126,7 @@ export class SQLiteTravelBookRepository
       ) {
         const memoryId = book.memoryIds[position];
 
-        await this.database.execute(
+        await transaction.execute(
           `
             INSERT INTO travel_book_memories (
               travel_book_id,

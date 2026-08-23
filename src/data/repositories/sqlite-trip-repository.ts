@@ -18,6 +18,11 @@ import type {
 
 import type { TripRepository } from '../../domain/repositories/trip-repository';
 
+import {
+  ensureCanonicalTripDays,
+  reorderTripStops,
+} from './trip-persistence-operations';
+
 interface TripRow {
   id: string;
   title: string;
@@ -215,8 +220,8 @@ export class SQLiteTripRepository
     trip: Trip,
   ): Promise<void> {
     await this.database.transaction(
-      async () => {
-        await this.database.execute(
+      async (transaction) => {
+        await transaction.execute(
           `
             INSERT INTO trips (
               id,
@@ -251,7 +256,7 @@ export class SQLiteTripRepository
           ],
         );
 
-        await this.database.execute(
+        await transaction.execute(
           `
             DELETE FROM trip_destinations
             WHERE trip_id = ?;
@@ -268,7 +273,7 @@ export class SQLiteTripRepository
           const destination =
             trip.destinations[position];
 
-          await this.database.execute(
+          await transaction.execute(
             `
               INSERT INTO trip_destinations (
                 id,
@@ -308,7 +313,7 @@ export class SQLiteTripRepository
           );
         }
 
-        await this.database.execute(
+        await transaction.execute(
           `
             DELETE FROM trip_travelers
             WHERE trip_id = ?;
@@ -318,7 +323,7 @@ export class SQLiteTripRepository
 
         for (const travelerId of trip.travelerIds) {
           const travelerExists =
-            await this.database.queryFirst<{
+            await transaction.queryFirst<{
               id: string;
             }>(
               `
@@ -330,7 +335,7 @@ export class SQLiteTripRepository
             );
 
           if (travelerExists) {
-            await this.database.execute(
+            await transaction.execute(
               `
                 INSERT INTO trip_travelers (
                   trip_id,
@@ -424,6 +429,15 @@ export class SQLiteTripRepository
         day.createdAt,
         day.updatedAt,
       ],
+    );
+  }
+
+  async ensureDays(
+    days: TripDay[],
+  ): Promise<void> {
+    await ensureCanonicalTripDays(
+      this.database,
+      days,
     );
   }
 
@@ -592,6 +606,15 @@ export class SQLiteTripRepository
         stop.createdAt,
         stop.updatedAt,
       ],
+    );
+  }
+
+  async reorderStops(
+    stops: TripStop[],
+  ): Promise<void> {
+    await reorderTripStops(
+      this.database,
+      stops,
     );
   }
 

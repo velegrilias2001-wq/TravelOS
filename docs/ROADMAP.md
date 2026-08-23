@@ -6,22 +6,28 @@ This sequence protects the canonical trip truth before adding product breadth. A
 
 Goal: make existing trip, day, stop, booking, and workspace behavior safe to extend.
 
-- Make TripDay generation atomic, idempotent, retry-safe, and able to repair partial day sets without duplicating data.
-- Make stop reorder a single atomic operation and preserve a valid contiguous order after failure.
-- Resolve migration-history drift with a new forward-only migration strategy; never edit a released migration.
-- Add missing database invariants, foreign keys, uniqueness constraints, and high-value indexes.
-- Decide and enforce relationship cardinality for bookings, accommodations, stops, and workspace aggregates.
-- Make Trip Space data reactive or focus-aware so every tab reflects current SQLite truth.
-- Define a single screen/service loading contract and remove avoidable competing state snapshots.
-- Handle invalid trip IDs, missing records, persistence failures, and bootstrap errors explicitly.
-- Remove N+1 loading patterns from the trip list and other obvious aggregate reads.
-- Add a minimal automated test foundation focused on:
-  - Migration from every supported schema version.
-  - TripDay generation and partial recovery.
-  - Stop reorder and deletion.
-  - Upcoming, active, and completed trip-state logic.
-  - Repository relationship and cascade behavior.
-- Commit a non-interactive lint configuration and add baseline CI checks.
+### Phase 0A — Persistence Safety implemented
+
+- [x] Make TripDay generation atomic, idempotent, concurrent-call safe, and able to repair partial canonical day sets without replacing valid rows.
+- [x] Make stop reorder a single atomic operation that preserves IDs/content and rolls back completely on failure.
+- [x] Add forward-only migration version 3 without changing historical migration behavior.
+- [x] Reconcile the version-2 accommodation-stop drift.
+- [x] Archive duplicate TripDay rows before consolidating references.
+- [x] Normalize legacy day numbers and stop positions before adding high-value unique indexes.
+- [x] Move application transactions to serialized, transaction-scoped exclusive Expo SQLite connections.
+- [x] Add automated coverage for fresh, partial, repeated, and concurrent TripDay generation; reorder integrity/rollback; and fresh, drifted, and failed migration behavior.
+- [x] Rehearse migration version 3 and the Phase 0A persistence paths with Expo SQLite on an Android development build using isolated version-2 test data.
+
+### Remaining Phase 0 work
+
+- [ ] Decide and enforce remaining relationship invariants and cardinality for bookings, accommodations, stops, memories, runtime state, and workspace aggregates.
+- [ ] Make Trip Space data reactive or focus-aware so every tab reflects current SQLite truth.
+- [ ] Define a single screen/service loading contract and remove avoidable competing state snapshots.
+- [ ] Handle invalid trip IDs, missing records, persistence failures, and bootstrap errors explicitly.
+- [ ] Remove N+1 loading patterns from the trip list and other obvious aggregate reads.
+- [ ] Expand automated coverage to stop deletion, repository relationships/cascades, and upcoming/active/completed trip-state logic.
+- [ ] Rehearse migration version 3 against Expo SQLite on an iOS development build.
+- [ ] Commit a non-interactive lint configuration and add baseline CI checks.
 
 Exit condition: existing native flows survive retries, partial data, navigation refocus, and supported migrations without corrupting or misrepresenting trip truth.
 

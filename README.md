@@ -8,12 +8,12 @@ The app is a working native foundation and vertical prototype. It currently incl
 
 - Home, Trips, and persisted trip creation.
 - Trip Space with Today, Plan, Map, Bookings, and a placeholder More tab.
-- SQLite-backed trips, automatic days, itinerary-stop CRUD/reorder, bookings, and payment status.
+- SQLite-backed trips, self-healing automatic days, atomic itinerary-stop reorder, bookings, and payment status.
 - Truth-aware upcoming/active/completed Today behavior.
 - Android Google Maps, native location selection, persisted coordinates, and stop pins.
 - Domain, repository, service, and Zustand UI/session layers.
 
-Discover, World, Profile, budget, accommodation UI, travelers, full Companion, Memories, Travel Book, sync, tests, and release infrastructure are not complete. See docs/CURRENT_STATE.md for the verified implementation snapshot.
+Discover, World, Profile, budget, accommodation UI, travelers, full Companion, Memories, Travel Book, sync, broad test coverage, and release infrastructure are not complete. See docs/CURRENT_STATE.md for the verified implementation snapshot.
 
 ## Stack
 
@@ -77,11 +77,12 @@ iOS maps, bundle configuration, permissions, and release behavior are not yet co
 
 Run the current safe baseline checks:
 
+    npm test
     npx tsc --noEmit
     git diff --check
     git status --short
 
-The package contains an Expo lint script, but no non-interactive lint configuration is committed yet. Do not let the lint command initialize or rewrite configuration during a verification-only task. There is currently no automated test suite.
+The persistence suite compiles its targeted TypeScript modules and runs against Node's built-in in-memory SQLite implementation. Node 22.13 or newer is required. The package contains an Expo lint script, but no non-interactive lint configuration is committed yet. Do not let the lint command initialize or rewrite configuration during a verification-only task.
 
 ## Project shape
 
@@ -91,6 +92,7 @@ The package contains an Expo lint script, but no non-interactive lint configurat
 - src/services/ — application orchestration
 - src/store/ — Zustand UI/session state
 - src/components/ and src/theme/ — shared UI and design foundations
+- tests/ — automated persistence and migration coverage
 - docs/ — product contract, verified state, roadmap, and web-reference guidance
 
 ## Documentation

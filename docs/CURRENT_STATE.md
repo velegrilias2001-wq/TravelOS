@@ -6,14 +6,13 @@ This file describes verified implementation, not intended behavior. Unknown or u
 
 ## Repository checkpoint
 
-- Audited branch: foundation/native-architecture
-- Audited HEAD: ec0b28a — Add native location picker and mapped itinerary stops
-- The implementation branch is 11 commits ahead of the local main checkpoint.
+- Current development branch: foundation/hardening-phase-0
+- Phase 0 baseline: 5e86f87 — Add TravelOS product and engineering documentation
+- The native architecture checkpoint remains ec0b28a — Add native location picker and mapped itinerary stops.
 - No Git remote or upstream branch was configured during the audit.
-- The working tree was clean before this documentation pass.
 - .env.local exists and is ignored. Its contents were not read.
 
-Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, truth-aware Today, bookings, Google Maps on Android, and the location picker.
+Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, truth-aware Today, bookings, Google Maps on Android, the location picker, and Phase 0A persistence safety.
 
 ## Stack and runtime
 
@@ -29,7 +28,7 @@ Recent native milestones include the repository/service foundation, native navig
 | Native runtime | expo-dev-client development build |
 | Styling | Local design tokens and React Native StyleSheet-based screen styling |
 
-The package currently has start, Android, iOS, web, reset-project, and lint scripts. There is no committed test runner, CI workflow, EAS configuration, or non-interactive lint configuration.
+The package currently has start, Android, iOS, web, reset-project, lint, and automated test scripts. There is no CI workflow, EAS configuration, or non-interactive lint configuration.
 
 ## Architecture
 
@@ -66,22 +65,29 @@ Entities use explicit IDs. The model distinguishes the trip's accounting currenc
 The database is the current durable source of truth. Verified characteristics include:
 
 - SQLite WAL mode and foreign-key enforcement are enabled.
-- The current database version is 2.
-- The schema contains 14 tables covering trips and related travel data.
+- The current database version is 3.
+- The core schema contains 14 tables covering trips and related travel data; migration version 3 adds one recovery archive table for reconciled duplicate TripDays.
 - Repository queries use bound parameters.
-- A version-2 migration adds an accommodation stop relationship.
-- The baseline schema already contains that column, creating migration-history drift that must be corrected with a safe forward-only strategy.
+- Historical version 1 and version 2 migration behavior remains unchanged.
+- Migration version 3 converges the accommodation stop relationship and index even when a version-2 database reflects the earlier baseline drift.
+- Migration version 3 archives duplicate TripDay rows before consolidating their stop, memory, and runtime references.
+- Migration version 3 normalizes TripDay numbers and stop positions before adding unique indexes for trip/date, trip/day-number, and day/position.
+- The migration adds focused relationship and ordering indexes without rebuilding core tables or adding constraints that could reject preserved databases.
+- Application transactions now use serialized, transaction-scoped Expo SQLite exclusive connections.
+- Automatic TripDay generation creates only missing canonical dates, repairs canonical day numbers, preserves existing valid IDs/content, and is atomic and repeated-call safe.
+- Stop reorder validates the complete TripDay stop set and changes only ordering metadata in one atomic transaction.
 
-Important gaps:
+Important remaining gaps:
 
-- Automatic TripDay generation is neither fully idempotent nor atomic. It exits when any day exists, so a partial set can remain incomplete, and concurrent calls can create duplicates.
-- Stop reorder writes positions separately rather than in one durable transaction.
-- Important uniqueness constraints, indexes, and relationship invariants are incomplete.
-- Some multi-record writes use a non-exclusive async transaction wrapper, so transaction boundaries need review.
+- Cross-table invariants do not yet prove that a stop's trip ID matches its TripDay's trip ID.
+- Memories and TripRuntimeState day/stop references are not fully protected by foreign keys.
 - Trip-list loading performs repeated related-data queries and will not scale well.
 - Repository relationship cardinality and service aggregation need explicit decisions where schemas can hold multiple records but the aggregate exposes one.
+- TripDay records outside an edited trip date range are preserved and placed after the canonical range; no product flow exists yet for resolving them.
+- Archived migration-v3 duplicate-day metadata is retained for recovery but has no user-facing inspection tool.
+- Migration and transaction behavior is covered by Node SQLite tests and was rehearsed with Expo SQLite 57 on an Android x86_64 emulator. The Android rehearsal migrated an isolated version-2 database to version 3, verified all version-3 indexes, preserved and loaded a seeded existing trip, repaired its partial TripDay set, preserved stop content through reorder, and removed only the isolated test database. An equivalent iOS rehearsal is still outstanding.
 
-Historical migrations must not be edited to repair these issues. Corrections require new migrations.
+Historical migrations must not be edited to repair remaining issues. Corrections require new migrations.
 
 ## Implemented native flows
 
@@ -217,14 +223,18 @@ It is still an early design system:
 
 Verified checks at the takeover checkpoint:
 
-- npx tsc --noEmit passes.
-- npm ls --depth=0 passes.
-- git diff --check was clean.
+- npm test runs seven automated persistence tests using Node's built-in SQLite engine.
+- Fresh database migration, version-2 drift repair, migration rollback, fresh/partial/repeated TripDay generation, concurrent idempotency, and stop reorder rollback are covered.
+- The Android debug build compiles, installs, launches, and reaches both the development persistence self-test and bootstrap-ready state on an x86_64 emulator.
+- An on-device Expo SQLite rehearsal verified `PRAGMA user_version = 3`, all ten migration/invariant indexes, existing seeded trip survival, canonical TripDay generation/loading, and lossless stop reorder in an isolated database.
+- npx tsc --noEmit passes for the application.
+- npm ls --depth=0 passed at the takeover audit.
+- git diff --check is part of the required completion checks.
 
 Missing release foundations:
 
-- No automated unit, repository, migration, or integration tests.
 - No CI pipeline.
+- Test coverage is intentionally narrow and does not yet cover every repository, cascade, trip-state rule, an iOS database upgrade, or a broad sample of real historical databases.
 - No committed lint configuration; the current lint command may attempt interactive setup.
 - No EAS build or submit configuration.
 - No iOS release configuration.
@@ -243,6 +253,10 @@ Missing release foundations:
 - Strict TypeScript.
 - Expo Router-based native navigation.
 - Persisted itinerary and booking CRUD.
+- Atomic, idempotent, self-healing canonical TripDay generation.
+- Atomic stop reorder that preserves stop identity and content.
+- Forward-only migration v3 with duplicate-day archival and high-value uniqueness/index protection.
+- A dependency-free automated persistence test baseline.
 - Truth-aware upcoming/active/completed Today logic.
 - Real selected coordinates persisted and rendered as map pins.
 - Separate accounting-currency concept.
@@ -253,7 +267,6 @@ These pieces are promising foundations; they do not make the app production-read
 ### Prototype or incomplete implementation
 
 - Create Trip input and validation.
-- Automatic day generation and stop reorder transaction safety.
 - Today as a full Companion.
 - Booking-stop and accommodation workflows.
 - Map intelligence, routes, and offline behavior.
@@ -266,4 +279,4 @@ These pieces are promising foundations; they do not make the app production-read
 
 ## Overall assessment
 
-TravelOS is a credible native foundation and working vertical prototype, not yet a production application. The strongest asset is its canonical, persistent native trip architecture. The immediate priority is to harden that foundation before broadening the product into the many flows already represented by domain types and the web reference.
+TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A now protects the highest-risk day-generation, ordering, and migration paths. The immediate priority remains the rest of Phase 0: reactive workspace state, explicit invalid-trip/error behavior, relationship decisions, query efficiency, and broader high-value tests.

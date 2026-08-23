@@ -1,6 +1,4 @@
-export interface Database {
-  initialize(): Promise<void>;
-
+export interface DatabaseConnection {
   execute(
     sql: string,
     params?: unknown[],
@@ -15,8 +13,16 @@ export interface Database {
     sql: string,
     params?: unknown[],
   ): Promise<T | null>;
+}
+
+export interface Database
+  extends DatabaseConnection
+{
+  initialize(): Promise<void>;
 
   transaction<T>(
-    operation: () => Promise<T>,
+    operation: (
+      transaction: DatabaseConnection,
+    ) => Promise<T>,
   ): Promise<T>;
 }
