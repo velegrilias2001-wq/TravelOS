@@ -15,17 +15,21 @@ import {
 import { Screen } from '@/components/ui/screen';
 import { CalendarDateField } from '@/components/ui/native-date-time-fields';
 import type {
-  TripDestination,
   TripStatus,
 } from '@/domain/entities';
+import {
+  DestinationPickerField,
+} from '@/features/destinations/destination-picker-field';
 import {
   useTripWorkspace,
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
+import type {
+  DestinationSelection,
+} from '@/services/destination-authoring';
 import {
-  hasStructuredDestinationMetadata,
   validateTripDateRange,
-  type TripDestinationNameInput,
+  type TripDestinationEditInput,
 } from '@/services/trip-details';
 import {
   colors,
@@ -69,29 +73,6 @@ const STATUS_OPTIONS: Array<{
   },
 ];
 
-function destinationMetadata(
-  destination: TripDestination,
-): string | null {
-  const facts = [
-    destination.countryCode,
-    destination.timezone,
-    destination.currencyCode
-      ? `${destination.currencyCode} local currency`
-      : undefined,
-    destination.latitude !== undefined &&
-    destination.longitude !== undefined
-      ? 'Mapped coordinates preserved'
-      : undefined,
-  ].filter(
-    (value): value is string =>
-      Boolean(value),
-  );
-
-  return facts.length > 0
-    ? facts.join(' · ')
-    : null;
-}
-
 export default function TripDetailsScreen() {
   const router = useRouter();
   const { workspace, actions } =
@@ -107,7 +88,7 @@ export default function TripDetailsScreen() {
     trip.title,
   );
   const [destinations, setDestinations] =
-    useState<TripDestinationNameInput[]>(
+    useState<TripDestinationEditInput[]>(
       trip.destinations.map(
         (destination) => ({
           id: destination.id,
@@ -132,15 +113,19 @@ export default function TripDetailsScreen() {
   const [showSavedNotice, setShowSavedNotice] =
     useState(false);
 
-  const updateDestination = (
+  const replaceDestination = (
     id: string,
-    name: string,
+    replacement: DestinationSelection,
   ) => {
     setShowSavedNotice(false);
     setDestinations((current) =>
       current.map((destination) =>
         destination.id === id
-          ? { ...destination, name }
+          ? {
+              ...destination,
+              name: replacement.name,
+              replacement,
+            }
           : destination,
       ),
     );
@@ -214,8 +199,10 @@ export default function TripDetailsScreen() {
       setAccountingCurrency(cleanCurrency);
       setDestinations((current) =>
         current.map((destination) => ({
-          ...destination,
-          name: destination.name.trim(),
+          id: destination.id,
+          name:
+            destination.replacement?.name ??
+            destination.name.trim(),
         })),
       );
       setShowSavedNotice(true);
@@ -306,7 +293,7 @@ export default function TripDetailsScreen() {
 
         <View style={styles.hero}>
           <Text style={styles.eyebrow}>
-            CANONICAL TRIP
+            TRIP OVERVIEW
           </Text>
           <Text style={styles.title}>
             Shape the journey,
@@ -314,7 +301,7 @@ export default function TripDetailsScreen() {
             keep its truth intact.
           </Text>
           <Text style={styles.subtitle}>
-            Changes here flow through Companion, Plan, Map, Bookings, Budget and More from the same saved trip.
+            Keep the details that guide Companion, Plan, Map, Bookings and your trip budget in one place.
           </Text>
         </View>
 
@@ -411,7 +398,7 @@ export default function TripDetailsScreen() {
           </View>
 
           <Text style={styles.fieldHelp}>
-            Status is an organizational choice. Companion derives live upcoming, active and completed truth from the saved travel dates and an explicit timezone resolution; this field cannot override it.
+            Status helps you organize trips. Companion follows your travel dates and available destination timing details when deciding what is happening now.
           </Text>
         </View>
 
@@ -429,22 +416,17 @@ export default function TripDetailsScreen() {
                 color={colors.warning}
               />
               <Text style={styles.inlineNoticeText}>
-                This trip has no canonical destination record. Other details can still be edited; destination creation needs the dedicated multi-destination workflow.
+                This trip does not have a destination yet. You can still edit its other details; adding destinations will arrive with the multi-destination planning flow.
               </Text>
             </View>
           ) : (
             destinations.map(
               (destination, index) => {
-                const canonicalDestination =
+                const savedDestination =
                   trip.destinations[index];
-                const metadata =
-                  destinationMetadata(
-                    canonicalDestination,
-                  );
-                const nameIsLocked =
-                  hasStructuredDestinationMetadata(
-                    canonicalDestination,
-                  );
+                const displayDestination =
+                  destination.replacement ??
+                  savedDestination;
 
                 return (
                   <View
@@ -455,32 +437,25 @@ export default function TripDetailsScreen() {
                         : undefined
                     }
                   >
-                    <Field
+                    <DestinationPickerField
                       label={
                         destinations.length === 1
                           ? 'DESTINATION'
                           : `DESTINATION ${index + 1}`
                       }
-                      value={destination.name}
-                      placeholder="Tokyo, Japan"
-                      editable={!nameIsLocked}
-                      onChangeText={(value) =>
-                        updateDestination(
+                      destination={displayDestination}
+                      disabled={isSaving}
+                      onSelect={(selection) =>
+                        replaceDestination(
                           destination.id,
-                          value,
+                          selection,
                         )
                       }
                     />
 
-                    {metadata && (
-                      <Text style={styles.metadataText}>
-                        {metadata}
-                      </Text>
-                    )}
-
-                    {nameIsLocked && (
-                      <Text style={styles.lockedDestinationText}>
-                        Name editing is locked because this record already carries structured place facts. A future location-aware replacement flow must update them together.
+                    {destination.replacement && (
+                      <Text style={styles.pendingDestinationText}>
+                        This map selection will replace the current destination when you save trip details.
                       </Text>
                     )}
                   </View>
@@ -496,7 +471,7 @@ export default function TripDetailsScreen() {
               color={colors.teal}
             />
             <Text style={styles.truthNoteText}>
-              Name-only destination records can be refined here. Destination IDs and order are preserved; adding, removing, reordering or replacing structured destinations is not available yet.
+              Older destination labels remain unchanged until you choose a real map location. Replacing a destination keeps its place in this trip while using only details returned by the new selection.
             </Text>
           </View>
         </View>
@@ -530,7 +505,7 @@ export default function TripDetailsScreen() {
           />
 
           <Text style={styles.fieldHelp}>
-            Dates remain saved as YYYY-MM-DD calendar values. Existing itinerary days outside a changed range are preserved rather than silently deleted.
+            Your chosen calendar dates stay exactly as selected. Existing itinerary days outside a changed range are kept rather than silently deleted.
           </Text>
         </View>
 
@@ -575,7 +550,7 @@ export default function TripDetailsScreen() {
             />
             <Text style={styles.currencyPolicyText}>
               {hasPersistedBudget
-                ? 'Locked because this trip has persisted Budget data. TravelOS will not relabel or reinterpret those amounts.'
+                ? 'Locked because this trip already has a saved budget. TravelOS will not relabel or reinterpret those amounts.'
                 : 'This is the trip accounting currency, not a destination’s local currency. Any budget created for this trip will use this value.'}
             </Text>
           </View>
@@ -622,7 +597,7 @@ export default function TripDetailsScreen() {
             Delete this trip
           </Text>
           <Text style={styles.dangerBody}>
-            Permanently remove the canonical trip and its related local data from this device.
+            Permanently remove this trip and its related local data from this device.
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -914,19 +889,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  metadataText: {
+  pendingDestinationText: {
     marginTop: spacing[2],
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.micro,
     lineHeight: lineHeight.micro,
-    color: colors.textMuted,
-  },
-  lockedDestinationText: {
-    marginTop: spacing[2],
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.micro,
-    lineHeight: lineHeight.micro,
-    color: colors.warning,
+    color: colors.teal,
   },
   inlineNotice: {
     flexDirection: 'row',

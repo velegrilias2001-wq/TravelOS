@@ -6,7 +6,7 @@ This file describes verified implementation, not intended behavior. Unknown or u
 
 ## Repository checkpoint
 
-- Current development branch: feature/companion-v1
+- Current development branch: feature/destination-authoring
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
 - Budget & Expenses checkpoint: 65b7f33 — Add native trip budget and expenses
@@ -15,13 +15,14 @@ This file describes verified implementation, not intended behavior. Unknown or u
 - Accommodation checkpoint: cc180f2 — Add canonical trip accommodation flow
 - Travelers checkpoint: 3dcb7d8 — Add reusable trip travelers
 - Time & Runtime Truth checkpoint: 81c4f20 — Establish canonical trip time and runtime truth
+- Companion V1 checkpoint: 97f6a19 — Add deterministic TravelOS Companion
 - The native architecture checkpoint remains ec0b28a — Add native location picker and mapped itinerary stops.
 - No Git remote or upstream branch was configured during the audit.
 - .env.local exists and is ignored. Its contents were not read.
 
-The working tree contains the verified but uncommitted Companion V1 implementation described below.
+The working tree contains the verified but uncommitted Canonical Destination Authoring implementation described below.
 
-Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, bookings, Google Maps on Android, the location picker, persistence hardening, the shared TripWorkspace lifecycle, Budget & Expenses, Trip Details, explicit Booking ↔ Stop relationships, native Accommodation management, reusable canonical Traveler identities with explicit trip membership, centralized date/time/runtime truth, and the first deterministic Companion surface.
+Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, bookings, Google Maps on Android, the location picker, persistence hardening, the shared TripWorkspace lifecycle, Budget & Expenses, Trip Details, explicit Booking ↔ Stop relationships, native Accommodation management, reusable canonical Traveler identities with explicit trip membership, centralized date/time/runtime truth, the first deterministic Companion surface, and canonical real-destination selection plus legacy destination upgrades.
 
 ## Stack and runtime
 
@@ -73,6 +74,8 @@ Verified domain entities include:
 
 Entities use explicit IDs. The model distinguishes the trip's accounting currency from destination currency concepts. `Booking.stopId` is the canonical optional relationship to an itinerary stop: each booking has zero or one stop, while each stop can have zero, one, or many bookings. Each Trip has zero or many Accommodations; an Accommodation belongs to exactly one Trip and may link to zero or one Booking and zero or one TripStop. A Booking or TripStop may be referenced by multiple Accommodation records, and every relationship must remain within one Trip. Links are never inferred from names, addresses, or other text.
 
+Trip destinations now have explicit authoring states. A native selection has a stable TravelOS destination ID plus a provider-returned display name, validated latitude/longitude, and optional returned country code, IANA timezone, and local-currency code. Historical name-only destinations remain valid legacy records until the user explicitly upgrades them. The installed native picker returns coordinates and reverse-geocoded place context, but does not expose a stable provider place ID, timezone, or currency; TravelOS does not fabricate those facts.
+
 Traveler identity is independent from Trip. One canonical Traveler may belong to multiple Trips through `trip_travelers`, whose composite primary key prevents duplicate membership. Removing a Traveler from a Trip deletes only that membership. Deleting a Trip cascades its memberships but preserves the reusable Traveler rows. The current planning flow deliberately permits zero Travelers so an unfinished Trip can exist; enforcing an eventual one-or-more party rule remains a product decision tied to Create Trip and owner identity.
 
 ## Time and runtime semantics
@@ -117,6 +120,7 @@ The database is the current durable source of truth. Verified characteristics in
 - Traveler creation plus first membership is atomic. Existing identities are added only through an exact selected Traveler ID, duplicate membership is rejected, canonical edits are visible in every Trip that contains that ID, and membership removal never deletes the identity.
 - Travelers required no migration version 7: the released schema already has independent `travelers` rows, a composite `(trip_id, traveler_id)` membership primary key, and foreign keys that delete memberships—but not identities—when a Trip is deleted.
 - Time & Runtime Truth requires no migration: existing Trip and TripDay dates remain canonical text calendar values, stop and Accommodation values remain local wall-clock data, compatible Booking values retain their stored semantics, and metadata timestamps remain true instants.
+- Canonical Destination Authoring requires no migration: `trip_destinations` already stores destination identity, ordered Trip membership, name, country code, latitude, longitude, timezone, and destination currency. Existing name-only rows remain readable and are upgraded only by an explicit user selection.
 
 Important remaining gaps:
 
@@ -125,7 +129,7 @@ Important remaining gaps:
 - Trip-list loading performs repeated related-data queries and will not scale well.
 - Relationship cardinality and service aggregation still need explicit decisions for memories, runtime state, and other aggregates. Booking ↔ Stop and Accommodation relationships are now explicit and no longer use arbitrary singular hydration.
 - TripDay records outside an edited trip date range are preserved and placed after the canonical range; no product flow exists yet for resolving them.
-- Multi-destination Trips still lack a Day → Destination relationship. Runtime calculations use a destination timezone only when every relevant saved destination has the same valid IANA timezone; otherwise the resolver reports an explicit device-calendar fallback.
+- Multi-destination Trips still lack a Day → Destination relationship. Runtime calculations use a destination timezone only when every relevant saved destination has the same valid IANA timezone; otherwise the resolver reports an explicit device-calendar fallback. The current native picker does not provide timezone data, so securely enriching a selection requires Google Time Zone API enablement and a separately restricted service/server boundary (or a picker/provider that returns a reliable IANA timezone); the Android Maps key is not reused for a client-side web-service call.
 - Archived migration-v3 duplicate-day metadata is retained for recovery but has no user-facing inspection tool.
 - Migration and transaction behavior is covered by Node SQLite tests and was rehearsed with Expo SQLite 57 on an Android x86_64 emulator. The Android rehearsal migrated an isolated version-2 database to version 3, verified all version-3 indexes, preserved and loaded a seeded existing trip, repaired its partial TripDay set, preserved stop content through reorder, and removed only the isolated test database. The Budget rehearsal upgraded the existing development database to version 4, verified the new indexes, preserved the pre-existing trip, and removed only its reserved test trip. Booking ↔ Stop verification upgraded the live development database to version 5, verified the valid WAL state reports `user_version = 5`, and confirmed the two validation triggers plus the invalid-link archive and index exist. Accommodation verification upgraded the development database to version 6, confirmed `user_version = 6`, the four validation triggers, the recovery archive indexes, and existing accommodation relationship indexes, and preserved the unrelated existing trip. Equivalent iOS rehearsals are still outstanding.
 
@@ -150,10 +154,10 @@ Home and Trips are functional. Discover, World, and Profile are placeholders.
 Implemented behavior includes:
 
 - Persisted trip list.
-- Creating a trip with title, one destination, native validated start/end calendar dates, and accounting currency.
+- Creating a trip with title, one real native-selected destination, native validated start/end calendar dates, and accounting currency. Free-form destination creation is no longer accepted.
 - Opening a trip-specific workspace.
 - Automatic TripDay creation from the trip date range.
-- Editing the canonical trip title, valid existing destination names, dates, accounting currency, and lifecycle status from Trip Details.
+- Editing the canonical trip title, dates, accounting currency, and lifecycle status from Trip Details, plus explicitly replacing or upgrading an existing destination through the same native real-location picker.
 - Deleting a trip through a destructive native confirmation that names the related local data being removed.
 
 Create Trip and Trip Details use the shared native calendar field, validate real `YYYY-MM-DD` dates plus `start <= end`, and persist the selected calendar day without UTC or device-timezone shifting. Accounting currency uses a validated three-letter code rather than a complete currency selector.
@@ -175,15 +179,29 @@ Companion, Plan, Map, Bookings, and More have working functionality. The existin
 Implemented behavior includes:
 
 - A dedicated native Trip Details route reached from More.
-- Canonical title editing, status selection, native date editing, accounting-currency editing, and existing destination-name editing through TripService and TripWorkspace.
+- Canonical title editing, status selection, native date editing, accounting-currency editing, and structured destination replacement through TripService and TripWorkspace.
 - Strict real-calendar `YYYY-MM-DD` validation and rejection of reversed ranges before persistence.
-- Preservation of destination IDs, order, coordinates, country, timezone, and local-currency metadata.
-- Structured destinations are read-only until a location-aware replacement flow exists; name-only destination records can be refined. Destination add, remove, reorder, and structured replacement are not implied by the UI.
+- Location-aware replacement preserves the destination ID and order while atomically replacing the selected place facts. Unrelated Trip metadata, travelers, accounting currency, and created timestamp remain intact.
+- Historical name-only destinations stay visible and loadable, and can be upgraded only through an explicit map selection. Structured destinations are not editable as disconnected text. Destination add, remove, and reorder remain outside this flow.
 - Manual status choices cover draft, planned, completed, and archived. An existing active status is preserved, but a future trip cannot be manually marked active because active truth needs date/runtime derivation.
 - Accounting currency cannot be changed once a persisted Budget exists. No amount is relabelled, converted, or assigned an invented exchange rate.
 - Trip deletion uses a destructive native confirmation, routes safely back to Trips, refreshes the global list cache, and leaves the deleted workspace in not-found state rather than retaining stale data.
 
 Current limitations include the unfinished multi-destination workflow, no Day → Destination timezone mapping, no archive/recovery or backup for deletion, and no complete currency selector.
+
+### Canonical Destination Authoring
+
+Implemented behavior includes:
+
+- One provider-neutral destination-authoring service validates real coordinates and optional country, timezone, and currency codes without inferring missing facts.
+- Create Trip requires the existing native picker and persists one real selected destination. Trip Details uses the same picker to replace a structured destination or upgrade a historical name-only destination while preserving its TravelOS ID and order.
+- Picker-returned locality/region/name/address and country context produce the saved display label. The current provider result does not expose a durable place ID, timezone, or currency, so none is invented or silently derived.
+- SQLite hydration and persistence round-trip the full existing destination record losslessly. No schema migration was required.
+- Map frames every mapped destination together with every mapped itinerary stop and renders distinct destination markers. Plan uses a destination coordinate as picker context only when exactly one mapped destination makes that context unambiguous.
+- Companion uses calm missing-timezone fallback copy and never shows exact NOW/NEXT timing without a saved reliable IANA timezone.
+- Trip-space headings use the full saved destination context instead of silently treating the first destination as authoritative.
+
+Current limitations include no destination add/remove/reorder UI, no stable provider place ID in the installed picker result, no secure timezone enrichment boundary, no destination-currency source, and no Day → Destination relationship. Provider enrichment, multi-destination authoring, and iOS verification remain future work.
 
 ### Budget & Expenses
 
@@ -247,7 +265,7 @@ Implemented truth rules and behavior are:
 - Runtime truth refreshes on route focus, app foreground return, and the next resolved local calendar-date boundary. The boundary calculation is DST-safe and uses one cleaned-up timer rather than polling.
 - Trip-level loading, refresh, not-found, and recoverable read-error behavior remains shared with the other Trip Space screens.
 
-Current Companion V1 limitations include no Day → Destination timezone relationship for multi-destination trips, no persisted delayed/skipped/lived progress, no live provider data, notifications, routes, ETAs, weather, traffic, opening hours, recommendations, or AI. NOW/NEXT does not reschedule at each stop boundary while the screen stays continuously open; it refreshes at the required focus, foreground, and calendar-boundary lifecycle events. The Android rehearsal verified upcoming, incomplete/fallback, active canonical-day, linked Booking, mapped-stop, tab/lifecycle persistence, and completed non-live behavior with isolated data, then removed only that isolated trip. Exact canonical-timezone NOW/NEXT and Accommodation date-picker creation could not be exercised end-to-end because the current product has no destination-timezone authoring flow and the emulator diverted the native Accommodation picker into a system settings surface; deterministic selector tests cover those rules. Existing pre-test trip data survived, and bootstrap plus the persistence self-test passed after cold relaunch. iOS verification remains outstanding.
+Current Companion V1 limitations include no Day → Destination timezone relationship for multi-destination trips, no secure reliable timezone enrichment source, no persisted delayed/skipped/lived progress, no live provider data, notifications, routes, ETAs, weather, traffic, opening hours, recommendations, or AI. NOW/NEXT does not reschedule at each stop boundary while the screen stays continuously open; it refreshes at the required focus, foreground, and calendar-boundary lifecycle events. The Android rehearsal verified upcoming, incomplete/fallback, active canonical-day, linked Booking, mapped-stop, tab/lifecycle persistence, and completed non-live behavior with isolated data, then removed only that isolated trip. Exact canonical-timezone NOW/NEXT and Accommodation date-picker creation could not be exercised end-to-end because the current native destination provider does not return a timezone and the emulator diverted the native Accommodation picker into a system settings surface; deterministic selector tests cover those rules. Existing pre-test trip data survived, and bootstrap plus the persistence self-test passed after cold relaunch. iOS verification remains outstanding.
 
 ### Plan
 
@@ -287,14 +305,15 @@ Platform state:
 
 - Android uses Google Maps through the current app configuration.
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
+- Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
+- The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
 - The API key is injected from GOOGLE_MAPS_API_KEY through app.config.js.
 - Cloud API enablement and key restrictions were not verified because secret configuration was intentionally not inspected.
 - iOS currently uses platform-default map behavior rather than a completed Google Maps setup.
 - No iOS bundle identifier is configured.
 - iOS build, picker behavior, permissions, and release readiness are unverified.
-- Routes, travel times, offline map behavior, navigation handoff, clustering, and multi-destination map behavior are not implemented.
-
-Several current screens use only the first destination even though the domain can represent more than one.
+- Routes, travel times, offline map behavior, navigation handoff, clustering, and Day → Destination map semantics are not implemented.
+- Home, Trips, Companion, Plan, Map, Bookings, Accommodation, Travelers, and More render the available destination set rather than silently treating the first record as the whole trip. Full multi-destination authoring and per-day semantics remain unimplemented.
 
 ## Persisted modules without product UI
 
@@ -332,9 +351,9 @@ It is still an early design system:
 
 ## Testing and release readiness
 
-Verified checks through Companion V1:
+Verified checks through Canonical Destination Authoring:
 
-- npm test runs sixty-two automated tests covering persistence, migrations, Budget calculations, Trip Details validation/persistence/cascades, Booking ↔ Stop invariants and deletion behavior, Accommodation validation/persistence/relationships/cascades/day context, Traveler identity/membership behavior, TripWorkspace lifecycle behavior, centralized time/runtime truth, and deterministic Companion selection/calendar-boundary behavior.
+- npm test runs sixty-seven automated tests covering persistence, migrations, Budget calculations, Trip Details validation/persistence/cascades, Booking ↔ Stop invariants and deletion behavior, Accommodation validation/persistence/relationships/cascades/day context, Traveler identity/membership behavior, TripWorkspace lifecycle behavior, centralized time/runtime truth, deterministic Companion selection/calendar-boundary behavior, destination selection validation, legacy compatibility, mapped-consumer context, and destination SQLite round trips.
 - Fresh database migration, version-2 drift repair, migration rollback, fresh/partial/repeated TripDay generation, concurrent idempotency, and stop reorder rollback are covered.
 - Workspace initial loading, not-found behavior, revision-aware refresh, shared-consumer mutation propagation, recoverable retry, and mutation-during-load invalidation are covered.
 - The Android debug build compiles, installs, launches, and reaches both the development persistence self-test and bootstrap-ready state on an x86_64 emulator.
@@ -347,6 +366,7 @@ Verified checks through Companion V1:
 - Travelers Android verification used two isolated Trips and two isolated Traveler identities to exercise creation, exact-ID reuse, shared canonical editing, duplicate-free membership, membership-only removal, saved-identity selection, and cold-process persistence. The edited identity appeared in both Trips; the removed identity remained selectable for reuse; deleting one Trip preserved the Traveler and its other membership. Both test Trips and both exact test identities were removed afterwards, while the unrelated existing trip remained visible and loadable. The database remains at version 6 because the existing Traveler and membership schema already provided the required keys and cascades. The Android debug build compiled, installed, launched, and reached the persistence self-test and bootstrap-ready state before the E2E flow.
 - Time & Runtime Truth Android verification compiled and launched the debug development build, created one isolated Trip with native dates, rejected an unsaved reversed Create Trip range, added a native-time Stop, added a native local-time Booking linked by exact stop ID, and added an Accommodation linked to the same exact stop. Today showed active Day 1 plus real Booking and Accommodation context, an explicit device-calendar fallback because no destination timezone was saved, a non-active first-day preview after the Trip moved to a future range, and completed-history copy after it moved to a past range. A cold process relaunch preserved the selected dates, local times, links, and unrelated existing Trip; startup reported `Persistence self-test: PASS` and `Bootstrap ready`. Plan, Map, Bookings, Budget, Accommodation, and Travelers all opened on Android. The exact `TimeTruthE2E` Trip and its related isolated data were deleted afterwards, the rejected draft was never persisted, and the existing Japan Trip remained visible.
 - Companion V1 Android verification compiled both debug and x86_64 release variants, installed and launched the development build on an Android 16 x86_64 emulator, and again reached `Persistence self-test: PASS` plus `Bootstrap ready`. An isolated active Trip verified exact canonical-day selection, Day 1 of 1, safe missing-timezone degradation, a real picker-selected mapped stop, exact linked Booking context across Companion/Map/Bookings tabs, completed non-live history after a date edit, and cold-process persistence. A pre-existing future Trip verified upcoming countdown/readiness without mutation. The exact isolated Companion Trip and all of its related data were deleted through the named destructive confirmation; the pre-existing Trip survived. Canonical-timezone NOW/NEXT and new Accommodation context could not be completed through this E2E path because no destination-timezone authoring UI exists and the emulator diverted the Accommodation picker to Android settings; those deterministic branches are covered by injected-clock tests.
+- Canonical Destination Authoring Android verification compiled and installed the debug development build without clearing app data. One isolated Trip was created from a real Tokyo-area city result, persisted its returned `JP` country context and coordinates, showed an explicit unavailable-timing fallback because no timezone was returned, biased the Plan picker to the single destination, and framed separate destination and mapped-stop markers together. A second isolated historical name-only Trip was upgraded through Trip Details to a real Athens selection while its title, dates, accounting currency, destination ID/order, and unrelated data remained intact. Both selections and the mapped stop survived a cold process relaunch. Companion, Plan, Map, Bookings, Budget, Accommodation, Travelers, More, and Trip Details loaded successfully. Both uniquely named test Trips were deleted through their exact destructive confirmations; the unrelated pre-existing Trip remained visible.
 - npx tsc --noEmit passes for the application.
 - npm ls --depth=0 passed at the takeover audit.
 - git diff --check is part of the required completion checks.
@@ -383,6 +403,7 @@ Missing release foundations:
 - A centralized injectable-clock runtime resolver with explicit canonical-destination timezone or device-fallback provenance, exact active TripDay selection, and no first-destination shortcut.
 - Shared strict calendar/local-time utilities plus native Create Trip, Booking, and optional Stop date/time controls that preserve compatible historical data.
 - Real selected coordinates persisted and rendered as map pins.
+- Provider-neutral canonical destination validation, native selection-only Create Trip, explicit ID-preserving legacy/structured replacement, and multi-destination-safe map consumption without invented timezone or currency.
 - Separate accounting-currency concept.
 - A service-backed Budget & Expenses flow with truthful same-currency aggregation and original-currency preservation.
 - A service-backed canonical Trip Details editor with strict date validation, metadata-preserving destination handling, budget-aware accounting-currency safety, and verified cascade deletion.
@@ -396,7 +417,7 @@ These pieces are promising foundations; they do not make the app production-read
 
 ### Prototype or incomplete implementation
 
-- Multi-destination add/remove/reorder and structured destination replacement.
+- Multi-destination add/remove/reorder, Day → Destination semantics, stable provider identity, and secure timezone/currency enrichment.
 - Companion V2 timezone authoring, Day → Destination semantics, stop-boundary refresh decisions, lived progress, and external live-data layers.
 - Advanced accommodation capabilities and the remaining booking actions/provider integrations.
 - Map intelligence, routes, and offline behavior.
@@ -408,4 +429,4 @@ These pieces are promising foundations; they do not make the app production-read
 
 ## Overall assessment
 
-TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, Budget & Expenses is the first complete Phase 1 product slice, Trip Details makes the canonical Trip safely editable, Booking ↔ Stop integration connects itinerary and reservation truth through explicit IDs, Accommodation adds a validated multi-stay workflow, Travelers establishes reusable people plus explicit Trip membership, Time & Runtime Truth gives the app one deterministic phase/date/day answer, and Companion V1 turns that truth into a useful before/during/after surface without inventing live data. The next priorities are closing the remaining Phase 0 engineering gaps, designing Day → Destination semantics plus timezone authoring for exact multi-destination timing, defining traveler ownership and roles, and choosing the concrete durable lived-state boundary for Companion V2. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.
+TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, Budget & Expenses is the first complete Phase 1 product slice, Trip Details makes the canonical Trip safely editable, Booking ↔ Stop integration connects itinerary and reservation truth through explicit IDs, Accommodation adds a validated multi-stay workflow, Travelers establishes reusable people plus explicit Trip membership, Time & Runtime Truth gives the app one deterministic phase/date/day answer, Companion V1 turns that truth into a useful before/during/after surface, and Canonical Destination Authoring replaces free-form creation with real selected place truth while preserving legacy data. The next priorities are closing the remaining Phase 0 engineering gaps, designing destination add/remove/reorder plus Day → Destination semantics, establishing a secure reliable timezone source for exact timing, defining traveler ownership and roles, and choosing the concrete durable lived-state boundary for Companion V2. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.

@@ -16,6 +16,9 @@ import {
   calculateBudgetSummary,
 } from '@/services/budget-calculations';
 import {
+  tripDestinationLabel,
+} from '@/services/destination-authoring';
+import {
   isCanonicalDateKey,
 } from '@/services/trip-details';
 import {
@@ -79,9 +82,9 @@ export default function MoreScreen() {
   const destinationLabel =
     trip.destinations.length === 0
       ? 'Destination not set'
-      : trip.destinations.length === 1
-        ? trip.destinations[0].name
-        : `${trip.destinations[0].name} +${trip.destinations.length - 1} more`;
+      : tripDestinationLabel(
+          trip.destinations,
+        );
 
   const mappedStopCount =
     workspace.stops.filter(
@@ -154,7 +157,7 @@ export default function MoreScreen() {
         </View>
 
         <Text style={styles.cardEyebrow}>
-          CANONICAL TRIP
+          TRIP OVERVIEW
         </Text>
         <Text style={styles.tripCardTitle}>
           Trip Details

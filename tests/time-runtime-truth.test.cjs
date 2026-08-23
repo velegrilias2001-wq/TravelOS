@@ -381,7 +381,12 @@ test(
     const trip = buildNewTrip(
       {
         title: '  Native dates  ',
-        destinationName: '  Athens  ',
+        destination: {
+          name: '  Athens, Greece  ',
+          countryCode: 'gr',
+          latitude: 37.9838,
+          longitude: 23.7275,
+        },
         startDate: '2028-02-29',
         endDate: '2028-03-02',
         accountingCurrency: 'eur',
@@ -397,6 +402,17 @@ test(
     assert.equal(trip.endDate, '2028-03-02');
     assert.equal(trip.title, 'Native dates');
     assert.equal(trip.accountingCurrency, 'EUR');
+    assert.deepEqual(trip.destinations, [
+      {
+        id: 'created-destination',
+        name: 'Athens, Greece',
+        countryCode: 'GR',
+        latitude: 37.9838,
+        longitude: 23.7275,
+        timezone: undefined,
+        currencyCode: undefined,
+      },
+    ]);
 
     const database = new NodeSQLiteDatabase();
     await migrateDatabase(database);

@@ -51,6 +51,9 @@ import {
   formatBookingTemporalValue,
   parseBookingTemporalValue,
 } from '@/services/booking-time';
+import {
+  tripDestinationLabel,
+} from '@/services/destination-authoring';
 import { formatCalendarDateForDisplay } from '@/services/time-truth';
 
 import {
@@ -770,12 +773,9 @@ export default function BookingsScreen() {
             <Text
               style={styles.eyebrow}
             >
-              {
-                workspace.trip
-                  .destinations[0]
-                  ?.name.toUpperCase() ??
-                'YOUR TRIP'
-              }
+              {tripDestinationLabel(
+                workspace.trip.destinations,
+              ).toUpperCase()}
             </Text>
 
             <Text
@@ -1894,7 +1894,7 @@ function BookingTimeEditor({
       <LocalTimeField
         label={`${label} TIME`}
         value={draft.time}
-        help="Stored as local wall-clock time with no implicit timezone conversion."
+        help="Saved as the local time shown at your destination. TravelOS does not shift it to another time zone."
         onChange={(time) =>
           onChange({ ...draft, time, edited: true })
         }

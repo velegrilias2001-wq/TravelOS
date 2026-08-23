@@ -225,6 +225,56 @@ test(
 );
 
 test(
+  'location-aware replacement upgrades a legacy destination while preserving trip identity and unrelated facts',
+  () => {
+    const trip = makeTrip();
+    const updated = buildUpdatedTrip(
+      trip,
+      makeInput({
+        accountingCurrency: 'EUR',
+        destinations: [
+          {
+            id: 'destination-1',
+            name: 'Tokyo',
+          },
+          {
+            id: 'destination-2',
+            name: 'Athens, Greece',
+            replacement: {
+              name: 'Athens, Greece',
+              countryCode: 'GR',
+              latitude: 37.9838,
+              longitude: 23.7275,
+            },
+          },
+        ],
+      }),
+      false,
+      UPDATED_AT,
+    );
+
+    assert.equal(updated.id, trip.id);
+    assert.equal(updated.destinations[1].id, 'destination-2');
+    assert.deepEqual(
+      updated.destinations.map(({ id }) => id),
+      ['destination-1', 'destination-2'],
+    );
+    assert.deepEqual(updated.destinations[1], {
+      id: 'destination-2',
+      name: 'Athens, Greece',
+      countryCode: 'GR',
+      latitude: 37.9838,
+      longitude: 23.7275,
+      timezone: undefined,
+      currencyCode: undefined,
+    });
+    assert.deepEqual(updated.travelerIds, ['traveler-1']);
+    assert.equal(updated.accountingCurrency, 'EUR');
+    assert.equal(updated.createdAt, CREATED_AT);
+  },
+);
+
+test(
   'trip updates persist atomically while preserving destination metadata and traveler links',
   async () => {
     const database =

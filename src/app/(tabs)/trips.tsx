@@ -9,6 +9,9 @@ import {
 
 import { Screen } from '@/components/ui/screen';
 import type { Trip } from '@/domain/entities';
+import {
+  tripDestinationLabel,
+} from '@/services/destination-authoring';
 import { useTripStore } from '@/store/trip-store';
 
 import {
@@ -134,8 +137,11 @@ export default function TripsScreen() {
               </View>
 
               <Text style={styles.destination}>
-                {trip.destinations[0]?.name ??
-                  'Destination'}
+                {trip.destinations.length === 0
+                  ? 'Destination'
+                  : tripDestinationLabel(
+                      trip.destinations,
+                    )}
               </Text>
 
               <Text style={styles.tripTitle}>

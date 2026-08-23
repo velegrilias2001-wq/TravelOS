@@ -43,6 +43,9 @@ import {
   buildItineraryStopContexts,
 } from '@/services/booking-stop-relationship';
 import {
+  tripDestinationLabel,
+} from '@/services/destination-authoring';
+import {
   calendarDateFromPickerValue,
   formatCalendarDateForDisplay,
   localTimeFromPickerValue,
@@ -471,8 +474,9 @@ export default function AccommodationScreen() {
         <View style={styles.header}>
           <View style={styles.headerCopy}>
             <Text style={styles.eyebrow}>
-              {workspace.trip.destinations[0]?.name.toUpperCase() ??
-                'YOUR TRIP'}
+              {tripDestinationLabel(
+                workspace.trip.destinations,
+              ).toUpperCase()}
             </Text>
             <Text style={styles.title}>Accommodation</Text>
             <Text style={styles.subtitle}>
@@ -702,7 +706,7 @@ export default function AccommodationScreen() {
             color={colors.brass}
           />
           <Text style={styles.truthNoteText}>
-            Stay times are stored as destination-local wall times. TravelOS does not convert them until trip timezone rules exist.
+            Stay times remain exactly as entered for the destination. TravelOS does not shift them to another time zone.
           </Text>
         </View>
         <View style={styles.bottomSpace} />
@@ -951,7 +955,7 @@ export default function AccommodationScreen() {
                 color={colors.brass}
               />
               <Text style={styles.localTimeNoteText}>
-                Enter the local wall time shown by the accommodation. No timezone conversion is applied.
+                Enter the time shown by the accommodation. TravelOS will keep it exactly as entered.
               </Text>
             </View>
 

@@ -8,4 +8,5 @@ export * from './booking-stop-relationship';
 export * from './booking-time';
 export * from './stop-time';
 export * from './time-truth';
+export * from './destination-authoring';
 export * from './trip-creation';

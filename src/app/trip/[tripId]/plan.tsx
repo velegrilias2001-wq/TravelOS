@@ -47,6 +47,10 @@ import {
 import {
   bookingsLinkedToStop,
 } from '@/services/booking-stop-relationship';
+import {
+  singleMappedDestinationCoordinate,
+  tripDestinationLabel,
+} from '@/services/destination-authoring';
 
 import {
   colors,
@@ -346,20 +350,21 @@ export default function PlanScreen() {
         return;
       }
 
-      const destination =
-        workspace.trip
-          .destinations[0];
+      const destinationCoordinate =
+        singleMappedDestinationCoordinate(
+          workspace.trip.destinations,
+        );
 
       const initialLatitude =
         pickedLocation
           ?.latitude ??
-        destination
+        destinationCoordinate
           ?.latitude;
 
       const initialLongitude =
         pickedLocation
           ?.longitude ??
-        destination
+        destinationCoordinate
           ?.longitude;
 
       try {
@@ -742,10 +747,9 @@ export default function PlanScreen() {
               styles.eyebrow
             }
           >
-            {workspace.trip
-              .destinations[0]
-              ?.name.toUpperCase() ??
-              'YOUR TRIP'}
+            {tripDestinationLabel(
+              workspace.trip.destinations,
+            ).toUpperCase()}
           </Text>
 
           <Text
@@ -1576,7 +1580,7 @@ export default function PlanScreen() {
                 <LocalTimeField
                   label="TIME"
                   value={time}
-                  help="Optional local wall-clock time. TravelOS does not convert it through a timezone."
+                  help="Optional time shown at your destination. TravelOS does not shift it to another time zone."
                   onChange={(value) => {
                     setTime(value);
                     setTimeEdited(true);

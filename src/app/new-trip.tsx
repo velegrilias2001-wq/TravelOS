@@ -16,6 +16,12 @@ import {
 
 import { Screen } from '@/components/ui/screen';
 import { CalendarDateField } from '@/components/ui/native-date-time-fields';
+import {
+  DestinationPickerField,
+} from '@/features/destinations/destination-picker-field';
+import type {
+  DestinationSelection,
+} from '@/services/destination-authoring';
 import { buildNewTrip } from '@/services/trip-creation';
 import { useTripStore } from '@/store/trip-store';
 
@@ -38,7 +44,7 @@ export default function NewTripScreen() {
 
   const [title, setTitle] = useState('');
   const [destination, setDestination] =
-    useState('');
+    useState<DestinationSelection | null>(null);
 
   const [startDate, setStartDate] =
     useState('');
@@ -53,6 +59,14 @@ export default function NewTripScreen() {
     useState(false);
 
   const createTrip = async () => {
+    if (!destination) {
+      Alert.alert(
+        'Choose a destination',
+        'Select a real city, region or country from the map before creating this trip.',
+      );
+      return;
+    }
+
     const now = new Date().toISOString();
     let trip;
 
@@ -60,7 +74,7 @@ export default function NewTripScreen() {
       trip = buildNewTrip(
         {
           title,
-          destinationName: destination,
+          destination,
           startDate,
           endDate,
           accountingCurrency: currency,
@@ -76,7 +90,7 @@ export default function NewTripScreen() {
         'Check trip details',
         error instanceof Error
           ? error.message
-          : 'Add a trip name, destination and valid travel dates.',
+          : 'Add a trip name, choose a destination and check the travel dates.',
       );
       return;
     }
@@ -156,11 +170,10 @@ export default function NewTripScreen() {
             onChangeText={setTitle}
           />
 
-          <Field
-            label="DESTINATION"
-            placeholder="Tokyo, Japan"
-            value={destination}
-            onChangeText={setDestination}
+          <DestinationPickerField
+            destination={destination}
+            disabled={isSaving}
+            onSelect={setDestination}
           />
 
           <View style={styles.dateFields}>

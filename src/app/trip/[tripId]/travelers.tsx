@@ -37,6 +37,9 @@ import {
   travelerService,
 } from '@/services/traveler-service';
 import {
+  tripDestinationLabel,
+} from '@/services/destination-authoring';
+import {
   colors,
   fontFamily,
   fontSize,
@@ -279,8 +282,9 @@ export default function TravelersScreen() {
         <View style={styles.header}>
           <View style={styles.headerCopy}>
             <Text style={styles.eyebrow}>
-              {workspace.trip.destinations[0]?.name.toUpperCase() ??
-                'YOUR TRIP'}
+              {tripDestinationLabel(
+                workspace.trip.destinations,
+              ).toUpperCase()}
             </Text>
             <Text style={styles.title}>
               Travelers

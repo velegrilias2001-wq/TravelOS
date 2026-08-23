@@ -46,6 +46,10 @@ import {
 import {
   accommodationsLinkedToStop,
 } from '@/services/accommodation-details';
+import {
+  mappedDestinations,
+  tripDestinationLabel,
+} from '@/services/destination-authoring';
 
 import {
   colors,
@@ -150,55 +154,28 @@ export default function TripMapScreen() {
       [workspace],
     );
 
-  const destinationCoordinate =
-    useMemo<LatLng | null>(
-      () => {
-        const destination =
-          workspace?.trip
-            .destinations[0];
-
-        if (
-          !destination ||
-          typeof destination.latitude !==
-            'number' ||
-          typeof destination.longitude !==
-            'number'
-        ) {
-          return null;
-        }
-
-        return {
-          latitude:
-            destination.latitude,
-
-          longitude:
-            destination.longitude,
-        };
-      },
-      [workspace],
-    );
+  const destinationPoints = useMemo(
+    () =>
+      mappedDestinations(
+        workspace.trip.destinations,
+      ),
+    [workspace.trip.destinations],
+  );
 
   const allCoordinates =
     useMemo<LatLng[]>(
       () => {
-        const coordinates =
-          mappedStops.map(
-            (item) =>
-              item.coordinate,
-          );
-
-        if (
-          destinationCoordinate
-        ) {
-          coordinates.unshift(
-            destinationCoordinate,
-          );
-        }
-
-        return coordinates;
+        return [
+          ...destinationPoints.map(
+            (item) => item.coordinate,
+          ),
+          ...mappedStops.map(
+            (item) => item.coordinate,
+          ),
+        ];
       },
       [
-        destinationCoordinate,
+        destinationPoints,
         mappedStops,
       ],
     );
@@ -322,10 +299,9 @@ export default function TripMapScreen() {
   ]);
 
   const destinationName =
-    workspace.trip
-      .destinations[0]
-      ?.name ??
-    'Your trip';
+    tripDestinationLabel(
+      workspace.trip.destinations,
+    );
 
   return (
     <View style={styles.screen}>
@@ -344,19 +320,16 @@ export default function TripMapScreen() {
         toolbarEnabled={false}
         moveOnMarkerPress
       >
-        {destinationCoordinate && (
-          <Marker
-            coordinate={
-              destinationCoordinate
-            }
-            title={
-              destinationName
-            }
-            description="Trip destination"
-            pinColor={
-              colors.brass
-            }
-          />
+        {destinationPoints.map(
+          ({ destination, coordinate }) => (
+            <Marker
+              key={`destination-${destination.id}`}
+              coordinate={coordinate}
+              title={destination.name}
+              description="Trip destination"
+              pinColor={colors.brass}
+            />
+          ),
         )}
 
         {mappedStops.map(
@@ -509,7 +482,7 @@ export default function TripMapScreen() {
                     styles.emptyTitle
                   }
                 >
-                  No mapped places
+                  No mapped stops
                   yet
                 </Text>
 
@@ -518,12 +491,9 @@ export default function TripMapScreen() {
                     styles.emptyBody
                   }
                 >
-                  Your itinerary is
-                  ready. Locations
-                  will appear here
-                  as soon as they
-                  have real map
-                  coordinates.
+                  {destinationPoints.length > 0
+                    ? 'Your destination is mapped. Itinerary stops will appear here as soon as they have real map coordinates.'
+                    : 'Destinations and itinerary stops will appear here as soon as they have real map coordinates.'}
                 </Text>
               </View>
             </View>

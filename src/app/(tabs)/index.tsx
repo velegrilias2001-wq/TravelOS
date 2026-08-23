@@ -18,6 +18,9 @@ import {
 import { Screen } from '@/components/ui/screen';
 import type { Trip } from '@/domain/entities';
 import {
+  tripDestinationLabel,
+} from '@/services/destination-authoring';
+import {
   formatCalendarDateForDisplay,
   resolveTripRuntime,
   systemRuntimeClock,
@@ -53,18 +56,6 @@ function formatTripDates(trip: Trip): string {
   );
 
   return `${startLabel} — ${endLabel}`;
-}
-
-function destinationLabel(trip: Trip): string {
-  if (trip.destinations.length === 0) {
-    return 'Destination not set';
-  }
-
-  if (trip.destinations.length === 1) {
-    return trip.destinations[0].name;
-  }
-
-  return `${trip.destinations[0].name} +${trip.destinations.length - 1}`;
 }
 
 export default function HomeScreen() {
@@ -196,7 +187,11 @@ export default function HomeScreen() {
 
           <View style={styles.heroContent}>
             <Text style={styles.heroDestination}>
-              {destinationLabel(featuredTrip)}
+              {featuredTrip.destinations.length === 0
+                ? 'Destination not set'
+                : tripDestinationLabel(
+                    featuredTrip.destinations,
+                  )}
             </Text>
 
             <Text

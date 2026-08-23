@@ -1,10 +1,14 @@
 import type { Trip } from '@/domain/entities';
 
+import {
+  applyDestinationSelection,
+  type DestinationSelection,
+} from './destination-authoring';
 import { validateCalendarDateRange } from './time-truth';
 
 export interface NewTripInput {
   title: string;
-  destinationName: string;
+  destination: DestinationSelection;
   startDate: string;
   endDate: string;
   accountingCurrency: string;
@@ -21,14 +25,12 @@ export function buildNewTrip(
   timestamp: string,
 ): Trip {
   const title = input.title.trim();
-  const destinationName =
-    input.destinationName.trim();
   const accountingCurrency =
     input.accountingCurrency.trim().toUpperCase();
 
-  if (!title || !destinationName) {
+  if (!title) {
     throw new Error(
-      'Trip name and destination are required',
+      'Trip name is required',
     );
   }
 
@@ -48,10 +50,10 @@ export function buildNewTrip(
     title,
     status: 'planned',
     destinations: [
-      {
-        id: identities.destinationId(),
-        name: destinationName,
-      },
+      applyDestinationSelection(
+        identities.destinationId(),
+        input.destination,
+      ),
     ],
     startDate: input.startDate,
     endDate: input.endDate,

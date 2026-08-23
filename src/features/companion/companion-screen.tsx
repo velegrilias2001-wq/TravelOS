@@ -104,13 +104,13 @@ function stopIcon(
 function timeZoneFallbackCopy(reason: TripTimeZoneReason): string {
   switch (reason) {
     case 'ambiguous-destination-timezones':
-      return 'Destination timezones differ. Companion uses this device for the trip date and keeps today’s stops in Plan order.';
+      return 'Live timing is not available across these destinations yet. Today’s plan stays in your saved order.';
     case 'invalid-destination-timezone':
-      return 'A saved destination timezone needs review. Companion will not guess what is happening now.';
+      return 'Live timing is not available for this trip yet. Today’s plan stays in your saved order.';
     case 'no-destination':
-      return 'No destination timezone is saved. Companion uses this device for the trip date and keeps today’s stops in Plan order.';
+      return 'Choose a destination to unlock live trip timing.';
     default:
-      return 'Destination timezone is not saved. Companion uses this device for the trip date and keeps today’s stops in Plan order.';
+      return 'Add destination details to unlock live trip timing. Today’s plan stays in your saved order.';
   }
 }
 
@@ -192,7 +192,7 @@ export function CompanionScreen() {
           <TruthNotice
             icon="shield-checkmark-outline"
             brass
-            body={`Saved workflow status is ${selection.runtime.persistedStatus}; Companion follows the ${selection.runtime.phase} calendar phase.`}
+            body="Trip status and travel dates differ. Companion follows your travel dates."
           />
         )}
       </View>
@@ -376,7 +376,7 @@ function Active({
       {!selection.timingReliable && selection.stopContexts.length > 0 && (
         <TruthNotice
           icon="reorder-three-outline"
-          body="Exact now/next cannot be proven from saved timezone truth. The timeline remains in canonical Plan order."
+          body="Live now and next timing is not available yet. Today’s plan stays in your saved order."
         />
       )}
       {selection.timingReliable &&

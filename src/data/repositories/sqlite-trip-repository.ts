@@ -3,7 +3,6 @@ import { travelOSDatabase } from '../database/expo-sqlite-database';
 
 import type {
   Trip,
-  TripDestination,
   TripId,
   TripStatus,
 } from '../../domain/entities/trip';
@@ -25,6 +24,9 @@ import {
   reorderTripStops,
   saveCanonicalTrip,
 } from './trip-persistence-operations';
+import {
+  loadTripDestinations,
+} from './trip-destination-persistence';
 
 interface TripRow {
   id: string;
@@ -35,16 +37,6 @@ interface TripRow {
   accounting_currency: string;
   created_at: string;
   updated_at: string;
-}
-
-interface DestinationRow {
-  id: string;
-  name: string;
-  country_code: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  timezone: string | null;
-  currency_code: string | null;
 }
 
 interface TravelerLinkRow {
@@ -166,21 +158,9 @@ export class SQLiteTripRepository
     row: TripRow,
   ): Promise<Trip> {
     const destinations =
-      await this.database.query<DestinationRow>(
-        `
-          SELECT
-            id,
-            name,
-            country_code,
-            latitude,
-            longitude,
-            timezone,
-            currency_code
-          FROM trip_destinations
-          WHERE trip_id = ?
-          ORDER BY position ASC;
-        `,
-        [row.id],
+      await loadTripDestinations(
+        this.database,
+        row.id,
       );
 
     const travelers =
@@ -198,34 +178,7 @@ export class SQLiteTripRepository
       title: row.title,
       status: row.status as TripStatus,
 
-      destinations: destinations.map(
-        (
-          destination,
-        ): TripDestination => ({
-          id: destination.id,
-          name: destination.name,
-
-          countryCode: optional(
-            destination.country_code,
-          ),
-
-          latitude: optional(
-            destination.latitude,
-          ),
-
-          longitude: optional(
-            destination.longitude,
-          ),
-
-          timezone: optional(
-            destination.timezone,
-          ),
-
-          currencyCode: optional(
-            destination.currency_code,
-          ),
-        }),
-      ),
+      destinations,
 
       startDate: row.start_date,
       endDate: row.end_date,

@@ -5,20 +5,26 @@ import type {
 } from '@/domain/entities';
 
 import {
+  applyDestinationSelection,
+  destinationAuthoringKind,
+  type DestinationSelection,
+} from './destination-authoring';
+import {
   isCanonicalDateKey,
   validateCalendarDateRange,
 } from './time-truth';
 
 export { isCanonicalDateKey };
 
-export interface TripDestinationNameInput {
+export interface TripDestinationEditInput {
   id: string;
   name: string;
+  replacement?: DestinationSelection;
 }
 
 export interface TripDetailsInput {
   title: string;
-  destinations: TripDestinationNameInput[];
+  destinations: TripDestinationEditInput[];
   startDate: string;
   endDate: string;
   accountingCurrency: string;
@@ -43,13 +49,7 @@ export function validateTripDateRange(
 export function hasStructuredDestinationMetadata(
   destination: TripDestination,
 ): boolean {
-  return (
-    destination.countryCode !== undefined ||
-    destination.latitude !== undefined ||
-    destination.longitude !== undefined ||
-    destination.timezone !== undefined ||
-    destination.currencyCode !== undefined
-  );
+  return destinationAuthoringKind(destination) !== 'manual';
 }
 
 export function buildUpdatedTrip(
@@ -117,6 +117,13 @@ export function buildUpdatedTrip(
         ) {
           throw new Error(
             'Destination identity or order changed unexpectedly',
+          );
+        }
+
+        if (update.replacement) {
+          return applyDestinationSelection(
+            destination.id,
+            update.replacement,
           );
         }
 
