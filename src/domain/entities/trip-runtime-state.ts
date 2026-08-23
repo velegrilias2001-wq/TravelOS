@@ -10,6 +10,10 @@ export type TripRuntimePhase =
 export interface TripRuntimeState {
   tripId: TripId;
 
+  /**
+   * Persisted companion progress only. Deterministic upcoming/active/completed
+   * truth is derived independently from Trip dates and timezone resolution.
+   */
   phase: TripRuntimePhase;
 
   currentDayId?: TripDayId;

@@ -39,7 +39,7 @@ export interface TripStop {
   location?: TripStopLocation;
 
   /**
-   * Local time in HH:mm format.
+   * Local wall-clock time in HH:mm. No timezone conversion is applied.
    */
   startTime?: string;
   endTime?: string;
@@ -47,7 +47,7 @@ export interface TripStop {
   notes?: string;
 
   /**
-   * ISO timestamps.
+   * True ISO instants used only for persistence metadata.
    */
   createdAt: string;
   updatedAt: string;

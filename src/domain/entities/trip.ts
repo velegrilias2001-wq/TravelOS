@@ -29,13 +29,17 @@ export interface Trip {
   id: TripId;
 
   title: string;
+  /**
+   * Durable organizational status. Live journey phase is derived from
+   * calendar dates and explicit timezone truth, never from this field.
+   */
   status: TripStatus;
 
   destinations: TripDestination[];
 
   /**
-   * ISO date format:
-   * YYYY-MM-DD
+   * Calendar dates in YYYY-MM-DD. These are not instants and must not be
+   * shifted through UTC or a device timezone.
    */
   startDate: string;
   endDate: string;
@@ -56,7 +60,7 @@ export interface Trip {
   accountingCurrency: string;
 
   /**
-   * ISO timestamps.
+   * True ISO instants used only for persistence metadata.
    */
   createdAt: string;
   updatedAt: string;

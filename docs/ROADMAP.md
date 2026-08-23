@@ -31,7 +31,7 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 
 - [ ] Decide and enforce remaining relationship invariants and cardinality for memories, runtime state, and other workspace aggregates. Booking ↔ Stop is explicitly zero-or-one from Booking and zero-to-many from TripStop; Accommodation is explicitly zero-to-many from Trip with optional zero-or-one Booking and TripStop links. Both relationship families enforce same-trip IDs.
 - [ ] Remove N+1 loading patterns from the trip list and other obvious aggregate reads.
-- [ ] Expand automated coverage for the remaining repository relationships/cascades and upcoming/active/completed trip-state logic. Booking/stop unlink cascades for Bookings and Accommodations are now covered.
+- [ ] Expand automated coverage for the remaining repository relationships/cascades. Booking/stop unlink cascades for Bookings and Accommodations are covered, and deterministic upcoming/active/completed runtime plus exact-day selection now have fixed-clock coverage.
 - [ ] Rehearse migration version 3 against Expo SQLite on an iOS development build.
 - [ ] Commit a non-interactive lint configuration and add baseline CI checks.
 
@@ -48,12 +48,13 @@ Goal: turn the current vertical prototype into a coherent pre-trip workspace.
 - [x] Add confirmed cascade deletion for trip-owned local data, workspace not-found transition, trip-list refresh, automated coverage, and Android runtime verification with isolated data.
 - [ ] Define a real FX-rate source, rate timestamp, conversion policy, user override, and provenance model before foreign currencies can enter accounting-currency totals.
 - [ ] Complete destination add/remove/reorder and location-aware replacement, then define how multi-destination truth is presented across Create Trip, Today, Plan, Map, and Bookings.
-- [ ] Replace free-form Create Trip and remaining booking/stop date-time fields with appropriate native inputs and domain validation.
+- [x] Replace free-form Create Trip dates, Booking start/end, and optional Stop time with native inputs and centralized calendar/local-time validation while preserving compatible historical Booking and Stop values.
 - [x] Implement Booking ↔ Stop linking by exact ID, including optional native link/relink/unlink UX, Plan/Today/Map context, zero-to-many reverse cardinality, same-trip validation, safe stop deletion, migration version 5, automated tests, and isolated Android verification.
 - [x] Implement native Accommodation management with multiple sorted stays, validated local date/time input, optional same-trip Booking and TripStop links by exact ID, lossless unlink/delete behavior, migration version 6, automated tests, and isolated Android verification.
 - [x] Implement native Traveler management with reusable canonical identities, exact-ID many-to-many Trip membership, atomic create-and-add, duplicate prevention, shared edits, membership-only removal, Trip-deletion preservation, TripWorkspace refresh, automated tests, and isolated Android verification.
 - [ ] Define Traveler owner identity, roles, invitations, permissions, reservation ownership, expense splitting, and when a Trip should transition from the current planning-time zero-or-many membership to a one-or-more party rule.
-- Define trip timezone, destination timezone behavior, and TripRuntimeState responsibilities.
+- [x] Define centralized date/time/runtime truth: canonical date-only Trip/TripDay values, local wall-clock Stop/Accommodation/new Booking values, preserved absolute historical Booking instants, injectable-clock runtime phase, exact active TripDay selection, explicit canonical-destination/device-fallback timezone provenance, and a separate future progress role for TripRuntimeState.
+- [ ] Add Day → Destination semantics before claiming fully timezone-aware multi-destination runtime behavior; never substitute destination order as temporal truth.
 - Improve booking actions, validation, payment state, and destructive-flow UX.
 - Define archive and user-data recovery expectations before deletion is considered release-ready.
 

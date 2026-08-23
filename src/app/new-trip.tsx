@@ -15,7 +15,8 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
-import type { Trip } from '@/domain/entities';
+import { CalendarDateField } from '@/components/ui/native-date-time-fields';
+import { buildNewTrip } from '@/services/trip-creation';
 import { useTripStore } from '@/store/trip-store';
 
 import {
@@ -52,60 +53,33 @@ export default function NewTripScreen() {
     useState(false);
 
   const createTrip = async () => {
-    const cleanTitle = title.trim();
-    const cleanDestination =
-      destination.trim();
-
-    if (
-      !cleanTitle ||
-      !cleanDestination ||
-      !startDate.trim() ||
-      !endDate.trim()
-    ) {
-      Alert.alert(
-        'Missing information',
-        'Add a trip name, destination and travel dates.',
-      );
-
-      return;
-    }
-
-    if (endDate < startDate) {
-      Alert.alert(
-        'Check your dates',
-        'The end date cannot be before the start date.',
-      );
-
-      return;
-    }
-
-    const tripId = Crypto.randomUUID();
     const now = new Date().toISOString();
+    let trip;
 
-    const trip: Trip = {
-      id: tripId,
-
-      title: cleanTitle,
-      status: 'planned',
-
-      destinations: [
+    try {
+      trip = buildNewTrip(
         {
-          id: Crypto.randomUUID(),
-          name: cleanDestination,
+          title,
+          destinationName: destination,
+          startDate,
+          endDate,
+          accountingCurrency: currency,
         },
-      ],
-
-      startDate: startDate.trim(),
-      endDate: endDate.trim(),
-
-      travelerIds: [],
-
-      accountingCurrency:
-        currency.trim().toUpperCase() || 'EUR',
-
-      createdAt: now,
-      updatedAt: now,
-    };
+        {
+          tripId: () => Crypto.randomUUID(),
+          destinationId: () => Crypto.randomUUID(),
+        },
+        now,
+      );
+    } catch (error) {
+      Alert.alert(
+        'Check trip details',
+        error instanceof Error
+          ? error.message
+          : 'Add a trip name, destination and valid travel dates.',
+      );
+      return;
+    }
 
     try {
       setIsSaving(true);
@@ -115,7 +89,7 @@ export default function NewTripScreen() {
       router.replace({
         pathname: '/trip/[tripId]',
         params: {
-          tripId,
+          tripId: trip.id,
         },
       });
     } catch {
@@ -189,25 +163,25 @@ export default function NewTripScreen() {
             onChangeText={setDestination}
           />
 
-          <View style={styles.dateRow}>
-            <View style={styles.dateField}>
-              <Field
-                label="START DATE"
-                placeholder="2026-09-01"
-                value={startDate}
-                onChangeText={setStartDate}
-              />
-            </View>
+          <View style={styles.dateFields}>
+            <CalendarDateField
+              label="START DATE"
+              value={startDate}
+              fallbackDate={endDate}
+              onChange={setStartDate}
+            />
 
-            <View style={styles.dateField}>
-              <Field
-                label="END DATE"
-                placeholder="2026-09-10"
-                value={endDate}
-                onChangeText={setEndDate}
-              />
-            </View>
+            <CalendarDateField
+              label="END DATE"
+              value={endDate}
+              fallbackDate={startDate}
+              onChange={setEndDate}
+            />
           </View>
+
+          <Text style={styles.dateNote}>
+            Travel dates are calendar days. They stay exactly as chosen and are never shifted through a timezone.
+          </Text>
 
           <Field
             label="ACCOUNTING CURRENCY"
@@ -394,13 +368,16 @@ const styles = StyleSheet.create({
     ...shadows.subtle,
   },
 
-  dateRow: {
-    flexDirection: 'row',
-    gap: spacing[3],
+  dateFields: {
+    gap: spacing[4],
   },
 
-  dateField: {
-    flex: 1,
+  dateNote: {
+    marginTop: -spacing[2],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: 18,
+    color: colors.textMuted,
   },
 
   currencyNote: {

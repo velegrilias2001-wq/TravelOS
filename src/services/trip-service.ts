@@ -28,6 +28,14 @@ import {
 import {
   validateBookingStopRelationship,
 } from './booking-stop-relationship';
+import {
+  validateBookingTimeUpdate,
+  validateNewBookingTimes,
+} from './booking-time';
+import {
+  validateNewStopTimes,
+  validateStopTimeUpdate,
+} from './stop-time';
 
 export interface TripWorkspace {
   trip: Trip;
@@ -134,12 +142,22 @@ export class TripService {
   async addStop(
     stop: TripStop,
   ): Promise<void> {
+    validateNewStopTimes(stop);
     await this.repo.trip.saveStop(stop);
   }
 
   async updateStop(
     stop: TripStop,
   ): Promise<void> {
+    const existing =
+      await this.repo.trip.getStopById(stop.id);
+
+    if (!existing) {
+      throw new Error('Itinerary stop was not found');
+    }
+
+    validateStopTimeUpdate(existing, stop);
+
     await this.repo.trip.saveStop({
       ...stop,
       updatedAt:
@@ -175,6 +193,7 @@ export class TripService {
   async addBooking(
     booking: Booking,
   ): Promise<void> {
+    validateNewBookingTimes(booking);
     await this.validateBookingStop(booking);
 
     await this.repo.booking.save(
@@ -185,6 +204,14 @@ export class TripService {
   async updateBooking(
     booking: Booking,
   ): Promise<void> {
+    const existing =
+      await this.repo.booking.getById(booking.id);
+
+    if (!existing) {
+      throw new Error('Booking was not found');
+    }
+
+    validateBookingTimeUpdate(existing, booking);
     await this.validateBookingStop(booking);
 
     await this.repo.booking.save({

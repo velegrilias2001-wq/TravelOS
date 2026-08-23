@@ -7,6 +7,12 @@ import type {
   TripStopId,
 } from '@/domain/entities';
 
+import {
+  combineLocalDateTime,
+  isCanonicalLocalDateTime,
+  parseCompatibleLocalDateTime,
+} from './time-truth';
+
 export const ACCOMMODATION_TYPES: AccommodationType[] = [
   'hotel',
   'apartment',
@@ -41,56 +47,10 @@ function optionalText(
   return value?.trim() || undefined;
 }
 
-function parseLocalDateTime(
-  value: string,
-): {
-  date: string;
-  time: string;
-} | null {
-  const match =
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})?$/.exec(
-      value,
-    );
-
-  if (!match) {
-    return null;
-  }
-
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const hour = Number(match[4]);
-  const minute = Number(match[5]);
-  const date = new Date(
-    Date.UTC(year, month - 1, day),
-  );
-
-  if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== month - 1 ||
-    date.getUTCDate() !== day ||
-    hour < 0 ||
-    hour > 23 ||
-    minute < 0 ||
-    minute > 59
-  ) {
-    return null;
-  }
-
-  return {
-    date: `${match[1]}-${match[2]}-${match[3]}`,
-    time: `${match[4]}:${match[5]}`,
-  };
-}
-
 export function isCanonicalAccommodationDateTime(
   value: string,
 ): boolean {
-  return (
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00$/.test(
-      value,
-    ) && parseLocalDateTime(value) !== null
-  );
+  return isCanonicalLocalDateTime(value);
 }
 
 export function splitAccommodationDateTime(
@@ -99,22 +59,24 @@ export function splitAccommodationDateTime(
   date: string;
   time: string;
 } | null {
-  return value ? parseLocalDateTime(value) : null;
+  const parsed = value
+    ? parseCompatibleLocalDateTime(value)
+    : null;
+
+  return parsed
+    ? { date: parsed.date, time: parsed.time }
+    : null;
 }
 
 export function combineAccommodationDateTime(
   date: string,
   time: string,
 ): string {
-  const value = `${date}T${time}:00`;
-
-  if (!isCanonicalAccommodationDateTime(value)) {
-    throw new Error(
-      'Stay date and time must be valid',
-    );
+  try {
+    return combineLocalDateTime(date, time);
+  } catch {
+    throw new Error('Stay date and time must be valid');
   }
-
-  return value;
 }
 
 export function cleanAccommodationInput(
@@ -139,7 +101,7 @@ export function cleanAccommodationInput(
 
   if (
     checkInAt &&
-    !parseLocalDateTime(checkInAt)
+    !parseCompatibleLocalDateTime(checkInAt)
   ) {
     throw new Error(
       'Check-in must use a valid local date and time',
@@ -148,7 +110,7 @@ export function cleanAccommodationInput(
 
   if (
     checkOutAt &&
-    !parseLocalDateTime(checkOutAt)
+    !parseCompatibleLocalDateTime(checkOutAt)
   ) {
     throw new Error(
       'Check-out must use a valid local date and time',

@@ -5,3 +5,7 @@ export * from './traveler-details';
 export * from './traveler-service';
 export * from './trip-service';
 export * from './booking-stop-relationship';
+export * from './booking-time';
+export * from './stop-time';
+export * from './time-truth';
+export * from './trip-creation';

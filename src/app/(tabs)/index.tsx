@@ -1,6 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import {
+  useFocusEffect,
+  useRouter,
+} from 'expo-router';
+import {
+  useCallback,
+  useMemo,
+  useState,
+} from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -10,6 +17,11 @@ import {
 
 import { Screen } from '@/components/ui/screen';
 import type { Trip } from '@/domain/entities';
+import {
+  formatCalendarDateForDisplay,
+  resolveTripRuntime,
+  systemRuntimeClock,
+} from '@/services/time-truth';
 import { useTripStore } from '@/store/trip-store';
 import {
   colors,
@@ -23,19 +35,22 @@ import {
 } from '@/theme';
 
 function formatTripDates(trip: Trip): string {
-  const start = new Date(`${trip.startDate}T12:00:00`);
-  const end = new Date(`${trip.endDate}T12:00:00`);
-
-  const startLabel = start.toLocaleDateString('en-GB', {
+  const startLabel = formatCalendarDateForDisplay(
+    trip.startDate,
+    {
     day: 'numeric',
     month: 'short',
-  });
+    },
+  );
 
-  const endLabel = end.toLocaleDateString('en-GB', {
+  const endLabel = formatCalendarDateForDisplay(
+    trip.endDate,
+    {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-  });
+    },
+  );
 
   return `${startLabel} — ${endLabel}`;
 }
@@ -63,29 +78,59 @@ export default function HomeScreen() {
     (state) => state.isLoading,
   );
 
-  const featuredTrip = useMemo(() => {
-    const active = trips.find(
-      (trip) => trip.status === 'active',
-    );
+  const [runtimeRevision, setRuntimeRevision] =
+    useState(0);
 
-    if (active) {
-      return active;
-    }
+  useFocusEffect(
+    useCallback(() => {
+      setRuntimeRevision((current) => current + 1);
+    }, []),
+  );
 
-    return trips
-      .filter(
-        (trip) =>
-          trip.status === 'planned' ||
-          trip.status === 'draft',
-      )
-      .sort((a, b) =>
-        a.startDate.localeCompare(b.startDate),
-      )[0];
-  }, [trips]);
+  const runtimeSummary = useMemo(() => {
+    const instant = systemRuntimeClock.now();
+    const deviceZone =
+      systemRuntimeClock.deviceTimeZone();
+    const clock = {
+      now: () => instant,
+      deviceTimeZone: () => deviceZone,
+    };
+    const records = trips
+      .filter((trip) => trip.status !== 'archived')
+      .map((trip) => ({
+        trip,
+        runtime: resolveTripRuntime(trip, [], clock),
+      }));
 
-  const completedTrips = trips.filter(
-    (trip) => trip.status === 'completed',
-  ).length;
+    const featured =
+      records.find(
+        ({ runtime }) => runtime.phase === 'active',
+      ) ??
+      records
+        .filter(
+          ({ runtime }) =>
+            runtime.phase === 'upcoming',
+        )
+        .sort((a, b) =>
+          a.trip.startDate.localeCompare(
+            b.trip.startDate,
+          ),
+        )[0];
+
+    return {
+      featured,
+      completedCount: trips.filter(
+        (trip) => trip.status === 'completed',
+      ).length,
+    };
+  }, [runtimeRevision, trips]);
+
+  const featuredTrip =
+    runtimeSummary.featured?.trip;
+  const featuredPhase =
+    runtimeSummary.featured?.runtime.phase;
+  const completedTrips =
+    runtimeSummary.completedCount;
 
   const openTrip = (trip: Trip) => {
     router.push({
@@ -136,7 +181,7 @@ export default function HomeScreen() {
               <View style={styles.statusDot} />
 
               <Text style={styles.statusText}>
-                {featuredTrip.status === 'active'
+                {featuredPhase === 'active'
                   ? 'HAPPENING NOW'
                   : 'UP NEXT'}
               </Text>

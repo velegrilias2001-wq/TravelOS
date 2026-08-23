@@ -25,6 +25,10 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
+import {
+  CalendarDateField,
+  LocalTimeField,
+} from '@/components/ui/native-date-time-fields';
 
 import type {
   Booking,
@@ -42,6 +46,12 @@ import {
 import {
   accommodationsLinkedToBooking,
 } from '@/services/accommodation-details';
+import {
+  combineBookingLocalDateTime,
+  formatBookingTemporalValue,
+  parseBookingTemporalValue,
+} from '@/services/booking-time';
+import { formatCalendarDateForDisplay } from '@/services/time-truth';
 
 import {
   colors,
@@ -145,34 +155,91 @@ function getBookingIcon(
 function formatDateTime(
   value?: string,
 ): string | null {
+  return formatBookingTemporalValue(value);
+}
+
+interface BookingTimeDraft {
+  mode: 'local' | 'preserved';
+  original?: string;
+  date: string;
+  time: string;
+  edited: boolean;
+  kind?: 'absolute-instant' | 'invalid';
+}
+
+function bookingTimeDraft(
+  value?: string,
+): BookingTimeDraft {
   if (!value) {
-    return null;
+    return {
+      mode: 'local',
+      date: '',
+      time: '',
+      edited: false,
+    };
   }
 
-  const date = new Date(value);
+  const parsed = parseBookingTemporalValue(value);
 
-  if (Number.isNaN(date.getTime())) {
-    return value;
+  if (
+    parsed.kind === 'local-wall-time' &&
+    parsed.date &&
+    parsed.time
+  ) {
+    return {
+      mode: 'local',
+      original: value,
+      date: parsed.date,
+      time: parsed.time,
+      edited: false,
+    };
   }
 
-  return date.toLocaleString(
-    'en-GB',
-    {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    },
+  return {
+    mode: 'preserved',
+    original: value,
+    date: '',
+    time: '',
+    edited: false,
+    kind:
+      parsed.kind === 'absolute-instant'
+        ? 'absolute-instant'
+        : 'invalid',
+  };
+}
+
+function bookingValueFromDraft(
+  draft: BookingTimeDraft,
+  label: string,
+): string | undefined {
+  if (draft.mode === 'preserved') {
+    return draft.original;
+  }
+
+  if (!draft.edited && draft.original) {
+    return draft.original;
+  }
+
+  if (!draft.date && !draft.time) {
+    return undefined;
+  }
+
+  if (!draft.date || !draft.time) {
+    throw new Error(
+      `Choose both a ${label.toLowerCase()} date and time, or clear both`,
+    );
+  }
+
+  return combineBookingLocalDateTime(
+    draft.date,
+    draft.time,
   );
 }
 
 function formatStopDate(
   value: string,
 ): string {
-  return new Date(
-    `${value}T12:00:00`,
-  ).toLocaleDateString('en-GB', {
+  return formatCalendarDateForDisplay(value, {
     day: 'numeric',
     month: 'short',
   });
@@ -266,17 +333,15 @@ export default function BookingsScreen() {
     setStopPickerOpen,
   ] = useState(false);
 
-  const [
-    startAt,
-    setStartAt,
-  ] =
-    useState('');
+  const [startDraft, setStartDraft] =
+    useState<BookingTimeDraft>(() =>
+      bookingTimeDraft(),
+    );
 
-  const [
-    endAt,
-    setEndAt,
-  ] =
-    useState('');
+  const [endDraft, setEndDraft] =
+    useState<BookingTimeDraft>(() =>
+      bookingTimeDraft(),
+    );
 
   const [
     amount,
@@ -328,8 +393,8 @@ export default function BookingsScreen() {
     setStopId(undefined);
     setStopPickerOpen(false);
 
-    setStartAt('');
-    setEndAt('');
+    setStartDraft(bookingTimeDraft());
+    setEndDraft(bookingTimeDraft());
 
     setAmount('');
 
@@ -379,12 +444,12 @@ export default function BookingsScreen() {
     setStopId(booking.stopId);
     setStopPickerOpen(false);
 
-    setStartAt(
-      booking.startAt ?? '',
+    setStartDraft(
+      bookingTimeDraft(booking.startAt),
     );
 
-    setEndAt(
-      booking.endAt ?? '',
+    setEndDraft(
+      bookingTimeDraft(booking.endAt),
     );
 
     setAmount(
@@ -508,6 +573,15 @@ export default function BookingsScreen() {
       try {
         setIsSaving(true);
 
+        const startAt = bookingValueFromDraft(
+          startDraft,
+          'Booking start',
+        );
+        const endAt = bookingValueFromDraft(
+          endDraft,
+          'Booking end',
+        );
+
         if (editingBooking) {
           await actions.updateBooking(
             {
@@ -529,13 +603,9 @@ export default function BookingsScreen() {
 
               stopId,
 
-              startAt:
-                startAt.trim() ||
-                undefined,
+              startAt,
 
-              endAt:
-                endAt.trim() ||
-                undefined,
+              endAt,
 
               amount:
                 parsedAmount,
@@ -579,13 +649,9 @@ export default function BookingsScreen() {
 
               stopId,
 
-              startAt:
-                startAt.trim() ||
-                undefined,
+              startAt,
 
-              endAt:
-                endAt.trim() ||
-                undefined,
+              endAt,
 
               amount:
                 parsedAmount,
@@ -630,7 +696,9 @@ export default function BookingsScreen() {
             'itinerary stop',
           )
             ? 'The selected itinerary stop is no longer available for this trip. Choose another stop or leave the booking unlinked.'
-            : 'Please try again.',
+            : error instanceof Error
+              ? error.message
+              : 'Please try again.',
         );
       } finally {
         setIsSaving(false);
@@ -1577,24 +1645,18 @@ export default function BookingsScreen() {
                 Links use the exact itinerary stop. TravelOS never matches bookings by name or location text.
               </Text>
 
-              <Field
-                label="START"
-                placeholder="2026-09-01T10:30:00"
-                value={startAt}
-                onChangeText={
-                  setStartAt
-                }
-                autoCapitalize="none"
+              <BookingTimeEditor
+                label="BOOKING START"
+                draft={startDraft}
+                fallbackDate={workspace.trip.startDate}
+                onChange={setStartDraft}
               />
 
-              <Field
-                label="END"
-                placeholder="2026-09-01T14:30:00"
-                value={endAt}
-                onChangeText={
-                  setEndAt
-                }
-                autoCapitalize="none"
+              <BookingTimeEditor
+                label="BOOKING END"
+                draft={endDraft}
+                fallbackDate={workspace.trip.endDate}
+                onChange={setEndDraft}
               />
 
               <View
@@ -1733,6 +1795,126 @@ export default function BookingsScreen() {
         </View>
       </Modal>
     </>
+  );
+}
+
+function BookingTimeEditor({
+  label,
+  draft,
+  fallbackDate,
+  onChange,
+}: {
+  label: string;
+  draft: BookingTimeDraft;
+  fallbackDate: string;
+  onChange(value: BookingTimeDraft): void;
+}) {
+  if (draft.mode === 'preserved') {
+    return (
+      <View style={styles.temporalField}>
+        <Text style={styles.fieldLabel}>{label}</Text>
+        <View style={styles.preservedTimeCard}>
+          <View style={styles.preservedTimeHeader}>
+            <Ionicons
+              name={
+                draft.kind === 'absolute-instant'
+                  ? 'globe-outline'
+                  : 'warning-outline'
+              }
+              size={20}
+              color={
+                draft.kind === 'absolute-instant'
+                  ? colors.teal
+                  : colors.warning
+              }
+            />
+            <Text style={styles.preservedTimeTitle}>
+              {draft.kind === 'absolute-instant'
+                ? 'Saved absolute instant'
+                : 'Saved time needs review'}
+            </Text>
+          </View>
+          <Text style={styles.preservedTimeValue}>
+            {draft.original}
+          </Text>
+          <Text style={styles.preservedTimeBody}>
+            {draft.kind === 'absolute-instant'
+              ? 'This historical value includes UTC or an explicit offset. TravelOS will preserve it exactly unless you replace or clear it.'
+              : 'TravelOS cannot safely interpret this historical value. It remains untouched unless you intentionally replace or clear it.'}
+          </Text>
+          <View style={styles.preservedTimeActions}>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.timeActionPrimary}
+              onPress={() =>
+                onChange({
+                  mode: 'local',
+                  date: '',
+                  time: '',
+                  edited: true,
+                })
+              }
+            >
+              <Text style={styles.timeActionPrimaryText}>
+                Replace with local time
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.timeActionSecondary}
+              onPress={() =>
+                onChange({
+                  mode: 'local',
+                  date: '',
+                  time: '',
+                  edited: true,
+                })
+              }
+            >
+              <Text style={styles.timeActionSecondaryText}>
+                Clear
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.temporalField}>
+      <CalendarDateField
+        label={`${label} DATE`}
+        value={draft.date}
+        fallbackDate={fallbackDate}
+        onChange={(date) =>
+          onChange({ ...draft, date, edited: true })
+        }
+      />
+      <LocalTimeField
+        label={`${label} TIME`}
+        value={draft.time}
+        help="Stored as local wall-clock time with no implicit timezone conversion."
+        onChange={(time) =>
+          onChange({ ...draft, time, edited: true })
+        }
+        onClear={() =>
+          onChange({ ...draft, time: '', edited: true })
+        }
+      />
+      {(draft.date || draft.time) && (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() =>
+            onChange(bookingTimeDraft())
+          }
+        >
+          <Text style={styles.clearTemporalValue}>
+            CLEAR DATE AND TIME
+          </Text>
+        </Pressable>
+      )}
+    </View>
   );
 }
 
@@ -2602,6 +2784,93 @@ const styles =
       fontSize: fontSize.caption,
       lineHeight: lineHeight.caption,
       color: colors.textMuted,
+    },
+
+    temporalField: {
+      gap: spacing[4],
+      marginBottom: spacing[6],
+      padding: spacing[4],
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.backgroundSoft,
+    },
+
+    preservedTimeCard: {
+      gap: spacing[3],
+      padding: spacing[4],
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+
+    preservedTimeHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+    },
+
+    preservedTimeTitle: {
+      fontFamily: fontFamily.sansSemiBold,
+      fontSize: fontSize.bodySmall,
+      color: colors.textPrimary,
+    },
+
+    preservedTimeValue: {
+      fontFamily: fontFamily.sansMedium,
+      fontSize: fontSize.caption,
+      color: colors.textPrimary,
+    },
+
+    preservedTimeBody: {
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+      color: colors.textSecondary,
+    },
+
+    preservedTimeActions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+    },
+
+    timeActionPrimary: {
+      minHeight: 40,
+      justifyContent: 'center',
+      paddingHorizontal: spacing[3],
+      borderRadius: radius.pill,
+      backgroundColor: colors.brand,
+    },
+
+    timeActionPrimaryText: {
+      fontFamily: fontFamily.sansSemiBold,
+      fontSize: fontSize.caption,
+      color: colors.textInverse,
+    },
+
+    timeActionSecondary: {
+      minHeight: 40,
+      justifyContent: 'center',
+      paddingHorizontal: spacing[3],
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+
+    timeActionSecondaryText: {
+      fontFamily: fontFamily.sansSemiBold,
+      fontSize: fontSize.caption,
+      color: colors.textSecondary,
+    },
+
+    clearTemporalValue: {
+      alignSelf: 'flex-end',
+      fontFamily: fontFamily.sansBold,
+      fontSize: fontSize.micro,
+      letterSpacing: 1,
+      color: colors.brand,
     },
 
     input: {

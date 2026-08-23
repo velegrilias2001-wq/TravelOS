@@ -1,6 +1,3 @@
-import DateTimePicker, {
-  DateTimePickerAndroid,
-} from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -16,6 +13,7 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
+import { CalendarDateField } from '@/components/ui/native-date-time-fields';
 import type {
   TripDestination,
   TripStatus,
@@ -26,7 +24,6 @@ import {
 } from '@/features/trip-workspace/trip-workspace-context';
 import {
   hasStructuredDestinationMetadata,
-  isCanonicalDateKey,
   validateTripDateRange,
   type TripDestinationNameInput,
 } from '@/services/trip-details';
@@ -71,55 +68,6 @@ const STATUS_OPTIONS: Array<{
     description: 'Kept out of the way',
   },
 ];
-
-function toDateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(
-    date.getMonth() + 1,
-  ).padStart(2, '0');
-  const day = String(date.getDate()).padStart(
-    2,
-    '0',
-  );
-
-  return `${year}-${month}-${day}`;
-}
-
-function fromDateKey(value: string): Date {
-  if (!isCanonicalDateKey(value)) {
-    return new Date();
-  }
-
-  const match =
-    /^(\d{4})-(\d{2})-(\d{2})$/.exec(
-      value,
-    );
-
-  if (!match) {
-    return new Date();
-  }
-
-  return new Date(
-    Number(match[1]),
-    Number(match[2]) - 1,
-    Number(match[3]),
-  );
-}
-
-function formatDate(value: string): string {
-  if (!isCanonicalDateKey(value)) {
-    return 'Saved date needs review';
-  }
-
-  return fromDateKey(value).toLocaleDateString(
-    'en-GB',
-    {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    },
-  );
-}
 
 function destinationMetadata(
   destination: TripDestination,
@@ -177,8 +125,6 @@ export default function TripDetailsScreen() {
     useState(trip.accountingCurrency);
   const [status, setStatus] =
     useState<TripStatus>(trip.status);
-  const [iosDateField, setIOSDateField] =
-    useState<'start' | 'end' | null>(null);
   const [isSaving, setIsSaving] =
     useState(false);
   const [isDeleting, setIsDeleting] =
@@ -198,48 +144,6 @@ export default function TripDetailsScreen() {
           : destination,
       ),
     );
-  };
-
-  const handleDateChange = (
-    field: 'start' | 'end',
-    selectedDate: Date,
-  ) => {
-    const value = toDateKey(selectedDate);
-    setShowSavedNotice(false);
-
-    if (field === 'start') {
-      setStartDate(value);
-    } else {
-      setEndDate(value);
-    }
-  };
-
-  const openDatePicker = (
-    field: 'start' | 'end',
-  ) => {
-    const value = fromDateKey(
-      field === 'start'
-        ? startDate
-        : endDate,
-    );
-
-    if (Platform.OS === 'android') {
-      DateTimePickerAndroid.open({
-        value,
-        mode: 'date',
-        onValueChange: (
-          _event,
-          selectedDate,
-        ) =>
-          handleDateChange(
-            field,
-            selectedDate,
-          ),
-      });
-      return;
-    }
-
-    setIOSDateField(field);
   };
 
   const save = async () => {
@@ -505,6 +409,10 @@ export default function TripDetailsScreen() {
               );
             })}
           </View>
+
+          <Text style={styles.fieldHelp}>
+            Status is an organizational choice. Today derives live upcoming, active and completed truth from the saved travel dates and an explicit timezone resolution; this field cannot override it.
+          </Text>
         </View>
 
         <SectionHeader
@@ -599,59 +507,27 @@ export default function TripDetailsScreen() {
         />
 
         <View style={styles.card}>
-          <DateField
+          <CalendarDateField
             label="START DATE"
             value={startDate}
-            onPress={() =>
-              openDatePicker('start')
-            }
+            fallbackDate={endDate}
+            onChange={(value) => {
+              setShowSavedNotice(false);
+              setStartDate(value);
+            }}
           />
-
-          {Platform.OS !== 'android' &&
-            iosDateField === 'start' && (
-              <DateTimePicker
-                value={fromDateKey(startDate)}
-                mode="date"
-                display="inline"
-                onValueChange={(
-                  _event,
-                  selectedDate,
-                ) =>
-                  handleDateChange(
-                    'start',
-                    selectedDate,
-                  )
-                }
-              />
-            )}
 
           <View style={styles.dateDivider} />
 
-          <DateField
+          <CalendarDateField
             label="END DATE"
             value={endDate}
-            onPress={() =>
-              openDatePicker('end')
-            }
+            fallbackDate={startDate}
+            onChange={(value) => {
+              setShowSavedNotice(false);
+              setEndDate(value);
+            }}
           />
-
-          {Platform.OS !== 'android' &&
-            iosDateField === 'end' && (
-              <DateTimePicker
-                value={fromDateKey(endDate)}
-                mode="date"
-                display="inline"
-                onValueChange={(
-                  _event,
-                  selectedDate,
-                ) =>
-                  handleDateChange(
-                    'end',
-                    selectedDate,
-                  )
-                }
-              />
-            )}
 
           <Text style={styles.fieldHelp}>
             Dates remain saved as YYYY-MM-DD calendar values. Existing itinerary days outside a changed range are preserved rather than silently deleted.
@@ -833,51 +709,6 @@ function Field({
           !editable && styles.inputLocked,
         ]}
       />
-    </View>
-  );
-}
-
-function DateField({
-  label,
-  value,
-  onPress,
-}: {
-  label: string;
-  value: string;
-  onPress(): void;
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>
-        {label}
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Choose ${label.toLowerCase()}`}
-        style={styles.dateButton}
-        onPress={onPress}
-      >
-        <View style={styles.dateIcon}>
-          <Ionicons
-            name="calendar-outline"
-            size={19}
-            color={colors.brand}
-          />
-        </View>
-        <View style={styles.dateCopy}>
-          <Text style={styles.dateValue}>
-            {formatDate(value)}
-          </Text>
-          <Text style={styles.dateKey}>
-            {value}
-          </Text>
-        </View>
-        <Ionicons
-          name="chevron-forward"
-          size={18}
-          color={colors.textMuted}
-        />
-      </Pressable>
     </View>
   );
 }
@@ -1127,39 +958,6 @@ const styles = StyleSheet.create({
   },
   dateDivider: {
     height: spacing[5],
-  },
-  dateButton: {
-    minHeight: 66,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    paddingHorizontal: spacing[3],
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceWarm,
-  },
-  dateIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.brandSoft,
-  },
-  dateCopy: {
-    flex: 1,
-  },
-  dateValue: {
-    fontFamily: fontFamily.sansSemiBold,
-    fontSize: fontSize.bodySmall,
-    color: colors.textPrimary,
-  },
-  dateKey: {
-    marginTop: spacing[1],
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.micro,
-    color: colors.textMuted,
   },
   fieldHelp: {
     marginTop: spacing[5],

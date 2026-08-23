@@ -11,8 +11,7 @@ export interface TripDay {
   tripId: TripId;
 
   /**
-   * ISO date format:
-   * YYYY-MM-DD
+   * Calendar date in YYYY-MM-DD. This is not an instant.
    */
   date: string;
 
@@ -34,7 +33,7 @@ export interface TripDay {
   notes?: string;
 
   /**
-   * ISO timestamps.
+   * True ISO instants used only for persistence metadata.
    */
   createdAt: string;
   updatedAt: string;

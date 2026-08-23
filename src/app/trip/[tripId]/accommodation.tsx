@@ -43,6 +43,12 @@ import {
   buildItineraryStopContexts,
 } from '@/services/booking-stop-relationship';
 import {
+  calendarDateFromPickerValue,
+  formatCalendarDateForDisplay,
+  localTimeFromPickerValue,
+  pickerValueFromLocalDateTime,
+} from '@/services/time-truth';
+import {
   colors,
   fontFamily,
   fontSize,
@@ -96,15 +102,7 @@ const TYPE_DETAILS: Record<
 };
 
 function formatDate(value: string): string {
-  const [year, month, day] = value
-    .split('-')
-    .map(Number);
-
-  return new Date(
-    year,
-    month - 1,
-    day,
-  ).toLocaleDateString('en-GB', {
+  return formatCalendarDateForDisplay(value, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -119,33 +117,6 @@ function formatStayDateTime(
   return parts
     ? `${formatDate(parts.date)} · ${parts.time}`
     : 'Not set';
-}
-
-function dateKeyFromDate(value: Date): string {
-  const year = value.getFullYear();
-  const month = String(
-    value.getMonth() + 1,
-  ).padStart(2, '0');
-  const day = String(value.getDate()).padStart(
-    2,
-    '0',
-  );
-
-  return `${year}-${month}-${day}`;
-}
-
-function timeKeyFromDate(value: Date): string {
-  return `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`;
-}
-
-function pickerDate(
-  date: string,
-  time: string,
-  fallbackDate: string,
-): Date {
-  return new Date(
-    `${date || fallbackDate}T${time || '12:00'}:00`,
-  );
 }
 
 function formatStopDate(value: string): string {
@@ -329,28 +300,28 @@ export default function AccommodationScreen() {
     value: Date,
   ) => {
     if (target === 'checkInDate') {
-      setCheckInDate(dateKeyFromDate(value));
+      setCheckInDate(calendarDateFromPickerValue(value));
       setCheckInEdited(true);
     } else if (target === 'checkInTime') {
-      setCheckInTime(timeKeyFromDate(value));
+      setCheckInTime(localTimeFromPickerValue(value));
       setCheckInEdited(true);
     } else if (target === 'checkOutDate') {
-      setCheckOutDate(dateKeyFromDate(value));
+      setCheckOutDate(calendarDateFromPickerValue(value));
       setCheckOutEdited(true);
     } else {
-      setCheckOutTime(timeKeyFromDate(value));
+      setCheckOutTime(localTimeFromPickerValue(value));
       setCheckOutEdited(true);
     }
   };
 
   const valueForPicker = (target: PickerTarget) =>
     target.startsWith('checkIn')
-      ? pickerDate(
+      ? pickerValueFromLocalDateTime(
           checkInDate,
           checkInTime,
           workspace.trip.startDate,
         )
-      : pickerDate(
+      : pickerValueFromLocalDateTime(
           checkOutDate,
           checkOutTime,
           workspace.trip.endDate,

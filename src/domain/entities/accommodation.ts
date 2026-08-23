@@ -26,6 +26,7 @@ export interface Accommodation {
   latitude?: number;
   longitude?: number;
 
+  /** Local wall-clock date-times; untouched legacy suffixes are preserved. */
   checkInAt?: string;
   checkOutAt?: string;
 

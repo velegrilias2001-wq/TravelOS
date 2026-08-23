@@ -27,6 +27,10 @@
     "src/services/traveler-details.ts",
     "src/services/booking-stop-relationship.ts",
     "src/services/trip-details.ts",
-    "src/services/trip-day-generation.ts"
+    "src/services/trip-day-generation.ts",
+    "src/services/booking-time.ts",
+    "src/services/stop-time.ts",
+    "src/services/time-truth.ts",
+    "src/services/trip-creation.ts"
   ]
 }

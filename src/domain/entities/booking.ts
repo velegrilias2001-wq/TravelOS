@@ -47,7 +47,10 @@ export interface Booking {
   confirmationCode?: string;
 
   /**
-   * ISO date-time strings when available.
+   * Compatibility boundary for historical booking data. New values are
+   * canonical local wall-clock date-times without an offset. Existing values
+   * with Z/offset remain absolute instants and are preserved exactly until the
+   * user intentionally replaces them.
    */
   startAt?: string;
   endAt?: string;

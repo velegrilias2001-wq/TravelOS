@@ -1,11 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 
 import {
+  useFocusEffect,
   useRouter,
 } from 'expo-router';
 
 import {
+  useCallback,
   useMemo,
+  useState,
 } from 'react';
 
 import {
@@ -18,7 +21,6 @@ import {
 import { Screen } from '@/components/ui/screen';
 
 import type {
-  TripDay,
   TripStop,
   TripStopType,
 } from '@/domain/entities';
@@ -27,10 +29,6 @@ import {
   useTripWorkspace,
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
-import type {
-  TripWorkspace,
-} from '@/services/trip-service';
-
 import {
   bookingsLinkedToStop,
 } from '@/services/booking-stop-relationship';
@@ -38,6 +36,11 @@ import {
   accommodationContextsForDay,
   splitAccommodationDateTime,
 } from '@/services/accommodation-details';
+import {
+  formatCalendarDateForDisplay,
+  resolveTodayRuntimeContext,
+  type TripTimeZoneReason,
+} from '@/services/time-truth';
 
 import {
   colors,
@@ -49,34 +52,11 @@ import {
   spacing,
 } from '@/theme';
 
-type JourneyMoment =
-  | 'upcoming'
-  | 'today'
-  | 'completed';
-
-function getLocalDateKey(): string {
-  const now = new Date();
-
-  const year = now.getFullYear();
-
-  const month = String(
-    now.getMonth() + 1,
-  ).padStart(2, '0');
-
-  const day = String(
-    now.getDate(),
-  ).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
-
 function formatDayDate(
   date: string,
 ): string {
-  return new Date(
-    `${date}T12:00:00`,
-  ).toLocaleDateString(
-    'en-GB',
+  return formatCalendarDateForDisplay(
+    date,
     {
       weekday: 'long',
       day: 'numeric',
@@ -88,10 +68,8 @@ function formatDayDate(
 function formatTripDate(
   date: string,
 ): string {
-  return new Date(
-    `${date}T12:00:00`,
-  ).toLocaleDateString(
-    'en-GB',
+  return formatCalendarDateForDisplay(
+    date,
     {
       day: 'numeric',
       month: 'short',
@@ -123,63 +101,19 @@ function getStopIcon(
   }
 }
 
-function resolveJourneyDay(
-  workspace: TripWorkspace,
-): {
-  moment: JourneyMoment;
-  day: TripDay | null;
-} {
-  const today =
-    getLocalDateKey();
-
-  const days = [
-    ...workspace.days,
-  ].sort(
-    (a, b) =>
-      a.dayNumber -
-      b.dayNumber,
-  );
-
-  if (days.length === 0) {
-    return {
-      moment: 'upcoming',
-      day: null,
-    };
+function timeZoneFallbackCopy(
+  reason: TripTimeZoneReason,
+): string {
+  switch (reason) {
+    case 'ambiguous-destination-timezones':
+      return 'Destination timezones differ, so Today is using this device’s calendar date.';
+    case 'invalid-destination-timezone':
+      return 'A saved destination timezone needs review, so Today is using this device’s calendar date.';
+    case 'no-destination':
+      return 'No destination timezone is saved, so Today is using this device’s calendar date.';
+    default:
+      return 'Destination timezone is not yet saved, so Today is using this device’s calendar date.';
   }
-
-  if (
-    today <
-    workspace.trip.startDate
-  ) {
-    return {
-      moment: 'upcoming',
-      day: days[0],
-    };
-  }
-
-  if (
-    today >
-    workspace.trip.endDate
-  ) {
-    return {
-      moment: 'completed',
-      day:
-        days[
-          days.length - 1
-        ],
-    };
-  }
-
-  const currentDay =
-    days.find(
-      (day) =>
-        day.date === today,
-    ) ?? null;
-
-  return {
-    moment: 'today',
-    day: currentDay,
-  };
 }
 
 export default function TodayScreen() {
@@ -191,20 +125,39 @@ export default function TodayScreen() {
 
   useTripWorkspaceFocusRefresh();
 
+  const [runtimeRevision, setRuntimeRevision] =
+    useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      setRuntimeRevision((current) => current + 1);
+    }, []),
+  );
+
   const journey =
     useMemo(
-      () => resolveJourneyDay(workspace),
-      [workspace],
+      () =>
+        resolveTodayRuntimeContext(
+          workspace.trip,
+          workspace.days,
+        ),
+      [
+        runtimeRevision,
+        workspace.days,
+        workspace.trip,
+      ],
     );
 
-  const destination =
-    workspace.trip
-      .destinations[0]
-      ?.name ??
-    'Your destination';
+  const firstDestination =
+    workspace.trip.destinations[0]?.name;
+  const destination = firstDestination
+    ? workspace.trip.destinations.length > 1
+      ? `${firstDestination} +${workspace.trip.destinations.length - 1}`
+      : firstDestination
+    : 'Your destination';
 
   const selectedDay =
-    journey.day;
+    journey.displayDay;
 
   const stops: TripStop[] =
     selectedDay
@@ -229,20 +182,22 @@ export default function TodayScreen() {
     : [];
 
   const momentLabel =
-    journey.moment === 'today'
+    journey.runtime.phase === 'active'
       ? 'TODAY'
-      : journey.moment ===
-          'upcoming'
+      : journey.runtime.phase === 'upcoming'
         ? 'UP NEXT'
-        : 'JOURNEY COMPLETE';
+        : journey.runtime.phase === 'completed'
+          ? 'JOURNEY COMPLETE'
+          : 'DATE REVIEW NEEDED';
 
   const dayTitle =
-    journey.moment === 'today'
+    journey.runtime.phase === 'active'
       ? 'Today'
-      : journey.moment ===
-          'upcoming'
-        ? 'Your first day'
-        : 'Your final day';
+      : journey.runtime.phase === 'upcoming'
+        ? 'Your first day preview'
+        : journey.runtime.phase === 'completed'
+          ? 'Your final day history'
+          : 'Trip timing unavailable';
 
   return (
     <Screen scroll>
@@ -295,6 +250,35 @@ export default function TodayScreen() {
             )}
           </Text>
         </View>
+
+        {journey.runtime.timeZone.certainty ===
+          'fallback' && (
+          <View style={styles.timeTruthNotice}>
+            <Ionicons
+              name="information-circle-outline"
+              size={16}
+              color={colors.teal}
+            />
+            <Text style={styles.timeTruthNoticeText}>
+              {timeZoneFallbackCopy(
+                journey.runtime.timeZone.reason,
+              )}
+            </Text>
+          </View>
+        )}
+
+        {journey.runtime.statusConflict && (
+          <View style={styles.statusTruthNotice}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={16}
+              color={colors.brass}
+            />
+            <Text style={styles.timeTruthNoticeText}>
+              Saved workflow status is {journey.runtime.persistedStatus}; live journey phase is {journey.runtime.phase}. Today follows the calendar truth.
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.dayCard}>
@@ -365,10 +349,22 @@ export default function TodayScreen() {
               );
               const phaseLabel =
                 phase === 'check-in'
-                  ? 'CHECK-IN SCHEDULED'
+                  ? journey.runtime.phase === 'completed'
+                    ? 'CHECK-IN HISTORY'
+                    : journey.runtime.phase === 'upcoming'
+                      ? 'PLANNED CHECK-IN'
+                      : 'CHECK-IN SCHEDULED'
                   : phase === 'check-out'
-                    ? 'CHECK-OUT SCHEDULED'
-                    : 'STAY SCHEDULED';
+                    ? journey.runtime.phase === 'completed'
+                      ? 'CHECK-OUT HISTORY'
+                      : journey.runtime.phase === 'upcoming'
+                        ? 'PLANNED CHECK-OUT'
+                        : 'CHECK-OUT SCHEDULED'
+                    : journey.runtime.phase === 'completed'
+                      ? 'STAY HISTORY'
+                      : journey.runtime.phase === 'upcoming'
+                        ? 'PLANNED STAY'
+                        : 'STAY SCHEDULED';
 
               return (
                 <Pressable
@@ -425,7 +421,7 @@ export default function TodayScreen() {
             >
               <Ionicons
                 name={
-                  journey.moment ===
+                  journey.runtime.phase ===
                   'upcoming'
                     ? 'sparkles-outline'
                     : 'sunny-outline'
@@ -442,10 +438,15 @@ export default function TodayScreen() {
                 styles.emptyTitle
               }
             >
-              {journey.moment ===
-              'upcoming'
+              {journey.kind === 'upcoming-preview'
                 ? 'Your first day is ready to take shape.'
-                : 'Nothing planned for this day yet.'}
+                : journey.kind === 'completed-history'
+                  ? 'No itinerary was recorded for this final day.'
+                  : journey.kind === 'active-missing-day'
+                    ? 'Today is inside the trip, but its exact TripDay is unavailable.'
+                    : journey.kind === 'invalid-trip-dates'
+                      ? 'Travel dates need review before Today can choose a day.'
+                      : 'Nothing planned for today yet.'}
             </Text>
 
             <Text
@@ -453,10 +454,11 @@ export default function TodayScreen() {
                 styles.emptyBody
               }
             >
-              Add places,
-              activities, food and
-              transport from your
-              Plan.
+              {journey.kind === 'active-missing-day'
+                ? 'Open Plan to repair the itinerary. TravelOS will not substitute a different day.'
+                : journey.kind === 'invalid-trip-dates'
+                  ? 'Open Trip Details to choose valid calendar dates.'
+                  : 'Add places, activities, food and transport from your Plan.'}
             </Text>
           </View>
         ) : (
@@ -753,6 +755,34 @@ const styles =
         fontSize.bodySmall,
       color:
         colors.textSecondary,
+    },
+
+    timeTruthNotice: {
+      marginTop: spacing[4],
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing[2],
+      padding: spacing[3],
+      borderRadius: radius.md,
+      backgroundColor: colors.tealSoft,
+    },
+
+    statusTruthNotice: {
+      marginTop: spacing[3],
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing[2],
+      padding: spacing[3],
+      borderRadius: radius.md,
+      backgroundColor: colors.brassSoft,
+    },
+
+    timeTruthNoticeText: {
+      flex: 1,
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+      color: colors.textSecondary,
     },
 
     dayCard: {

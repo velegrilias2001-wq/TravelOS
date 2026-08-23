@@ -30,6 +30,8 @@ import {
 import {
   Screen,
 } from '@/components/ui/screen';
+import { LocalTimeField } from '@/components/ui/native-date-time-fields';
+import { formatCalendarDateForDisplay } from '@/services/time-truth';
 
 import type {
   TripDay,
@@ -98,10 +100,8 @@ type MappedLocation =
 function formatDayDate(
   date: string,
 ): string {
-  return new Date(
-    `${date}T12:00:00`,
-  ).toLocaleDateString(
-    'en-GB',
+  return formatCalendarDateForDisplay(
+    date,
     {
       weekday: 'short',
       day: 'numeric',
@@ -189,6 +189,12 @@ export default function PlanScreen() {
   ] =
     useState('');
 
+  const [timeEdited, setTimeEdited] =
+    useState(false);
+
+  const [originalTime, setOriginalTime] =
+    useState<string | undefined>();
+
   const [
     type,
     setType,
@@ -224,6 +230,8 @@ export default function PlanScreen() {
 
     setTitle('');
     setTime('');
+    setTimeEdited(false);
+    setOriginalTime(undefined);
 
     setType('place');
 
@@ -239,6 +247,8 @@ export default function PlanScreen() {
 
     setTitle('');
     setTime('');
+    setTimeEdited(false);
+    setOriginalTime(undefined);
 
     setType('place');
 
@@ -260,6 +270,8 @@ export default function PlanScreen() {
     setTime(
       stop.startTime ?? '',
     );
+    setTimeEdited(false);
+    setOriginalTime(stop.startTime);
 
     setType(
       stop.type,
@@ -502,8 +514,9 @@ export default function PlanScreen() {
               type,
 
               startTime:
-                time.trim() ||
-                undefined,
+                timeEdited
+                  ? time || undefined
+                  : originalTime,
 
               location:
                 pickedLocation ??
@@ -542,9 +555,7 @@ export default function PlanScreen() {
                 dayStops.length +
                 1,
 
-              startTime:
-                time.trim() ||
-                undefined,
+              startTime: time || undefined,
 
               location:
                 pickedLocation ??
@@ -571,7 +582,9 @@ export default function PlanScreen() {
 
         Alert.alert(
           'Could not save activity',
-          'Please try again.',
+          error instanceof Error
+            ? error.message
+            : 'Please try again.',
         );
       } finally {
         setIsSaving(false);
@@ -1559,31 +1572,19 @@ export default function PlanScreen() {
                 </View>
               </View>
 
-              <View
-                style={
-                  styles.field
-                }
-              >
-                <Text
-                  style={
-                    styles.fieldLabel
-                  }
-                >
-                  TIME
-                </Text>
-
-                <TextInput
+              <View style={styles.field}>
+                <LocalTimeField
+                  label="TIME"
                   value={time}
-                  onChangeText={
-                    setTime
-                  }
-                  placeholder="10:30"
-                  placeholderTextColor={
-                    colors.textMuted
-                  }
-                  style={
-                    styles.input
-                  }
+                  help="Optional local wall-clock time. TravelOS does not convert it through a timezone."
+                  onChange={(value) => {
+                    setTime(value);
+                    setTimeEdited(true);
+                  }}
+                  onClear={() => {
+                    setTime('');
+                    setTimeEdited(true);
+                  }}
                 />
               </View>
 
