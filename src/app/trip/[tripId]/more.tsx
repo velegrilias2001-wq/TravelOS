@@ -309,8 +309,8 @@ export default function MoreScreen() {
         />
         <ToolCard
           icon="today-outline"
-          title="Today"
-          body="Trip-aware daily context"
+          title="Companion"
+          body="Truth-aware trip context"
           onPress={() => {
             router.push({
               pathname: '/trip/[tripId]',

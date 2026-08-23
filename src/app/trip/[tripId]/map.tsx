@@ -1,10 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 
 import {
+  useLocalSearchParams,
+  useRouter,
+} from 'expo-router';
+
+import {
   useCallback,
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 
 import {
@@ -65,6 +71,17 @@ const WORLD_REGION: Region = {
 };
 
 export default function TripMapScreen() {
+  const router = useRouter();
+  const routeParams = useLocalSearchParams<{
+    stopId?: string | string[];
+  }>();
+  const requestedStopId = Array.isArray(routeParams.stopId)
+    ? routeParams.stopId[0]
+    : routeParams.stopId;
+  const handledStopId = useRef<string | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [focusedStopId, setFocusedStopId] =
+    useState<string | null>(null);
   const { workspace } =
     useTripWorkspace();
 
@@ -254,26 +271,55 @@ export default function TripMapScreen() {
       );
     }, [allCoordinates]);
 
+  const focusStop = useCallback((item: MappedStop) => {
+    setFocusedStopId(item.stop.id);
+    mapRef.current?.animateToRegion(
+      {
+        ...item.coordinate,
+        latitudeDelta: 0.025,
+        longitudeDelta: 0.025,
+      },
+      450,
+    );
+  }, []);
+
   useEffect(() => {
     fitMap();
   }, [fitMap]);
 
-  const focusStop = (
-    item: MappedStop,
-  ) => {
-    mapRef.current?.animateToRegion(
-      {
-        ...item.coordinate,
+  useEffect(() => {
+    if (!requestedStopId) {
+      handledStopId.current = null;
+      return;
+    }
 
-        latitudeDelta:
-          0.025,
+    if (
+      !mapReady ||
+      handledStopId.current === requestedStopId
+    ) {
+      return;
+    }
 
-        longitudeDelta:
-          0.025,
-      },
-      450,
+    const requested = mappedStops.find(
+      (item) => item.stop.id === requestedStopId,
     );
-  };
+
+    if (!requested) {
+      handledStopId.current = requestedStopId;
+      router.setParams({ stopId: '' });
+      return;
+    }
+
+    handledStopId.current = requestedStopId;
+    focusStop(requested);
+    router.setParams({ stopId: '' });
+  }, [
+    focusStop,
+    mapReady,
+    mappedStops,
+    requestedStopId,
+    router,
+  ]);
 
   const destinationName =
     workspace.trip
@@ -289,7 +335,10 @@ export default function TripMapScreen() {
         initialRegion={
           initialRegion
         }
-        onMapReady={fitMap}
+        onMapReady={() => {
+          setMapReady(true);
+          fitMap();
+        }}
         showsCompass
         showsScale
         toolbarEnabled={false}
@@ -346,6 +395,11 @@ export default function TripMapScreen() {
                       }`
                     : ''
                 }`
+              }
+              pinColor={
+                stop.id === focusedStopId
+                  ? colors.coral
+                  : colors.teal
               }
             />
           ),

@@ -460,6 +460,34 @@ function dateAtInstantInTimeZone(
   return `${value.year}-${value.month}-${value.day}`;
 }
 
+export function localTimeAtInstant(
+  instant: Date,
+  resolution: TripTimeZoneResolution,
+): string {
+  if (Number.isNaN(instant.getTime())) {
+    throw new Error('Runtime clock returned an invalid instant');
+  }
+
+  if (!resolution.timeZone) {
+    return localTimeFromPickerValue(instant);
+  }
+
+  const parts = new Intl.DateTimeFormat(
+    'en-GB-u-nu-latn',
+    {
+      timeZone: resolution.timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    },
+  ).formatToParts(instant);
+  const value = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+
+  return `${value.hour}:${value.minute}`;
+}
+
 export function calendarDateAtInstant(
   instant: Date,
   resolution: TripTimeZoneResolution,

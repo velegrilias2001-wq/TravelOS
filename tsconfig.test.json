@@ -31,6 +31,8 @@
     "src/services/booking-time.ts",
     "src/services/stop-time.ts",
     "src/services/time-truth.ts",
+    "src/services/companion.ts",
+    "src/services/companion-refresh.ts",
     "src/services/trip-creation.ts"
   ]
 }

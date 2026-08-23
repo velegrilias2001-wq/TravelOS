@@ -314,7 +314,7 @@ export default function TripDetailsScreen() {
             keep its truth intact.
           </Text>
           <Text style={styles.subtitle}>
-            Changes here flow through Today, Plan, Map, Bookings, Budget and More from the same saved trip.
+            Changes here flow through Companion, Plan, Map, Bookings, Budget and More from the same saved trip.
           </Text>
         </View>
 
@@ -411,7 +411,7 @@ export default function TripDetailsScreen() {
           </View>
 
           <Text style={styles.fieldHelp}>
-            Status is an organizational choice. Today derives live upcoming, active and completed truth from the saved travel dates and an explicit timezone resolution; this field cannot override it.
+            Status is an organizational choice. Companion derives live upcoming, active and completed truth from the saved travel dates and an explicit timezone resolution; this field cannot override it.
           </Text>
         </View>
 

@@ -6,7 +6,7 @@ This file describes verified implementation, not intended behavior. Unknown or u
 
 ## Repository checkpoint
 
-- Current development branch: feature/time-runtime-truth
+- Current development branch: feature/companion-v1
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
 - Budget & Expenses checkpoint: 65b7f33 — Add native trip budget and expenses
@@ -14,13 +14,14 @@ This file describes verified implementation, not intended behavior. Unknown or u
 - Booking ↔ Stop checkpoint: f6d09c5 — Connect bookings with itinerary stops
 - Accommodation checkpoint: cc180f2 — Add canonical trip accommodation flow
 - Travelers checkpoint: 3dcb7d8 — Add reusable trip travelers
+- Time & Runtime Truth checkpoint: 81c4f20 — Establish canonical trip time and runtime truth
 - The native architecture checkpoint remains ec0b28a — Add native location picker and mapped itinerary stops.
 - No Git remote or upstream branch was configured during the audit.
 - .env.local exists and is ignored. Its contents were not read.
 
-The working tree contains the verified but uncommitted Time & Runtime Truth implementation described below.
+The working tree contains the verified but uncommitted Companion V1 implementation described below.
 
-Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, truth-aware Today, bookings, Google Maps on Android, the location picker, persistence hardening, the shared TripWorkspace lifecycle, Budget & Expenses, Trip Details, explicit Booking ↔ Stop relationships, native Accommodation management, reusable canonical Traveler identities with explicit trip membership, and centralized date/time/runtime truth.
+Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, bookings, Google Maps on Android, the location picker, persistence hardening, the shared TripWorkspace lifecycle, Budget & Expenses, Trip Details, explicit Booking ↔ Stop relationships, native Accommodation management, reusable canonical Traveler identities with explicit trip membership, centralized date/time/runtime truth, and the first deterministic Companion surface.
 
 ## Stack and runtime
 
@@ -51,9 +52,9 @@ The codebase has a sensible layered direction:
 6. A route-scoped TripWorkspace provider owns one ephemeral aggregate snapshot for the active trip and exposes service-backed mutations.
 7. Expo Router Trip Space screens render the shared snapshot and mutate it through the provider while SQLite remains authoritative.
 
-TripService builds a TripWorkspace aggregate from the canonical Trip and its related records. Today, Plan, Map, Bookings, Accommodation, Budget, Travelers, More, and Trip Details consume one provider above the nested Trip Space tabs instead of maintaining independent screen-owned copies. Successful mutations invalidate and reload that aggregate from SQLite. Focus refreshes are revision-aware, so current data does not trigger an unnecessary database reload. Trip edits and deletion also refresh the Zustand-backed global trip-list cache after SQLite and the workspace have been updated.
+TripService builds a TripWorkspace aggregate from the canonical Trip and its related records. Companion, Plan, Map, Bookings, Accommodation, Budget, Travelers, More, and Trip Details consume one provider above the nested Trip Space tabs instead of maintaining independent screen-owned copies. Successful mutations invalidate and reload that aggregate from SQLite. Focus refreshes are revision-aware, so current data does not trigger an unnecessary database reload. Trip edits and deletion also refresh the Zustand-backed global trip-list cache after SQLite and the workspace have been updated.
 
-Pure time utilities now define calendar dates, local wall-clock values, compatible historical date-times, timezone resolution, and an injectable-clock Trip runtime resolver. Today and Home derive live phase from those utilities rather than durable workflow status. Today also recomputes runtime truth on route focus so a mounted screen does not retain a pre-midnight result.
+Pure time utilities define calendar dates, local wall-clock values, compatible historical date-times, timezone resolution, and an injectable-clock Trip runtime resolver. Companion and Home derive live phase from those utilities rather than durable workflow status. A pure Companion selector adds transient relevance without creating durable Companion state. The screen recomputes on focus, foreground return, and the exact next resolved local calendar boundary using a calculated timer rather than polling.
 
 ## Canonical domain model
 
@@ -161,13 +162,13 @@ Create Trip and Trip Details use the shared native calendar field, validate real
 
 Each trip exposes:
 
-- Today
+- Companion
 - Plan
 - Map
 - Bookings
 - More
 
-Today, Plan, Map, Bookings, and More have working functionality. More is now a native trip hub with canonical Trip Details, Budget, Accommodation, Travelers, Itinerary, Bookings, Map, and Today navigation. Readiness remains an explicitly labelled planned module.
+Companion, Plan, Map, Bookings, and More have working functionality. The existing `/trip/[tripId]` route remains the canonical first tab, so the former Today route has backward-compatible navigation while its product label and implementation are now Companion. More is a native trip hub with canonical Trip Details, Budget, Accommodation, Travelers, Itinerary, Bookings, Map, and Companion navigation.
 
 ### Trip Details and More
 
@@ -211,7 +212,7 @@ Implemented behavior includes:
 - Optional link, relink, and unlink behavior using exact IDs. The UI offers accommodation-type Bookings and real TripStops from the same Trip; existing explicit historical links remain editable without silently rewriting them.
 - Booking reservation/provider/confirmation/payment facts remain owned by Booking. Accommodation owns stay facts, address/contact, and notes.
 - Accommodation deletion preserves linked Booking and TripStop records. Booking or stop deletion preserves the Accommodation and unlinks only the deleted relationship.
-- Restrained exact-link context in Today, Bookings, and Map. Map shows stay context only through an explicitly linked TripStop that already has real coordinates; no Accommodation coordinates are guessed or copied.
+- Restrained exact-link context in Companion, Bookings, and Map. Map shows stay context only through an explicitly linked TripStop that already has real coordinates; no Accommodation coordinates are guessed or copied.
 
 Current limitations include no Day → Destination timezone mapping for multi-destination stay context, no provider import, no room/guest policy model, no booking creation from Accommodation, no dedicated place picker for accommodation coordinates, and no iOS runtime rehearsal.
 
@@ -229,21 +230,24 @@ Implemented behavior includes:
 
 Current limitations include no trip owner or default “Me” identity, no roles, invitations, permissions, reservation ownership, expense splitting, emergency contacts, or global identity-library management. Create Trip still starts with zero Traveler memberships; the empty state is intentional for planning, while any future one-or-more enforcement must be designed together with owner identity and Create Trip. Canonical identity deletion is not exposed in the product UI. No iOS runtime rehearsal has been completed.
 
-### Today
+### Companion V1
 
-Today consumes the centralized runtime resolver. It derives upcoming, active, completed, or invalid-date truth from canonical Trip dates and an injected/system clock; durable Trip status remains an independent organizational field.
+The former Today surface is now the first deterministic Companion. It consumes the centralized runtime resolver and the route-scoped TripWorkspace, then derives transient relevance through a pure selector with an injectable clock. SQLite remains durable truth, Zustand is not used as a second trip database, and `TripRuntimeState` has not been activated speculatively.
 
-Implemented truth rules are:
+Implemented truth rules and behavior are:
 
-- A single valid destination IANA timezone, or one valid timezone shared by every destination, determines the runtime calendar date.
-- Missing, invalid, or ambiguous destination timezone data produces an explicit device-calendar fallback; destination order is never used as hidden timezone authority.
-- Upcoming Trips show a labelled first-day preview, active Trips use only the TripDay whose canonical date exactly matches the resolved date, and completed Trips show labelled final-day history.
-- Missing exact active-day data and invalid Trip dates render explicit safe states instead of substituting another day.
-- Persisted TripRuntimeState is not consumed for deterministic date/phase truth; it remains reserved for future explicit companion progress or lived-state data.
-- It does not derive current and next stop phases.
-- Confirmed bookings linked by exact stop ID can surface compact confirmation context on the relevant Today stop and open the booking. Unlinked, cancelled, or differently linked bookings are not presented as that stop's context.
-- Accommodation check-in, in-stay, and check-out context is scheduled against the selected exact TripDay calendar date. Copy distinguishes planned, active-day schedule, and historical context.
-- Trip-level loading, refresh, not-found, and recoverable read-error behavior is shared with the other Trip Space screens.
+- A single valid destination IANA timezone, or one valid timezone shared by every destination, supplies exact travel-local date and time. Missing, invalid, or differing timezones produce an explicit device-calendar fallback; destination order is never temporal authority.
+- Upcoming Trips show a deterministic calendar-day countdown, first canonical TripDay preview, next safely dated local check-in, bounded early unlinked Booking context, and preparation signals derived only from Accommodation, Bookings, populated itinerary days, Travelers, and Budget data. Missing optional modules are not errors.
+- Active Trips use only the TripDay whose canonical date exactly matches runtime truth and show `Day X of N`. When canonical timezone truth exists, a stop is `NOW` only if exactly one valid start/end range contains the local clock time. `NEXT` is the first canonical-order stop with a valid start at or after that time. Earlier, later, and untimed stops remain explicit; an untimed stop is never called current.
+- When exact active timing cannot be proven, Companion suppresses NOW/NEXT and active unlinked Booking claims, retains the canonical Plan order, and explains the timezone limitation. Missing active TripDays and invalid trip dates render explicit safe states instead of substituting another day.
+- Relevant stop Booking context uses exact `Booking.stopId` relationships, ignores cancelled Bookings, and exposes restrained status/provider/payment context. Unlinked Bookings are shown only when their local calendar context can be derived safely; no fuzzy relationship is created.
+- Current-stay language requires exactly one Accommodation whose canonical local check-in/out interval contains the reliable trip-local time. Otherwise only safely dated check-in/check-out context is shown. Historical absolute-offset stay values are preserved but are not reinterpreted as local live-stay truth.
+- Map actions appear only for stops that already have persisted numeric coordinates. The Map route can focus the exact requested stop and visually distinguish its existing marker; no route, ETA, or coordinate is invented.
+- Completed Trips leave live mode, show saved counts and final-day history, and label Memories / Travel Book as future work rather than presenting an active stop or stay.
+- Runtime truth refreshes on route focus, app foreground return, and the next resolved local calendar-date boundary. The boundary calculation is DST-safe and uses one cleaned-up timer rather than polling.
+- Trip-level loading, refresh, not-found, and recoverable read-error behavior remains shared with the other Trip Space screens.
+
+Current Companion V1 limitations include no Day → Destination timezone relationship for multi-destination trips, no persisted delayed/skipped/lived progress, no live provider data, notifications, routes, ETAs, weather, traffic, opening hours, recommendations, or AI. NOW/NEXT does not reschedule at each stop boundary while the screen stays continuously open; it refreshes at the required focus, foreground, and calendar-boundary lifecycle events. The Android rehearsal verified upcoming, incomplete/fallback, active canonical-day, linked Booking, mapped-stop, tab/lifecycle persistence, and completed non-live behavior with isolated data, then removed only that isolated trip. Exact canonical-timezone NOW/NEXT and Accommodation date-picker creation could not be exercised end-to-end because the current product has no destination-timezone authoring flow and the emulator diverted the native Accommodation picker into a system settings surface; deterministic selector tests cover those rules. Existing pre-test trip data survived, and bootstrap plus the persistence self-test passed after cold relaunch. iOS verification remains outstanding.
 
 ### Plan
 
@@ -304,7 +308,7 @@ These are foundations, not shipped features. Their repository existence does not
 
 ## State and navigation lifecycle
 
-- Today, Plan, Map, Bookings, Accommodation, Budget, Travelers, More, and Trip Details share one route-scoped TripWorkspace lifecycle above the nested tabs.
+- Companion, Plan, Map, Bookings, Accommodation, Budget, Travelers, More, and Trip Details share one route-scoped TripWorkspace lifecycle above the nested tabs.
 - Initial loading, ready, refreshing, not-found, and recoverable error states are explicit.
 - Stop, booking, Booking ↔ Stop, Trip Details, and trip-delete mutations use the existing TripService, budget mutations use BudgetService, accommodation mutations use AccommodationService, and traveler mutations use TravelerService; all invalidate and reload the shared aggregate from SQLite.
 - Focus-aware refresh retries invalid or failed snapshots but skips database reads when the shared revision is already current.
@@ -328,9 +332,9 @@ It is still an early design system:
 
 ## Testing and release readiness
 
-Verified checks through the Travelers implementation:
+Verified checks through Companion V1:
 
-- npm test runs forty-five automated tests covering persistence, migrations, Budget calculations, Trip Details validation/persistence/cascades, Booking ↔ Stop invariants and deletion behavior, Accommodation validation/persistence/relationships/cascades/day context, Traveler identity/membership behavior, and TripWorkspace lifecycle behavior.
+- npm test runs sixty-two automated tests covering persistence, migrations, Budget calculations, Trip Details validation/persistence/cascades, Booking ↔ Stop invariants and deletion behavior, Accommodation validation/persistence/relationships/cascades/day context, Traveler identity/membership behavior, TripWorkspace lifecycle behavior, centralized time/runtime truth, and deterministic Companion selection/calendar-boundary behavior.
 - Fresh database migration, version-2 drift repair, migration rollback, fresh/partial/repeated TripDay generation, concurrent idempotency, and stop reorder rollback are covered.
 - Workspace initial loading, not-found behavior, revision-aware refresh, shared-consumer mutation propagation, recoverable retry, and mutation-during-load invalidation are covered.
 - The Android debug build compiles, installs, launches, and reaches both the development persistence self-test and bootstrap-ready state on an x86_64 emulator.
@@ -342,6 +346,7 @@ Verified checks through the Travelers implementation:
 - Accommodation Android verification used one isolated trip to create a real mapped stop, an accommodation-type Booking, and two stays; exercised add, native date/time input, edit, link, unlink, relink, sorted multiple-stay rendering, and deletion; and observed exact stay context in Today, Bookings, and Map. Deleting the linked Booking preserved the stay and its stop link, and cold relaunch preserved the edited Sep 1–3 schedule. The development database reported `PRAGMA user_version = 6`, all four validation triggers and five relevant indexes, and the unrelated existing trip remained visible. The isolated trip was deleted through the app afterwards. The Android debug build compiled, installed, launched, and reported `Persistence self-test: PASS` and `Bootstrap ready`.
 - Travelers Android verification used two isolated Trips and two isolated Traveler identities to exercise creation, exact-ID reuse, shared canonical editing, duplicate-free membership, membership-only removal, saved-identity selection, and cold-process persistence. The edited identity appeared in both Trips; the removed identity remained selectable for reuse; deleting one Trip preserved the Traveler and its other membership. Both test Trips and both exact test identities were removed afterwards, while the unrelated existing trip remained visible and loadable. The database remains at version 6 because the existing Traveler and membership schema already provided the required keys and cascades. The Android debug build compiled, installed, launched, and reached the persistence self-test and bootstrap-ready state before the E2E flow.
 - Time & Runtime Truth Android verification compiled and launched the debug development build, created one isolated Trip with native dates, rejected an unsaved reversed Create Trip range, added a native-time Stop, added a native local-time Booking linked by exact stop ID, and added an Accommodation linked to the same exact stop. Today showed active Day 1 plus real Booking and Accommodation context, an explicit device-calendar fallback because no destination timezone was saved, a non-active first-day preview after the Trip moved to a future range, and completed-history copy after it moved to a past range. A cold process relaunch preserved the selected dates, local times, links, and unrelated existing Trip; startup reported `Persistence self-test: PASS` and `Bootstrap ready`. Plan, Map, Bookings, Budget, Accommodation, and Travelers all opened on Android. The exact `TimeTruthE2E` Trip and its related isolated data were deleted afterwards, the rejected draft was never persisted, and the existing Japan Trip remained visible.
+- Companion V1 Android verification compiled both debug and x86_64 release variants, installed and launched the development build on an Android 16 x86_64 emulator, and again reached `Persistence self-test: PASS` plus `Bootstrap ready`. An isolated active Trip verified exact canonical-day selection, Day 1 of 1, safe missing-timezone degradation, a real picker-selected mapped stop, exact linked Booking context across Companion/Map/Bookings tabs, completed non-live history after a date edit, and cold-process persistence. A pre-existing future Trip verified upcoming countdown/readiness without mutation. The exact isolated Companion Trip and all of its related data were deleted through the named destructive confirmation; the pre-existing Trip survived. Canonical-timezone NOW/NEXT and new Accommodation context could not be completed through this E2E path because no destination-timezone authoring UI exists and the emulator diverted the Accommodation picker to Android settings; those deterministic branches are covered by injected-clock tests.
 - npx tsc --noEmit passes for the application.
 - npm ls --depth=0 passed at the takeover audit.
 - git diff --check is part of the required completion checks.
@@ -374,7 +379,7 @@ Missing release foundations:
 - A dependency-free automated persistence test baseline.
 - A route-scoped, revision-aware TripWorkspace lifecycle that keeps SQLite authoritative and shares current data across Trip Space tabs.
 - Explicit trip loading, refresh, not-found, recoverable error, and fatal bootstrap states.
-- Truth-aware upcoming/active/completed Today logic.
+- A deterministic upcoming/active/completed Companion selector with exact-day selection, conservative NOW/NEXT rules, truthful Booking/Accommodation/Map context, and no duplicate durable state.
 - A centralized injectable-clock runtime resolver with explicit canonical-destination timezone or device-fallback provenance, exact active TripDay selection, and no first-destination shortcut.
 - Shared strict calendar/local-time utilities plus native Create Trip, Booking, and optional Stop date/time controls that preserve compatible historical data.
 - Real selected coordinates persisted and rendered as map pins.
@@ -382,7 +387,7 @@ Missing release foundations:
 - A service-backed Budget & Expenses flow with truthful same-currency aggregation and original-currency preservation.
 - A service-backed canonical Trip Details editor with strict date validation, metadata-preserving destination handling, budget-aware accounting-currency safety, and verified cascade deletion.
 - An explicit zero-or-one Booking → TripStop relationship with same-trip enforcement, zero-to-many reverse cardinality, lossless stop deletion, service/repository validation, and contextual TripWorkspace-backed UI.
-- An explicit Trip → Accommodation aggregate with optional same-trip Booking and TripStop IDs, service and database enforcement, lossless link deletion behavior, native validated CRUD, and restrained Today/Bookings/Map context.
+- An explicit Trip → Accommodation aggregate with optional same-trip Booking and TripStop IDs, service and database enforcement, lossless link deletion behavior, native validated CRUD, and restrained Companion/Bookings/Map context.
 - A reusable canonical Traveler identity with explicit many-to-many Trip membership, exact-ID selection, atomic creation, duplicate prevention, shared edits, membership-only removal, and verified Trip-deletion preservation.
 - A functional More hub that distinguishes implemented navigation from planned modules.
 - A coherent early visual language.
@@ -392,7 +397,7 @@ These pieces are promising foundations; they do not make the app production-read
 ### Prototype or incomplete implementation
 
 - Multi-destination add/remove/reorder and structured destination replacement.
-- Today as a full Companion.
+- Companion V2 timezone authoring, Day → Destination semantics, stop-boundary refresh decisions, lived progress, and external live-data layers.
 - Advanced accommodation capabilities and the remaining booking actions/provider integrations.
 - Map intelligence, routes, and offline behavior.
 - Traveler owner/role/invitation/permission workflows, runtime state, memories, and Travel Book UI.
@@ -403,4 +408,4 @@ These pieces are promising foundations; they do not make the app production-read
 
 ## Overall assessment
 
-TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, Budget & Expenses is the first complete Phase 1 product slice, Trip Details makes the canonical Trip safely editable, Booking ↔ Stop integration connects itinerary and reservation truth through explicit IDs, Accommodation adds a validated multi-stay workflow, Travelers establishes reusable people plus explicit Trip membership, and Time & Runtime Truth now gives the app one deterministic phase/date/day answer without inventing timezone data or rewriting historical times. The next priorities are closing the remaining Phase 0 engineering gaps, designing Day → Destination semantics for truthful multi-destination timezones, and defining traveler ownership and roles before building full Companion behavior. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.
+TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, Budget & Expenses is the first complete Phase 1 product slice, Trip Details makes the canonical Trip safely editable, Booking ↔ Stop integration connects itinerary and reservation truth through explicit IDs, Accommodation adds a validated multi-stay workflow, Travelers establishes reusable people plus explicit Trip membership, Time & Runtime Truth gives the app one deterministic phase/date/day answer, and Companion V1 turns that truth into a useful before/during/after surface without inventing live data. The next priorities are closing the remaining Phase 0 engineering gaps, designing Day → Destination semantics plus timezone authoring for exact multi-destination timing, defining traveler ownership and roles, and choosing the concrete durable lived-state boundary for Companion V2. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.

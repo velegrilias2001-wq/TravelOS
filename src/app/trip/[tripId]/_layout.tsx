@@ -72,7 +72,7 @@ function TripSpaceTabs({
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Today',
+          title: 'Companion',
 
           href: {
             pathname: '/trip/[tripId]',

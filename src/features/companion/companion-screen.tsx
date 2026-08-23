@@ -1,0 +1,1726 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import {
+  type PropsWithChildren,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
+import {
+  AccessibilityInfo,
+  Animated,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
+import { Screen } from '@/components/ui/screen';
+import type {
+  Accommodation,
+  Booking,
+  TripStopType,
+} from '@/domain/entities';
+import {
+  useTripWorkspace,
+  useTripWorkspaceFocusRefresh,
+} from '@/features/trip-workspace/trip-workspace-context';
+import {
+  splitAccommodationDateTime,
+  type AccommodationDayContext,
+} from '@/services/accommodation-details';
+import { formatBookingTemporalValue } from '@/services/booking-time';
+import {
+  selectCompanion,
+  type CompanionReadiness,
+  type CompanionSelection,
+  type CompanionStopContext,
+} from '@/services/companion';
+import {
+  formatCalendarDateForDisplay,
+  type TripTimeZoneReason,
+} from '@/services/time-truth';
+import {
+  colors,
+  fontFamily,
+  fontSize,
+  lineHeight,
+  radius,
+  shadows,
+  spacing,
+} from '@/theme';
+
+import { useCompanionRuntimeRefresh } from './use-companion-runtime-refresh';
+
+type CompanionPath =
+  | '/trip/[tripId]/plan'
+  | '/trip/[tripId]/map'
+  | '/trip/[tripId]/bookings'
+  | '/trip/[tripId]/accommodation'
+  | '/trip/[tripId]/budget'
+  | '/trip/[tripId]/travelers'
+  | '/trip/[tripId]/details';
+
+type OpenRoute = (
+  pathname: CompanionPath,
+  params?: Record<string, string>,
+) => void;
+
+function formatTripDate(date: string): string {
+  return formatCalendarDateForDisplay(date, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatDayDate(date: string): string {
+  return formatCalendarDateForDisplay(date, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+}
+
+function stopIcon(
+  type: TripStopType,
+): keyof typeof Ionicons.glyphMap {
+  switch (type) {
+    case 'food':
+      return 'restaurant-outline';
+    case 'activity':
+      return 'sparkles-outline';
+    case 'transport':
+      return 'car-outline';
+    case 'accommodation':
+      return 'bed-outline';
+    case 'place':
+      return 'location-outline';
+    default:
+      return 'ellipse-outline';
+  }
+}
+
+function timeZoneFallbackCopy(reason: TripTimeZoneReason): string {
+  switch (reason) {
+    case 'ambiguous-destination-timezones':
+      return 'Destination timezones differ. Companion uses this device for the trip date and keeps today’s stops in Plan order.';
+    case 'invalid-destination-timezone':
+      return 'A saved destination timezone needs review. Companion will not guess what is happening now.';
+    case 'no-destination':
+      return 'No destination timezone is saved. Companion uses this device for the trip date and keeps today’s stops in Plan order.';
+    default:
+      return 'Destination timezone is not saved. Companion uses this device for the trip date and keeps today’s stops in Plan order.';
+  }
+}
+
+export function CompanionScreen() {
+  const router = useRouter();
+  const { workspace } = useTripWorkspace();
+  useTripWorkspaceFocusRefresh();
+
+  const initial = useMemo(
+    () => selectCompanion(workspace),
+    [workspace],
+  );
+  const runtimeRevision = useCompanionRuntimeRefresh(
+    initial.runtime.timeZone,
+  );
+  const selection = useMemo(
+    () => selectCompanion(workspace),
+    [runtimeRevision, workspace],
+  );
+
+  const openRoute: OpenRoute = (pathname, params = {}) => {
+    router.push({
+      pathname,
+      params: { tripId: workspace.trip.id, ...params },
+    });
+  };
+  const destinations = workspace.trip.destinations
+    .map((destination) => destination.name.trim())
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <Screen scroll contentStyle={styles.screenContent}>
+      <View style={styles.topBar}>
+        <RoundButton
+          icon="arrow-back"
+          label="Go back"
+          onPress={() => router.back()}
+        />
+        <Text style={styles.topLabel}>COMPANION</Text>
+        <RoundButton
+          icon="options-outline"
+          label="Open trip details"
+          onPress={() => openRoute('/trip/[tripId]/details')}
+        />
+      </View>
+
+      <View style={styles.hero}>
+        <View style={styles.phasePill}>
+          <View style={styles.phaseDot} />
+          <Text style={styles.phaseText}>
+            {selection.mode === 'upcoming'
+              ? 'BEFORE THE JOURNEY'
+              : selection.mode === 'active'
+                ? 'ON THE JOURNEY'
+                : selection.mode === 'completed'
+                  ? 'JOURNEY COMPLETE'
+                  : 'DATES NEED REVIEW'}
+          </Text>
+        </View>
+        <Text style={styles.destination}>
+          {(destinations || 'Destination not yet set').toUpperCase()}
+        </Text>
+        <Text style={styles.tripTitle}>{workspace.trip.title}</Text>
+        <Text style={styles.tripDates}>
+          {formatTripDate(workspace.trip.startDate)} —{' '}
+          {formatTripDate(workspace.trip.endDate)}
+        </Text>
+
+        {selection.runtime.timeZone.certainty === 'fallback' && (
+          <TruthNotice
+            icon="time-outline"
+            body={timeZoneFallbackCopy(
+              selection.runtime.timeZone.reason,
+            )}
+          />
+        )}
+        {selection.runtime.statusConflict && (
+          <TruthNotice
+            icon="shield-checkmark-outline"
+            brass
+            body={`Saved workflow status is ${selection.runtime.persistedStatus}; Companion follows the ${selection.runtime.phase} calendar phase.`}
+          />
+        )}
+      </View>
+
+      <PhaseTransition phase={selection.mode}>
+        {selection.mode === 'upcoming' ? (
+          <Upcoming
+            selection={selection}
+            openRoute={openRoute}
+          />
+        ) : selection.mode === 'active' ? (
+          <Active selection={selection} openRoute={openRoute} />
+        ) : selection.mode === 'completed' ? (
+          <Completed
+            selection={selection}
+            openRoute={openRoute}
+          />
+        ) : (
+          <DateReview
+            onPress={() => openRoute('/trip/[tripId]/details')}
+          />
+        )}
+      </PhaseTransition>
+      <View style={styles.bottomSpace} />
+    </Screen>
+  );
+}
+
+function Upcoming({
+  selection,
+  openRoute,
+}: {
+  selection: CompanionSelection;
+  openRoute: OpenRoute;
+}) {
+  return (
+    <View style={styles.stack}>
+      <View style={styles.darkCard}>
+        <Text style={styles.darkEyebrow}>DEPARTURE</Text>
+        <Text
+          accessibilityLabel={`${selection.countdownDays ?? 0} days until departure`}
+          style={styles.countdown}
+        >
+          {selection.countdownDays ?? '—'}
+        </Text>
+        <Text style={styles.darkTitle}>
+          {selection.countdownDays === 1 ? 'day to go' : 'days to go'}
+        </Text>
+        <View style={styles.brassRule} />
+        <Text style={styles.darkBody}>
+          This trip is still ahead. Companion is showing preparation and first known context—not live travel state.
+        </Text>
+      </View>
+
+      {selection.displayDay && (
+        <Section
+          eyebrow="FIRST DAY"
+          title="The journey begins here"
+          meta={formatDayDate(selection.displayDay.date)}
+          action="Open Plan"
+          onAction={() => openRoute('/trip/[tripId]/plan')}
+        >
+          {selection.stopContexts.length === 0 ? (
+            <Empty
+              icon="calendar-outline"
+              title="Your first day is open"
+              body="Add a stop when the plan is known. An empty day is not treated as a problem."
+            />
+          ) : (
+            <View style={styles.list}>
+              {selection.stopContexts.slice(0, 3).map((context) => (
+                <CompactStop
+                  key={context.stop.id}
+                  context={context}
+                  onPress={() =>
+                    openRoute('/trip/[tripId]/plan', {
+                      stopId: context.stop.id,
+                    })
+                  }
+                />
+              ))}
+              {selection.stopContexts.length > 3 && (
+                <Text style={styles.moreText}>
+                  +{selection.stopContexts.length - 3} more in Plan
+                </Text>
+              )}
+            </View>
+          )}
+        </Section>
+      )}
+
+      {selection.nextAccommodation && (
+        <StayCard
+          accommodation={selection.nextAccommodation}
+          label="NEXT CHECK-IN"
+          onPress={() =>
+            openRoute('/trip/[tripId]/accommodation', {
+              accommodationId: selection.nextAccommodation?.id ?? '',
+            })
+          }
+        />
+      )}
+      {selection.relevantUnlinkedBookings.map((booking) => (
+        <BookingCard
+          key={booking.id}
+          booking={booking}
+          label="EARLY BOOKING CONTEXT"
+          onPress={() =>
+            openRoute('/trip/[tripId]/bookings', {
+              bookingId: booking.id,
+            })
+          }
+        />
+      ))}
+      <Readiness readiness={selection.readiness} openRoute={openRoute} />
+    </View>
+  );
+}
+
+function Active({
+  selection,
+  openRoute,
+}: {
+  selection: CompanionSelection;
+  openRoute: OpenRoute;
+}) {
+  if (!selection.displayDay) {
+    return (
+      <Section eyebrow="TODAY" title="Today’s TripDay is unavailable">
+        <Empty
+          icon="calendar-clear-outline"
+          title="Companion will not substitute another day"
+          body="The trip is active by date, but no TripDay exactly matches the resolved travel date."
+        />
+        <PrimaryButton
+          label="Open Plan"
+          onPress={() => openRoute('/trip/[tripId]/plan')}
+        />
+      </Section>
+    );
+  }
+
+  return (
+    <View style={styles.stack}>
+      <View style={styles.progressCard}>
+        <View style={styles.progressCopy}>
+          <Text style={styles.darkEyebrow}>TODAY</Text>
+          <Text style={styles.progressTitle}>
+            Day {selection.dayIndex ?? '—'} of {selection.totalDays}
+          </Text>
+          <Text style={styles.darkMeta}>
+            {formatDayDate(selection.displayDay.date)}
+          </Text>
+        </View>
+        <View style={styles.remainingBadge}>
+          <Text style={styles.remainingNumber}>
+            {selection.timingReliable
+              ? selection.remainingStops.length
+              : selection.stopContexts.length}
+          </Text>
+          <Text style={styles.remainingLabel}>
+            {selection.timingReliable ? 'TIMED AHEAD' : 'ON PLAN'}
+          </Text>
+        </View>
+      </View>
+
+      {selection.currentStop && (
+        <FocusStop
+          label="NOW"
+          context={selection.currentStop}
+          openRoute={openRoute}
+        />
+      )}
+      {selection.nextStop && (
+        <FocusStop
+          label="NEXT"
+          context={selection.nextStop}
+          openRoute={openRoute}
+        />
+      )}
+      {!selection.timingReliable && selection.stopContexts.length > 0 && (
+        <TruthNotice
+          icon="reorder-three-outline"
+          body="Exact now/next cannot be proven from saved timezone truth. The timeline remains in canonical Plan order."
+        />
+      )}
+      {selection.timingReliable &&
+        !selection.currentStop &&
+        !selection.nextStop &&
+        selection.stopContexts.length > 0 && (
+          <TruthNotice
+            icon="checkmark-done-outline"
+            body="No later timed stop is saved today. Untimed stops remain visible without being called current."
+          />
+        )}
+
+      <Section
+        eyebrow="TODAY"
+        title={selection.displayDay.title || 'Today’s plan'}
+        meta={
+          selection.timingReliable && selection.localTime
+            ? `${selection.localTime} in ${selection.runtime.timeZone.timeZone}`
+            : 'Canonical itinerary order'
+        }
+        action="Full Plan"
+        onAction={() => openRoute('/trip/[tripId]/plan')}
+      >
+        {selection.stopContexts.length === 0 ? (
+          <Empty
+            icon="sunny-outline"
+            title="Nothing is planned for this day"
+            body="Companion has no stop to call current or next. The day remains open."
+          />
+        ) : (
+          <View>
+            {selection.stopContexts.map((context, index) => (
+              <TimelineStop
+                key={context.stop.id}
+                context={context}
+                last={index === selection.stopContexts.length - 1}
+                onPress={() =>
+                  openRoute('/trip/[tripId]/plan', {
+                    stopId: context.stop.id,
+                  })
+                }
+              />
+            ))}
+          </View>
+        )}
+      </Section>
+
+      {selection.currentAccommodation ? (
+        <StayCard
+          accommodation={selection.currentAccommodation}
+          label="CURRENT STAY"
+          onPress={() =>
+            openRoute('/trip/[tripId]/accommodation', {
+              accommodationId:
+                selection.currentAccommodation?.id ?? '',
+            })
+          }
+        />
+      ) : (
+        selection.relevantAccommodations.map((context) => (
+          <StayContext
+            key={`${context.accommodation.id}-${context.phase}`}
+            context={context}
+            onPress={() =>
+              openRoute('/trip/[tripId]/accommodation', {
+                accommodationId: context.accommodation.id,
+              })
+            }
+          />
+        ))
+      )}
+      {selection.relevantUnlinkedBookings.map((booking) => (
+        <BookingCard
+          key={booking.id}
+          booking={booking}
+          label="TODAY · UNLINKED BOOKING"
+          onPress={() =>
+            openRoute('/trip/[tripId]/bookings', {
+              bookingId: booking.id,
+            })
+          }
+        />
+      ))}
+      <ModuleActions openRoute={openRoute} />
+    </View>
+  );
+}
+
+function Completed({
+  selection,
+  openRoute,
+}: {
+  selection: CompanionSelection;
+  openRoute: OpenRoute;
+}) {
+  return (
+    <View style={styles.stack}>
+      <View style={styles.darkCard}>
+        <View style={styles.completeIcon}>
+          <Ionicons name="checkmark" size={24} color={colors.textInverse} />
+        </View>
+        <Text style={styles.darkEyebrow}>JOURNEY COMPLETE</Text>
+        <Text style={styles.completeTitle}>This trip is no longer live.</Text>
+        <Text style={styles.darkBody}>
+          Companion now shows saved history and real counts. It does not imply that a stop or stay is happening now.
+        </Text>
+        <View style={styles.summaryRow}>
+          <Summary value={selection.summary.dayCount} label="DAYS" />
+          <Summary value={selection.summary.stopCount} label="STOPS" />
+          <Summary value={selection.summary.bookingCount} label="BOOKINGS" />
+        </View>
+      </View>
+
+      {selection.displayDay && (
+        <Section
+          eyebrow="FINAL DAY"
+          title={selection.displayDay.title || 'Final day history'}
+          meta={formatDayDate(selection.displayDay.date)}
+          action="Open Plan"
+          onAction={() => openRoute('/trip/[tripId]/plan')}
+        >
+          {selection.stopContexts.length === 0 ? (
+            <Empty
+              icon="book-outline"
+              title="No final-day itinerary was recorded"
+              body="TravelOS keeps history honest and does not fill the day with inferred places."
+            />
+          ) : (
+            <View style={styles.list}>
+              {selection.stopContexts.map((context) => (
+                <CompactStop
+                  key={context.stop.id}
+                  context={context}
+                  onPress={() =>
+                    openRoute('/trip/[tripId]/plan', {
+                      stopId: context.stop.id,
+                    })
+                  }
+                />
+              ))}
+            </View>
+          )}
+        </Section>
+      )}
+      <View style={styles.futureCard}>
+        <Text style={styles.sectionEyebrow}>AFTER TRAVEL</Text>
+        <Text style={styles.futureTitle}>Memories and Travel Book</Text>
+        <Text style={styles.futureBody}>
+          These experiences are planned, but are not implemented in this version.
+        </Text>
+      </View>
+      <ModuleActions openRoute={openRoute} />
+    </View>
+  );
+}
+
+function DateReview({ onPress }: { onPress: () => void }) {
+  return (
+    <Section eyebrow="DATE REVIEW" title="Companion needs valid trip dates">
+      <Empty
+        icon="alert-circle-outline"
+        title="Live context is unavailable"
+        body="The saved range cannot determine a trip phase. No day or stop has been substituted."
+      />
+      <PrimaryButton label="Review Trip Details" onPress={onPress} />
+    </Section>
+  );
+}
+
+function PhaseTransition({
+  phase,
+  children,
+}: PropsWithChildren<{ phase: string }>) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(10)).current;
+
+  useEffect(() => {
+    let mounted = true;
+    let animation: Animated.CompositeAnimation | null = null;
+
+    void AccessibilityInfo.isReduceMotionEnabled().then((reduceMotion) => {
+      if (!mounted || reduceMotion) {
+        opacity.setValue(1);
+        translateY.setValue(0);
+        return;
+      }
+      opacity.setValue(0);
+      translateY.setValue(10);
+      animation = Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 280,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 320,
+          useNativeDriver: true,
+        }),
+      ]);
+      animation.start();
+    });
+
+    return () => {
+      mounted = false;
+      animation?.stop();
+    };
+  }, [opacity, phase, translateY]);
+
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      {children}
+    </Animated.View>
+  );
+}
+
+function Section({
+  eyebrow,
+  title,
+  meta,
+  action,
+  onAction,
+  children,
+}: PropsWithChildren<{
+  eyebrow: string;
+  title: string;
+  meta?: string;
+  action?: string;
+  onAction?: () => void;
+}>) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionCopy}>
+          <Text style={styles.sectionEyebrow}>{eyebrow}</Text>
+          <Text style={styles.sectionTitle}>{title}</Text>
+          {meta && <Text style={styles.sectionMeta}>{meta}</Text>}
+        </View>
+        {action && onAction && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={action}
+            hitSlop={8}
+            onPress={onAction}
+          >
+            <Text style={styles.sectionAction}>{action}</Text>
+          </Pressable>
+        )}
+      </View>
+      <View style={styles.sectionBody}>{children}</View>
+    </View>
+  );
+}
+
+function FocusStop({
+  label,
+  context,
+  openRoute,
+}: {
+  label: 'NOW' | 'NEXT';
+  context: CompanionStopContext;
+  openRoute: OpenRoute;
+}) {
+  const booking = context.bookings[0];
+
+  return (
+    <View style={[styles.focusCard, label === 'NEXT' && styles.nextCard]}>
+      <View style={styles.focusTop}>
+        <Text style={styles.focusLabel}>{label}</Text>
+        <Text style={styles.focusTime}>
+          {context.stop.startTime}
+          {context.stop.endTime ? ` — ${context.stop.endTime}` : ''}
+        </Text>
+      </View>
+      <View style={styles.focusMain}>
+        <View style={styles.focusIcon}>
+          <Ionicons
+            name={stopIcon(context.stop.type)}
+            size={23}
+            color={colors.teal}
+          />
+        </View>
+        <View style={styles.flex}>
+          <Text style={styles.focusTitle}>{context.stop.title}</Text>
+          <Text numberOfLines={1} style={styles.focusMeta}>
+            {context.stop.location?.name || context.stop.type}
+          </Text>
+        </View>
+      </View>
+      {booking && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Open linked booking ${booking.title}`}
+          style={styles.bookingTruth}
+          onPress={() =>
+            openRoute('/trip/[tripId]/bookings', {
+              bookingId: booking.id,
+            })
+          }
+        >
+          <Ionicons name="ticket-outline" size={15} color={colors.brass} />
+          <Text numberOfLines={1} style={styles.bookingTruthText}>
+            {booking.status}
+            {booking.provider ? ` · ${booking.provider}` : ''}
+            {typeof booking.isPaid === 'boolean'
+              ? booking.isPaid
+                ? ' · paid'
+                : ' · unpaid'
+              : ''}
+          </Text>
+          <Ionicons name="chevron-forward" size={15} color={colors.brass} />
+        </Pressable>
+      )}
+      <View style={styles.actionRow}>
+        <PillAction
+          icon="create-outline"
+          label="Open in Plan"
+          onPress={() =>
+            openRoute('/trip/[tripId]/plan', {
+              stopId: context.stop.id,
+            })
+          }
+        />
+        {context.isMapped && (
+          <PillAction
+            icon="map-outline"
+            label="Show on Map"
+            onPress={() =>
+              openRoute('/trip/[tripId]/map', {
+                stopId: context.stop.id,
+              })
+            }
+          />
+        )}
+      </View>
+    </View>
+  );
+}
+
+function TimelineStop({
+  context,
+  last,
+  onPress,
+}: {
+  context: CompanionStopContext;
+  last: boolean;
+  onPress: () => void;
+}) {
+  const label =
+    context.phase === 'current'
+      ? 'NOW'
+      : context.phase === 'next'
+        ? 'NEXT'
+        : context.phase === 'previous'
+          ? 'EARLIER'
+          : context.phase === 'untimed'
+            ? 'NO TIME'
+            : context.phase === 'ordered'
+              ? 'PLAN ORDER'
+              : context.phase === 'history'
+                ? 'HISTORY'
+                : 'LATER';
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${context.stop.title} in Plan, ${label.toLowerCase()}`}
+      style={styles.timelineRow}
+      onPress={onPress}
+    >
+      <View style={styles.rail}>
+        <View
+          style={[
+            styles.dot,
+            context.phase === 'current' && styles.dotCurrent,
+            context.phase === 'previous' && styles.dotPast,
+          ]}
+        />
+        {!last && <View style={styles.line} />}
+      </View>
+      <View style={styles.timelineCard}>
+        <View style={styles.flex}>
+          <Text style={styles.timelineLabel}>{label}</Text>
+          <Text style={styles.rowTitle}>{context.stop.title}</Text>
+          <Text style={styles.rowMeta}>
+            {context.stop.startTime ? `${context.stop.startTime} · ` : ''}
+            {context.stop.type}
+            {context.bookings.length > 0
+              ? ` · ${context.bookings.length} linked ${context.bookings.length === 1 ? 'booking' : 'bookings'}`
+              : ''}
+          </Text>
+        </View>
+        {context.isMapped && (
+          <Ionicons name="location-outline" size={17} color={colors.teal} />
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
+function CompactStop({
+  context,
+  onPress,
+}: {
+  context: CompanionStopContext;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${context.stop.title} in Plan`}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      onPress={onPress}
+    >
+      <View style={styles.rowIcon}>
+        <Ionicons
+          name={stopIcon(context.stop.type)}
+          size={18}
+          color={colors.teal}
+        />
+      </View>
+      <View style={styles.flex}>
+        <Text numberOfLines={1} style={styles.rowTitle}>
+          {context.stop.title}
+        </Text>
+        <Text style={styles.rowMeta}>
+          {context.stop.startTime ? `${context.stop.startTime} · ` : 'Untimed · '}
+          {context.stop.type}
+          {context.bookings.length > 0
+            ? ` · ${context.bookings.length} linked ${context.bookings.length === 1 ? 'booking' : 'bookings'}`
+            : ''}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={17} color={colors.textMuted} />
+    </Pressable>
+  );
+}
+
+function StayCard({
+  accommodation,
+  label,
+  onPress,
+}: {
+  accommodation: Accommodation;
+  label: string;
+  onPress: () => void;
+}) {
+  const checkIn = splitAccommodationDateTime(accommodation.checkInAt);
+  const checkOut = splitAccommodationDateTime(accommodation.checkOutAt);
+
+  return (
+    <ContextCard
+      icon="bed-outline"
+      label={label}
+      title={accommodation.name}
+      meta={`${
+        checkIn
+          ? `${formatTripDate(checkIn.date)} · ${checkIn.time}`
+          : accommodation.address || 'Stay details saved'
+      }${checkOut ? ` — ${formatTripDate(checkOut.date)}` : ''}`}
+      onPress={onPress}
+    />
+  );
+}
+
+function StayContext({
+  context,
+  onPress,
+}: {
+  context: AccommodationDayContext;
+  onPress: () => void;
+}) {
+  const event = splitAccommodationDateTime(
+    context.phase === 'check-out'
+      ? context.accommodation.checkOutAt
+      : context.accommodation.checkInAt,
+  );
+
+  return (
+    <ContextCard
+      icon="bed-outline"
+      label={
+        context.phase === 'check-in'
+          ? 'CHECK-IN TODAY'
+          : context.phase === 'check-out'
+            ? 'CHECK-OUT TODAY'
+            : 'TODAY’S STAY'
+      }
+      title={context.accommodation.name}
+      meta={event ? `${event.time} local` : 'Stay context saved'}
+      onPress={onPress}
+    />
+  );
+}
+
+function BookingCard({
+  booking,
+  label,
+  onPress,
+}: {
+  booking: Booking;
+  label: string;
+  onPress: () => void;
+}) {
+  const time = formatBookingTemporalValue(booking.startAt);
+
+  return (
+    <ContextCard
+      icon="ticket-outline"
+      label={label}
+      title={booking.title}
+      meta={`${booking.status}${booking.provider ? ` · ${booking.provider}` : ''}${time ? ` · ${time}` : ''}`}
+      onPress={onPress}
+      brass
+    />
+  );
+}
+
+function ContextCard({
+  icon,
+  label,
+  title,
+  meta,
+  onPress,
+  brass = false,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  title: string;
+  meta: string;
+  onPress: () => void;
+  brass?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${title}`}
+      style={({ pressed }) => [
+        styles.contextCard,
+        brass && styles.contextCardBrass,
+        pressed && styles.pressed,
+      ]}
+      onPress={onPress}
+    >
+      <View style={styles.contextIcon}>
+        <Ionicons
+          name={icon}
+          size={21}
+          color={brass ? colors.brass : colors.brand}
+        />
+      </View>
+      <View style={styles.flex}>
+        <Text style={[styles.contextLabel, brass && styles.brassText]}>
+          {label}
+        </Text>
+        <Text numberOfLines={1} style={styles.contextTitle}>{title}</Text>
+        <Text numberOfLines={1} style={styles.contextMeta}>{meta}</Text>
+      </View>
+      <Ionicons
+        name="arrow-forward"
+        size={18}
+        color={brass ? colors.brass : colors.brand}
+      />
+    </Pressable>
+  );
+}
+
+function Readiness({
+  readiness,
+  openRoute,
+}: {
+  readiness: CompanionReadiness;
+  openRoute: OpenRoute;
+}) {
+  const rows: Array<{
+    icon: keyof typeof Ionicons.glyphMap;
+    title: string;
+    body: string;
+    ready: boolean;
+    route: CompanionPath;
+  }> = [
+    {
+      icon: 'calendar-outline',
+      title: 'Itinerary',
+      body: `${readiness.populatedDayCount} of ${readiness.totalDayCount} days populated`,
+      ready:
+        readiness.totalDayCount > 0 &&
+        readiness.populatedDayCount === readiness.totalDayCount,
+      route: '/trip/[tripId]/plan',
+    },
+    {
+      icon: 'bed-outline',
+      title: 'Accommodation',
+      body:
+        readiness.accommodationCount > 0
+          ? `${readiness.accommodationCount} ${readiness.accommodationCount === 1 ? 'stay' : 'stays'} saved`
+          : 'No stay saved yet',
+      ready: readiness.accommodationCount > 0,
+      route: '/trip/[tripId]/accommodation',
+    },
+    {
+      icon: 'briefcase-outline',
+      title: 'Bookings',
+      body:
+        readiness.bookingCount > 0
+          ? `${readiness.bookingCount} active ${readiness.bookingCount === 1 ? 'booking' : 'bookings'}`
+          : 'No active bookings saved',
+      ready: readiness.bookingCount > 0,
+      route: '/trip/[tripId]/bookings',
+    },
+    {
+      icon: 'people-outline',
+      title: 'Travelers',
+      body:
+        readiness.travelerCount > 0
+          ? `${readiness.travelerCount} ${readiness.travelerCount === 1 ? 'traveler' : 'travelers'} added`
+          : 'No travelers added yet',
+      ready: readiness.travelerCount > 0,
+      route: '/trip/[tripId]/travelers',
+    },
+    {
+      icon: 'wallet-outline',
+      title: 'Budget',
+      body: readiness.budgetConfigured
+        ? 'Planned budget configured'
+        : 'No planned budget yet',
+      ready: readiness.budgetConfigured,
+      route: '/trip/[tripId]/budget',
+    },
+  ];
+
+  return (
+    <Section
+      eyebrow="PREPARATION"
+      title="Your saved trip shape"
+      meta="Optional modules stay neutral until you use them"
+    >
+      <View style={styles.list}>
+        {rows.map((row) => (
+          <Pressable
+            key={row.title}
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${row.title}. ${row.body}`}
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+            onPress={() => openRoute(row.route)}
+          >
+            <View style={styles.rowIcon}>
+              <Ionicons name={row.icon} size={18} color={colors.teal} />
+            </View>
+            <View style={styles.flex}>
+              <Text style={styles.rowTitle}>{row.title}</Text>
+              <Text style={styles.rowMeta}>{row.body}</Text>
+            </View>
+            <View style={[styles.state, row.ready && styles.stateReady]}>
+              <Text
+                style={[
+                  styles.stateText,
+                  row.ready && styles.stateTextReady,
+                ]}
+              >
+                {row.ready ? 'SAVED' : 'OPEN'}
+              </Text>
+            </View>
+          </Pressable>
+        ))}
+      </View>
+    </Section>
+  );
+}
+
+function ModuleActions({ openRoute }: { openRoute: OpenRoute }) {
+  return (
+    <View style={styles.moduleRow}>
+      <PillAction
+        icon="wallet-outline"
+        label="Budget"
+        onPress={() => openRoute('/trip/[tripId]/budget')}
+      />
+      <PillAction
+        icon="people-outline"
+        label="Travelers"
+        onPress={() => openRoute('/trip/[tripId]/travelers')}
+      />
+      <PillAction
+        icon="options-outline"
+        label="Trip details"
+        onPress={() => openRoute('/trip/[tripId]/details')}
+      />
+    </View>
+  );
+}
+
+function RoundButton({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={styles.roundButton}
+      onPress={onPress}
+    >
+      <Ionicons name={icon} size={20} color={colors.brand} />
+    </Pressable>
+  );
+}
+
+function PillAction({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.pillAction, pressed && styles.pressed]}
+      onPress={onPress}
+    >
+      <Ionicons name={icon} size={16} color={colors.brand} />
+      <Text style={styles.pillText}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function PrimaryButton({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
+      onPress={onPress}
+    >
+      <Text style={styles.primaryText}>{label}</Text>
+      <Ionicons name="arrow-forward" size={18} color={colors.textInverse} />
+    </Pressable>
+  );
+}
+
+function TruthNotice({
+  icon,
+  body,
+  brass = false,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  body: string;
+  brass?: boolean;
+}) {
+  return (
+    <View style={[styles.notice, brass && styles.noticeBrass]}>
+      <Ionicons
+        name={icon}
+        size={17}
+        color={brass ? colors.brass : colors.teal}
+      />
+      <Text style={styles.noticeText}>{body}</Text>
+    </View>
+  );
+}
+
+function Empty({
+  icon,
+  title,
+  body,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  body: string;
+}) {
+  return (
+    <View style={styles.empty}>
+      <View style={styles.emptyIcon}>
+        <Ionicons name={icon} size={21} color={colors.teal} />
+      </View>
+      <View style={styles.flex}>
+        <Text style={styles.emptyTitle}>{title}</Text>
+        <Text style={styles.emptyBody}>{body}</Text>
+      </View>
+    </View>
+  );
+}
+
+function Summary({ value, label }: { value: number; label: string }) {
+  return (
+    <View style={styles.summary}>
+      <Text style={styles.summaryValue}>{value}</Text>
+      <Text style={styles.summaryLabel}>{label}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  screenContent: { paddingBottom: spacing[8] },
+  stack: { gap: spacing[5] },
+  list: { gap: spacing[2] },
+  pressed: { opacity: 0.72 },
+  topBar: {
+    paddingTop: spacing[3],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  roundButton: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.subtle,
+  },
+  topLabel: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 2,
+    color: colors.brass,
+  },
+  hero: { paddingTop: spacing[10], paddingBottom: spacing[8] },
+  phasePill: {
+    alignSelf: 'flex-start',
+    minHeight: 28,
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.pill,
+    backgroundColor: colors.tealSoft,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[4],
+  },
+  phaseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.teal,
+  },
+  phaseText: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.1,
+    color: colors.teal,
+  },
+  destination: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.8,
+    color: colors.brass,
+    marginBottom: spacing[3],
+  },
+  tripTitle: {
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.display,
+    lineHeight: lineHeight.display,
+    color: colors.textPrimary,
+  },
+  tripDates: {
+    marginTop: spacing[3],
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.bodySmall,
+    color: colors.textSecondary,
+  },
+  notice: {
+    marginTop: spacing[4],
+    padding: spacing[3],
+    borderRadius: radius.md,
+    backgroundColor: colors.tealSoft,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[2],
+  },
+  noticeBrass: { backgroundColor: colors.brassSoft },
+  noticeText: {
+    flex: 1,
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textSecondary,
+  },
+  darkCard: {
+    padding: spacing[6],
+    borderRadius: radius.xl,
+    backgroundColor: colors.brand,
+    ...shadows.card,
+  },
+  darkEyebrow: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.7,
+    color: '#D4C29F',
+  },
+  countdown: {
+    marginTop: spacing[2],
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: 70,
+    lineHeight: 76,
+    color: colors.textInverse,
+  },
+  darkTitle: {
+    fontFamily: fontFamily.serifMedium,
+    fontSize: fontSize.titleSmall,
+    color: colors.textInverse,
+  },
+  darkBody: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.bodySmall,
+    lineHeight: lineHeight.bodySmall,
+    color: '#DCE7E3',
+  },
+  darkMeta: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: '#DCE7E3',
+  },
+  brassRule: {
+    width: 44,
+    height: 2,
+    marginVertical: spacing[5],
+    backgroundColor: colors.brass,
+  },
+  progressCard: {
+    padding: spacing[5],
+    borderRadius: radius.xl,
+    backgroundColor: colors.brand,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[4],
+    ...shadows.card,
+  },
+  progressCopy: { flex: 1 },
+  progressTitle: {
+    marginTop: spacing[2],
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.title,
+    color: colors.textInverse,
+  },
+  remainingBadge: {
+    minWidth: 78,
+    padding: spacing[3],
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+  },
+  remainingNumber: {
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.title,
+    color: colors.textInverse,
+  },
+  remainingLabel: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 9,
+    letterSpacing: 1,
+    color: '#D4C29F',
+  },
+  section: {
+    padding: spacing[5],
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    ...shadows.subtle,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing[3],
+  },
+  sectionCopy: { flex: 1 },
+  sectionEyebrow: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.5,
+    color: colors.brass,
+  },
+  sectionTitle: {
+    marginTop: spacing[2],
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleSmall,
+    lineHeight: lineHeight.titleSmall,
+    color: colors.textPrimary,
+  },
+  sectionMeta: {
+    marginTop: spacing[2],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
+  },
+  sectionAction: {
+    minHeight: 44,
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.teal,
+  },
+  sectionBody: { marginTop: spacing[5] },
+  focusCard: {
+    padding: spacing[5],
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.teal,
+    backgroundColor: colors.surface,
+    ...shadows.card,
+  },
+  nextCard: { borderColor: colors.borderStrong },
+  focusTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  focusLabel: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.8,
+    color: colors.brass,
+  },
+  focusTime: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.teal,
+  },
+  focusMain: {
+    marginTop: spacing[4],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[4],
+  },
+  focusIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
+    backgroundColor: colors.tealSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  focusTitle: {
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleSmall,
+    lineHeight: lineHeight.titleSmall,
+    color: colors.textPrimary,
+  },
+  focusMeta: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
+    textTransform: 'capitalize',
+  },
+  bookingTruth: {
+    minHeight: 48,
+    marginTop: spacing[4],
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.md,
+    backgroundColor: colors.brassSoft,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  bookingTruthText: {
+    flex: 1,
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.textSecondary,
+    textTransform: 'capitalize',
+  },
+  actionRow: {
+    marginTop: spacing[4],
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+  },
+  pillAction: {
+    minHeight: 44,
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  pillText: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.brand,
+  },
+  timelineRow: { minHeight: 76, flexDirection: 'row' },
+  rail: { width: 22, alignItems: 'center' },
+  dot: {
+    width: 9,
+    height: 9,
+    marginTop: 25,
+    borderRadius: radius.pill,
+    borderWidth: 2,
+    borderColor: colors.teal,
+    backgroundColor: colors.surface,
+  },
+  dotCurrent: {
+    width: 13,
+    height: 13,
+    marginTop: 23,
+    borderWidth: 3,
+    backgroundColor: colors.tealSoft,
+  },
+  dotPast: {
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.borderStrong,
+  },
+  line: {
+    flex: 1,
+    width: 1,
+    marginVertical: 3,
+    backgroundColor: colors.borderStrong,
+  },
+  timelineCard: {
+    flex: 1,
+    minHeight: 66,
+    marginLeft: spacing[2],
+    marginBottom: spacing[2],
+    padding: spacing[3],
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceWarm,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  timelineLabel: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 9,
+    letterSpacing: 1,
+    color: colors.brass,
+  },
+  row: {
+    minHeight: 68,
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceWarm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+  rowIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.sm,
+    backgroundColor: colors.tealSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowTitle: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+  },
+  rowMeta: {
+    marginTop: 3,
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
+    textTransform: 'capitalize',
+  },
+  moreText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
+  },
+  contextCard: {
+    minHeight: 92,
+    padding: spacing[4],
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.brandSoft,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+  contextCardBrass: { backgroundColor: colors.brassSoft },
+  contextIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contextLabel: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.1,
+    color: colors.brand,
+  },
+  brassText: { color: colors.brass },
+  contextTitle: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.bodyLarge,
+    color: colors.textPrimary,
+  },
+  contextMeta: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: colors.textSecondary,
+  },
+  state: {
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderRadius: radius.pill,
+    backgroundColor: colors.backgroundSoft,
+  },
+  stateReady: { backgroundColor: colors.tealSoft },
+  stateText: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 9,
+    letterSpacing: 0.7,
+    color: colors.textMuted,
+  },
+  stateTextReady: { color: colors.teal },
+  empty: {
+    padding: spacing[3],
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceWarm,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[3],
+  },
+  emptyIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.sm,
+    backgroundColor: colors.tealSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+  },
+  emptyBody: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textSecondary,
+  },
+  primaryButton: {
+    minHeight: 52,
+    marginTop: spacing[4],
+    borderRadius: radius.md,
+    backgroundColor: colors.brand,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[3],
+  },
+  primaryText: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.textInverse,
+  },
+  completeIcon: {
+    width: 48,
+    height: 48,
+    marginBottom: spacing[5],
+    borderRadius: radius.pill,
+    backgroundColor: colors.teal,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completeTitle: {
+    marginTop: spacing[2],
+    marginBottom: spacing[3],
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.title,
+    lineHeight: lineHeight.title,
+    color: colors.textInverse,
+  },
+  summaryRow: {
+    marginTop: spacing[6],
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  summary: {
+    flex: 1,
+    minHeight: 72,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summaryValue: {
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleSmall,
+    color: colors.textInverse,
+  },
+  summaryLabel: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 9,
+    letterSpacing: 1,
+    color: '#D4C29F',
+  },
+  futureCard: {
+    padding: spacing[5],
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.backgroundSoft,
+  },
+  futureTitle: {
+    marginTop: spacing[2],
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleSmall,
+    color: colors.textPrimary,
+  },
+  futureBody: {
+    marginTop: spacing[2],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.bodySmall,
+    lineHeight: lineHeight.bodySmall,
+    color: colors.textSecondary,
+  },
+  moduleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+  },
+  bottomSpace: { height: spacing[12] },
+});
