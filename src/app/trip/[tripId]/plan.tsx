@@ -2,12 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 
 import {
-  useLocalSearchParams,
-} from 'expo-router';
-
-import {
-  useCallback,
-  useEffect,
   useState,
 } from 'react';
 
@@ -37,9 +31,9 @@ import type {
 } from '@/domain/entities';
 
 import {
-  tripService,
-  type TripWorkspace,
-} from '@/services/trip-service';
+  useTripWorkspace,
+  useTripWorkspaceFocusRefresh,
+} from '@/features/trip-workspace/trip-workspace-context';
 
 import {
   colors,
@@ -132,24 +126,12 @@ function hasCoordinates(
 }
 
 export default function PlanScreen() {
-  const { tripId } =
-    useLocalSearchParams<{
-      tripId: string;
-    }>();
-
-  const [
+  const {
     workspace,
-    setWorkspace,
-  ] =
-    useState<TripWorkspace | null>(
-      null,
-    );
+    actions,
+  } = useTripWorkspace();
 
-  const [
-    isLoading,
-    setIsLoading,
-  ] =
-    useState(true);
+  useTripWorkspaceFocusRefresh();
 
   const [
     selectedDay,
@@ -206,45 +188,6 @@ export default function PlanScreen() {
     setIsSaving,
   ] =
     useState(false);
-
-  const loadPlan =
-    useCallback(
-      async () => {
-        if (!tripId) {
-          return;
-        }
-
-        try {
-          setIsLoading(true);
-
-          const result =
-            await tripService.getWorkspace(
-              tripId,
-            );
-
-          setWorkspace(
-            result,
-          );
-        } catch (error) {
-          console.error(
-            '[Plan] Load error:',
-            error,
-          );
-
-          Alert.alert(
-            'Could not load plan',
-            'Travel OS could not load this itinerary.',
-          );
-        } finally {
-          setIsLoading(false);
-        }
-      },
-      [tripId],
-    );
-
-  useEffect(() => {
-    void loadPlan();
-  }, [loadPlan]);
 
   const resetModal = () => {
     setSelectedDay(null);
@@ -474,7 +417,7 @@ export default function PlanScreen() {
         setIsSaving(true);
 
         if (editingStop) {
-          await tripService.updateStop(
+          await actions.updateStop(
             {
               ...editingStop,
 
@@ -539,14 +482,12 @@ export default function PlanScreen() {
                 now,
             };
 
-          await tripService.addStop(
+          await actions.addStop(
             stop,
           );
         }
 
         resetModal();
-
-        await loadPlan();
       } catch (error) {
         console.error(
           '[Plan] Save error:',
@@ -582,11 +523,9 @@ export default function PlanScreen() {
           onPress:
             async () => {
               try {
-                await tripService.deleteStop(
+                await actions.deleteStop(
                   stop.id,
                 );
-
-                await loadPlan();
               } catch (
                 error
               ) {
@@ -670,11 +609,9 @@ export default function PlanScreen() {
       ];
 
       try {
-        await tripService.reorderStops(
+        await actions.reorderStops(
           reordered,
         );
-
-        await loadPlan();
       } catch (error) {
         console.error(
           '[Plan] Reorder error:',
@@ -687,30 +624,6 @@ export default function PlanScreen() {
         );
       }
     };
-
-  if (
-    isLoading ||
-    !workspace
-  ) {
-    return (
-      <Screen>
-        <View
-          style={
-            styles.center
-          }
-        >
-          <Text
-            style={
-              styles.loading
-            }
-          >
-            Building your
-            itinerary…
-          </Text>
-        </View>
-      </Screen>
-    );
-  }
 
   return (
     <>
@@ -1563,23 +1476,6 @@ export default function PlanScreen() {
 
 const styles =
   StyleSheet.create({
-    center: {
-      flex: 1,
-      alignItems:
-        'center',
-      justifyContent:
-        'center',
-    },
-
-    loading: {
-      fontFamily:
-        fontFamily.sansMedium,
-      fontSize:
-        fontSize.bodySmall,
-      color:
-        colors.textMuted,
-    },
-
     header: {
       paddingTop:
         spacing[6],

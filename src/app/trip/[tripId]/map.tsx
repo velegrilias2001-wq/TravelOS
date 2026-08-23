@@ -1,12 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
 
 import {
   useCallback,
   useEffect,
   useMemo,
   useRef,
-  useState,
 } from 'react';
 
 import {
@@ -32,9 +30,9 @@ import type {
 } from '@/domain/entities';
 
 import {
-  tripService,
-  type TripWorkspace,
-} from '@/services/trip-service';
+  useTripWorkspace,
+  useTripWorkspaceFocusRefresh,
+} from '@/features/trip-workspace/trip-workspace-context';
 
 import {
   colors,
@@ -58,10 +56,10 @@ const WORLD_REGION: Region = {
 };
 
 export default function TripMapScreen() {
-  const { tripId } =
-    useLocalSearchParams<{
-      tripId: string;
-    }>();
+  const { workspace } =
+    useTripWorkspace();
+
+  useTripWorkspaceFocusRefresh();
 
   const insets =
     useSafeAreaInsets();
@@ -70,54 +68,6 @@ export default function TripMapScreen() {
     useRef<MapView | null>(
       null,
     );
-
-  const [
-    workspace,
-    setWorkspace,
-  ] =
-    useState<TripWorkspace | null>(
-      null,
-    );
-
-  const [
-    isLoading,
-    setIsLoading,
-  ] =
-    useState(true);
-
-  const loadWorkspace =
-    useCallback(
-      async () => {
-        if (!tripId) {
-          return;
-        }
-
-        try {
-          setIsLoading(true);
-
-          const result =
-            await tripService.getWorkspace(
-              tripId,
-            );
-
-          setWorkspace(
-            result,
-          );
-        } catch (error) {
-          console.error(
-            '[Map] Load error:',
-            error,
-          );
-        } finally {
-          setIsLoading(false);
-        }
-      },
-      [tripId],
-    );
-
-  useEffect(() => {
-    void loadWorkspace();
-  }, [loadWorkspace]);
 
   const mappedStops =
     useMemo<MappedStop[]>(
@@ -283,6 +233,10 @@ export default function TripMapScreen() {
       );
     }, [allCoordinates]);
 
+  useEffect(() => {
+    fitMap();
+  }, [fitMap]);
+
   const focusStop = (
     item: MappedStop,
   ) => {
@@ -299,23 +253,6 @@ export default function TripMapScreen() {
       450,
     );
   };
-
-  if (
-    isLoading ||
-    !workspace
-  ) {
-    return (
-      <View
-        style={styles.loadingScreen}
-      >
-        <Text
-          style={styles.loadingText}
-        >
-          Preparing your map…
-        </Text>
-      </View>
-    );
-  }
 
   const destinationName =
     workspace.trip
@@ -652,25 +589,6 @@ const styles =
 
     map: {
       ...StyleSheet.absoluteFill,
-    },
-
-    loadingScreen: {
-      flex: 1,
-      alignItems:
-        'center',
-      justifyContent:
-        'center',
-      backgroundColor:
-        colors.background,
-    },
-
-    loadingText: {
-      fontFamily:
-        fontFamily.sansMedium,
-      fontSize:
-        fontSize.bodySmall,
-      color:
-        colors.textMuted,
     },
 
     headerWrap: {

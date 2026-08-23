@@ -236,7 +236,13 @@ let selfTestPromise: Promise<void> | null = null;
 
 export function runPersistenceSelfTestOnce(): Promise<void> {
   if (!selfTestPromise) {
-    selfTestPromise = performSelfTest();
+    selfTestPromise = performSelfTest().catch(
+      (error: unknown) => {
+        selfTestPromise = null;
+
+        throw error;
+      },
+    );
   }
 
   return selfTestPromise;

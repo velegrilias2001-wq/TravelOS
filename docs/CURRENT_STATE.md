@@ -7,10 +7,12 @@ This file describes verified implementation, not intended behavior. Unknown or u
 ## Repository checkpoint
 
 - Current development branch: foundation/hardening-phase-0
-- Phase 0 baseline: 5e86f87 — Add TravelOS product and engineering documentation
+- Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - The native architecture checkpoint remains ec0b28a — Add native location picker and mapped itinerary stops.
 - No Git remote or upstream branch was configured during the audit.
 - .env.local exists and is ignored. Its contents were not read.
+
+The working tree contains the verified but uncommitted Phase 0B implementation described below.
 
 Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, truth-aware Today, bookings, Google Maps on Android, the location picker, and Phase 0A persistence safety.
 
@@ -38,10 +40,11 @@ The codebase has a sensible layered direction:
 2. Repository interfaces describe persistence operations.
 3. SQLite repositories implement those interfaces.
 4. Services coordinate aggregate workflows.
-5. Zustand holds trip-list and active-trip UI/session state.
-6. Expo Router screens render and mutate trip workspaces through the service layer.
+5. Zustand holds the global trip-list cache and its loading state; it no longer holds a redundant active-trip snapshot.
+6. A route-scoped TripWorkspace provider owns one ephemeral aggregate snapshot for the active trip and exposes service-backed mutations.
+7. Expo Router Trip Space screens render the shared snapshot and mutate it through the provider while SQLite remains authoritative.
 
-TripService builds a TripWorkspace aggregate from the canonical Trip and its related records. Screens also keep local workspace state, so durable records currently have two UI-facing state paths: the small Zustand store and screen-owned workspace snapshots.
+TripService builds a TripWorkspace aggregate from the canonical Trip and its related records. Today, Plan, Map, and Bookings now consume one provider above the nested Trip Space tabs instead of maintaining independent screen-owned copies. Successful mutations invalidate and reload that aggregate from SQLite. Focus refreshes are revision-aware, so current data does not trigger an unnecessary database reload.
 
 ## Canonical domain model
 
@@ -136,7 +139,7 @@ This is truth-aware compared with a static mock, but not yet Companion-grade:
 - It does not consume persisted TripRuntimeState.
 - It does not derive current and next stop phases.
 - Booking and accommodation context is not integrated.
-- Error and missing-trip states are incomplete.
+- Trip-level loading, refresh, not-found, and recoverable read-error behavior is shared with the other Trip Space screens.
 
 ### Plan
 
@@ -197,15 +200,17 @@ The following have domain and persistence support but no complete user-facing fl
 
 These are foundations, not shipped features. Their repository existence does not prove the end-to-end behavior is complete.
 
-## State and navigation risks
+## State and navigation lifecycle
 
-- Screens load TripWorkspace data independently and retain local snapshots.
-- Changes are not consistently refreshed when a tab regains focus.
-- Zustand and screen-local state can become stale relative to SQLite.
-- Invalid trip IDs can leave some screens in an indefinite loading state.
-- Bootstrap failures are not surfaced consistently.
-- Only parts of Trip Space expose a clear path back to global navigation.
-- The current nested tab structure needs native usability testing on both platforms.
+- Today, Plan, Map, and Bookings share one route-scoped TripWorkspace lifecycle above the nested tabs.
+- Initial loading, ready, refreshing, not-found, and recoverable error states are explicit.
+- Stop and booking mutations use the existing TripService, then invalidate and reload the shared aggregate from SQLite.
+- Focus-aware refresh retries invalid or failed snapshots but skips database reads when the shared revision is already current.
+- Missing and unknown trip IDs render a native not-found state with a safe route back to Trips instead of waiting indefinitely.
+- Fatal database, persistence self-test, or initial trip-list bootstrap failures render a retryable root state rather than opening the application against an unverified database.
+- Zustand no longer maintains the unused activeTrip/activeTripId path. It remains a UI cache for the global trip list, not a second durable trip database.
+
+Remaining risks include requiring future Trip Space mutations to use the shared action/invalidation contract, the absence of an external-change observer for writes made outside that contract, and the need to test the nested tab lifecycle on iOS and a broader range of Android devices.
 
 ## Design system state
 
@@ -221,12 +226,14 @@ It is still an early design system:
 
 ## Testing and release readiness
 
-Verified checks at the takeover checkpoint:
+Verified checks through Phase 0B:
 
-- npm test runs seven automated persistence tests using Node's built-in SQLite engine.
+- npm test runs fourteen automated tests: seven persistence tests using Node's built-in SQLite engine and seven TripWorkspace lifecycle tests.
 - Fresh database migration, version-2 drift repair, migration rollback, fresh/partial/repeated TripDay generation, concurrent idempotency, and stop reorder rollback are covered.
+- Workspace initial loading, not-found behavior, revision-aware refresh, shared-consumer mutation propagation, recoverable retry, and mutation-during-load invalidation are covered.
 - The Android debug build compiles, installs, launches, and reaches both the development persistence self-test and bootstrap-ready state on an x86_64 emulator.
 - An on-device Expo SQLite rehearsal verified `PRAGMA user_version = 3`, all ten migration/invariant indexes, existing seeded trip survival, canonical TripDay generation/loading, and lossless stop reorder in an isolated database.
+- Phase 0B Android runtime verification created and opened an isolated trip, selected and persisted a real mapped stop, observed it and its edited title on Map after tab navigation, preserved a booking across tab changes, and confirmed an unknown trip route reaches the native not-found state. Only the isolated verification trip was removed afterwards; the pre-existing trip remained visible.
 - npx tsc --noEmit passes for the application.
 - npm ls --depth=0 passed at the takeover audit.
 - git diff --check is part of the required completion checks.
@@ -257,6 +264,8 @@ Missing release foundations:
 - Atomic stop reorder that preserves stop identity and content.
 - Forward-only migration v3 with duplicate-day archival and high-value uniqueness/index protection.
 - A dependency-free automated persistence test baseline.
+- A route-scoped, revision-aware TripWorkspace lifecycle that keeps SQLite authoritative and shares current data across Trip Space tabs.
+- Explicit trip loading, refresh, not-found, recoverable error, and fatal bootstrap states.
 - Truth-aware upcoming/active/completed Today logic.
 - Real selected coordinates persisted and rendered as map pins.
 - Separate accounting-currency concept.
@@ -272,11 +281,10 @@ These pieces are promising foundations; they do not make the app production-read
 - Map intelligence, routes, and offline behavior.
 - Budget, travelers, runtime state, memories, and Travel Book UI.
 - Discover, World, Profile, and More.
-- Reactive workspace state.
 - Shared UI primitives and accessibility.
 - iOS platform setup.
 - Tests, CI, EAS, release operations, sync, backup, and observability.
 
 ## Overall assessment
 
-TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A now protects the highest-risk day-generation, ordering, and migration paths. The immediate priority remains the rest of Phase 0: reactive workspace state, explicit invalid-trip/error behavior, relationship decisions, query efficiency, and broader high-value tests.
+TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, and Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. The immediate priority remains the rest of Phase 0: relationship decisions, query efficiency, broader repository and truth-state tests, iOS migration/runtime verification, and baseline CI/lint automation.

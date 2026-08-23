@@ -23,19 +23,42 @@ import {
 } from '@expo-google-fonts/playfair-display';
 
 import { useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
+} from 'react-native';
 
 import { travelOSDatabase } from '@/data/database/expo-sqlite-database';
 import { runPersistenceSelfTestOnce } from '@/lib/persistence-self-test';
 import { useTripStore } from '@/store/trip-store';
+import {
+  colors,
+  fontFamily,
+  fontSize,
+  lineHeight,
+  radius,
+  spacing,
+} from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
-  const [databaseReady, setDatabaseReady] =
-    useState(false);
+  const [
+    bootstrapStatus,
+    setBootstrapStatus,
+  ] = useState<
+    'loading' | 'ready' | 'error'
+  >('loading');
+
+  const [
+    bootstrapAttempt,
+    setBootstrapAttempt,
+  ] = useState(0);
 
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -50,7 +73,11 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    let active = true;
+
     const bootstrap = async () => {
+      setBootstrapStatus('loading');
+
       try {
         await travelOSDatabase.initialize();
 
@@ -69,34 +96,44 @@ export default function RootLayout() {
         console.log(
           '[TravelOS] Bootstrap ready',
         );
+
+        if (active) {
+          setBootstrapStatus('ready');
+        }
       } catch (error) {
         console.error(
           '[TravelOS] Bootstrap failed:',
           error,
         );
-      } finally {
-        setDatabaseReady(true);
+
+        if (active) {
+          setBootstrapStatus('error');
+        }
       }
     };
 
     void bootstrap();
-  }, []);
+
+    return () => {
+      active = false;
+    };
+  }, [bootstrapAttempt]);
 
   useEffect(() => {
     if (
-      databaseReady &&
+      bootstrapStatus !== 'loading' &&
       (fontsLoaded || fontError)
     ) {
       void SplashScreen.hideAsync();
     }
   }, [
-    databaseReady,
+    bootstrapStatus,
     fontsLoaded,
     fontError,
   ]);
 
   if (
-    !databaseReady ||
+    bootstrapStatus === 'loading' ||
     (!fontsLoaded && !fontError)
   ) {
     return null;
@@ -110,27 +147,124 @@ export default function RootLayout() {
           : DefaultTheme
       }
     >
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="(tabs)" />
-
-        <Stack.Screen
-          name="new-trip"
-          options={{
-            presentation: 'card',
+      {bootstrapStatus === 'error' ? (
+        <BootstrapErrorState
+          onRetry={() => {
+            setBootstrapAttempt(
+              (attempt) => attempt + 1,
+            );
           }}
         />
-
-        <Stack.Screen
-          name="trip/[tripId]"
-          options={{
-            presentation: 'card',
+      ) : (
+        <Stack
+          screenOptions={{
+            headerShown: false,
           }}
-        />
-      </Stack>
+        >
+          <Stack.Screen name="(tabs)" />
+
+          <Stack.Screen
+            name="new-trip"
+            options={{
+              presentation: 'card',
+            }}
+          />
+
+          <Stack.Screen
+            name="trip/[tripId]"
+            options={{
+              presentation: 'card',
+            }}
+          />
+        </Stack>
+      )}
     </ThemeProvider>
   );
 }
+
+function BootstrapErrorState({
+  onRetry,
+}: {
+  onRetry: () => void;
+}) {
+  return (
+    <View style={styles.bootstrapScreen}>
+      <Text style={styles.bootstrapEyebrow}>
+        TRAVEL OS
+      </Text>
+
+      <Text style={styles.bootstrapTitle}>
+        Your travel data couldn&apos;t be opened.
+      </Text>
+
+      <Text style={styles.bootstrapBody}>
+        Nothing has been changed. Try opening your local travel data again.
+      </Text>
+
+      <Pressable
+        style={styles.bootstrapButton}
+        onPress={onRetry}
+      >
+        <Text
+          style={styles.bootstrapButtonText}
+        >
+          Try again
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  bootstrapScreen: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[8],
+    backgroundColor: colors.background,
+  },
+
+  bootstrapEyebrow: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.8,
+    color: colors.brass,
+  },
+
+  bootstrapTitle: {
+    maxWidth: 340,
+    marginTop: spacing[4],
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.title,
+    lineHeight: lineHeight.title,
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+
+  bootstrapBody: {
+    maxWidth: 330,
+    marginTop: spacing[3],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.bodySmall,
+    lineHeight: lineHeight.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+
+  bootstrapButton: {
+    minWidth: 180,
+    height: 52,
+    marginTop: spacing[7],
+    paddingHorizontal: spacing[6],
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brand,
+  },
+
+  bootstrapButtonText: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.textInverse,
+  },
+});

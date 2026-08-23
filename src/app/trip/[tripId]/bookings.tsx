@@ -1,10 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
-import { useLocalSearchParams } from 'expo-router';
 
 import {
-  useCallback,
-  useEffect,
   useState,
 } from 'react';
 
@@ -29,9 +26,9 @@ import type {
 } from '@/domain/entities';
 
 import {
-  tripService,
-  type TripWorkspace,
-} from '@/services/trip-service';
+  useTripWorkspace,
+  useTripWorkspaceFocusRefresh,
+} from '@/features/trip-workspace/trip-workspace-context';
 
 import {
   colors,
@@ -158,24 +155,12 @@ function formatDateTime(
 }
 
 export default function BookingsScreen() {
-  const { tripId } =
-    useLocalSearchParams<{
-      tripId: string;
-    }>();
-
-  const [
+  const {
     workspace,
-    setWorkspace,
-  ] =
-    useState<TripWorkspace | null>(
-      null,
-    );
+    actions,
+  } = useTripWorkspace();
 
-  const [
-    isLoading,
-    setIsLoading,
-  ] =
-    useState(true);
+  useTripWorkspaceFocusRefresh();
 
   const [
     modalVisible,
@@ -266,45 +251,6 @@ export default function BookingsScreen() {
     setIsSaving,
   ] =
     useState(false);
-
-  const loadWorkspace =
-    useCallback(
-      async () => {
-        if (!tripId) {
-          return;
-        }
-
-        try {
-          setIsLoading(true);
-
-          const result =
-            await tripService.getWorkspace(
-              tripId,
-            );
-
-          setWorkspace(
-            result,
-          );
-        } catch (error) {
-          console.error(
-            '[Bookings] Load error:',
-            error,
-          );
-
-          Alert.alert(
-            'Could not load bookings',
-            'Travel OS could not load your bookings.',
-          );
-        } finally {
-          setIsLoading(false);
-        }
-      },
-      [tripId],
-    );
-
-  useEffect(() => {
-    void loadWorkspace();
-  }, [loadWorkspace]);
 
   const resetForm = () => {
     setEditingBooking(null);
@@ -458,7 +404,7 @@ export default function BookingsScreen() {
         setIsSaving(true);
 
         if (editingBooking) {
-          await tripService.updateBooking(
+          await actions.updateBooking(
             {
               ...editingBooking,
 
@@ -555,14 +501,13 @@ export default function BookingsScreen() {
                 now,
             };
 
-          await tripService.addBooking(
+          await actions.addBooking(
             booking,
           );
         }
 
         closeModal();
 
-        await loadWorkspace();
       } catch (error) {
         console.error(
           '[Bookings] Save error:',
@@ -596,11 +541,9 @@ export default function BookingsScreen() {
           onPress:
             async () => {
               try {
-                await tripService.deleteBooking(
+                await actions.deleteBooking(
                   booking.id,
                 );
-
-                await loadWorkspace();
               } catch (
                 error
               ) {
@@ -619,29 +562,6 @@ export default function BookingsScreen() {
       ],
     );
   };
-
-  if (
-    isLoading ||
-    !workspace
-  ) {
-    return (
-      <Screen>
-        <View
-          style={
-            styles.center
-          }
-        >
-          <Text
-            style={
-              styles.loading
-            }
-          >
-            Loading your bookings…
-          </Text>
-        </View>
-      </Screen>
-    );
-  }
 
   const confirmedCount =
     workspace.bookings.filter(
@@ -1495,22 +1415,6 @@ function Field({
 
 const styles =
   StyleSheet.create({
-    center: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent:
-        'center',
-    },
-
-    loading: {
-      fontFamily:
-        fontFamily.sansMedium,
-      fontSize:
-        fontSize.bodySmall,
-      color:
-        colors.textMuted,
-    },
-
     header: {
       flexDirection: 'row',
       alignItems:

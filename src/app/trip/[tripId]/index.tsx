@@ -1,15 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 
 import {
-  useLocalSearchParams,
   useRouter,
 } from 'expo-router';
 
 import {
-  useCallback,
-  useEffect,
   useMemo,
-  useState,
 } from 'react';
 
 import {
@@ -28,8 +24,11 @@ import type {
 } from '@/domain/entities';
 
 import {
-  tripService,
-  type TripWorkspace,
+  useTripWorkspace,
+  useTripWorkspaceFocusRefresh,
+} from '@/features/trip-workspace/trip-workspace-context';
+import type {
+  TripWorkspace,
 } from '@/services/trip-service';
 
 import {
@@ -179,89 +178,16 @@ export default function TodayScreen() {
   const router =
     useRouter();
 
-  const { tripId } =
-    useLocalSearchParams<{
-      tripId: string;
-    }>();
+  const { workspace } =
+    useTripWorkspace();
 
-  const [
-    workspace,
-    setWorkspace,
-  ] =
-    useState<TripWorkspace | null>(
-      null,
-    );
-
-  const [
-    isLoading,
-    setIsLoading,
-  ] =
-    useState(true);
-
-  const loadWorkspace =
-    useCallback(
-      async () => {
-        if (!tripId) {
-          return;
-        }
-
-        try {
-          setIsLoading(true);
-
-          const result =
-            await tripService.getWorkspace(
-              tripId,
-            );
-
-          setWorkspace(
-            result,
-          );
-        } catch (error) {
-          console.error(
-            '[Today] Load error:',
-            error,
-          );
-        } finally {
-          setIsLoading(false);
-        }
-      },
-      [tripId],
-    );
-
-  useEffect(() => {
-    void loadWorkspace();
-  }, [loadWorkspace]);
+  useTripWorkspaceFocusRefresh();
 
   const journey =
     useMemo(
-      () =>
-        workspace
-          ? resolveJourneyDay(
-              workspace,
-            )
-          : null,
+      () => resolveJourneyDay(workspace),
       [workspace],
     );
-
-  if (
-    isLoading ||
-    !workspace ||
-    !journey
-  ) {
-    return (
-      <Screen>
-        <View
-          style={styles.center}
-        >
-          <Text
-            style={styles.loading}
-          >
-            Loading your trip…
-          </Text>
-        </View>
-      </Screen>
-    );
-  }
 
   const destination =
     workspace.trip
@@ -600,23 +526,6 @@ export default function TodayScreen() {
 
 const styles =
   StyleSheet.create({
-    center: {
-      flex: 1,
-      alignItems:
-        'center',
-      justifyContent:
-        'center',
-    },
-
-    loading: {
-      fontFamily:
-        fontFamily.sansMedium,
-      fontSize:
-        fontSize.bodySmall,
-      color:
-        colors.textMuted,
-    },
-
     topBar: {
       flexDirection:
         'row',

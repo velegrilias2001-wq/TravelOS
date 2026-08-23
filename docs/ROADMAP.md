@@ -18,12 +18,18 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 - [x] Add automated coverage for fresh, partial, repeated, and concurrent TripDay generation; reorder integrity/rollback; and fresh, drifted, and failed migration behavior.
 - [x] Rehearse migration version 3 and the Phase 0A persistence paths with Expo SQLite on an Android development build using isolated version-2 test data.
 
+### Phase 0B — Reactive Trip Workspace and Reliable Screen Lifecycle implemented
+
+- [x] Introduce one route-scoped TripWorkspace provider above Today, Plan, Map, Bookings, and future Trip Space tabs while keeping SQLite authoritative.
+- [x] Route stop and booking mutations through shared TripService-backed actions that invalidate and reload the aggregate from SQLite.
+- [x] Add revision-aware focus refresh so invalidated or failed snapshots reload without querying the database on every tab focus.
+- [x] Define loading, ready, refreshing, not-found, recoverable workspace error, and fatal bootstrap error behavior.
+- [x] Remove the unused Zustand active-trip snapshot while retaining the global trip-list UI cache.
+- [x] Add automated workspace lifecycle coverage and verify create/open, mapped-stop add/edit propagation, booking persistence across tabs, and invalid-trip recovery on an Android development build.
+
 ### Remaining Phase 0 work
 
 - [ ] Decide and enforce remaining relationship invariants and cardinality for bookings, accommodations, stops, memories, runtime state, and workspace aggregates.
-- [ ] Make Trip Space data reactive or focus-aware so every tab reflects current SQLite truth.
-- [ ] Define a single screen/service loading contract and remove avoidable competing state snapshots.
-- [ ] Handle invalid trip IDs, missing records, persistence failures, and bootstrap errors explicitly.
 - [ ] Remove N+1 loading patterns from the trip list and other obvious aggregate reads.
 - [ ] Expand automated coverage to stop deletion, repository relationships/cascades, and upcoming/active/completed trip-state logic.
 - [ ] Rehearse migration version 3 against Expo SQLite on an iOS development build.

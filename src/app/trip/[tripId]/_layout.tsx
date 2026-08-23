@@ -6,6 +6,9 @@ import {
 } from 'expo-router';
 
 import {
+  TripWorkspaceProvider,
+} from '@/features/trip-workspace/trip-workspace-context';
+import {
   colors,
   fontFamily,
   fontSize,
@@ -13,11 +16,31 @@ import {
 } from '@/theme';
 
 export default function TripSpaceLayout() {
-  const { tripId } =
+  const { tripId: routeTripId } =
     useLocalSearchParams<{
-      tripId: string;
+      tripId?: string | string[];
     }>();
 
+  const tripId =
+    typeof routeTripId === 'string' &&
+    routeTripId.trim()
+      ? routeTripId
+      : null;
+
+  return (
+    <TripWorkspaceProvider tripId={tripId}>
+      {tripId ? (
+        <TripSpaceTabs tripId={tripId} />
+      ) : null}
+    </TripWorkspaceProvider>
+  );
+}
+
+function TripSpaceTabs({
+  tripId,
+}: {
+  tripId: string;
+}) {
   return (
     <Tabs
       screenOptions={{
