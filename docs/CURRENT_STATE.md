@@ -6,19 +6,20 @@ This file describes verified implementation, not intended behavior. Unknown or u
 
 ## Repository checkpoint
 
-- Current development branch: feature/accommodation
+- Current development branch: feature/travelers
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
 - Budget & Expenses checkpoint: 65b7f33 — Add native trip budget and expenses
 - Trip Details and More checkpoint: ac21422 — Add native trip details and management hub
 - Booking ↔ Stop checkpoint: f6d09c5 — Connect bookings with itinerary stops
+- Accommodation checkpoint: cc180f2 — Add canonical trip accommodation flow
 - The native architecture checkpoint remains ec0b28a — Add native location picker and mapped itinerary stops.
 - No Git remote or upstream branch was configured during the audit.
 - .env.local exists and is ignored. Its contents were not read.
 
-The working tree contains the verified but uncommitted Accommodation implementation described below.
+The working tree contains the verified but uncommitted Travelers implementation described below.
 
-Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, truth-aware Today, bookings, Google Maps on Android, the location picker, persistence hardening, the shared TripWorkspace lifecycle, Budget & Expenses, Trip Details, explicit Booking ↔ Stop relationships, and native Accommodation management.
+Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, truth-aware Today, bookings, Google Maps on Android, the location picker, persistence hardening, the shared TripWorkspace lifecycle, Budget & Expenses, Trip Details, explicit Booking ↔ Stop relationships, native Accommodation management, and reusable canonical Traveler identities with explicit trip membership.
 
 ## Stack and runtime
 
@@ -49,7 +50,7 @@ The codebase has a sensible layered direction:
 6. A route-scoped TripWorkspace provider owns one ephemeral aggregate snapshot for the active trip and exposes service-backed mutations.
 7. Expo Router Trip Space screens render the shared snapshot and mutate it through the provider while SQLite remains authoritative.
 
-TripService builds a TripWorkspace aggregate from the canonical Trip and its related records. Today, Plan, Map, Bookings, Accommodation, Budget, More, and Trip Details consume one provider above the nested Trip Space tabs instead of maintaining independent screen-owned copies. Successful mutations invalidate and reload that aggregate from SQLite. Focus refreshes are revision-aware, so current data does not trigger an unnecessary database reload. Trip edits and deletion also refresh the Zustand-backed global trip-list cache after SQLite and the workspace have been updated.
+TripService builds a TripWorkspace aggregate from the canonical Trip and its related records. Today, Plan, Map, Bookings, Accommodation, Budget, Travelers, More, and Trip Details consume one provider above the nested Trip Space tabs instead of maintaining independent screen-owned copies. Successful mutations invalidate and reload that aggregate from SQLite. Focus refreshes are revision-aware, so current data does not trigger an unnecessary database reload. Trip edits and deletion also refresh the Zustand-backed global trip-list cache after SQLite and the workspace have been updated.
 
 ## Canonical domain model
 
@@ -67,6 +68,8 @@ Verified domain entities include:
 - TravelBook
 
 Entities use explicit IDs. The model distinguishes the trip's accounting currency from destination currency concepts. `Booking.stopId` is the canonical optional relationship to an itinerary stop: each booking has zero or one stop, while each stop can have zero, one, or many bookings. Each Trip has zero or many Accommodations; an Accommodation belongs to exactly one Trip and may link to zero or one Booking and zero or one TripStop. A Booking or TripStop may be referenced by multiple Accommodation records, and every relationship must remain within one Trip. Links are never inferred from names, addresses, or other text.
+
+Traveler identity is independent from Trip. One canonical Traveler may belong to multiple Trips through `trip_travelers`, whose composite primary key prevents duplicate membership. Removing a Traveler from a Trip deletes only that membership. Deleting a Trip cascades its memberships but preserves the reusable Traveler rows. The current planning flow deliberately permits zero Travelers so an unfinished Trip can exist; enforcing an eventual one-or-more party rule remains a product decision tied to Create Trip and owner identity.
 
 ## SQLite and migrations
 
@@ -96,6 +99,8 @@ The database is the current durable source of truth. Verified characteristics in
 - Canonical Trip updates persist the trip row, ordered destination records, and traveler links in one transaction while preserving destination IDs and metadata.
 - Trip deletion remains one atomic SQLite statement and relies on verified foreign-key cascades for trip-owned data. Independent traveler records survive because only trip membership belongs to the deleted trip.
 - Accommodation create and update validate required stay facts, real local date-time values, `checkInAt <= checkOutAt`, and same-trip optional booking/stop IDs. Deleting an Accommodation does not delete or mutate its linked Booking or TripStop; deleting a linked Booking or TripStop unlinks the Accommodation through `ON DELETE SET NULL`.
+- Traveler creation plus first membership is atomic. Existing identities are added only through an exact selected Traveler ID, duplicate membership is rejected, canonical edits are visible in every Trip that contains that ID, and membership removal never deletes the identity.
+- Travelers required no migration version 7: the released schema already has independent `travelers` rows, a composite `(trip_id, traveler_id)` membership primary key, and foreign keys that delete memberships—but not identities—when a Trip is deleted.
 
 Important remaining gaps:
 
@@ -146,7 +151,7 @@ Each trip exposes:
 - Bookings
 - More
 
-Today, Plan, Map, Bookings, and More have working functionality. More is now a native trip hub with canonical Trip Details, Budget, Accommodation, Itinerary, Bookings, Map, and Today navigation. Travelers and Readiness appear only as explicitly labelled planned modules.
+Today, Plan, Map, Bookings, and More have working functionality. More is now a native trip hub with canonical Trip Details, Budget, Accommodation, Travelers, Itinerary, Bookings, Map, and Today navigation. Readiness remains an explicitly labelled planned module.
 
 ### Trip Details and More
 
@@ -193,6 +198,20 @@ Implemented behavior includes:
 - Restrained exact-link context in Today, Bookings, and Map. Map shows stay context only through an explicitly linked TripStop that already has real coordinates; no Accommodation coordinates are guessed or copied.
 
 Current limitations include no canonical timezone model, no destination-aware check-in status, no provider import, no room/guest policy model, no booking creation from Accommodation, no dedicated place picker for accommodation coordinates, and no iOS runtime rehearsal.
+
+### Travelers
+
+Implemented behavior includes:
+
+- A dedicated native Travelers screen reached from More with TripWorkspace loading, refresh, recoverable-error, and trip-not-found behavior.
+- A reusable canonical Traveler identity with first name, optional last name, adult/child/infant type, optional email, optional phone, and existing avatar storage support. The UI intentionally does not collect passport, health, document, or inferred profile data.
+- Explicit many-to-many Trip membership through stable Traveler IDs. Names are presentation only and are never used for matching or deduplication.
+- Atomic create-and-add, exact selection of a saved identity for another Trip, canonical edit, and membership-only removal workflows.
+- Duplicate membership prevention in both repository behavior and the existing composite SQLite primary key.
+- Clear UI copy that canonical edits appear in every Trip containing that Traveler and that removal affects only the current Trip.
+- Traveler counts and current membership on More and Travelers refresh through the shared TripWorkspace lifecycle after every mutation.
+
+Current limitations include no trip owner or default “Me” identity, no roles, invitations, permissions, reservation ownership, expense splitting, emergency contacts, or global identity-library management. Create Trip still starts with zero Traveler memberships; the empty state is intentional for planning, while any future one-or-more enforcement must be designed together with owner identity and Create Trip. Canonical identity deletion is not exposed in the product UI. No iOS runtime rehearsal has been completed.
 
 ### Today
 
@@ -257,7 +276,6 @@ Several current screens use only the first destination even though the domain ca
 
 The following have domain and persistence support but no complete user-facing flow:
 
-- Travelers
 - TripRuntimeState
 - Memories
 - TravelBook
@@ -266,9 +284,9 @@ These are foundations, not shipped features. Their repository existence does not
 
 ## State and navigation lifecycle
 
-- Today, Plan, Map, Bookings, Accommodation, Budget, More, and Trip Details share one route-scoped TripWorkspace lifecycle above the nested tabs.
+- Today, Plan, Map, Bookings, Accommodation, Budget, Travelers, More, and Trip Details share one route-scoped TripWorkspace lifecycle above the nested tabs.
 - Initial loading, ready, refreshing, not-found, and recoverable error states are explicit.
-- Stop, booking, Booking ↔ Stop, Trip Details, and trip-delete mutations use the existing TripService, budget mutations use BudgetService, and accommodation mutations use AccommodationService; all invalidate and reload the shared aggregate from SQLite.
+- Stop, booking, Booking ↔ Stop, Trip Details, and trip-delete mutations use the existing TripService, budget mutations use BudgetService, accommodation mutations use AccommodationService, and traveler mutations use TravelerService; all invalidate and reload the shared aggregate from SQLite.
 - Focus-aware refresh retries invalid or failed snapshots but skips database reads when the shared revision is already current.
 - Missing and unknown trip IDs render a native not-found state with a safe route back to Trips instead of waiting indefinitely.
 - Fatal database, persistence self-test, or initial trip-list bootstrap failures render a retryable root state rather than opening the application against an unverified database.
@@ -290,9 +308,9 @@ It is still an early design system:
 
 ## Testing and release readiness
 
-Verified checks through the Accommodation implementation:
+Verified checks through the Travelers implementation:
 
-- npm test runs thirty-nine automated tests covering persistence, migrations, Budget calculations, Trip Details validation/persistence/cascades, Booking ↔ Stop invariants and deletion behavior, Accommodation validation/persistence/relationships/cascades/day context, and TripWorkspace lifecycle behavior.
+- npm test runs forty-five automated tests covering persistence, migrations, Budget calculations, Trip Details validation/persistence/cascades, Booking ↔ Stop invariants and deletion behavior, Accommodation validation/persistence/relationships/cascades/day context, Traveler identity/membership behavior, and TripWorkspace lifecycle behavior.
 - Fresh database migration, version-2 drift repair, migration rollback, fresh/partial/repeated TripDay generation, concurrent idempotency, and stop reorder rollback are covered.
 - Workspace initial loading, not-found behavior, revision-aware refresh, shared-consumer mutation propagation, recoverable retry, and mutation-during-load invalidation are covered.
 - The Android debug build compiles, installs, launches, and reaches both the development persistence self-test and bootstrap-ready state on an x86_64 emulator.
@@ -302,6 +320,7 @@ Verified checks through the Accommodation implementation:
 - Trip Details Android runtime verification edited an existing trip title and date range, rejected an invalid reversed range, safely changed accounting currency on a trip without a persisted Budget, observed the saved values immediately in More and Today, and confirmed them after a cold process relaunch. The original trip values were restored afterwards. A separate `DeleteE2E` trip exercised the destructive confirmation and cascade path; it disappeared from Trips while the original trip and its itinerary remained. A clean restart reported `Persistence self-test: PASS` and `Bootstrap ready`.
 - Booking ↔ Stop Android verification used one isolated trip to create two stops, link and relink a confirmed booking, explicitly unlink it, link two bookings to one stop, observe exact relationship context in Bookings, Plan, and Today, and delete the linked stop after an explicit two-booking warning. Both bookings survived unlinked, the other stop remained, and all results persisted through a cold relaunch. The isolated trip was deleted afterwards, while the unrelated existing trip remained visible. The native build compiled and launched, and repeated startup logs reported `Persistence self-test: PASS` and `Bootstrap ready`.
 - Accommodation Android verification used one isolated trip to create a real mapped stop, an accommodation-type Booking, and two stays; exercised add, native date/time input, edit, link, unlink, relink, sorted multiple-stay rendering, and deletion; and observed exact stay context in Today, Bookings, and Map. Deleting the linked Booking preserved the stay and its stop link, and cold relaunch preserved the edited Sep 1–3 schedule. The development database reported `PRAGMA user_version = 6`, all four validation triggers and five relevant indexes, and the unrelated existing trip remained visible. The isolated trip was deleted through the app afterwards. The Android debug build compiled, installed, launched, and reported `Persistence self-test: PASS` and `Bootstrap ready`.
+- Travelers Android verification used two isolated Trips and two isolated Traveler identities to exercise creation, exact-ID reuse, shared canonical editing, duplicate-free membership, membership-only removal, saved-identity selection, and cold-process persistence. The edited identity appeared in both Trips; the removed identity remained selectable for reuse; deleting one Trip preserved the Traveler and its other membership. Both test Trips and both exact test identities were removed afterwards, while the unrelated existing trip remained visible and loadable. The database remains at version 6 because the existing Traveler and membership schema already provided the required keys and cascades. The Android debug build compiled, installed, launched, and reached the persistence self-test and bootstrap-ready state before the E2E flow.
 - npx tsc --noEmit passes for the application.
 - npm ls --depth=0 passed at the takeover audit.
 - git diff --check is part of the required completion checks.
@@ -341,6 +360,7 @@ Missing release foundations:
 - A service-backed canonical Trip Details editor with strict date validation, metadata-preserving destination handling, budget-aware accounting-currency safety, and verified cascade deletion.
 - An explicit zero-or-one Booking → TripStop relationship with same-trip enforcement, zero-to-many reverse cardinality, lossless stop deletion, service/repository validation, and contextual TripWorkspace-backed UI.
 - An explicit Trip → Accommodation aggregate with optional same-trip Booking and TripStop IDs, service and database enforcement, lossless link deletion behavior, native validated CRUD, and restrained Today/Bookings/Map context.
+- A reusable canonical Traveler identity with explicit many-to-many Trip membership, exact-ID selection, atomic creation, duplicate prevention, shared edits, membership-only removal, and verified Trip-deletion preservation.
 - A functional More hub that distinguishes implemented navigation from planned modules.
 - A coherent early visual language.
 
@@ -353,7 +373,7 @@ These pieces are promising foundations; they do not make the app production-read
 - Today as a full Companion.
 - Advanced accommodation capabilities and the remaining booking actions/date-time validation.
 - Map intelligence, routes, and offline behavior.
-- Travelers, runtime state, memories, and Travel Book UI.
+- Traveler owner/role/invitation/permission workflows, runtime state, memories, and Travel Book UI.
 - Discover, World, and Profile.
 - Shared UI primitives and accessibility.
 - iOS platform setup.
@@ -361,4 +381,4 @@ These pieces are promising foundations; they do not make the app production-read
 
 ## Overall assessment
 
-TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, Budget & Expenses is the first complete Phase 1 product slice, Trip Details makes the canonical Trip safely editable, Booking ↔ Stop integration connects itinerary and reservation truth through explicit IDs, and Accommodation now adds a validated multi-stay workflow over that same trip truth. The next priorities are closing the remaining Phase 0 engineering gaps while completing multi-destination rules, upgrading Create Trip and remaining booking date-time inputs, and continuing Phase 1 through travelers and timezone/runtime rules. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.
+TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, Budget & Expenses is the first complete Phase 1 product slice, Trip Details makes the canonical Trip safely editable, Booking ↔ Stop integration connects itinerary and reservation truth through explicit IDs, Accommodation adds a validated multi-stay workflow, and Travelers now establishes reusable people plus explicit Trip membership over that same truth. The next priorities are closing the remaining Phase 0 engineering gaps while completing multi-destination rules, upgrading Create Trip and remaining booking date-time inputs, and defining timezone/runtime behavior plus traveler ownership and roles. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.

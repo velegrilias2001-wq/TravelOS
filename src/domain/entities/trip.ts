@@ -41,7 +41,9 @@ export interface Trip {
   endDate: string;
 
   /**
-   * IDs will later point to Traveler entities.
+   * Canonical Traveler IDs joined through
+   * trip_travelers. Traveler identity is reusable
+   * across Trips and is never copied into the Trip.
    */
   travelerIds: string[];
 

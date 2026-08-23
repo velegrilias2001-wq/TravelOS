@@ -279,6 +279,67 @@ test(
 );
 
 test(
+  'traveler membership mutations refresh More and Travelers from durable truth',
+  async () => {
+    const durableTruth = makeWorkspace();
+    const lifecycle = new TripWorkspaceLifecycle(
+      'trip-1',
+      async () => clone(durableTruth),
+    );
+
+    await lifecycle.refreshIfNeeded();
+
+    await lifecycle.runMutation(async () => {
+      const traveler = {
+        id: 'traveler-1',
+        firstName: 'Alex',
+        type: 'adult',
+        createdAt: TIMESTAMP,
+        updatedAt: TIMESTAMP,
+      };
+
+      durableTruth.travelers.push(traveler);
+      durableTruth.trip.travelerIds.push(
+        traveler.id,
+      );
+    });
+
+    let snapshot = lifecycle.getSnapshot();
+    assert.equal(
+      snapshot.workspace.travelers[0].firstName,
+      'Alex',
+    );
+    assert.deepEqual(
+      snapshot.workspace.trip.travelerIds,
+      ['traveler-1'],
+    );
+
+    await lifecycle.runMutation(async () => {
+      durableTruth.travelers[0].firstName =
+        'Alexandra';
+    });
+
+    assert.equal(
+      lifecycle.getSnapshot().workspace.travelers[0]
+        .firstName,
+      'Alexandra',
+    );
+
+    await lifecycle.runMutation(async () => {
+      durableTruth.travelers = [];
+      durableTruth.trip.travelerIds = [];
+    });
+
+    snapshot = lifecycle.getSnapshot();
+    assert.deepEqual(snapshot.workspace.travelers, []);
+    assert.deepEqual(
+      snapshot.workspace.trip.travelerIds,
+      [],
+    );
+  },
+);
+
+test(
   'booking-stop link mutations refresh Plan, Today, Map and Bookings from one snapshot',
   async () => {
     const durableTruth = makeWorkspace();

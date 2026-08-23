@@ -286,6 +286,17 @@ export default function MoreScreen() {
           }}
         />
         <ToolCard
+          icon="people-outline"
+          title="Travelers"
+          body={`${workspace.travelers.length} ${workspace.travelers.length === 1 ? 'traveler' : 'travelers'} in this trip`}
+          onPress={() => {
+            router.push({
+              pathname: '/trip/[tripId]/travelers',
+              params: { tripId },
+            });
+          }}
+        />
+        <ToolCard
           icon="map-outline"
           title="Trip map"
           body={`${mappedStopCount} mapped ${mappedStopCount === 1 ? 'stop' : 'stops'}`}
@@ -319,12 +330,6 @@ export default function MoreScreen() {
       </View>
 
       <View style={styles.futureCard}>
-        <FutureRow
-          icon="people-outline"
-          title="Travelers"
-          body="Membership and roles need explicit rules."
-        />
-        <View style={styles.futureDivider} />
         <FutureRow
           icon="checkmark-done-outline"
           title="Readiness"

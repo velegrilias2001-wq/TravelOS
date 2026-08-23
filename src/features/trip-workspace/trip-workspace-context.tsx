@@ -26,6 +26,7 @@ import type {
   Booking,
   BookingId,
   BudgetItemId,
+  TravelerId,
   TripId,
   TripStop,
   TripStopId,
@@ -44,6 +45,12 @@ import {
   tripService,
   type TripWorkspace,
 } from '@/services/trip-service';
+import {
+  travelerService,
+} from '@/services/traveler-service';
+import type {
+  TravelerInput,
+} from '@/services/traveler-details';
 import type {
   TripDetailsInput,
 } from '@/services/trip-details';
@@ -84,6 +91,20 @@ interface TripWorkspaceActions {
   ): Promise<void>;
   deleteAccommodation(
     accommodationId: AccommodationId,
+  ): Promise<void>;
+
+  createTraveler(
+    input: TravelerInput,
+  ): Promise<void>;
+  addExistingTraveler(
+    travelerId: TravelerId,
+  ): Promise<void>;
+  updateTraveler(
+    travelerId: TravelerId,
+    input: TravelerInput,
+  ): Promise<void>;
+  removeTraveler(
+    travelerId: TravelerId,
   ): Promise<void>;
 
   setPlannedBudget(plannedAmount: number): Promise<void>;
@@ -264,6 +285,39 @@ export function TripWorkspaceProvider({
           accommodationService.deleteAccommodation(
             requireWorkspaceTripId(tripId),
             accommodationId,
+          ),
+        ),
+
+      createTraveler: (input) =>
+        lifecycle.runMutation(() =>
+          travelerService.createTraveler(
+            requireWorkspaceTripId(tripId),
+            input,
+          ),
+        ),
+
+      addExistingTraveler: (travelerId) =>
+        lifecycle.runMutation(() =>
+          travelerService.addExistingTraveler(
+            requireWorkspaceTripId(tripId),
+            travelerId,
+          ),
+        ),
+
+      updateTraveler: (travelerId, input) =>
+        lifecycle.runMutation(() =>
+          travelerService.updateTraveler(
+            requireWorkspaceTripId(tripId),
+            travelerId,
+            input,
+          ),
+        ),
+
+      removeTraveler: (travelerId) =>
+        lifecycle.runMutation(() =>
+          travelerService.removeTraveler(
+            requireWorkspaceTripId(tripId),
+            travelerId,
           ),
         ),
 
