@@ -24,10 +24,15 @@ import { Screen } from '@/components/ui/screen';
 import type {
   Booking,
   BookingId,
+  BudgetItemId,
   TripId,
   TripStop,
   TripStopId,
 } from '@/domain/entities';
+import {
+  budgetService,
+  type BudgetExpenseInput,
+} from '@/services/budget-service';
 import {
   tripService,
   type TripWorkspace,
@@ -55,6 +60,14 @@ interface TripWorkspaceActions {
   addBooking(booking: Booking): Promise<void>;
   updateBooking(booking: Booking): Promise<void>;
   deleteBooking(bookingId: BookingId): Promise<void>;
+
+  setPlannedBudget(plannedAmount: number): Promise<void>;
+  addExpense(input: BudgetExpenseInput): Promise<void>;
+  updateExpense(
+    expenseId: BudgetItemId,
+    input: BudgetExpenseInput,
+  ): Promise<void>;
+  deleteExpense(expenseId: BudgetItemId): Promise<void>;
 }
 
 interface TripWorkspaceContextValue {
@@ -86,6 +99,18 @@ const TripWorkspaceContext =
 interface TripWorkspaceProviderProps
   extends PropsWithChildren {
   tripId: TripId | null;
+}
+
+function requireWorkspaceTripId(
+  tripId: TripId | null,
+): TripId {
+  if (!tripId) {
+    throw new Error(
+      'TripWorkspace does not have a trip ID',
+    );
+  }
+
+  return tripId;
 }
 
 export function TripWorkspaceProvider({
@@ -154,8 +179,41 @@ export function TripWorkspaceProvider({
         lifecycle.runMutation(() =>
           tripService.deleteBooking(bookingId),
         ),
+
+      setPlannedBudget: (plannedAmount) =>
+        lifecycle.runMutation(() =>
+          budgetService.setPlannedBudget(
+            requireWorkspaceTripId(tripId),
+            plannedAmount,
+          ),
+        ),
+
+      addExpense: (input) =>
+        lifecycle.runMutation(() =>
+          budgetService.addExpense(
+            requireWorkspaceTripId(tripId),
+            input,
+          ),
+        ),
+
+      updateExpense: (expenseId, input) =>
+        lifecycle.runMutation(() =>
+          budgetService.updateExpense(
+            requireWorkspaceTripId(tripId),
+            expenseId,
+            input,
+          ),
+        ),
+
+      deleteExpense: (expenseId) =>
+        lifecycle.runMutation(() =>
+          budgetService.deleteExpense(
+            requireWorkspaceTripId(tripId),
+            expenseId,
+          ),
+        ),
     }),
-    [lifecycle],
+    [lifecycle, tripId],
   );
 
   const value = useMemo<TripWorkspaceContextValue>(

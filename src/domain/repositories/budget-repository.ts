@@ -11,6 +11,8 @@ export interface BudgetRepository {
 
   save(budget: Budget): Promise<void>;
 
+  savePlan(budget: Budget): Promise<void>;
+
   saveItem(item: BudgetItem): Promise<void>;
 
   deleteItem(id: BudgetItemId): Promise<void>;

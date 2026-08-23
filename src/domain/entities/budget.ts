@@ -39,6 +39,13 @@ export interface BudgetItem {
    */
   currencyCode: string;
 
+  /**
+   * Calendar date explicitly selected for the expense.
+   * Older records may not have one because the original
+   * schema did not persist an expense date.
+   */
+  date?: string;
+
   notes?: string;
 
   createdAt: string;

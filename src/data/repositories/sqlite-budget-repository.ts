@@ -1,19 +1,22 @@
-import type {
-  Database,
-  DatabaseConnection,
-} from '../database/database';
+import type { Database } from '../database/database';
 import { travelOSDatabase } from '../database/expo-sqlite-database';
 
 import type {
-    Budget,
-    BudgetCategory,
-    BudgetItem,
-    BudgetItemId,
-    BudgetItemStatus,
+  Budget,
+  BudgetCategory,
+  BudgetItem,
+  BudgetItemId,
+  BudgetItemStatus,
 } from '../../domain/entities/budget';
 
 import type { TripId } from '../../domain/entities/trip';
 import type { BudgetRepository } from '../../domain/repositories/budget-repository';
+
+import {
+  deleteBudgetItem,
+  upsertBudgetItem,
+  upsertBudgetPlan,
+} from './budget-persistence-operations';
 
 interface BudgetRow {
   id: string;
@@ -35,6 +38,7 @@ interface BudgetItemRow {
   status: string;
   amount: number;
   currency_code: string;
+  expense_date: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -52,6 +56,7 @@ function mapItem(row: BudgetItemRow): BudgetItem {
     status: row.status as BudgetItemStatus,
     amount: row.amount,
     currencyCode: row.currency_code,
+    date: row.expense_date ?? undefined,
     notes: row.notes ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -96,97 +101,61 @@ export class SQLiteBudgetRepository implements BudgetRepository {
 
   async save(budget: Budget): Promise<void> {
     await this.database.transaction(async (transaction) => {
-      await transaction.execute(
-        `
-          INSERT INTO budgets (
-            id, trip_id, currency_code,
-            planned_amount, created_at, updated_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?)
-          ON CONFLICT(id) DO UPDATE SET
-            trip_id = excluded.trip_id,
-            currency_code = excluded.currency_code,
-            planned_amount = excluded.planned_amount,
-            updated_at = excluded.updated_at;
-        `,
-        [
-          budget.id,
-          budget.tripId,
-          budget.currencyCode,
-          budget.plannedAmount ?? null,
-          budget.createdAt,
-          budget.updatedAt,
-        ],
+      await upsertBudgetPlan(
+        transaction,
+        budget,
       );
+
+      const persistedBudget =
+        await transaction.queryFirst<{
+          id: string;
+        }>(
+          `SELECT id FROM budgets WHERE trip_id = ?;`,
+          [budget.tripId],
+        );
+
+      if (!persistedBudget) {
+        throw new Error(
+          'Budget could not be persisted',
+        );
+      }
 
       await transaction.execute(
         `DELETE FROM budget_items WHERE budget_id = ?;`,
-        [budget.id],
+        [persistedBudget.id],
       );
 
       for (const item of budget.items) {
-        await this.insertItem(
+        await upsertBudgetItem(
           transaction,
-          item,
+          {
+            ...item,
+            budgetId: persistedBudget.id,
+            tripId: budget.tripId,
+          },
         );
       }
     });
   }
 
+  async savePlan(budget: Budget): Promise<void> {
+    await upsertBudgetPlan(
+      this.database,
+      budget,
+    );
+  }
+
   async saveItem(item: BudgetItem): Promise<void> {
-    await this.insertItem(
+    await upsertBudgetItem(
       this.database,
       item,
     );
   }
 
-  private async insertItem(
-    connection: DatabaseConnection,
-    item: BudgetItem,
-  ): Promise<void> {
-    await connection.execute(
-      `
-        INSERT INTO budget_items (
-          id, budget_id, trip_id, booking_id, stop_id,
-          title, category, status, amount, currency_code,
-          notes, created_at, updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
-          budget_id = excluded.budget_id,
-          trip_id = excluded.trip_id,
-          booking_id = excluded.booking_id,
-          stop_id = excluded.stop_id,
-          title = excluded.title,
-          category = excluded.category,
-          status = excluded.status,
-          amount = excluded.amount,
-          currency_code = excluded.currency_code,
-          notes = excluded.notes,
-          updated_at = excluded.updated_at;
-      `,
-      [
-        item.id,
-        item.budgetId,
-        item.tripId,
-        item.bookingId ?? null,
-        item.stopId ?? null,
-        item.title,
-        item.category,
-        item.status,
-        item.amount,
-        item.currencyCode,
-        item.notes ?? null,
-        item.createdAt,
-        item.updatedAt,
-      ],
-    );
-  }
-
   async deleteItem(id: BudgetItemId): Promise<void> {
-    await this.database.execute(
-      `DELETE FROM budget_items WHERE id = ?;`,
-      [id],
+    await deleteBudgetItem(
+      this.database,
+      id,
     );
   }
 }

@@ -37,11 +37,12 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 
 Exit condition: existing native flows survive retries, partial data, navigation refocus, and supported migrations without corrupting or misrepresenting trip truth.
 
-## Phase 1 — Complete Trip Core
+## Phase 1 — Complete Trip Core in progress
 
 Goal: turn the current vertical prototype into a coherent pre-trip workspace.
 
-- Build budget and expense flows with explicit accounting and local currencies plus conversion provenance.
+- [x] Build one native trip budget and actual-expense flow with original currencies, explicit booking/stop IDs, truthful same-currency totals, category breakdown, persistence tests, and Android runtime verification.
+- [ ] Define a real FX-rate source, rate timestamp, conversion policy, user override, and provenance model before foreign currencies can enter accounting-currency totals.
 - Implement More as trip details, readiness, settings, and safe trip actions.
 - Add trip editing for destinations, dates, title, currencies, and status.
 - Replace free-form date/time fields with appropriate native inputs and domain validation.

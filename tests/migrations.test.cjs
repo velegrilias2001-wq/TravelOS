@@ -27,7 +27,7 @@ const TIMESTAMP =
   '2026-08-23T12:00:00.000Z';
 
 test(
-  'migration v3 initializes a fresh database',
+  'current migrations initialize a fresh database',
   async () => {
     const database =
       new NodeSQLiteDatabase();
@@ -190,7 +190,7 @@ async function insertDay(
 }
 
 test(
-  'migration v3 reconciles drift and installs safe invariants without dropping referenced data',
+  'current migrations reconcile drift and install safe invariants without dropping referenced data',
   async () => {
     const database =
       await createVersionTwoDatabase();
@@ -612,6 +612,189 @@ test(
         archiveTable,
         null,
       );
+    } finally {
+      database.close();
+    }
+  },
+);
+
+test(
+  'migration v4 adds expense dates without inventing them for existing items',
+  async () => {
+    const database =
+      new NodeSQLiteDatabase();
+
+    try {
+      await database.execAsync(
+        DATABASE_SCHEMA,
+      );
+
+      await database.execAsync(
+        'PRAGMA user_version = 3;',
+      );
+
+      await database.runAsync(
+        `
+          INSERT INTO trips (
+            id,
+            title,
+            status,
+            start_date,
+            end_date,
+            accounting_currency,
+            created_at,
+            updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+        `,
+        [
+          'budget-trip',
+          'Budget migration',
+          'planned',
+          '2026-09-01',
+          '2026-09-03',
+          'EUR',
+          TIMESTAMP,
+          TIMESTAMP,
+        ],
+      );
+
+      await database.runAsync(
+        `
+          INSERT INTO budgets (
+            id,
+            trip_id,
+            currency_code,
+            planned_amount,
+            created_at,
+            updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?);
+        `,
+        [
+          'budget-1',
+          'budget-trip',
+          'EUR',
+          1200,
+          TIMESTAMP,
+          TIMESTAMP,
+        ],
+      );
+
+      await database.runAsync(
+        `
+          INSERT INTO budget_items (
+            id,
+            budget_id,
+            trip_id,
+            title,
+            category,
+            status,
+            amount,
+            currency_code,
+            notes,
+            created_at,
+            updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        `,
+        [
+          'legacy-expense',
+          'budget-1',
+          'budget-trip',
+          'Legacy expense',
+          'food',
+          'paid',
+          42,
+          'EUR',
+          'Keep this note',
+          TIMESTAMP,
+          TIMESTAMP,
+        ],
+      );
+
+      await migrateDatabase(database);
+
+      const version =
+        await database.queryFirst(
+          'PRAGMA user_version;',
+        );
+
+      assert.equal(
+        version.user_version,
+        4,
+      );
+
+      const columns = await database.query(
+        'PRAGMA table_info(budget_items);',
+      );
+
+      assert.ok(
+        columns.some(
+          (column) =>
+            column.name === 'expense_date',
+        ),
+      );
+
+      const expense =
+        await database.queryFirst(
+          `
+            SELECT
+              title,
+              amount,
+              currency_code,
+              expense_date,
+              notes
+            FROM budget_items
+            WHERE id = ?;
+          `,
+          ['legacy-expense'],
+        );
+
+      assert.deepEqual({ ...expense }, {
+        title: 'Legacy expense',
+        amount: 42,
+        currency_code: 'EUR',
+        expense_date: null,
+        notes: 'Keep this note',
+      });
+
+      const indexes = await database.query(
+        "PRAGMA index_list('budget_items');",
+      );
+      const indexNames = new Set(
+        indexes.map((index) => index.name),
+      );
+
+      assert.ok(
+        indexNames.has(
+          'idx_budget_items_trip_expense_date',
+        ),
+      );
+      assert.ok(
+        indexNames.has(
+          'idx_budget_items_booking_id',
+        ),
+      );
+      assert.ok(
+        indexNames.has(
+          'idx_budget_items_stop_id',
+        ),
+      );
+
+      await migrateDatabase(database);
+
+      const afterRepeat =
+        await database.queryFirst(
+          `
+            SELECT COUNT(*) AS count
+            FROM budget_items
+            WHERE id = ?;
+          `,
+          ['legacy-expense'],
+        );
+
+      assert.equal(afterRepeat.count, 1);
     } finally {
       database.close();
     }

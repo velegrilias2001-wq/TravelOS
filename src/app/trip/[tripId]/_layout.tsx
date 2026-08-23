@@ -188,6 +188,13 @@ function TripSpaceTabs({
           ),
         }}
       />
+
+      <Tabs.Screen
+        name="budget"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

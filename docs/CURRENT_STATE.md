@@ -6,13 +6,14 @@ This file describes verified implementation, not intended behavior. Unknown or u
 
 ## Repository checkpoint
 
-- Current development branch: foundation/hardening-phase-0
+- Current development branch: feature/budget-expenses
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
+- Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
 - The native architecture checkpoint remains ec0b28a — Add native location picker and mapped itinerary stops.
 - No Git remote or upstream branch was configured during the audit.
 - .env.local exists and is ignored. Its contents were not read.
 
-The working tree contains the verified but uncommitted Phase 0B implementation described below.
+The working tree contains the verified but uncommitted Budget & Expenses implementation described below.
 
 Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, truth-aware Today, bookings, Google Maps on Android, the location picker, and Phase 0A persistence safety.
 
@@ -28,6 +29,7 @@ Recent native milestones include the repository/service foundation, native navig
 | Maps | react-native-maps 1.27.2 |
 | Place selection | expo-location-picker 1.0.2 |
 | Native runtime | expo-dev-client development build |
+| Native date input | @react-native-community/datetimepicker 9.1.0 |
 | Styling | Local design tokens and React Native StyleSheet-based screen styling |
 
 The package currently has start, Android, iOS, web, reset-project, lint, and automated test scripts. There is no CI workflow, EAS configuration, or non-interactive lint configuration.
@@ -68,7 +70,7 @@ Entities use explicit IDs. The model distinguishes the trip's accounting currenc
 The database is the current durable source of truth. Verified characteristics include:
 
 - SQLite WAL mode and foreign-key enforcement are enabled.
-- The current database version is 3.
+- The current database version is 4.
 - The core schema contains 14 tables covering trips and related travel data; migration version 3 adds one recovery archive table for reconciled duplicate TripDays.
 - Repository queries use bound parameters.
 - Historical version 1 and version 2 migration behavior remains unchanged.
@@ -79,6 +81,10 @@ The database is the current durable source of truth. Verified characteristics in
 - Application transactions now use serialized, transaction-scoped Expo SQLite exclusive connections.
 - Automatic TripDay generation creates only missing canonical dates, repairs canonical day numbers, preserves existing valid IDs/content, and is atomic and repeated-call safe.
 - Stop reorder validates the complete TripDay stop set and changes only ordering metadata in one atomic transaction.
+- Migration version 4 adds a nullable user-selected expense date to budget items without fabricating dates for legacy records.
+- Migration version 4 adds indexes for trip/date expense reads and optional booking/stop relationships.
+- Each trip can persist one budget header, protected by the existing unique trip relationship. Plan updates preserve the canonical budget ID and existing expenses.
+- Budget expense create, edit, and delete preserve original currency, explicit booking/stop IDs, and the user-selected expense date.
 
 Important remaining gaps:
 
@@ -88,7 +94,7 @@ Important remaining gaps:
 - Repository relationship cardinality and service aggregation need explicit decisions where schemas can hold multiple records but the aggregate exposes one.
 - TripDay records outside an edited trip date range are preserved and placed after the canonical range; no product flow exists yet for resolving them.
 - Archived migration-v3 duplicate-day metadata is retained for recovery but has no user-facing inspection tool.
-- Migration and transaction behavior is covered by Node SQLite tests and was rehearsed with Expo SQLite 57 on an Android x86_64 emulator. The Android rehearsal migrated an isolated version-2 database to version 3, verified all version-3 indexes, preserved and loaded a seeded existing trip, repaired its partial TripDay set, preserved stop content through reorder, and removed only the isolated test database. An equivalent iOS rehearsal is still outstanding.
+- Migration and transaction behavior is covered by Node SQLite tests and was rehearsed with Expo SQLite 57 on an Android x86_64 emulator. The Android rehearsal migrated an isolated version-2 database to version 3, verified all version-3 indexes, preserved and loaded a seeded existing trip, repaired its partial TripDay set, preserved stop content through reorder, and removed only the isolated test database. The Budget rehearsal upgraded the existing development database to version 4, verified the new indexes, preserved the pre-existing trip, and removed only its reserved test trip. Equivalent iOS rehearsals are still outstanding.
 
 Historical migrations must not be edited to repair remaining issues. Corrections require new migrations.
 
@@ -127,7 +133,23 @@ Each trip exposes:
 - Bookings
 - More
 
-Today, Plan, Map, and Bookings have working functionality. More is a placeholder.
+Today, Plan, Map, Bookings, and the Budget entry in More have working functionality. The rest of More remains intentionally limited.
+
+### Budget & Expenses
+
+Implemented behavior includes:
+
+- One persisted budget per trip, denominated in the Trip's accounting currency.
+- Planned amount updates that preserve existing expenses.
+- Actual expense add, edit, and delete with title, positive amount, original currency, category, explicit date, optional notes, and optional booking/stop links by ID.
+- Service validation that linked bookings and stops belong to the same trip.
+- Planned, spent, remaining, progress, category breakdown, and a dated expense list.
+- Accounting totals that include only paid expenses whose currency matches the Trip accounting currency.
+- Foreign-currency paid expenses grouped and displayed separately in their original currencies, with explicit copy that no exchange rate or conversion was assumed.
+- Legacy planned or committed budget items remain persisted and visible but are not represented as actual spend.
+- A dedicated native Budget screen reached from More, with native date selection and shared TripWorkspace loading, refresh, error, and not-found behavior.
+
+Current limitations include no FX-rate source or conversion provenance, no receipt/media capture, no recurring/shared/split expense model, no decimal-minor-unit money type, and no iOS runtime rehearsal. Currency entry uses validated three-letter codes rather than a complete currency selector.
 
 ### Today
 
@@ -192,7 +214,6 @@ Several current screens use only the first destination even though the domain ca
 The following have domain and persistence support but no complete user-facing flow:
 
 - Accommodation
-- Budget and budget items
 - Travelers
 - TripRuntimeState
 - Memories
@@ -204,7 +225,7 @@ These are foundations, not shipped features. Their repository existence does not
 
 - Today, Plan, Map, and Bookings share one route-scoped TripWorkspace lifecycle above the nested tabs.
 - Initial loading, ready, refreshing, not-found, and recoverable error states are explicit.
-- Stop and booking mutations use the existing TripService, then invalidate and reload the shared aggregate from SQLite.
+- Stop and booking mutations use the existing TripService, and budget mutations use BudgetService; all invalidate and reload the shared aggregate from SQLite.
 - Focus-aware refresh retries invalid or failed snapshots but skips database reads when the shared revision is already current.
 - Missing and unknown trip IDs render a native not-found state with a safe route back to Trips instead of waiting indefinitely.
 - Fatal database, persistence self-test, or initial trip-list bootstrap failures render a retryable root state rather than opening the application against an unverified database.
@@ -226,14 +247,15 @@ It is still an early design system:
 
 ## Testing and release readiness
 
-Verified checks through Phase 0B:
+Verified checks through the Budget & Expenses implementation:
 
-- npm test runs fourteen automated tests: seven persistence tests using Node's built-in SQLite engine and seven TripWorkspace lifecycle tests.
+- npm test runs eighteen automated tests covering persistence, migrations, Budget calculations, and TripWorkspace lifecycle behavior.
 - Fresh database migration, version-2 drift repair, migration rollback, fresh/partial/repeated TripDay generation, concurrent idempotency, and stop reorder rollback are covered.
 - Workspace initial loading, not-found behavior, revision-aware refresh, shared-consumer mutation propagation, recoverable retry, and mutation-during-load invalidation are covered.
 - The Android debug build compiles, installs, launches, and reaches both the development persistence self-test and bootstrap-ready state on an x86_64 emulator.
 - An on-device Expo SQLite rehearsal verified `PRAGMA user_version = 3`, all ten migration/invariant indexes, existing seeded trip survival, canonical TripDay generation/loading, and lossless stop reorder in an isolated database.
 - Phase 0B Android runtime verification created and opened an isolated trip, selected and persisted a real mapped stop, observed it and its edited title on Map after tab navigation, preserved a booking across tab changes, and confirmed an unknown trip route reaches the native not-found state. Only the isolated verification trip was removed afterwards; the pre-existing trip remained visible.
+- Budget Android runtime verification created an isolated EUR trip, set a €1,000 plan, added accounting- and foreign-currency expenses, verified the foreign amount stayed outside EUR totals, edited an expense to produce €350 spent and €650 remaining, deleted an expense, cold-relaunched the app, and confirmed the budget and edited expense persisted. Expo SQLite reported `PRAGMA user_version = 4` and all three Budget indexes. Only the reserved test trip was removed; the pre-existing trip remained visible.
 - npx tsc --noEmit passes for the application.
 - npm ls --depth=0 passed at the takeover audit.
 - git diff --check is part of the required completion checks.
@@ -269,6 +291,7 @@ Missing release foundations:
 - Truth-aware upcoming/active/completed Today logic.
 - Real selected coordinates persisted and rendered as map pins.
 - Separate accounting-currency concept.
+- A service-backed Budget & Expenses flow with truthful same-currency aggregation and original-currency preservation.
 - A coherent early visual language.
 
 These pieces are promising foundations; they do not make the app production-ready on their own.
@@ -279,7 +302,7 @@ These pieces are promising foundations; they do not make the app production-read
 - Today as a full Companion.
 - Booking-stop and accommodation workflows.
 - Map intelligence, routes, and offline behavior.
-- Budget, travelers, runtime state, memories, and Travel Book UI.
+- Travelers, runtime state, memories, and Travel Book UI.
 - Discover, World, Profile, and More.
 - Shared UI primitives and accessibility.
 - iOS platform setup.
@@ -287,4 +310,4 @@ These pieces are promising foundations; they do not make the app production-read
 
 ## Overall assessment
 
-TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, and Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. The immediate priority remains the rest of Phase 0: relationship decisions, query efficiency, broader repository and truth-state tests, iOS migration/runtime verification, and baseline CI/lint automation.
+TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, and Budget & Expenses is the first complete Phase 1 product slice. The next priorities are closing the remaining Phase 0 engineering gaps while continuing Phase 1 through trip editing, native date/time validation, explicit booking/stop relationships, accommodations, and travelers. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.

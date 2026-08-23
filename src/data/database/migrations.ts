@@ -2,7 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { DATABASE_SCHEMA } from './schema';
 
-export const DATABASE_VERSION = 3;
+export const DATABASE_VERSION = 4;
 
 interface UserVersionRow {
   user_version: number;
@@ -441,6 +441,50 @@ export async function migrateDatabase(
           ON budget_items(budget_id);
 
           PRAGMA user_version = 3;
+        `);
+      },
+    );
+  }
+
+  /**
+   * Version 4
+   * Persist the user-selected expense date without
+   * fabricating dates for existing BudgetItem records.
+   */
+  if (currentVersion < 4) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        const columns =
+          await transaction.getAllAsync<TableInfoRow>(
+            'PRAGMA table_info(budget_items);',
+          );
+
+        const hasExpenseDate = columns.some(
+          (column) =>
+            column.name === 'expense_date',
+        );
+
+        if (!hasExpenseDate) {
+          await transaction.execAsync(`
+            ALTER TABLE budget_items
+            ADD COLUMN expense_date TEXT;
+          `);
+        }
+
+        await transaction.execAsync(`
+          CREATE INDEX IF NOT EXISTS
+            idx_budget_items_trip_expense_date
+          ON budget_items(trip_id, expense_date);
+
+          CREATE INDEX IF NOT EXISTS
+            idx_budget_items_booking_id
+          ON budget_items(booking_id);
+
+          CREATE INDEX IF NOT EXISTS
+            idx_budget_items_stop_id
+          ON budget_items(stop_id);
+
+          PRAGMA user_version = 4;
         `);
       },
     );
