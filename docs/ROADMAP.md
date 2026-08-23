@@ -42,17 +42,19 @@ Exit condition: existing native flows survive retries, partial data, navigation 
 Goal: turn the current vertical prototype into a coherent pre-trip workspace.
 
 - [x] Build one native trip budget and actual-expense flow with original currencies, explicit booking/stop IDs, truthful same-currency totals, category breakdown, persistence tests, and Android runtime verification.
+- [x] Implement More as a functional trip hub with canonical Trip Details, Budget, Itinerary, Bookings, Map, and Today navigation while labelling future modules honestly.
+- [x] Add service-backed Trip Details editing for title, valid existing destination names, native dates, accounting currency, and lifecycle status.
+- [x] Reject invalid/reversed detail dates, prevent manual assignment of active truth, preserve structured destination metadata, and block accounting-currency changes once a Budget exists.
+- [x] Add confirmed cascade deletion for trip-owned local data, workspace not-found transition, trip-list refresh, automated coverage, and Android runtime verification with isolated data.
 - [ ] Define a real FX-rate source, rate timestamp, conversion policy, user override, and provenance model before foreign currencies can enter accounting-currency totals.
-- Implement More as trip details, readiness, settings, and safe trip actions.
-- Add trip editing for destinations, dates, title, currencies, and status.
-- Replace free-form date/time fields with appropriate native inputs and domain validation.
+- [ ] Complete destination add/remove/reorder and location-aware replacement, then define how multi-destination truth is presented across Create Trip, Today, Plan, Map, and Bookings.
+- [ ] Replace free-form Create Trip and remaining booking/stop date-time fields with appropriate native inputs and domain validation.
 - Implement booking-to-stop linking by ID.
 - Implement accommodation management and accommodation-to-stop linking by ID.
 - Implement traveler management and explicit trip membership.
 - Define trip timezone, destination timezone behavior, and TripRuntimeState responsibilities.
-- Clarify multi-destination behavior across creation, Today, Plan, Map, and bookings.
 - Improve booking actions, validation, payment state, and destructive-flow UX.
-- Define safe archive/delete behavior and user-data recovery expectations.
+- Define archive and user-data recovery expectations before deletion is considered release-ready.
 
 Exit condition: a traveler can create, edit, organize, budget, and validate the essential facts of a trip in one durable workspace.
 

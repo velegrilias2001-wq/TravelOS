@@ -230,6 +230,72 @@ test(
 );
 
 test(
+  'a Trip Details update refreshes every workspace consumer',
+  async () => {
+    const durableTruth = makeWorkspace();
+    const lifecycle =
+      new TripWorkspaceLifecycle(
+        'trip-1',
+        async () => clone(durableTruth),
+      );
+
+    await lifecycle.refreshIfNeeded();
+
+    await lifecycle.runMutation(async () => {
+      durableTruth.trip.title =
+        'Updated canonical trip';
+      durableTruth.trip.startDate =
+        '2026-09-02';
+      durableTruth.trip.endDate =
+        '2026-09-03';
+    });
+
+    const snapshot =
+      lifecycle.getSnapshot();
+
+    assert.equal(snapshot.status, 'ready');
+    assert.equal(
+      snapshot.workspace.trip.title,
+      'Updated canonical trip',
+    );
+    assert.equal(
+      snapshot.workspace.trip.startDate,
+      '2026-09-02',
+    );
+  },
+);
+
+test(
+  'a deleted Trip becomes not found instead of retaining a ready workspace',
+  async () => {
+    let durableTruth = makeWorkspace();
+    const lifecycle =
+      new TripWorkspaceLifecycle(
+        'trip-1',
+        async () =>
+          durableTruth
+            ? clone(durableTruth)
+            : null,
+      );
+
+    await lifecycle.refreshIfNeeded();
+
+    await lifecycle.runMutation(async () => {
+      durableTruth = null;
+    });
+
+    assert.deepEqual(
+      lifecycle.getSnapshot(),
+      {
+        status: 'not-found',
+        workspace: null,
+        error: null,
+      },
+    );
+  },
+);
+
+test(
   'workspace load errors are recoverable without losing the last snapshot',
   async () => {
     const durableTruth = makeWorkspace();

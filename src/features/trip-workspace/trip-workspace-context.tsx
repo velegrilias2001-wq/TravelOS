@@ -37,6 +37,10 @@ import {
   tripService,
   type TripWorkspace,
 } from '@/services/trip-service';
+import type {
+  TripDetailsInput,
+} from '@/services/trip-details';
+import { useTripStore } from '@/store/trip-store';
 import {
   colors,
   fontFamily,
@@ -52,6 +56,9 @@ import {
 } from './trip-workspace-lifecycle';
 
 interface TripWorkspaceActions {
+  updateTrip(input: TripDetailsInput): Promise<void>;
+  deleteTrip(): Promise<void>;
+
   addStop(stop: TripStop): Promise<void>;
   updateStop(stop: TripStop): Promise<void>;
   deleteStop(stopId: TripStopId): Promise<void>;
@@ -113,6 +120,17 @@ function requireWorkspaceTripId(
   return tripId;
 }
 
+async function refreshTripListCache(): Promise<void> {
+  try {
+    await useTripStore.getState().loadTrips();
+  } catch (error) {
+    console.error(
+      '[TripWorkspace] Trip-list refresh failed:',
+      error,
+    );
+  }
+}
+
 export function TripWorkspaceProvider({
   tripId,
   children,
@@ -145,6 +163,27 @@ export function TripWorkspaceProvider({
 
   const actions = useMemo<TripWorkspaceActions>(
     () => ({
+      updateTrip: async (input) => {
+        await lifecycle.runMutation(() =>
+          tripService.updateTrip(
+            requireWorkspaceTripId(tripId),
+            input,
+          ),
+        );
+
+        await refreshTripListCache();
+      },
+
+      deleteTrip: async () => {
+        await lifecycle.runMutation(() =>
+          tripService.deleteTrip(
+            requireWorkspaceTripId(tripId),
+          ),
+        );
+
+        await refreshTripListCache();
+      },
+
       addStop: (stop) =>
         lifecycle.runMutation(() =>
           tripService.addStop(stop),

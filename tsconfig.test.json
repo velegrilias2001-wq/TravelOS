@@ -20,6 +20,7 @@
     "src/domain/entities/**/*.ts",
     "src/features/trip-workspace/trip-workspace-lifecycle.ts",
     "src/services/budget-calculations.ts",
+    "src/services/trip-details.ts",
     "src/services/trip-day-generation.ts"
   ]
 }

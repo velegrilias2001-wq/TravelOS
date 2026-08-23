@@ -21,6 +21,10 @@ import {
   type RepositoryRegistry,
 } from './repository-registry';
 import { buildCanonicalTripDays } from './trip-day-generation';
+import {
+  buildUpdatedTrip,
+  type TripDetailsInput,
+} from './trip-details';
 
 export interface TripWorkspace {
   trip: Trip;
@@ -204,6 +208,32 @@ export class TripService {
     trip: Trip,
   ): Promise<void> {
     await this.repo.trip.save(trip);
+  }
+
+  async updateTrip(
+    id: TripId,
+    input: TripDetailsInput,
+  ): Promise<Trip> {
+    const trip =
+      await this.repo.trip.getById(id);
+
+    if (!trip) {
+      throw new Error('Trip was not found');
+    }
+
+    const budget =
+      await this.repo.budget.getByTripId(id);
+
+    const updated = buildUpdatedTrip(
+      trip,
+      input,
+      budget !== null,
+      new Date().toISOString(),
+    );
+
+    await this.repo.trip.save(updated);
+
+    return updated;
   }
 
   async deleteTrip(

@@ -6,16 +6,17 @@ This file describes verified implementation, not intended behavior. Unknown or u
 
 ## Repository checkpoint
 
-- Current development branch: feature/budget-expenses
+- Current development branch: feature/trip-details
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
+- Budget & Expenses checkpoint: 65b7f33 — Add native trip budget and expenses
 - The native architecture checkpoint remains ec0b28a — Add native location picker and mapped itinerary stops.
 - No Git remote or upstream branch was configured during the audit.
 - .env.local exists and is ignored. Its contents were not read.
 
-The working tree contains the verified but uncommitted Budget & Expenses implementation described below.
+The working tree contains the verified but uncommitted Trip Details and More implementation described below.
 
-Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, truth-aware Today, bookings, Google Maps on Android, the location picker, and Phase 0A persistence safety.
+Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, truth-aware Today, bookings, Google Maps on Android, the location picker, persistence hardening, the shared TripWorkspace lifecycle, and Budget & Expenses.
 
 ## Stack and runtime
 
@@ -46,7 +47,7 @@ The codebase has a sensible layered direction:
 6. A route-scoped TripWorkspace provider owns one ephemeral aggregate snapshot for the active trip and exposes service-backed mutations.
 7. Expo Router Trip Space screens render the shared snapshot and mutate it through the provider while SQLite remains authoritative.
 
-TripService builds a TripWorkspace aggregate from the canonical Trip and its related records. Today, Plan, Map, and Bookings now consume one provider above the nested Trip Space tabs instead of maintaining independent screen-owned copies. Successful mutations invalidate and reload that aggregate from SQLite. Focus refreshes are revision-aware, so current data does not trigger an unnecessary database reload.
+TripService builds a TripWorkspace aggregate from the canonical Trip and its related records. Today, Plan, Map, Bookings, Budget, More, and Trip Details consume one provider above the nested Trip Space tabs instead of maintaining independent screen-owned copies. Successful mutations invalidate and reload that aggregate from SQLite. Focus refreshes are revision-aware, so current data does not trigger an unnecessary database reload. Trip edits and deletion also refresh the Zustand-backed global trip-list cache after SQLite and the workspace have been updated.
 
 ## Canonical domain model
 
@@ -85,6 +86,8 @@ The database is the current durable source of truth. Verified characteristics in
 - Migration version 4 adds indexes for trip/date expense reads and optional booking/stop relationships.
 - Each trip can persist one budget header, protected by the existing unique trip relationship. Plan updates preserve the canonical budget ID and existing expenses.
 - Budget expense create, edit, and delete preserve original currency, explicit booking/stop IDs, and the user-selected expense date.
+- Canonical Trip updates persist the trip row, ordered destination records, and traveler links in one transaction while preserving destination IDs and metadata.
+- Trip deletion remains one atomic SQLite statement and relies on verified foreign-key cascades for trip-owned data. Independent traveler records survive because only trip membership belongs to the deleted trip.
 
 Important remaining gaps:
 
@@ -120,8 +123,10 @@ Implemented behavior includes:
 - Creating a trip with title, one destination, free-form date strings, and accounting currency.
 - Opening a trip-specific workspace.
 - Automatic TripDay creation from the trip date range.
+- Editing the canonical trip title, valid existing destination names, dates, accounting currency, and lifecycle status from Trip Details.
+- Deleting a trip through a destructive native confirmation that names the related local data being removed.
 
-Dates and currencies do not yet have production-grade native input, validation, timezone handling, or editing flows.
+Create Trip still uses placeholder-driven free-form date fields and weak validation. Trip Details uses native calendar selection and validates real `YYYY-MM-DD` dates plus `start <= end`, but timezone behavior remains undefined. Accounting currency uses a validated three-letter code rather than a complete currency selector.
 
 ### Trip Space navigation
 
@@ -133,7 +138,22 @@ Each trip exposes:
 - Bookings
 - More
 
-Today, Plan, Map, Bookings, and the Budget entry in More have working functionality. The rest of More remains intentionally limited.
+Today, Plan, Map, Bookings, and More have working functionality. More is now a native trip hub with canonical Trip Details, Budget, Itinerary, Bookings, Map, and Today navigation. Travelers, Accommodations, and Readiness appear only as explicitly labelled planned modules.
+
+### Trip Details and More
+
+Implemented behavior includes:
+
+- A dedicated native Trip Details route reached from More.
+- Canonical title editing, status selection, native date editing, accounting-currency editing, and existing destination-name editing through TripService and TripWorkspace.
+- Strict real-calendar `YYYY-MM-DD` validation and rejection of reversed ranges before persistence.
+- Preservation of destination IDs, order, coordinates, country, timezone, and local-currency metadata.
+- Structured destinations are read-only until a location-aware replacement flow exists; name-only destination records can be refined. Destination add, remove, reorder, and structured replacement are not implied by the UI.
+- Manual status choices cover draft, planned, completed, and archived. An existing active status is preserved, but a future trip cannot be manually marked active because active truth needs date/runtime derivation.
+- Accounting currency cannot be changed once a persisted Budget exists. No amount is relabelled, converted, or assigned an invented exchange rate.
+- Trip deletion uses a destructive native confirmation, routes safely back to Trips, refreshes the global list cache, and leaves the deleted workspace in not-found state rather than retaining stale data.
+
+Current limitations include the unfinished multi-destination workflow, no archive/recovery or backup for deletion, no destination-aware timezone rules, no native date picker on Create Trip, and no complete currency selector.
 
 ### Budget & Expenses
 
@@ -223,9 +243,9 @@ These are foundations, not shipped features. Their repository existence does not
 
 ## State and navigation lifecycle
 
-- Today, Plan, Map, and Bookings share one route-scoped TripWorkspace lifecycle above the nested tabs.
+- Today, Plan, Map, Bookings, Budget, More, and Trip Details share one route-scoped TripWorkspace lifecycle above the nested tabs.
 - Initial loading, ready, refreshing, not-found, and recoverable error states are explicit.
-- Stop and booking mutations use the existing TripService, and budget mutations use BudgetService; all invalidate and reload the shared aggregate from SQLite.
+- Stop, booking, Trip Details, and trip-delete mutations use the existing TripService, while budget mutations use BudgetService; all invalidate and reload the shared aggregate from SQLite.
 - Focus-aware refresh retries invalid or failed snapshots but skips database reads when the shared revision is already current.
 - Missing and unknown trip IDs render a native not-found state with a safe route back to Trips instead of waiting indefinitely.
 - Fatal database, persistence self-test, or initial trip-list bootstrap failures render a retryable root state rather than opening the application against an unverified database.
@@ -247,15 +267,16 @@ It is still an early design system:
 
 ## Testing and release readiness
 
-Verified checks through the Budget & Expenses implementation:
+Verified checks through the Trip Details and More implementation:
 
-- npm test runs eighteen automated tests covering persistence, migrations, Budget calculations, and TripWorkspace lifecycle behavior.
+- npm test runs twenty-four automated tests covering persistence, migrations, Budget calculations, Trip Details validation/persistence/cascades, and TripWorkspace lifecycle behavior.
 - Fresh database migration, version-2 drift repair, migration rollback, fresh/partial/repeated TripDay generation, concurrent idempotency, and stop reorder rollback are covered.
 - Workspace initial loading, not-found behavior, revision-aware refresh, shared-consumer mutation propagation, recoverable retry, and mutation-during-load invalidation are covered.
 - The Android debug build compiles, installs, launches, and reaches both the development persistence self-test and bootstrap-ready state on an x86_64 emulator.
 - An on-device Expo SQLite rehearsal verified `PRAGMA user_version = 3`, all ten migration/invariant indexes, existing seeded trip survival, canonical TripDay generation/loading, and lossless stop reorder in an isolated database.
 - Phase 0B Android runtime verification created and opened an isolated trip, selected and persisted a real mapped stop, observed it and its edited title on Map after tab navigation, preserved a booking across tab changes, and confirmed an unknown trip route reaches the native not-found state. Only the isolated verification trip was removed afterwards; the pre-existing trip remained visible.
 - Budget Android runtime verification created an isolated EUR trip, set a €1,000 plan, added accounting- and foreign-currency expenses, verified the foreign amount stayed outside EUR totals, edited an expense to produce €350 spent and €650 remaining, deleted an expense, cold-relaunched the app, and confirmed the budget and edited expense persisted. Expo SQLite reported `PRAGMA user_version = 4` and all three Budget indexes. Only the reserved test trip was removed; the pre-existing trip remained visible.
+- Trip Details Android runtime verification edited an existing trip title and date range, rejected an invalid reversed range, safely changed accounting currency on a trip without a persisted Budget, observed the saved values immediately in More and Today, and confirmed them after a cold process relaunch. The original trip values were restored afterwards. A separate `DeleteE2E` trip exercised the destructive confirmation and cascade path; it disappeared from Trips while the original trip and its itinerary remained. A clean restart reported `Persistence self-test: PASS` and `Bootstrap ready`.
 - npx tsc --noEmit passes for the application.
 - npm ls --depth=0 passed at the takeover audit.
 - git diff --check is part of the required completion checks.
@@ -292,6 +313,8 @@ Missing release foundations:
 - Real selected coordinates persisted and rendered as map pins.
 - Separate accounting-currency concept.
 - A service-backed Budget & Expenses flow with truthful same-currency aggregation and original-currency preservation.
+- A service-backed canonical Trip Details editor with strict date validation, metadata-preserving destination handling, budget-aware accounting-currency safety, and verified cascade deletion.
+- A functional More hub that distinguishes implemented navigation from planned modules.
 - A coherent early visual language.
 
 These pieces are promising foundations; they do not make the app production-ready on their own.
@@ -299,15 +322,16 @@ These pieces are promising foundations; they do not make the app production-read
 ### Prototype or incomplete implementation
 
 - Create Trip input and validation.
+- Multi-destination add/remove/reorder and structured destination replacement.
 - Today as a full Companion.
 - Booking-stop and accommodation workflows.
 - Map intelligence, routes, and offline behavior.
 - Travelers, runtime state, memories, and Travel Book UI.
-- Discover, World, Profile, and More.
+- Discover, World, and Profile.
 - Shared UI primitives and accessibility.
 - iOS platform setup.
 - Tests, CI, EAS, release operations, sync, backup, and observability.
 
 ## Overall assessment
 
-TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, and Budget & Expenses is the first complete Phase 1 product slice. The next priorities are closing the remaining Phase 0 engineering gaps while continuing Phase 1 through trip editing, native date/time validation, explicit booking/stop relationships, accommodations, and travelers. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.
+TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, Budget & Expenses is the first complete Phase 1 product slice, and Trip Details now makes the canonical Trip safely editable. The next priorities are closing the remaining Phase 0 engineering gaps while completing multi-destination rules, upgrading Create Trip inputs, and continuing Phase 1 through explicit booking/stop relationships, accommodations, and travelers. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.

@@ -4,7 +4,9 @@ import type {
 } from '../database/database';
 
 import type {
+  Trip,
   TripDay,
+  TripId,
   TripStop,
 } from '../../domain/entities';
 
@@ -20,6 +22,142 @@ interface PersistedStopRow {
   trip_id: string;
   day_id: string;
   position: number;
+}
+
+export async function saveCanonicalTrip(
+  database: Database,
+  trip: Trip,
+): Promise<void> {
+  await database.transaction(
+    async (transaction) => {
+      await transaction.execute(
+        `
+          INSERT INTO trips (
+            id,
+            title,
+            status,
+            start_date,
+            end_date,
+            accounting_currency,
+            created_at,
+            updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            title = excluded.title,
+            status = excluded.status,
+            start_date = excluded.start_date,
+            end_date = excluded.end_date,
+            accounting_currency =
+              excluded.accounting_currency,
+            updated_at = excluded.updated_at;
+        `,
+        [
+          trip.id,
+          trip.title,
+          trip.status,
+          trip.startDate,
+          trip.endDate,
+          trip.accountingCurrency,
+          trip.createdAt,
+          trip.updatedAt,
+        ],
+      );
+
+      await transaction.execute(
+        `
+          DELETE FROM trip_destinations
+          WHERE trip_id = ?;
+        `,
+        [trip.id],
+      );
+
+      for (
+        let position = 0;
+        position < trip.destinations.length;
+        position += 1
+      ) {
+        const destination =
+          trip.destinations[position];
+
+        await transaction.execute(
+          `
+            INSERT INTO trip_destinations (
+              id,
+              trip_id,
+              name,
+              country_code,
+              latitude,
+              longitude,
+              timezone,
+              currency_code,
+              position
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+          `,
+          [
+            destination.id,
+            trip.id,
+            destination.name,
+            destination.countryCode ?? null,
+            destination.latitude ?? null,
+            destination.longitude ?? null,
+            destination.timezone ?? null,
+            destination.currencyCode ?? null,
+            position,
+          ],
+        );
+      }
+
+      await transaction.execute(
+        `
+          DELETE FROM trip_travelers
+          WHERE trip_id = ?;
+        `,
+        [trip.id],
+      );
+
+      for (const travelerId of trip.travelerIds) {
+        const travelerExists =
+          await transaction.queryFirst<{
+            id: string;
+          }>(
+            `
+              SELECT id
+              FROM travelers
+              WHERE id = ?;
+            `,
+            [travelerId],
+          );
+
+        if (travelerExists) {
+          await transaction.execute(
+            `
+              INSERT INTO trip_travelers (
+                trip_id,
+                traveler_id
+              )
+              VALUES (?, ?);
+            `,
+            [trip.id, travelerId],
+          );
+        }
+      }
+    },
+  );
+}
+
+export async function deleteCanonicalTrip(
+  database: Database,
+  id: TripId,
+): Promise<void> {
+  // A single SQLite DELETE statement is atomic, and keeping it on
+  // the database connection preserves Expo SQLite's configured
+  // foreign-key cascade behavior.
+  await database.execute(
+    `DELETE FROM trips WHERE id = ?;`,
+    [id],
+  );
 }
 
 function assertUnique<
