@@ -275,6 +275,17 @@ export default function MoreScreen() {
           }}
         />
         <ToolCard
+          icon="bed-outline"
+          title="Accommodation"
+          body={`${workspace.accommodations.length} saved ${workspace.accommodations.length === 1 ? 'stay' : 'stays'}`}
+          onPress={() => {
+            router.push({
+              pathname: '/trip/[tripId]/accommodation',
+              params: { tripId },
+            });
+          }}
+        />
+        <ToolCard
           icon="map-outline"
           title="Trip map"
           body={`${mappedStopCount} mapped ${mappedStopCount === 1 ? 'stop' : 'stops'}`}
@@ -312,12 +323,6 @@ export default function MoreScreen() {
           icon="people-outline"
           title="Travelers"
           body="Membership and roles need explicit rules."
-        />
-        <View style={styles.futureDivider} />
-        <FutureRow
-          icon="bed-outline"
-          title="Accommodations"
-          body="Persisted foundation; management UI is next."
         />
         <View style={styles.futureDivider} />
         <FutureRow

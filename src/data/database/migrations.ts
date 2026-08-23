@@ -2,7 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { DATABASE_SCHEMA } from './schema';
 
-export const DATABASE_VERSION = 5;
+export const DATABASE_VERSION = 6;
 
 interface UserVersionRow {
   user_version: number;
@@ -33,6 +33,15 @@ interface InvalidBookingStopLinkRow {
   booking_id: string;
   booking_trip_id: string;
   stop_id: string;
+  stop_trip_id: string | null;
+}
+
+interface InvalidAccommodationLinkRow {
+  accommodation_id: string;
+  accommodation_trip_id: string;
+  booking_id: string | null;
+  booking_trip_id: string | null;
+  stop_id: string | null;
   stop_trip_id: string | null;
 }
 
@@ -444,6 +453,244 @@ async function reconcileBookingStopLinks(
   `);
 }
 
+async function reconcileAccommodationLinks(
+  db: SQLiteDatabase,
+): Promise<void> {
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS
+      migration_v6_invalid_accommodation_links (
+        accommodation_id TEXT PRIMARY KEY NOT NULL,
+        accommodation_trip_id TEXT NOT NULL,
+        booking_id TEXT,
+        booking_trip_id TEXT,
+        stop_id TEXT,
+        stop_trip_id TEXT,
+        archived_at TEXT NOT NULL
+      );
+
+    CREATE INDEX IF NOT EXISTS
+      idx_migration_v6_accommodation_booking_id
+    ON migration_v6_invalid_accommodation_links(booking_id);
+
+    CREATE INDEX IF NOT EXISTS
+      idx_migration_v6_accommodation_stop_id
+    ON migration_v6_invalid_accommodation_links(stop_id);
+  `);
+
+  const invalidLinks =
+    await db.getAllAsync<InvalidAccommodationLinkRow>(
+      `
+        SELECT
+          a.id AS accommodation_id,
+          a.trip_id AS accommodation_trip_id,
+          CASE
+            WHEN
+              a.booking_id IS NOT NULL AND
+              (
+                b.id IS NULL OR
+                b.trip_id <> a.trip_id
+              )
+            THEN a.booking_id
+            ELSE NULL
+          END AS booking_id,
+          CASE
+            WHEN
+              a.booking_id IS NOT NULL AND
+              (
+                b.id IS NULL OR
+                b.trip_id <> a.trip_id
+              )
+            THEN b.trip_id
+            ELSE NULL
+          END AS booking_trip_id,
+          CASE
+            WHEN
+              a.stop_id IS NOT NULL AND
+              (
+                s.id IS NULL OR
+                s.trip_id <> a.trip_id
+              )
+            THEN a.stop_id
+            ELSE NULL
+          END AS stop_id,
+          CASE
+            WHEN
+              a.stop_id IS NOT NULL AND
+              (
+                s.id IS NULL OR
+                s.trip_id <> a.trip_id
+              )
+            THEN s.trip_id
+            ELSE NULL
+          END AS stop_trip_id
+        FROM accommodations a
+        LEFT JOIN bookings b
+          ON b.id = a.booking_id
+        LEFT JOIN trip_stops s
+          ON s.id = a.stop_id
+        WHERE
+          (
+            a.booking_id IS NOT NULL AND
+            (
+              b.id IS NULL OR
+              b.trip_id <> a.trip_id
+            )
+          ) OR
+          (
+            a.stop_id IS NOT NULL AND
+            (
+              s.id IS NULL OR
+              s.trip_id <> a.trip_id
+            )
+          );
+      `,
+    );
+
+  const archivedAt = new Date().toISOString();
+
+  for (const link of invalidLinks) {
+    await db.runAsync(
+      `
+        INSERT INTO
+          migration_v6_invalid_accommodation_links (
+            accommodation_id,
+            accommodation_trip_id,
+            booking_id,
+            booking_trip_id,
+            stop_id,
+            stop_trip_id,
+            archived_at
+          )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(accommodation_id) DO UPDATE SET
+          accommodation_trip_id =
+            excluded.accommodation_trip_id,
+          booking_id = excluded.booking_id,
+          booking_trip_id =
+            excluded.booking_trip_id,
+          stop_id = excluded.stop_id,
+          stop_trip_id = excluded.stop_trip_id,
+          archived_at = excluded.archived_at;
+      `,
+      [
+        link.accommodation_id,
+        link.accommodation_trip_id,
+        link.booking_id,
+        link.booking_trip_id,
+        link.stop_id,
+        link.stop_trip_id,
+        archivedAt,
+      ],
+    );
+  }
+
+  await db.execAsync(`
+    UPDATE accommodations
+    SET booking_id = NULL
+    WHERE
+      booking_id IS NOT NULL AND
+      NOT EXISTS (
+        SELECT 1
+        FROM bookings b
+        WHERE
+          b.id = accommodations.booking_id AND
+          b.trip_id = accommodations.trip_id
+      );
+
+    UPDATE accommodations
+    SET stop_id = NULL
+    WHERE
+      stop_id IS NOT NULL AND
+      NOT EXISTS (
+        SELECT 1
+        FROM trip_stops s
+        WHERE
+          s.id = accommodations.stop_id AND
+          s.trip_id = accommodations.trip_id
+      );
+
+    CREATE TRIGGER IF NOT EXISTS
+      validate_accommodation_booking_insert
+    BEFORE INSERT ON accommodations
+    WHEN NEW.booking_id IS NOT NULL
+    BEGIN
+      SELECT CASE
+        WHEN NOT EXISTS (
+          SELECT 1
+          FROM bookings b
+          WHERE
+            b.id = NEW.booking_id AND
+            b.trip_id = NEW.trip_id
+        )
+        THEN RAISE(
+          ABORT,
+          'accommodation booking must belong to accommodation trip'
+        )
+      END;
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS
+      validate_accommodation_booking_update
+    BEFORE UPDATE OF trip_id, booking_id ON accommodations
+    WHEN NEW.booking_id IS NOT NULL
+    BEGIN
+      SELECT CASE
+        WHEN NOT EXISTS (
+          SELECT 1
+          FROM bookings b
+          WHERE
+            b.id = NEW.booking_id AND
+            b.trip_id = NEW.trip_id
+        )
+        THEN RAISE(
+          ABORT,
+          'accommodation booking must belong to accommodation trip'
+        )
+      END;
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS
+      validate_accommodation_stop_insert
+    BEFORE INSERT ON accommodations
+    WHEN NEW.stop_id IS NOT NULL
+    BEGIN
+      SELECT CASE
+        WHEN NOT EXISTS (
+          SELECT 1
+          FROM trip_stops s
+          WHERE
+            s.id = NEW.stop_id AND
+            s.trip_id = NEW.trip_id
+        )
+        THEN RAISE(
+          ABORT,
+          'accommodation stop must belong to accommodation trip'
+        )
+      END;
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS
+      validate_accommodation_stop_update
+    BEFORE UPDATE OF trip_id, stop_id ON accommodations
+    WHEN NEW.stop_id IS NOT NULL
+    BEGIN
+      SELECT CASE
+        WHEN NOT EXISTS (
+          SELECT 1
+          FROM trip_stops s
+          WHERE
+            s.id = NEW.stop_id AND
+            s.trip_id = NEW.trip_id
+        )
+        THEN RAISE(
+          ABORT,
+          'accommodation stop must belong to accommodation trip'
+        )
+      END;
+    END;
+  `);
+}
+
 export async function migrateDatabase(
   db: SQLiteDatabase,
 ): Promise<void> {
@@ -639,6 +886,28 @@ export async function migrateDatabase(
 
         await transaction.execAsync(
           'PRAGMA user_version = 5;',
+        );
+      },
+    );
+  }
+
+  /**
+   * Version 6
+   * Enforce Accommodation -> Booking and
+   * Accommodation -> TripStop same-trip ownership.
+   * Historical invalid links are archived and only
+   * those relationships are unlinked; every
+   * Accommodation record and its stay data survives.
+   */
+  if (currentVersion < 6) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await reconcileAccommodationLinks(
+          transaction,
+        );
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 6;',
         );
       },
     );

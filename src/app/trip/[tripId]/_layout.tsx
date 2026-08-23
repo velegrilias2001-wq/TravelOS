@@ -202,6 +202,13 @@ function TripSpaceTabs({
           href: null,
         }}
       />
+
+      <Tabs.Screen
+        name="accommodation"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

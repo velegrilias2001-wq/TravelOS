@@ -39,6 +39,9 @@ import {
 import {
   buildItineraryStopContexts,
 } from '@/services/booking-stop-relationship';
+import {
+  accommodationsLinkedToBooking,
+} from '@/services/accommodation-details';
 
 import {
   colors,
@@ -863,6 +866,11 @@ export default function BookingsScreen() {
                           booking.stopId,
                       )
                     : undefined;
+                const linkedAccommodations =
+                  accommodationsLinkedToBooking(
+                    workspace.accommodations,
+                    booking.id,
+                  );
 
                 return (
                   <Pressable
@@ -1058,6 +1066,50 @@ export default function BookingsScreen() {
                             name="arrow-forward"
                             size={16}
                             color={colors.teal}
+                          />
+                        </Pressable>
+                      )}
+
+                      {linkedAccommodations.length > 0 && (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Open linked accommodation"
+                          style={styles.linkedAccommodationRow}
+                          onPress={() =>
+                            router.push({
+                              pathname: '/trip/[tripId]/accommodation',
+                              params: {
+                                tripId: workspace.trip.id,
+                                ...(linkedAccommodations.length === 1
+                                  ? { accommodationId: linkedAccommodations[0].id }
+                                  : {}),
+                              },
+                            })
+                          }
+                        >
+                          <View style={styles.linkedAccommodationIcon}>
+                            <Ionicons
+                              name="bed-outline"
+                              size={15}
+                              color={colors.brand}
+                            />
+                          </View>
+                          <View style={styles.linkedStopCopy}>
+                            <Text style={styles.linkedAccommodationLabel}>
+                              {linkedAccommodations.length === 1
+                                ? 'LINKED STAY'
+                                : `${linkedAccommodations.length} LINKED STAYS`}
+                            </Text>
+                            <Text numberOfLines={1} style={styles.linkedStopTitle}>
+                              {linkedAccommodations.length === 1
+                                ? linkedAccommodations[0].name
+                                : 'Open accommodation'}
+                            </Text>
+                          </View>
+                          <Ionicons
+                            name="arrow-forward"
+                            size={16}
+                            color={colors.brand}
                           />
                         </Pressable>
                       )}
@@ -2198,6 +2250,34 @@ const styles =
       fontFamily: fontFamily.sansMedium,
       fontSize: fontSize.caption,
       color: colors.textPrimary,
+    },
+
+    linkedAccommodationRow: {
+      minHeight: 58,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[3],
+      marginTop: spacing[3],
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      borderRadius: radius.md,
+      backgroundColor: colors.brandSoft,
+    },
+
+    linkedAccommodationIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    linkedAccommodationLabel: {
+      fontFamily: fontFamily.sansBold,
+      fontSize: fontSize.micro,
+      letterSpacing: 0.8,
+      color: colors.brand,
     },
 
     bookingFooter: {

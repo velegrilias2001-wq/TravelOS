@@ -230,6 +230,55 @@ test(
 );
 
 test(
+  'accommodation mutations refresh every Trip Space consumer from durable truth',
+  async () => {
+    const durableTruth = makeWorkspace();
+    const lifecycle = new TripWorkspaceLifecycle(
+      'trip-1',
+      async () => clone(durableTruth),
+    );
+
+    await lifecycle.refreshIfNeeded();
+
+    await lifecycle.runMutation(async () => {
+      durableTruth.accommodations.push({
+        id: 'stay-1',
+        tripId: 'trip-1',
+        name: 'Known stay',
+        type: 'hotel',
+        checkInAt: '2026-09-01T15:00:00',
+        checkOutAt: '2026-09-02T11:00:00',
+        createdAt: TIMESTAMP,
+        updatedAt: TIMESTAMP,
+      });
+    });
+
+    assert.equal(
+      lifecycle.getSnapshot().workspace.accommodations[0].name,
+      'Known stay',
+    );
+
+    await lifecycle.runMutation(async () => {
+      durableTruth.accommodations[0].name = 'Updated stay';
+    });
+
+    assert.equal(
+      lifecycle.getSnapshot().workspace.accommodations[0].name,
+      'Updated stay',
+    );
+
+    await lifecycle.runMutation(async () => {
+      durableTruth.accommodations = [];
+    });
+
+    assert.deepEqual(
+      lifecycle.getSnapshot().workspace.accommodations,
+      [],
+    );
+  },
+);
+
+test(
   'booking-stop link mutations refresh Plan, Today, Map and Bookings from one snapshot',
   async () => {
     const durableTruth = makeWorkspace();

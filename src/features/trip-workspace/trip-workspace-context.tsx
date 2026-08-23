@@ -22,6 +22,7 @@ import {
 
 import { Screen } from '@/components/ui/screen';
 import type {
+  AccommodationId,
   Booking,
   BookingId,
   BudgetItemId,
@@ -29,6 +30,12 @@ import type {
   TripStop,
   TripStopId,
 } from '@/domain/entities';
+import {
+  accommodationService,
+} from '@/services/accommodation-service';
+import type {
+  AccommodationInput,
+} from '@/services/accommodation-details';
 import {
   budgetService,
   type BudgetExpenseInput,
@@ -67,6 +74,17 @@ interface TripWorkspaceActions {
   addBooking(booking: Booking): Promise<void>;
   updateBooking(booking: Booking): Promise<void>;
   deleteBooking(bookingId: BookingId): Promise<void>;
+
+  addAccommodation(
+    input: AccommodationInput,
+  ): Promise<void>;
+  updateAccommodation(
+    accommodationId: AccommodationId,
+    input: AccommodationInput,
+  ): Promise<void>;
+  deleteAccommodation(
+    accommodationId: AccommodationId,
+  ): Promise<void>;
 
   setPlannedBudget(plannedAmount: number): Promise<void>;
   addExpense(input: BudgetExpenseInput): Promise<void>;
@@ -217,6 +235,36 @@ export function TripWorkspaceProvider({
       deleteBooking: (bookingId) =>
         lifecycle.runMutation(() =>
           tripService.deleteBooking(bookingId),
+        ),
+
+      addAccommodation: (input) =>
+        lifecycle.runMutation(() =>
+          accommodationService.addAccommodation(
+            requireWorkspaceTripId(tripId),
+            input,
+          ),
+        ),
+
+      updateAccommodation: (
+        accommodationId,
+        input,
+      ) =>
+        lifecycle.runMutation(() =>
+          accommodationService.updateAccommodation(
+            requireWorkspaceTripId(tripId),
+            accommodationId,
+            input,
+          ),
+        ),
+
+      deleteAccommodation: (
+        accommodationId,
+      ) =>
+        lifecycle.runMutation(() =>
+          accommodationService.deleteAccommodation(
+            requireWorkspaceTripId(tripId),
+            accommodationId,
+          ),
         ),
 
       setPlannedBudget: (plannedAmount) =>

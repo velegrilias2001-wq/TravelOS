@@ -34,6 +34,10 @@ import type {
 import {
   bookingsLinkedToStop,
 } from '@/services/booking-stop-relationship';
+import {
+  accommodationContextsForDay,
+  splitAccommodationDateTime,
+} from '@/services/accommodation-details';
 
 import {
   colors,
@@ -217,6 +221,13 @@ export default function TodayScreen() {
           )
       : [];
 
+  const accommodationContexts = selectedDay
+    ? accommodationContextsForDay(
+        workspace.accommodations,
+        selectedDay.date,
+      )
+    : [];
+
   const momentLabel =
     journey.moment === 'today'
       ? 'TODAY'
@@ -343,6 +354,63 @@ export default function TodayScreen() {
             styles.divider
           }
         />
+
+        {accommodationContexts.length > 0 && (
+          <View style={styles.stayContexts}>
+            {accommodationContexts.map(({ accommodation, phase }) => {
+              const dateTime = splitAccommodationDateTime(
+                phase === 'check-out'
+                  ? accommodation.checkOutAt
+                  : accommodation.checkInAt,
+              );
+              const phaseLabel =
+                phase === 'check-in'
+                  ? 'CHECK-IN SCHEDULED'
+                  : phase === 'check-out'
+                    ? 'CHECK-OUT SCHEDULED'
+                    : 'STAY SCHEDULED';
+
+              return (
+                <Pressable
+                  key={`${accommodation.id}-${phase}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open ${accommodation.name}`}
+                  style={styles.stayContext}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/trip/[tripId]/accommodation',
+                      params: {
+                        tripId: workspace.trip.id,
+                        accommodationId: accommodation.id,
+                      },
+                    })
+                  }
+                >
+                  <View style={styles.stayContextIcon}>
+                    <Ionicons
+                      name="bed-outline"
+                      size={17}
+                      color={colors.brand}
+                    />
+                  </View>
+                  <View style={styles.stayContextCopy}>
+                    <Text style={styles.stayContextLabel}>
+                      {phaseLabel}{dateTime && phase !== 'stay' ? ` · ${dateTime.time}` : ''}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.stayContextTitle}>
+                      {accommodation.name}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={16}
+                    color={colors.brand}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
 
         {stops.length === 0 ? (
           <View
@@ -770,6 +838,48 @@ const styles =
         colors.border,
       marginVertical:
         spacing[6],
+    },
+
+    stayContexts: {
+      gap: spacing[3],
+      marginBottom: spacing[5],
+    },
+
+    stayContext: {
+      minHeight: 64,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[3],
+      padding: spacing[3],
+      borderRadius: radius.md,
+      backgroundColor: colors.brandSoft,
+    },
+
+    stayContextIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: radius.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface,
+    },
+
+    stayContextCopy: {
+      flex: 1,
+    },
+
+    stayContextLabel: {
+      fontFamily: fontFamily.sansBold,
+      fontSize: fontSize.micro,
+      letterSpacing: 0.8,
+      color: colors.brand,
+    },
+
+    stayContextTitle: {
+      marginTop: 3,
+      fontFamily: fontFamily.sansMedium,
+      fontSize: fontSize.bodySmall,
+      color: colors.textPrimary,
     },
 
     emptyState: {

@@ -37,6 +37,9 @@ import {
 import {
   bookingsLinkedToStop,
 } from '@/services/booking-stop-relationship';
+import {
+  accommodationsLinkedToStop,
+} from '@/services/accommodation-details';
 
 import {
   colors,
@@ -51,6 +54,7 @@ interface MappedStop {
   stop: TripStop;
   coordinate: LatLng;
   bookingCount: number;
+  accommodationCount: number;
 }
 
 const WORLD_REGION: Region = {
@@ -106,6 +110,12 @@ export default function TripMapScreen() {
             bookingCount:
               bookingsLinkedToStop(
                 workspace.bookings,
+                stop.id,
+              ).length,
+
+            accommodationCount:
+              accommodationsLinkedToStop(
+                workspace.accommodations,
                 stop.id,
               ).length,
 
@@ -305,6 +315,7 @@ export default function TripMapScreen() {
             stop,
             coordinate,
             bookingCount,
+            accommodationCount,
           }) => (
             <Marker
               key={stop.id}
@@ -324,6 +335,14 @@ export default function TripMapScreen() {
                         1
                           ? 'booking'
                           : 'bookings'
+                      }`
+                    : ''
+                }${
+                  accommodationCount > 0
+                    ? ` · ${accommodationCount} linked ${
+                        accommodationCount === 1
+                          ? 'stay'
+                          : 'stays'
                       }`
                     : ''
                 }`
@@ -622,6 +641,21 @@ export default function TripMapScreen() {
                           1
                             ? 'booking'
                             : 'bookings'}
+                        </Text>
+                      </View>
+                    )}
+                    {item.accommodationCount > 0 && (
+                      <View style={styles.bookingRow}>
+                        <Ionicons
+                          name="bed-outline"
+                          size={13}
+                          color={colors.brand}
+                        />
+                        <Text style={styles.bookingText}>
+                          {item.accommodationCount}{' '}
+                          {item.accommodationCount === 1
+                            ? 'stay'
+                            : 'stays'}
                         </Text>
                       </View>
                     )}

@@ -29,9 +29,9 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 
 ### Remaining Phase 0 work
 
-- [ ] Decide and enforce remaining relationship invariants and cardinality for accommodations, memories, runtime state, and other workspace aggregates. Booking ↔ Stop is now explicitly zero-or-one from Booking and zero-to-many from TripStop, with same-trip enforcement.
+- [ ] Decide and enforce remaining relationship invariants and cardinality for memories, runtime state, and other workspace aggregates. Booking ↔ Stop is explicitly zero-or-one from Booking and zero-to-many from TripStop; Accommodation is explicitly zero-to-many from Trip with optional zero-or-one Booking and TripStop links. Both relationship families enforce same-trip IDs.
 - [ ] Remove N+1 loading patterns from the trip list and other obvious aggregate reads.
-- [ ] Expand automated coverage for the remaining repository relationships/cascades and upcoming/active/completed trip-state logic. Booking deletion and linked-stop unlink cascades are now covered.
+- [ ] Expand automated coverage for the remaining repository relationships/cascades and upcoming/active/completed trip-state logic. Booking/stop unlink cascades for Bookings and Accommodations are now covered.
 - [ ] Rehearse migration version 3 against Expo SQLite on an iOS development build.
 - [ ] Commit a non-interactive lint configuration and add baseline CI checks.
 
@@ -50,7 +50,7 @@ Goal: turn the current vertical prototype into a coherent pre-trip workspace.
 - [ ] Complete destination add/remove/reorder and location-aware replacement, then define how multi-destination truth is presented across Create Trip, Today, Plan, Map, and Bookings.
 - [ ] Replace free-form Create Trip and remaining booking/stop date-time fields with appropriate native inputs and domain validation.
 - [x] Implement Booking ↔ Stop linking by exact ID, including optional native link/relink/unlink UX, Plan/Today/Map context, zero-to-many reverse cardinality, same-trip validation, safe stop deletion, migration version 5, automated tests, and isolated Android verification.
-- Implement accommodation management and accommodation-to-stop linking by ID.
+- [x] Implement native Accommodation management with multiple sorted stays, validated local date/time input, optional same-trip Booking and TripStop links by exact ID, lossless unlink/delete behavior, migration version 6, automated tests, and isolated Android verification.
 - Implement traveler management and explicit trip membership.
 - Define trip timezone, destination timezone behavior, and TripRuntimeState responsibilities.
 - Improve booking actions, validation, payment state, and destructive-flow UX.

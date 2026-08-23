@@ -4,6 +4,8 @@ import type {
 } from '../entities/accommodation';
 
 import type { TripId } from '../entities/trip';
+import type { BookingId } from '../entities/booking';
+import type { TripStopId } from '../entities/trip-stop';
 
 export interface AccommodationRepository {
   getById(
@@ -12,6 +14,14 @@ export interface AccommodationRepository {
 
   getByTripId(
     tripId: TripId,
+  ): Promise<Accommodation[]>;
+
+  getByBookingId(
+    bookingId: BookingId,
+  ): Promise<Accommodation[]>;
+
+  getByStopId(
+    stopId: TripStopId,
   ): Promise<Accommodation[]>;
 
   save(accommodation: Accommodation): Promise<void>;
