@@ -89,7 +89,8 @@ export default function MoreScreen() {
       | '/trip/[tripId]/budget'
       | '/trip/[tripId]/accommodation'
       | '/trip/[tripId]/travelers'
-      | '/trip/[tripId]/memories',
+      | '/trip/[tripId]/memories'
+      | '/trip/[tripId]/travel-book',
   ) => {
     router.push({ pathname, params: { tripId } });
   };
@@ -174,6 +175,19 @@ export default function MoreScreen() {
           accent="brass"
           onPress={() => open('/trip/[tripId]/memories')}
         />
+        <HubDivider />
+        <HubRow
+          icon="book-outline"
+          title="Travel Book"
+          body={
+            workspace.memories.length === 0
+              ? 'Add memories first, then shape the story of this trip'
+              : `Shape ${workspace.memories.length} ${
+                  workspace.memories.length === 1 ? 'saved moment' : 'saved moments'
+                } into your trip story`
+          }
+          onPress={() => open('/trip/[tripId]/travel-book')}
+        />
       </HubSection>
 
       <View style={styles.plannedSection}>
@@ -181,15 +195,15 @@ export default function MoreScreen() {
         <View style={styles.plannedRow}>
           <View style={styles.plannedIcon}>
             <Ionicons
-              name="book-outline"
+              name="checkmark-done-outline"
               size={18}
               color={colors.textMuted}
             />
           </View>
           <View style={styles.rowCopy}>
-            <Text style={styles.plannedTitle}>Travel Book</Text>
+            <Text style={styles.plannedTitle}>Trip readiness</Text>
             <Text style={styles.rowBody}>
-              Turn saved moments into the story of your trip
+              A focused pre-departure checklist
             </Text>
           </View>
           <Text style={styles.plannedBadge}>PLANNED</Text>
