@@ -88,7 +88,8 @@ export default function MoreScreen() {
       | '/trip/[tripId]/details'
       | '/trip/[tripId]/budget'
       | '/trip/[tripId]/accommodation'
-      | '/trip/[tripId]/travelers',
+      | '/trip/[tripId]/travelers'
+      | '/trip/[tripId]/memories',
   ) => {
     router.push({ pathname, params: { tripId } });
   };
@@ -106,7 +107,7 @@ export default function MoreScreen() {
           <View style={styles.tripMark}>
             <Ionicons
               name="compass-outline"
-              size={19}
+              size={21}
               color={colors.brand}
             />
           </View>
@@ -162,6 +163,38 @@ export default function MoreScreen() {
           onPress={() => open('/trip/[tripId]/accommodation')}
         />
       </HubSection>
+
+      <HubSection title="Your journey">
+        <HubRow
+          icon="images-outline"
+          title="Memories"
+          body={`${workspace.memories.length} ${
+            workspace.memories.length === 1 ? 'moment saved' : 'moments saved'
+          }`}
+          accent="brass"
+          onPress={() => open('/trip/[tripId]/memories')}
+        />
+      </HubSection>
+
+      <View style={styles.plannedSection}>
+        <Text style={styles.groupLabel}>COMING LATER</Text>
+        <View style={styles.plannedRow}>
+          <View style={styles.plannedIcon}>
+            <Ionicons
+              name="book-outline"
+              size={18}
+              color={colors.textMuted}
+            />
+          </View>
+          <View style={styles.rowCopy}>
+            <Text style={styles.plannedTitle}>Travel Book</Text>
+            <Text style={styles.rowBody}>
+              Turn saved moments into the story of your trip
+            </Text>
+          </View>
+          <Text style={styles.plannedBadge}>PLANNED</Text>
+        </View>
+      </View>
 
       <View style={styles.bottomSpace} />
     </Screen>
@@ -234,8 +267,7 @@ function HubDivider() {
 
 const styles = StyleSheet.create({
   tripSummary: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
+    padding: spacing[4],
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
@@ -246,8 +278,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tripMark: {
-    width: 36,
-    height: 36,
+    width: 42,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,
@@ -272,8 +304,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
-    marginTop: spacing[2],
-    marginLeft: 36 + spacing[3],
+    marginTop: spacing[3],
+    paddingTop: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   tripMeta: {
     fontFamily: fontFamily.sansMedium,
@@ -341,6 +375,44 @@ const styles = StyleSheet.create({
     height: 1,
     marginLeft: spacing[4] + 38 + spacing[3],
     backgroundColor: colors.border,
+  },
+  plannedSection: {
+    marginTop: spacing[7],
+  },
+  plannedRow: {
+    minHeight: 68,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    paddingHorizontal: spacing[4],
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceWarm,
+  },
+  plannedIcon: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+    backgroundColor: colors.backgroundSoft,
+  },
+  plannedTitle: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.textSecondary,
+  },
+  plannedBadge: {
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    overflow: 'hidden',
+    borderRadius: radius.pill,
+    backgroundColor: colors.brassSoft,
+    fontFamily: fontFamily.sansBold,
+    fontSize: 9,
+    letterSpacing: 0.7,
+    color: colors.brass,
   },
   pressed: {
     opacity: 0.72,

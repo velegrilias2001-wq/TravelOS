@@ -2,7 +2,11 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { DATABASE_SCHEMA } from './schema';
 
-export const DATABASE_VERSION = 6;
+import {
+  reconcileMemoryRelationships,
+} from './memory-integrity-migration';
+
+export const DATABASE_VERSION = 7;
 
 interface UserVersionRow {
   user_version: number;
@@ -908,6 +912,29 @@ export async function migrateDatabase(
 
         await transaction.execAsync(
           'PRAGMA user_version = 6;',
+        );
+      },
+    );
+  }
+
+  /**
+   * Version 7
+   * Harden Memory -> TripDay / TripStop and
+   * TravelBook -> Memory relationship integrity.
+   *
+   * Historical invalid relationships are archived
+   * before being unlinked. Memory and TravelBook
+   * content survives relationship cleanup.
+   */
+  if (currentVersion < 7) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await reconcileMemoryRelationships(
+          transaction,
+        );
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 7;',
         );
       },
     );

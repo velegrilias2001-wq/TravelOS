@@ -216,6 +216,13 @@ function TripSpaceTabs({
           href: null,
         }}
       />
+
+      <Tabs.Screen
+        name="memories"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
