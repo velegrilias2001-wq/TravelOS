@@ -115,6 +115,10 @@ Exit condition: discovery and import reduce planning effort while every unconfir
 
 Goal: turn coherent functionality into a distinctive, accessible native product.
 
+- [x] Complete UX Refinement V1: preserve the TravelOS identity while making Companion the signature surface, tightening utility-screen hierarchy, reducing card stacking and shadows, improving Plan density, compacting Bookings/Accommodation summaries, and turning More into a fast grouped hub.
+- [x] Remove traveler-facing engineering terminology from Companion, Travelers, Trip Details, destination selection, and time/date form helpers while preserving the underlying canonical data rules.
+- [x] Establish shared compact utility-header and summary-strip primitives and apply them across Plan, Bookings, Budget, Accommodation, Travelers, More, and Trip Details without adding a UI framework.
+- [ ] Complete the remaining UX Refinement V1 Android visual/function matrix for Plan, Bookings, More, Travelers, forms, Map, CRUD, and cold relaunch; the debug build/install/launch and updated upcoming Companion first screenful are verified, but emulator control ended before the rest of the matrix could be observed.
 - Consolidate stable primitives for typography, fields, cards, sheets, navigation, alerts, empty states, loading, and errors.
 - Add native gestures, transitions, motion, and haptics where they improve comprehension.
 - Create an imagery strategy with licensing, caching, attribution, fallbacks, and performance constraints.

@@ -1,8 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, {
   DateTimePickerAndroid,
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
 import {
   useLocalSearchParams,
   useRouter,
@@ -25,6 +25,10 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
+import {
+  CompactSummaryStrip,
+  UtilityScreenHeader,
+} from '@/components/ui/utility-screen';
 import type {
   Accommodation,
   AccommodationType,
@@ -471,76 +475,75 @@ export default function AccommodationScreen() {
   return (
     <>
       <Screen scroll>
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>
-              {tripDestinationLabel(
-                workspace.trip.destinations,
-              ).toUpperCase()}
-            </Text>
-            <Text style={styles.title}>Accommodation</Text>
-            <Text style={styles.subtitle}>
-              Keep every stay connected to the trip without mixing reservation and itinerary truth.
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add accommodation"
-            style={styles.addButton}
-            onPress={openCreate}
-          >
-            <Ionicons
-              name="add"
-              size={24}
-              color={colors.textInverse}
-            />
-          </Pressable>
-        </View>
+        <UtilityScreenHeader
+          eyebrow={tripDestinationLabel(
+            workspace.trip.destinations,
+          ).toUpperCase()}
+          title="Accommodation"
+          subtitle="Hotels, rentals and stays for this trip."
+          action={(
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add accommodation"
+              style={styles.addButton}
+              onPress={openCreate}
+            >
+              <Ionicons
+                name="add"
+                size={24}
+                color={colors.textInverse}
+              />
+            </Pressable>
+          )}
+        />
 
-        <View style={styles.summaryRow}>
-          <SummaryStat
-            value={workspace.accommodations.length}
-            label="STAYS"
+        {workspace.accommodations.length > 0 ? (
+          <CompactSummaryStrip
+            accessibilityLabel={`${workspace.accommodations.length} stays, ${workspace.accommodations.filter((item) => item.bookingId).length} booked, ${workspace.accommodations.filter((item) => item.stopId).length} in the plan`}
+            items={[
+              {
+                value: workspace.accommodations.length,
+                label: workspace.accommodations.length === 1 ? 'stay' : 'stays',
+              },
+              {
+                value: workspace.accommodations.filter((item) => item.bookingId).length,
+                label: 'booked',
+              },
+              {
+                value: workspace.accommodations.filter((item) => item.stopId).length,
+                label: 'in plan',
+              },
+            ]}
           />
-          <SummaryStat
-            value={
-              workspace.accommodations.filter(
-                (item) => item.bookingId,
-              ).length
-            }
-            label="BOOKED"
-          />
-          <SummaryStat
-            value={
-              workspace.accommodations.filter(
-                (item) => item.stopId,
-              ).length
-            }
-            label="IN PLAN"
-          />
-        </View>
+        ) : null}
 
         {workspace.accommodations.length === 0 ? (
           <View style={styles.emptyCard}>
-            <View style={styles.emptyIcon}>
-              <Ionicons
-                name="bed-outline"
-                size={28}
-                color={colors.brand}
-              />
+            <View style={styles.emptyTop}>
+              <View style={styles.emptyIcon}>
+                <Ionicons
+                  name="bed-outline"
+                  size={22}
+                  color={colors.brand}
+                />
+              </View>
+
+              <View style={styles.emptyCopy}>
+                <Text style={styles.emptyTitle}>
+                  Add your first stay
+                </Text>
+                <Text style={styles.emptyBody}>
+                  Save a hotel, rental or other place you’ll stay. Add dates and links whenever you have them.
+                </Text>
+              </View>
             </View>
-            <Text style={styles.emptyTitle}>
-              No stays saved yet
-            </Text>
-            <Text style={styles.emptyBody}>
-              Add a hotel, rental or other real stay. Dates, booking links and itinerary context remain optional until you know them.
-            </Text>
+
             <Pressable
               style={styles.primaryButton}
               onPress={openCreate}
             >
               <Text style={styles.primaryButtonText}>
-                Add accommodation
+                Add stay
               </Text>
             </Pressable>
           </View>
@@ -702,11 +705,11 @@ export default function AccommodationScreen() {
         <View style={styles.truthNote}>
           <Ionicons
             name="time-outline"
-            size={18}
-            color={colors.brass}
+            size={17}
+            color={colors.textMuted}
           />
           <Text style={styles.truthNoteText}>
-            Stay times remain exactly as entered for the destination. TravelOS does not shift them to another time zone.
+            Check-in and check-out times use the local time you enter.
           </Text>
         </View>
         <View style={styles.bottomSpace} />
@@ -726,7 +729,7 @@ export default function AccommodationScreen() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalEyebrow}>
-                  CANONICAL STAY
+                  STAY DETAILS
                 </Text>
                 <Text style={styles.modalTitle}>
                   {editing ? 'Edit accommodation' : 'Add accommodation'}
@@ -788,10 +791,10 @@ export default function AccommodationScreen() {
               placeholder="Hotel, rental or stay name"
             />
             <Field
-              label="ADDRESS / LOCATION"
+              label="ADDRESS"
               value={address}
               onChangeText={setAddress}
-              placeholder="Only enter a known address"
+              placeholder="Address or place name"
             />
 
             <StayEditor
@@ -819,13 +822,13 @@ export default function AccommodationScreen() {
               }}
             />
 
-            <Text style={styles.fieldLabel}>BOOKING LINK</Text>
+            <Text style={styles.fieldLabel}>BOOKING</Text>
             <SelectorSummary
               icon="ticket-outline"
               label={linkedBooking ? 'LINKED BOOKING' : 'NOT LINKED'}
               title={
                 linkedBooking?.title ??
-                'Keep reservation details independent'
+                'Link a booking'
               }
               expanded={bookingPickerOpen}
               onPress={() =>
@@ -836,8 +839,8 @@ export default function AccommodationScreen() {
               <View style={styles.choices}>
                 <ChoiceRow
                   selected={!bookingId}
-                  title="No booking"
-                  meta="Leave this stay unlinked"
+                  title="No booking linked"
+                  meta="Keep this stay separate from bookings"
                   onPress={() => {
                     setBookingId(undefined);
                     setBookingPickerOpen(false);
@@ -861,13 +864,13 @@ export default function AccommodationScreen() {
                 ))}
                 {lodgingBookings.length === 0 && (
                   <Text style={styles.choiceEmpty}>
-                    Add a Hotel booking before linking reservation details.
+                    Add a Hotel booking first, then link it here.
                   </Text>
                 )}
               </View>
             )}
 
-            <Text style={styles.fieldLabel}>ITINERARY LINK</Text>
+            <Text style={styles.fieldLabel}>ADD TO YOUR PLAN</Text>
             <SelectorSummary
               icon="git-merge-outline"
               label={
@@ -879,7 +882,7 @@ export default function AccommodationScreen() {
               }
               title={
                 linkedStopContext?.stop.title ??
-                'Keep this stay outside the itinerary'
+                'Choose a moment from your plan'
               }
               expanded={stopPickerOpen}
               onPress={() =>
@@ -890,8 +893,8 @@ export default function AccommodationScreen() {
               <View style={styles.choices}>
                 <ChoiceRow
                   selected={!stopId}
-                  title="No itinerary stop"
-                  meta="Leave this stay unlinked"
+                  title="Not in plan"
+                  meta="Keep this stay separate from your plan"
                   onPress={() => {
                     setStopId(undefined);
                     setStopPickerOpen(false);
@@ -919,7 +922,7 @@ export default function AccommodationScreen() {
                 ))}
                 {stopContexts.length === 0 && (
                   <Text style={styles.choiceEmpty}>
-                    Add an itinerary stop in Plan before linking it.
+                    Add a moment in Plan first, then link this stay.
                   </Text>
                 )}
               </View>
@@ -929,14 +932,14 @@ export default function AccommodationScreen() {
               label="PHONE"
               value={phone}
               onChangeText={setPhone}
-              placeholder="Optional known contact number"
+              placeholder="Optional phone number"
               keyboardType="phone-pad"
             />
             <Field
               label="WEBSITE"
               value={website}
               onChangeText={setWebsite}
-              placeholder="Optional known website"
+              placeholder="Optional website"
               autoCapitalize="none"
               keyboardType="url"
             />
@@ -951,11 +954,11 @@ export default function AccommodationScreen() {
             <View style={styles.localTimeNote}>
               <Ionicons
                 name="information-circle-outline"
-                size={18}
-                color={colors.brass}
+                size={17}
+                color={colors.textMuted}
               />
               <Text style={styles.localTimeNoteText}>
-                Enter the time shown by the accommodation. TravelOS will keep it exactly as entered.
+                Use the local check-in and check-out times shown by the stay.
               </Text>
             </View>
 
@@ -1025,21 +1028,6 @@ export default function AccommodationScreen() {
         </View>
       </Modal>
     </>
-  );
-}
-
-function SummaryStat({
-  value,
-  label,
-}: {
-  value: number;
-  label: string;
-}) {
-  return (
-    <View style={styles.summaryStat}>
-      <Text style={styles.summaryValue}>{value}</Text>
-      <Text style={styles.summaryLabel}>{label}</Text>
-    </View>
   );
 }
 
@@ -1228,34 +1216,6 @@ function Field({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingTop: spacing[6],
-    paddingBottom: spacing[8],
-  },
-  headerCopy: { flex: 1, paddingRight: spacing[5] },
-  eyebrow: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.8,
-    color: colors.brass,
-    marginBottom: spacing[2],
-  },
-  title: {
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.display,
-    lineHeight: lineHeight.display,
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    marginTop: spacing[3],
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.body,
-    lineHeight: lineHeight.body,
-    color: colors.textSecondary,
-  },
   addButton: {
     width: 46,
     height: 46,
@@ -1265,66 +1225,46 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand,
     ...shadows.subtle,
   },
-  summaryRow: {
-    flexDirection: 'row',
-    gap: spacing[3],
-    marginBottom: spacing[6],
-  },
-  summaryStat: {
-    flex: 1,
-    minHeight: 92,
-    padding: spacing[4],
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  summaryValue: {
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.title,
-    color: colors.textPrimary,
-  },
-  summaryLabel: {
-    marginTop: spacing[2],
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1,
-    color: colors.textMuted,
-  },
   emptyCard: {
-    alignItems: 'flex-start',
-    padding: spacing[6],
-    borderRadius: radius.xl,
+    padding: spacing[5],
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     ...shadows.subtle,
   },
+  emptyTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[3],
+  },
+  emptyCopy: {
+    flex: 1,
+  },
   emptyIcon: {
-    width: 54,
-    height: 54,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,
     backgroundColor: colors.brandSoft,
   },
   emptyTitle: {
-    marginTop: spacing[6],
     fontFamily: fontFamily.serifSemiBold,
     fontSize: fontSize.titleSmall,
     color: colors.textPrimary,
   },
   emptyBody: {
-    marginTop: spacing[3],
+    marginTop: spacing[1],
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.bodySmall,
     lineHeight: lineHeight.bodySmall,
     color: colors.textSecondary,
   },
   primaryButton: {
-    height: 52,
-    marginTop: spacing[6],
-    paddingHorizontal: spacing[6],
+    minHeight: 46,
+    marginTop: spacing[4],
+    paddingHorizontal: spacing[5],
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,
@@ -1335,7 +1275,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.bodySmall,
     color: colors.textInverse,
   },
-  list: { gap: spacing[4] },
+  list: { gap: spacing[3] },
   stayCard: {
     padding: spacing[5],
     borderRadius: radius.lg,
@@ -1429,31 +1369,29 @@ const styles = StyleSheet.create({
   truthNote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing[3],
-    marginTop: spacing[6],
-    padding: spacing[4],
-    borderRadius: radius.md,
-    backgroundColor: colors.brassSoft,
+    gap: spacing[2],
+    marginTop: spacing[5],
+    paddingHorizontal: spacing[1],
   },
   truthNoteText: {
     flex: 1,
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
   bottomSpace: { height: spacing[16] },
   pressed: { opacity: 0.82 },
   modalRoot: { flex: 1, backgroundColor: colors.background },
   modalContent: {
-    padding: spacing[6],
+    padding: spacing[5],
     paddingBottom: spacing[16],
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: spacing[8],
+    marginBottom: spacing[6],
   },
   modalEyebrow: {
     fontFamily: fontFamily.sansBold,
@@ -1477,7 +1415,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  field: { marginTop: spacing[5] },
+  field: { marginTop: spacing[4] },
   fieldLabel: {
     marginBottom: spacing[2],
     fontFamily: fontFamily.sansBold,
@@ -1529,7 +1467,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   typeChoiceTextSelected: { color: colors.textInverse },
-  stayEditor: { marginTop: spacing[5] },
+  stayEditor: { marginTop: spacing[4] },
   stayEditorHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1564,7 +1502,7 @@ const styles = StyleSheet.create({
     color: colors.danger,
   },
   selectorSummary: {
-    minHeight: 72,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[3],
@@ -1639,17 +1577,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing[2],
-    marginTop: spacing[6],
-    padding: spacing[4],
-    borderRadius: radius.md,
-    backgroundColor: colors.brassSoft,
+    marginTop: spacing[5],
+    paddingHorizontal: spacing[1],
   },
   localTimeNoteText: {
     flex: 1,
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
   saveButton: {
     minHeight: 56,
@@ -1657,7 +1593,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[3],
-    marginTop: spacing[7],
+    marginTop: spacing[6],
     borderRadius: radius.md,
     backgroundColor: colors.brand,
   },

@@ -1,8 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, {
   DateTimePickerAndroid,
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
   Platform,
@@ -34,10 +34,10 @@ interface SharedFieldProps {
   label: string;
   value: string;
   disabled?: boolean;
+  compact?: boolean;
 }
 
-interface CalendarDateFieldProps
-  extends SharedFieldProps {
+interface CalendarDateFieldProps extends SharedFieldProps {
   onChange(value: string): void;
   fallbackDate?: string;
 }
@@ -48,16 +48,11 @@ export function CalendarDateField({
   onChange,
   fallbackDate,
   disabled = false,
+  compact = false,
 }: CalendarDateFieldProps) {
-  const [isIOSPickerOpen, setIOSPickerOpen] =
-    useState(false);
-  const fallback = pickerValueFromCalendarDate(
-    fallbackDate ?? '',
-  );
-  const pickerValue = pickerValueFromCalendarDate(
-    value,
-    fallback,
-  );
+  const [isIOSPickerOpen, setIOSPickerOpen] = useState(false);
+  const fallback = pickerValueFromCalendarDate(fallbackDate ?? '');
+  const pickerValue = pickerValueFromCalendarDate(value, fallback);
 
   const select = (selected: Date) => {
     onChange(calendarDateFromPickerValue(selected));
@@ -87,6 +82,25 @@ export function CalendarDateField({
     setIOSPickerOpen((current) => !current);
   };
 
+  const displayValue = value
+    ? formatCalendarDateForDisplay(
+        value,
+        compact
+          ? {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            }
+          : {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            },
+      )
+    : compact
+      ? 'Choose date'
+      : 'Choose a date';
+
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -96,36 +110,33 @@ export function CalendarDateField({
         disabled={disabled}
         style={[
           styles.button,
+          compact && styles.buttonCompact,
           disabled && styles.disabled,
         ]}
         onPress={open}
       >
-        <View style={styles.icon}>
+        <View style={[styles.icon, compact && styles.iconCompact]}>
           <Ionicons
             name="calendar-outline"
-            size={19}
+            size={compact ? 18 : 19}
             color={colors.brand}
           />
         </View>
         <View style={styles.copy}>
-          <Text style={styles.value}>
-            {value
-              ? formatCalendarDateForDisplay(
-                  value,
-                  {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  },
-                )
-              : 'Choose a date'}
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.value,
+              compact && styles.valueCompact,
+            ]}
+          >
+            {displayValue}
           </Text>
-          {value ? (
+          {!compact && value ? (
             <Text
               style={[
                 styles.raw,
-                !isCanonicalDateKey(value) &&
-                  styles.review,
+                !isCanonicalDateKey(value) && styles.review,
               ]}
             >
               {value}
@@ -134,43 +145,36 @@ export function CalendarDateField({
         </View>
         <Ionicons
           name="chevron-forward"
-          size={18}
+          size={compact ? 17 : 18}
           color={colors.textMuted}
         />
       </Pressable>
 
-      {Platform.OS === 'ios' &&
-        isIOSPickerOpen && (
-          <View style={styles.iosPicker}>
-            <DateTimePicker
-              value={pickerValue}
-              mode="date"
-              display="inline"
-              onChange={(
-                event,
-                selected,
-              ) => {
-                if (event.type === 'set' && selected) {
-                  select(selected);
-                }
-              }}
-            />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() =>
-                setIOSPickerOpen(false)
+      {Platform.OS === 'ios' && isIOSPickerOpen && (
+        <View style={styles.iosPicker}>
+          <DateTimePicker
+            value={pickerValue}
+            mode="date"
+            display="inline"
+            onChange={(event, selected) => {
+              if (event.type === 'set' && selected) {
+                select(selected);
               }
-            >
-              <Text style={styles.done}>Done</Text>
-            </Pressable>
-          </View>
-        )}
+            }}
+          />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setIOSPickerOpen(false)}
+          >
+            <Text style={styles.done}>Done</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
 
-interface LocalTimeFieldProps
-  extends SharedFieldProps {
+interface LocalTimeFieldProps extends SharedFieldProps {
   onChange(value: string): void;
   onClear?(): void;
   help?: string;
@@ -183,13 +187,11 @@ export function LocalTimeField({
   onClear,
   help,
   disabled = false,
+  compact = false,
 }: LocalTimeFieldProps) {
-  const [isIOSPickerOpen, setIOSPickerOpen] =
-    useState(false);
-  const pickerValue =
-    pickerValueFromLocalTime(value);
-  const valid =
-    !value || isCanonicalLocalTime(value);
+  const [isIOSPickerOpen, setIOSPickerOpen] = useState(false);
+  const pickerValue = pickerValueFromLocalTime(value);
+  const valid = !value || isCanonicalLocalTime(value);
 
   const select = (selected: Date) => {
     onChange(localTimeFromPickerValue(selected));
@@ -241,69 +243,69 @@ export function LocalTimeField({
         disabled={disabled}
         style={[
           styles.button,
+          compact && styles.buttonCompact,
           disabled && styles.disabled,
         ]}
         onPress={open}
       >
-        <View style={styles.icon}>
+        <View style={[styles.icon, compact && styles.iconCompact]}>
           <Ionicons
             name="time-outline"
-            size={19}
+            size={compact ? 18 : 19}
             color={colors.brand}
           />
         </View>
         <View style={styles.copy}>
-          <Text style={styles.value}>
-            {value || 'Choose an optional time'}
-          </Text>
           <Text
+            numberOfLines={1}
             style={[
-              styles.raw,
+              styles.value,
+              compact && styles.valueCompact,
               !valid && styles.review,
             ]}
           >
-            {valid
-              ? 'Local wall-clock time'
-              : 'Saved time needs review'}
+            {value || (compact ? 'Add time' : 'Choose an optional time')}
           </Text>
+          {!compact ? (
+            <Text
+              style={[
+                styles.raw,
+                !valid && styles.review,
+              ]}
+            >
+              {valid ? 'Local time' : 'Saved time needs review'}
+            </Text>
+          ) : null}
         </View>
         <Ionicons
           name="chevron-forward"
-          size={18}
+          size={compact ? 17 : 18}
           color={colors.textMuted}
         />
       </Pressable>
-      {help ? (
-        <Text style={styles.help}>{help}</Text>
-      ) : null}
+      {help ? <Text style={styles.help}>{help}</Text> : null}
 
-      {Platform.OS === 'ios' &&
-        isIOSPickerOpen && (
-          <View style={styles.iosPicker}>
-            <DateTimePicker
-              value={pickerValue}
-              mode="time"
-              display="spinner"
-              is24Hour
-              onChange={(
-                event,
-                selected,
-              ) => {
-                if (event.type === 'set' && selected) {
-                  select(selected);
-                }
-              }}
-            />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() =>
-                setIOSPickerOpen(false)
+      {Platform.OS === 'ios' && isIOSPickerOpen && (
+        <View style={styles.iosPicker}>
+          <DateTimePicker
+            value={pickerValue}
+            mode="time"
+            display="spinner"
+            is24Hour
+            onChange={(event, selected) => {
+              if (event.type === 'set' && selected) {
+                select(selected);
               }
-            >
-              <Text style={styles.done}>Done</Text>
-            </Pressable>
-          </View>
-        )}
+            }}
+          />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setIOSPickerOpen(false)}
+          >
+            <Text style={styles.done}>Done</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -336,6 +338,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[2],
     ...shadows.subtle,
   },
+  buttonCompact: {
+    minHeight: 54,
+    gap: spacing[2],
+    paddingHorizontal: spacing[2],
+  },
   icon: {
     width: 34,
     height: 34,
@@ -344,14 +351,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.brandSoft,
   },
+  iconCompact: {
+    width: 30,
+    height: 30,
+  },
   copy: {
     flex: 1,
     gap: 2,
+    minWidth: 0,
   },
   value: {
     fontFamily: fontFamily.sansSemiBold,
     fontSize: fontSize.bodySmall,
     color: colors.textPrimary,
+  },
+  valueCompact: {
+    fontSize: fontSize.caption,
   },
   raw: {
     fontFamily: fontFamily.sansRegular,

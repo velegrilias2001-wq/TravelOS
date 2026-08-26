@@ -256,7 +256,7 @@ export default function HomeScreen() {
               styles.primaryButton,
               pressed && styles.pressed,
             ]}
-            onPress={() => router.push('/trips')}
+            onPress={() => router.push('/new-trip')}
           >
             <Ionicons
               name="add"
@@ -316,7 +316,7 @@ export default function HomeScreen() {
           </Text>
 
           <Text style={styles.statLabel}>
-            Lived
+            Completed
           </Text>
         </View>
       </View>
@@ -341,6 +341,46 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Plan a new trip"
+        style={({ pressed }) => [
+          styles.newTripCard,
+          pressed && styles.pressed,
+        ]}
+        onPress={() => router.push('/new-trip')}
+      >
+        <View style={styles.newTripIcon}>
+          <Ionicons
+            name="airplane-outline"
+            size={23}
+            color={colors.textInverse}
+          />
+        </View>
+
+        <View style={styles.newTripCopy}>
+          <Text style={styles.newTripEyebrow}>
+            START A JOURNEY
+          </Text>
+
+          <Text style={styles.newTripTitle}>
+            Plan a new trip
+          </Text>
+
+          <Text style={styles.newTripDescription}>
+            Choose a destination and dates.
+          </Text>
+        </View>
+
+        <View style={styles.newTripArrow}>
+          <Ionicons
+            name="arrow-forward"
+            size={18}
+            color={colors.brand}
+          />
+        </View>
+      </Pressable>
+
       <View style={styles.actionGrid}>
         <Pressable
           style={({ pressed }) => [
@@ -362,7 +402,7 @@ export default function HomeScreen() {
           </Text>
 
           <Text style={styles.actionDescription}>
-            Plans, dates and itineraries.
+            Trips you have started.
           </Text>
         </Pressable>
 
@@ -386,7 +426,7 @@ export default function HomeScreen() {
           </Text>
 
           <Text style={styles.actionDescription}>
-            Places you have lived.
+            Places you have been.
           </Text>
         </Pressable>
       </View>
@@ -654,6 +694,62 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.textMuted,
     marginTop: spacing[1],
+  },
+
+  newTripCard: {
+    minHeight: 112,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[4],
+    marginBottom: spacing[3],
+    padding: spacing[5],
+    borderRadius: radius.lg,
+    backgroundColor: colors.brand,
+    ...shadows.card,
+  },
+
+  newTripIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+
+  newTripCopy: {
+    flex: 1,
+  },
+
+  newTripEyebrow: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.4,
+    color: '#D5B887',
+  },
+
+  newTripTitle: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleSmall,
+    lineHeight: lineHeight.titleSmall,
+    color: colors.textInverse,
+  },
+
+  newTripDescription: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: 'rgba(255,255,255,0.72)',
+  },
+
+  newTripArrow: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
   },
 
   actionGrid: {

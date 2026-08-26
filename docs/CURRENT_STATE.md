@@ -6,7 +6,7 @@ This file describes verified implementation, not intended behavior. Unknown or u
 
 ## Repository checkpoint
 
-- Current development branch: feature/destination-authoring
+- Current development branch: feature/ux-refinement-v1
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
 - Budget & Expenses checkpoint: 65b7f33 — Add native trip budget and expenses
@@ -16,13 +16,14 @@ This file describes verified implementation, not intended behavior. Unknown or u
 - Travelers checkpoint: 3dcb7d8 — Add reusable trip travelers
 - Time & Runtime Truth checkpoint: 81c4f20 — Establish canonical trip time and runtime truth
 - Companion V1 checkpoint: 97f6a19 — Add deterministic TravelOS Companion
+- Canonical Destination Authoring checkpoint: 3ed225c — Add canonical destination authoring
 - The native architecture checkpoint remains ec0b28a — Add native location picker and mapped itinerary stops.
 - No Git remote or upstream branch was configured during the audit.
 - .env.local exists and is ignored. Its contents were not read.
 
-The working tree contains the verified but uncommitted Canonical Destination Authoring implementation described below.
+The working tree contains the completed but uncommitted UX Refinement V1 implementation described below.
 
-Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, bookings, Google Maps on Android, the location picker, persistence hardening, the shared TripWorkspace lifecycle, Budget & Expenses, Trip Details, explicit Booking ↔ Stop relationships, native Accommodation management, reusable canonical Traveler identities with explicit trip membership, centralized date/time/runtime truth, the first deterministic Companion surface, and canonical real-destination selection plus legacy destination upgrades.
+Recent native milestones include the repository/service foundation, native navigation, create trip, itinerary planning, bookings, Google Maps on Android, the location picker, persistence hardening, the shared TripWorkspace lifecycle, Budget & Expenses, Trip Details, explicit Booking ↔ Stop relationships, native Accommodation management, reusable canonical Traveler identities with explicit trip membership, centralized date/time/runtime truth, the first deterministic Companion surface, canonical real-destination selection plus legacy destination upgrades, and UX Refinement V1.
 
 ## Stack and runtime
 
@@ -339,19 +340,29 @@ Remaining risks include requiring future Trip Space mutations to use the shared 
 
 ## Design system state
 
-The app has a coherent early visual direction with typography, color, spacing, and premium editorial intent. Home, Trips, and trip flows are more considered than a default Expo template.
+The app retains its warm off-white, deep green, brass, restrained teal/coral, Playfair Display, and Inter visual identity. UX Refinement V1 makes Companion the deliberate signature surface while giving utility screens a denser, calmer hierarchy.
 
-It is still an early design system:
+Verified UX Refinement V1 changes include:
 
-- Major screens contain large, locally defined style and interaction implementations.
-- Common cards, fields, sheets, empty states, alerts, and destructive confirmations are duplicated rather than enforced through stable primitives.
-- Theme configuration and actual UI behavior are not fully aligned.
-- Accessibility labels, dynamic type behavior, reduced-motion behavior, contrast validation, localization, and bidirectional layout are not complete.
+- A shared compact utility-screen header and summary strip now standardize hierarchy without adding a UI framework.
+- Companion leads upcoming trips with destination, departure countdown, and first-day context before showing a compact actionable timing hint. Preparation is now a compact readiness list ordered toward useful missing actions; active NOW/NEXT and completed-history semantics are unchanged.
+- Plan uses tighter day spacing, smaller day markers, compact empty-day actions, and accessible collapsible populated days while preserving stop CRUD and button-based reorder behavior.
+- Bookings and Accommodation replace three oversized statistic cards with compact summaries, leaving their real records visually primary.
+- More is a grouped trip hub for Trip Details, Travelers, Budget, and Accommodation. Companion, Plan, Map, and Bookings are not redundantly repeated because they remain primary bottom tabs.
+- Travelers uses concise human copy for adding, reusing, editing, and removing people. Visible database and identity-model explanations were removed.
+- Create Trip, Trip Details, Stop, Booking, Accommodation, Traveler, Budget, and destination-selection helper copy was shortened without changing validation or data semantics.
+- Large utility headings, repeated shadows, and card stacking were reduced while preserving Playfair Display for meaningful titles and maintaining 44-point-or-larger primary touch targets or explicit hit slop for compact itinerary actions.
+
+The design system is still incomplete:
+
+- Major screens still contain large local style and interaction implementations.
+- Fields, sheets, empty states, alerts, and destructive confirmations are not yet consolidated into stable primitives.
+- Dynamic type, contrast, screen-reader order, localization, bidirectional layout, and iOS visual verification remain incomplete.
 - Starter Expo components and assets remain in the repository.
 
 ## Testing and release readiness
 
-Verified checks through Canonical Destination Authoring:
+Verified checks through UX Refinement V1:
 
 - npm test runs sixty-seven automated tests covering persistence, migrations, Budget calculations, Trip Details validation/persistence/cascades, Booking ↔ Stop invariants and deletion behavior, Accommodation validation/persistence/relationships/cascades/day context, Traveler identity/membership behavior, TripWorkspace lifecycle behavior, centralized time/runtime truth, deterministic Companion selection/calendar-boundary behavior, destination selection validation, legacy compatibility, mapped-consumer context, and destination SQLite round trips.
 - Fresh database migration, version-2 drift repair, migration rollback, fresh/partial/repeated TripDay generation, concurrent idempotency, and stop reorder rollback are covered.
@@ -367,6 +378,7 @@ Verified checks through Canonical Destination Authoring:
 - Time & Runtime Truth Android verification compiled and launched the debug development build, created one isolated Trip with native dates, rejected an unsaved reversed Create Trip range, added a native-time Stop, added a native local-time Booking linked by exact stop ID, and added an Accommodation linked to the same exact stop. Today showed active Day 1 plus real Booking and Accommodation context, an explicit device-calendar fallback because no destination timezone was saved, a non-active first-day preview after the Trip moved to a future range, and completed-history copy after it moved to a past range. A cold process relaunch preserved the selected dates, local times, links, and unrelated existing Trip; startup reported `Persistence self-test: PASS` and `Bootstrap ready`. Plan, Map, Bookings, Budget, Accommodation, and Travelers all opened on Android. The exact `TimeTruthE2E` Trip and its related isolated data were deleted afterwards, the rejected draft was never persisted, and the existing Japan Trip remained visible.
 - Companion V1 Android verification compiled both debug and x86_64 release variants, installed and launched the development build on an Android 16 x86_64 emulator, and again reached `Persistence self-test: PASS` plus `Bootstrap ready`. An isolated active Trip verified exact canonical-day selection, Day 1 of 1, safe missing-timezone degradation, a real picker-selected mapped stop, exact linked Booking context across Companion/Map/Bookings tabs, completed non-live history after a date edit, and cold-process persistence. A pre-existing future Trip verified upcoming countdown/readiness without mutation. The exact isolated Companion Trip and all of its related data were deleted through the named destructive confirmation; the pre-existing Trip survived. Canonical-timezone NOW/NEXT and new Accommodation context could not be completed through this E2E path because no destination-timezone authoring UI exists and the emulator diverted the Accommodation picker to Android settings; those deterministic branches are covered by injected-clock tests.
 - Canonical Destination Authoring Android verification compiled and installed the debug development build without clearing app data. One isolated Trip was created from a real Tokyo-area city result, persisted its returned `JP` country context and coordinates, showed an explicit unavailable-timing fallback because no timezone was returned, biased the Plan picker to the single destination, and framed separate destination and mapped-stop markers together. A second isolated historical name-only Trip was upgraded through Trip Details to a real Athens selection while its title, dates, accounting currency, destination ID/order, and unrelated data remained intact. Both selections and the mapped stop survived a cold process relaunch. Companion, Plan, Map, Bookings, Budget, Accommodation, Travelers, More, and Trip Details loaded successfully. Both uniquely named test Trips were deleted through their exact destructive confirmations; the unrelated pre-existing Trip remained visible.
+- UX Refinement V1 compiles as an Android debug development build, installs over the existing app without clearing data, launches on the Android 16 x86_64 emulator, and reaches the existing upcoming Trip. The updated Companion first screenful was visually verified with the departure experience ahead of a compact timing action and first-day context. Emulator screenshot/control access ended before the remaining Plan, Bookings, More, Travelers, forms, Map, CRUD, and cold-relaunch visual matrix could be completed, so those scenarios are not claimed as verified for this milestone; their underlying business behavior remains covered by the existing automated suite.
 - npx tsc --noEmit passes for the application.
 - npm ls --depth=0 passed at the takeover audit.
 - git diff --check is part of the required completion checks.
@@ -429,4 +441,4 @@ These pieces are promising foundations; they do not make the app production-read
 
 ## Overall assessment
 
-TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, Budget & Expenses is the first complete Phase 1 product slice, Trip Details makes the canonical Trip safely editable, Booking ↔ Stop integration connects itinerary and reservation truth through explicit IDs, Accommodation adds a validated multi-stay workflow, Travelers establishes reusable people plus explicit Trip membership, Time & Runtime Truth gives the app one deterministic phase/date/day answer, Companion V1 turns that truth into a useful before/during/after surface, and Canonical Destination Authoring replaces free-form creation with real selected place truth while preserving legacy data. The next priorities are closing the remaining Phase 0 engineering gaps, designing destination add/remove/reorder plus Day → Destination semantics, establishing a secure reliable timezone source for exact timing, defining traveler ownership and roles, and choosing the concrete durable lived-state boundary for Companion V2. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.
+TravelOS is a credible native foundation and working vertical prototype, not yet a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths, Phase 0B establishes one reliable reactive lifecycle for the current Trip Space, Budget & Expenses is the first complete Phase 1 product slice, Trip Details makes the canonical Trip safely editable, Booking ↔ Stop integration connects itinerary and reservation truth through explicit IDs, Accommodation adds a validated multi-stay workflow, Travelers establishes reusable people plus explicit Trip membership, Time & Runtime Truth gives the app one deterministic phase/date/day answer, Companion V1 turns that truth into a useful before/during/after surface, Canonical Destination Authoring replaces free-form creation with real selected place truth while preserving legacy data, and UX Refinement V1 improves hierarchy, density, card discipline, and traveler-facing language without changing product truth. The next priorities are completing the remaining native visual/accessibility matrix, closing the remaining Phase 0 engineering gaps, designing destination add/remove/reorder plus Day → Destination semantics, establishing a secure reliable timezone source for exact timing, defining traveler ownership and roles, and choosing the concrete durable lived-state boundary for Companion V2. A real FX strategy must be designed before foreign-currency expenses can enter accounting-currency totals.

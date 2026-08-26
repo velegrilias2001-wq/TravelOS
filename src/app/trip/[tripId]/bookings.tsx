@@ -24,11 +24,15 @@ import {
   View,
 } from 'react-native';
 
-import { Screen } from '@/components/ui/screen';
 import {
   CalendarDateField,
   LocalTimeField,
 } from '@/components/ui/native-date-time-fields';
+import { Screen } from '@/components/ui/screen';
+import {
+  CompactSummaryStrip,
+  UtilityScreenHeader,
+} from '@/components/ui/utility-screen';
 
 import type {
   Booking,
@@ -41,11 +45,11 @@ import {
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
 import {
-  buildItineraryStopContexts,
-} from '@/services/booking-stop-relationship';
-import {
   accommodationsLinkedToBooking,
 } from '@/services/accommodation-details';
+import {
+  buildItineraryStopContexts,
+} from '@/services/booking-stop-relationship';
 import {
   combineBookingLocalDateTime,
   formatBookingTemporalValue,
@@ -698,7 +702,7 @@ export default function BookingsScreen() {
           error.message.includes(
             'itinerary stop',
           )
-            ? 'The selected itinerary stop is no longer available for this trip. Choose another stop or leave the booking unlinked.'
+            ? 'The selected moment is no longer available for this trip. Choose another moment or leave the booking out of your plan.'
             : error instanceof Error
               ? error.message
               : 'Please try again.',
@@ -764,103 +768,42 @@ export default function BookingsScreen() {
   return (
     <>
       <Screen scroll>
-        <View
-          style={styles.header}
-        >
-          <View
-            style={styles.headerCopy}
-          >
-            <Text
-              style={styles.eyebrow}
+        <UtilityScreenHeader
+          eyebrow={tripDestinationLabel(
+            workspace.trip.destinations,
+          ).toUpperCase()}
+          title="Bookings"
+          subtitle="Confirmations, reservations and payment details."
+          action={(
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add booking"
+              style={styles.addButton}
+              onPress={openCreate}
             >
-              {tripDestinationLabel(
-                workspace.trip.destinations,
-              ).toUpperCase()}
-            </Text>
+              <Ionicons
+                name="add"
+                size={24}
+                color={colors.textInverse}
+              />
+            </Pressable>
+          )}
+        />
 
-            <Text
-              style={styles.pageTitle}
-            >
-              Bookings
-            </Text>
-
-            <Text
-              style={styles.subtitle}
-            >
-              Keep every confirmation,
-              reservation and payment in
-              one place.
-            </Text>
-          </View>
-
-          <Pressable
-            style={styles.addButton}
-            onPress={openCreate}
-          >
-            <Ionicons
-              name="add"
-              size={24}
-              color={
-                colors.textInverse
-              }
-            />
-          </Pressable>
-        </View>
-
-        <View
-          style={styles.statsRow}
-        >
-          <View
-            style={styles.statCard}
-          >
-            <Text
-              style={styles.statValue}
-            >
-              {
-                workspace.bookings
-                  .length
-              }
-            </Text>
-
-            <Text
-              style={styles.statLabel}
-            >
-              BOOKINGS
-            </Text>
-          </View>
-
-          <View
-            style={styles.statCard}
-          >
-            <Text
-              style={styles.statValue}
-            >
-              {confirmedCount}
-            </Text>
-
-            <Text
-              style={styles.statLabel}
-            >
-              CONFIRMED
-            </Text>
-          </View>
-
-          <View
-            style={styles.statCard}
-          >
-            <Text
-              style={styles.statValue}
-            >
-              {paidCount}
-            </Text>
-
-            <Text
-              style={styles.statLabel}
-            >
-              PAID
-            </Text>
-          </View>
-        </View>
+        <CompactSummaryStrip
+          accessibilityLabel={`${workspace.bookings.length} bookings, ${confirmedCount} confirmed, ${paidCount} paid`}
+          items={[
+            {
+              value: workspace.bookings.length,
+              label:
+                workspace.bookings.length === 1
+                  ? 'booking'
+                  : 'bookings',
+            },
+            { value: confirmedCount, label: 'confirmed' },
+            { value: paidCount, label: 'paid' },
+          ]}
+        />
 
         {workspace.bookings
           .length === 0 ? (
@@ -1120,7 +1063,7 @@ export default function BookingsScreen() {
                             >
                               {linkedStopContext.day
                                 ? `DAY ${linkedStopContext.day.dayNumber} · ${formatStopDate(linkedStopContext.day.date)}`
-                                : 'ITINERARY STOP'}
+                                : 'PLAN MOMENT'}
                             </Text>
                             <Text
                               numberOfLines={1}
@@ -1284,14 +1227,6 @@ export default function BookingsScreen() {
               }
             >
               <View>
-                <Text
-                  style={
-                    styles.sheetEyebrow
-                  }
-                >
-                  TRIP BOOKING
-                </Text>
-
                 <Text
                   style={
                     styles.sheetTitle
@@ -1478,12 +1413,12 @@ export default function BookingsScreen() {
               />
 
               <Text style={styles.fieldLabel}>
-                ITINERARY LINK
+                ADD TO YOUR PLAN
               </Text>
 
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Choose itinerary stop"
+                accessibilityLabel="Choose plan moment"
                 accessibilityState={{
                   expanded: stopPickerOpen,
                 }}
@@ -1513,15 +1448,15 @@ export default function BookingsScreen() {
                     {selectedStopContext?.day
                       ? `DAY ${selectedStopContext.day.dayNumber} · ${formatStopDate(selectedStopContext.day.date)}`
                       : selectedStopContext
-                        ? 'ITINERARY STOP'
-                        : 'NOT LINKED'}
+                        ? 'PLAN MOMENT'
+                        : 'NOT IN PLAN'}
                   </Text>
                   <Text
                     numberOfLines={1}
                     style={styles.stopPickerTitle}
                   >
                     {selectedStopContext?.stop.title ??
-                      'Keep this booking independent'}
+                      'Choose a moment from your plan'}
                   </Text>
                 </View>
 
@@ -1562,10 +1497,10 @@ export default function BookingsScreen() {
                     </View>
                     <View style={styles.stopChoiceCopy}>
                       <Text style={styles.stopChoiceTitle}>
-                        No itinerary stop
+                        Not added to plan
                       </Text>
                       <Text style={styles.stopChoiceMeta}>
-                        Keep this booking unlinked
+                        Keep this booking separate
                       </Text>
                     </View>
                     {stopId === undefined && (
@@ -1635,25 +1570,25 @@ export default function BookingsScreen() {
 
                   {stopContexts.length === 0 && (
                     <Text style={styles.stopChoicesEmpty}>
-                      Add itinerary stops in Plan before linking this booking.
+                      Add moments in Plan before linking this booking.
                     </Text>
                   )}
                 </View>
               )}
 
               <Text style={styles.relationshipHelp}>
-                Links use the exact itinerary stop. TravelOS never matches bookings by name or location text.
+                Link this booking to a moment so it appears with your plan.
               </Text>
 
               <BookingTimeEditor
-                label="BOOKING START"
+                label="START"
                 draft={startDraft}
                 fallbackDate={workspace.trip.startDate}
                 onChange={setStartDraft}
               />
 
               <BookingTimeEditor
-                label="BOOKING END"
+                label="END"
                 draft={endDraft}
                 fallbackDate={workspace.trip.endDate}
                 onChange={setEndDraft}
@@ -1812,7 +1747,7 @@ function BookingTimeEditor({
   if (draft.mode === 'preserved') {
     return (
       <View style={styles.temporalField}>
-        <Text style={styles.fieldLabel}>{label}</Text>
+        <Text style={styles.temporalSectionLabel}>{label}</Text>
         <View style={styles.preservedTimeCard}>
           <View style={styles.preservedTimeHeader}>
             <Ionicons
@@ -1839,8 +1774,8 @@ function BookingTimeEditor({
           </Text>
           <Text style={styles.preservedTimeBody}>
             {draft.kind === 'absolute-instant'
-              ? 'This historical value includes UTC or an explicit offset. TravelOS will preserve it exactly unless you replace or clear it.'
-              : 'TravelOS cannot safely interpret this historical value. It remains untouched unless you intentionally replace or clear it.'}
+              ? 'This saved time uses a different format. Replace or clear it to make changes.'
+              : 'This saved time can’t be edited in its current format. Replace or clear it to make changes.'}
           </Text>
           <View style={styles.preservedTimeActions}>
             <Pressable
@@ -1883,25 +1818,36 @@ function BookingTimeEditor({
 
   return (
     <View style={styles.temporalField}>
-      <CalendarDateField
-        label={`${label} DATE`}
-        value={draft.date}
-        fallbackDate={fallbackDate}
-        onChange={(date) =>
-          onChange({ ...draft, date, edited: true })
-        }
-      />
-      <LocalTimeField
-        label={`${label} TIME`}
-        value={draft.time}
-        help="Saved as the local time shown at your destination. TravelOS does not shift it to another time zone."
-        onChange={(time) =>
-          onChange({ ...draft, time, edited: true })
-        }
-        onClear={() =>
-          onChange({ ...draft, time: '', edited: true })
-        }
-      />
+      <Text style={styles.temporalSectionLabel}>{label}</Text>
+
+      <View style={styles.temporalRow}>
+        <View style={styles.temporalHalf}>
+          <CalendarDateField
+            label="DATE"
+            value={draft.date}
+            fallbackDate={fallbackDate}
+            compact
+            onChange={(date) =>
+              onChange({ ...draft, date, edited: true })
+            }
+          />
+        </View>
+
+        <View style={styles.temporalHalf}>
+          <LocalTimeField
+            label="TIME"
+            value={draft.time}
+            compact
+            onChange={(time) =>
+              onChange({ ...draft, time, edited: true })
+            }
+            onClear={() =>
+              onChange({ ...draft, time: '', edited: true })
+            }
+          />
+        </View>
+      </View>
+
       {(draft.date || draft.time) && (
         <Pressable
           accessibilityRole="button"
@@ -1991,74 +1937,6 @@ function Field({
 
 const styles =
   StyleSheet.create({
-    header: {
-      flexDirection: 'row',
-      alignItems:
-        'flex-start',
-      justifyContent:
-        'space-between',
-
-      paddingTop:
-        spacing[6],
-
-      paddingBottom:
-        spacing[8],
-    },
-
-    headerCopy: {
-      flex: 1,
-
-      paddingRight:
-        spacing[6],
-    },
-
-    eyebrow: {
-      fontFamily:
-        fontFamily.sansBold,
-
-      fontSize:
-        fontSize.micro,
-
-      letterSpacing: 1.8,
-
-      color:
-        colors.brass,
-
-      marginBottom:
-        spacing[2],
-    },
-
-    pageTitle: {
-      fontFamily:
-        fontFamily.serifSemiBold,
-
-      fontSize:
-        fontSize.display,
-
-      lineHeight:
-        lineHeight.display,
-
-      color:
-        colors.textPrimary,
-    },
-
-    subtitle: {
-      fontFamily:
-        fontFamily.sansRegular,
-
-      fontSize:
-        fontSize.bodySmall,
-
-      lineHeight:
-        lineHeight.bodySmall,
-
-      color:
-        colors.textSecondary,
-
-      marginTop:
-        spacing[3],
-    },
-
     addButton: {
       width: 48,
       height: 48,
@@ -2076,65 +1954,6 @@ const styles =
         'center',
 
       ...shadows.subtle,
-    },
-
-    statsRow: {
-      flexDirection: 'row',
-
-      gap:
-        spacing[2],
-
-      marginBottom:
-        spacing[6],
-    },
-
-    statCard: {
-      flex: 1,
-
-      minHeight: 92,
-
-      backgroundColor:
-        colors.surface,
-
-      borderWidth: 1,
-
-      borderColor:
-        colors.border,
-
-      borderRadius:
-        radius.md,
-
-      padding:
-        spacing[4],
-
-      ...shadows.subtle,
-    },
-
-    statValue: {
-      fontFamily:
-        fontFamily.serifSemiBold,
-
-      fontSize:
-        fontSize.title,
-
-      color:
-        colors.textPrimary,
-    },
-
-    statLabel: {
-      fontFamily:
-        fontFamily.sansBold,
-
-      fontSize:
-        fontSize.micro,
-
-      letterSpacing: 1.1,
-
-      color:
-        colors.textMuted,
-
-      marginTop:
-        spacing[2],
     },
 
     emptyCard: {
@@ -2172,7 +1991,7 @@ const styles =
         'center',
 
       marginBottom:
-        spacing[6],
+        spacing[5],
     },
 
     emptyTitle: {
@@ -2608,18 +2427,6 @@ const styles =
         spacing[6],
     },
 
-    sheetEyebrow: {
-      fontFamily:
-        fontFamily.sansBold,
-
-      fontSize:
-        fontSize.micro,
-
-      letterSpacing: 1.5,
-
-      color:
-        colors.brass,
-    },
 
     sheetTitle: {
       fontFamily:
@@ -2631,8 +2438,7 @@ const styles =
       color:
         colors.textPrimary,
 
-      marginTop:
-        spacing[1],
+      marginTop: 0,
     },
 
     closeButton: {
@@ -2787,13 +2593,31 @@ const styles =
     },
 
     temporalField: {
-      gap: spacing[4],
-      marginBottom: spacing[6],
-      padding: spacing[4],
+      gap: spacing[3],
+      marginBottom: spacing[5],
+      padding: spacing[3],
       borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.backgroundSoft,
+    },
+
+    temporalSectionLabel: {
+      fontFamily: fontFamily.sansBold,
+      fontSize: fontSize.micro,
+      letterSpacing: 1.3,
+      color: colors.brass,
+    },
+
+    temporalRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing[2],
+    },
+
+    temporalHalf: {
+      flex: 1,
+      minWidth: 0,
     },
 
     preservedTimeCard: {
@@ -2921,13 +2745,13 @@ const styles =
         spacing[2],
 
       marginBottom:
-        spacing[6],
+        spacing[5],
     },
 
     typeButton: {
-      width: '31%',
+      width: '22%',
 
-      minHeight: 64,
+      minHeight: 54,
 
       borderRadius:
         radius.md,

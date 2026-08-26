@@ -27,10 +27,11 @@ import {
   pickLocation,
 } from 'expo-location-picker';
 
+import { LocalTimeField } from '@/components/ui/native-date-time-fields';
 import {
   Screen,
 } from '@/components/ui/screen';
-import { LocalTimeField } from '@/components/ui/native-date-time-fields';
+import { UtilityScreenHeader } from '@/components/ui/utility-screen';
 import { formatCalendarDateForDisplay } from '@/services/time-truth';
 
 import type {
@@ -56,9 +57,7 @@ import {
   colors,
   fontFamily,
   fontSize,
-  lineHeight,
   radius,
-  shadows,
   spacing,
 } from '@/theme';
 
@@ -164,6 +163,23 @@ export default function PlanScreen() {
   } = useTripWorkspace();
 
   useTripWorkspaceFocusRefresh();
+
+  const [collapsedDayIds, setCollapsedDayIds] =
+    useState<Set<string>>(() => new Set());
+
+  const toggleDay = (dayId: string) => {
+    setCollapsedDayIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(dayId)) {
+        next.delete(dayId);
+      } else {
+        next.add(dayId);
+      }
+
+      return next;
+    });
+  };
 
   const [
     selectedDay,
@@ -471,7 +487,7 @@ export default function PlanScreen() {
 
         Alert.alert(
           'Could not open map',
-          'Travel OS could not open the location picker. Please try again.',
+          'TravelOS could not open the location picker. Please try again.',
         );
       } finally {
         setIsPickingLocation(
@@ -499,7 +515,7 @@ export default function PlanScreen() {
       if (!cleanTitle) {
         Alert.alert(
           'Add a name',
-          'Give this stop or activity a name.',
+          'Give this moment a name.',
         );
 
         return;
@@ -586,7 +602,7 @@ export default function PlanScreen() {
         );
 
         Alert.alert(
-          'Could not save activity',
+          'Could not save moment',
           error instanceof Error
             ? error.message
             : 'Please try again.',
@@ -607,16 +623,16 @@ export default function PlanScreen() {
 
     const unlinkMessage =
       linkedBookings.length > 0
-        ? `\n\n${linkedBookings.length} linked ${
+        ? `\n\n${linkedBookings.length} ${
             linkedBookings.length ===
             1
-              ? 'booking'
-              : 'bookings'
-          } will remain saved and become unlinked.`
+              ? 'booking will stay saved but will no longer be connected to this moment.'
+              : 'bookings will stay saved but will no longer be connected to this moment.'
+          }`
         : '';
 
     Alert.alert(
-      'Remove from itinerary?',
+      'Remove moment?',
       `Remove "${stop.title}" from this day?${unlinkMessage}`,
       [
         {
@@ -644,7 +660,7 @@ export default function PlanScreen() {
                 );
 
                 Alert.alert(
-                  'Could not remove activity',
+                  'Could not remove moment',
                   'Please try again.',
                 );
               }
@@ -728,7 +744,7 @@ export default function PlanScreen() {
         );
 
         Alert.alert(
-          'Could not reorder itinerary',
+          'Could not reorder plan',
           'Please try again.',
         );
       }
@@ -737,39 +753,13 @@ export default function PlanScreen() {
   return (
     <>
       <Screen scroll>
-        <View
-          style={
-            styles.header
-          }
-        >
-          <Text
-            style={
-              styles.eyebrow
-            }
-          >
-            {tripDestinationLabel(
-              workspace.trip.destinations,
-            ).toUpperCase()}
-          </Text>
-
-          <Text
-            style={
-              styles.pageTitle
-            }
-          >
-            Your plan
-          </Text>
-
-          <Text
-            style={
-              styles.subtitle
-            }
-          >
-            Shape each day,
-            one moment at a
-            time.
-          </Text>
-        </View>
+        <UtilityScreenHeader
+          eyebrow={tripDestinationLabel(
+            workspace.trip.destinations,
+          ).toUpperCase()}
+          title="Your plan"
+          subtitle={`${workspace.days.length} ${workspace.days.length === 1 ? 'day' : 'days'} · ${workspace.stops.length} ${workspace.stops.length === 1 ? 'moment' : 'moments'}`}
+        />
 
         <View
           style={
@@ -790,6 +780,8 @@ export default function PlanScreen() {
                       a.order -
                       b.order,
                   );
+              const collapsed =
+                collapsedDayIds.has(day.id);
 
               return (
                 <View
@@ -800,76 +792,69 @@ export default function PlanScreen() {
                     styles.daySection
                   }
                 >
-                  <View
-                    style={
-                      styles.dayHeader
-                    }
-                  >
-                    <View
-                      style={
-                        styles.dayNumber
-                      }
-                    >
-                      <Text
-                        style={
-                          styles.dayNumberText
-                        }
-                      >
-                        {
-                          day.dayNumber
-                        }
-                      </Text>
-                    </View>
-
-                    <View
-                      style={
-                        styles.dayCopy
-                      }
-                    >
-                      <Text
-                        style={
-                          styles.dayLabel
-                        }
-                      >
-                        DAY{' '}
-                        {
-                          day.dayNumber
-                        }
-                      </Text>
-
-                      <Text
-                        style={
-                          styles.dayDate
-                        }
-                      >
-                        {formatDayDate(
-                          day.date,
-                        )}
-                      </Text>
-                    </View>
-
+                  <View style={styles.dayHeader}>
                     <Pressable
-                      style={
-                        styles.addButton
+                      accessibilityRole="button"
+                      accessibilityLabel={`Day ${day.dayNumber}, ${formatDayDate(day.date)}${stops.length > 0 ? collapsed ? ', collapsed' : ', expanded' : ''}`}
+                      accessibilityState={
+                        stops.length > 0
+                          ? { expanded: !collapsed }
+                          : undefined
                       }
-                      onPress={() =>
-                        openCreate(
-                          day,
-                        )
-                      }
+                      disabled={stops.length === 0}
+                      style={styles.dayToggle}
+                      onPress={() => toggleDay(day.id)}
                     >
-                      <Ionicons
-                        name="add"
-                        size={21}
-                        color={
-                          colors.brand
-                        }
-                      />
+                      <View style={styles.dayNumber}>
+                        <Text style={styles.dayNumberText}>
+                          {day.dayNumber}
+                        </Text>
+                      </View>
+
+                      <View style={styles.dayCopy}>
+                        <Text style={styles.dayLabel}>
+                          DAY {day.dayNumber}
+                        </Text>
+
+                        <Text style={styles.dayDate}>
+                          {formatDayDate(day.date)}
+                        </Text>
+                      </View>
+
+                      {stops.length > 0 && (
+                        <Ionicons
+                          name={collapsed ? 'chevron-down' : 'chevron-up'}
+                          size={17}
+                          color={colors.textMuted}
+                        />
+                      )}
                     </Pressable>
+
+                    {stops.length > 0 && (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Add moment to day ${day.dayNumber}`}
+                        style={
+                          styles.addButton
+                        }
+                        onPress={() =>
+                          openCreate(
+                            day,
+                          )
+                        }
+                      >
+                        <Ionicons
+                          name="add"
+                          size={21}
+                          color={
+                            colors.brand
+                          }
+                        />
+                      </Pressable>
+                    )}
                   </View>
 
-                  {stops.length ===
-                  0 ? (
+                  {stops.length === 0 ? (
                     <Pressable
                       style={
                         styles.emptyDay
@@ -893,11 +878,10 @@ export default function PlanScreen() {
                           styles.emptyDayText
                         }
                       >
-                        Add your first
-                        moment
+                        Add a moment
                       </Text>
                     </Pressable>
-                  ) : (
+                  ) : !collapsed ? (
                     <View
                       style={
                         styles.stopList
@@ -1051,6 +1035,8 @@ export default function PlanScreen() {
                                 0 && (
                                 <Pressable
                                   accessibilityLabel="Open linked bookings"
+                                  accessibilityRole="button"
+                                  hitSlop={5}
                                   style={
                                     styles.smallAction
                                   }
@@ -1083,71 +1069,84 @@ export default function PlanScreen() {
                                 </Pressable>
                               )}
 
+                              {stops.length > 1 && (
+                                <>
+                                  <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Move ${stop.title} earlier`}
+                                    hitSlop={5}
+                                    disabled={
+                                      index ===
+                                      0
+                                    }
+                                    style={[
+                                      styles.smallAction,
+
+                                      index ===
+                                        0 &&
+                                        styles.actionDisabled,
+                                    ]}
+                                    onPress={() =>
+                                      moveStop(
+                                        day,
+                                        stop,
+                                        -1,
+                                      )
+                                    }
+                                  >
+                                    <Ionicons
+                                      name="chevron-up"
+                                      size={
+                                        17
+                                      }
+                                      color={
+                                        colors.textSecondary
+                                      }
+                                    />
+                                  </Pressable>
+
+                                  <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Move ${stop.title} later`}
+                                    hitSlop={5}
+                                    disabled={
+                                      index ===
+                                      stops.length -
+                                        1
+                                    }
+                                    style={[
+                                      styles.smallAction,
+
+                                      index ===
+                                        stops.length -
+                                          1 &&
+                                        styles.actionDisabled,
+                                    ]}
+                                    onPress={() =>
+                                      moveStop(
+                                        day,
+                                        stop,
+                                        1,
+                                      )
+                                    }
+                                  >
+                                    <Ionicons
+                                      name="chevron-down"
+                                      size={
+                                        17
+                                      }
+                                      color={
+                                        colors.textSecondary
+                                      }
+                                    />
+                                  </Pressable>
+                                </>
+                              )}
+
                               <Pressable
-                                disabled={
-                                  index ===
-                                  0
-                                }
-                                style={[
-                                  styles.smallAction,
-
-                                  index ===
-                                    0 &&
-                                    styles.actionDisabled,
-                                ]}
-                                onPress={() =>
-                                  moveStop(
-                                    day,
-                                    stop,
-                                    -1,
-                                  )
-                                }
-                              >
-                                <Ionicons
-                                  name="chevron-up"
-                                  size={
-                                    17
-                                  }
-                                  color={
-                                    colors.textSecondary
-                                  }
-                                />
-                              </Pressable>
-
-                              <Pressable
-                                disabled={
-                                  index ===
-                                  stops.length -
-                                    1
-                                }
-                                style={[
-                                  styles.smallAction,
-
-                                  index ===
-                                    stops.length -
-                                      1 &&
-                                    styles.actionDisabled,
-                                ]}
-                                onPress={() =>
-                                  moveStop(
-                                    day,
-                                    stop,
-                                    1,
-                                  )
-                                }
-                              >
-                                <Ionicons
-                                  name="chevron-down"
-                                  size={
-                                    17
-                                  }
-                                  color={
-                                    colors.textSecondary
-                                  }
-                                />
-                              </Pressable>
-
-                              <Pressable
+                                accessibilityRole="button"
+                                accessibilityLabel={`Delete ${stop.title}`}
+                                hitSlop={5}
                                 style={
                                   styles.smallAction
                                 }
@@ -1173,7 +1172,7 @@ export default function PlanScreen() {
                         },
                       )}
                     </View>
-                  )}
+                  ) : null}
                 </View>
               );
             },
@@ -1384,7 +1383,7 @@ export default function PlanScreen() {
                         styles.locationReady
                       }
                     >
-                      READY FOR MAP
+                      MAPPED
                     </Text>
                   )}
                 </View>
@@ -1442,23 +1441,6 @@ export default function PlanScreen() {
                         </Text>
                       )}
 
-                      {hasCoordinates(
-                        pickedLocation,
-                      ) && (
-                        <Text
-                          style={
-                            styles.coordinateText
-                          }
-                        >
-                          {pickedLocation.latitude.toFixed(
-                            5,
-                          )}
-                          {'  ·  '}
-                          {pickedLocation.longitude.toFixed(
-                            5,
-                          )}
-                        </Text>
-                      )}
                     </View>
 
                     {hasCoordinates(
@@ -1497,7 +1479,7 @@ export default function PlanScreen() {
                           styles.locationEmptyTitle
                         }
                       >
-                        No location selected
+                        Add a location
                       </Text>
 
                       <Text
@@ -1505,7 +1487,7 @@ export default function PlanScreen() {
                           styles.locationEmptyBody
                         }
                       >
-                        Choose a real place to show it on your trip map.
+                        Show this moment on your trip map.
                       </Text>
                     </View>
                   </View>
@@ -1580,7 +1562,6 @@ export default function PlanScreen() {
                 <LocalTimeField
                   label="TIME"
                   value={time}
-                  help="Optional time shown at your destination. TravelOS does not shift it to another time zone."
                   onChange={(value) => {
                     setTime(value);
                     setTimeEdited(true);
@@ -1617,7 +1598,7 @@ export default function PlanScreen() {
                     ? 'Saving…'
                     : editingStop
                       ? 'Save changes'
-                      : 'Add to itinerary'}
+                      : 'Add moment'}
                 </Text>
 
                 {!isSaving &&
@@ -1647,56 +1628,14 @@ export default function PlanScreen() {
 
 const styles =
   StyleSheet.create({
-    header: {
-      paddingTop:
-        spacing[6],
-      paddingBottom:
-        spacing[8],
-    },
-
-    eyebrow: {
-      fontFamily:
-        fontFamily.sansBold,
-      fontSize:
-        fontSize.micro,
-      letterSpacing:
-        1.8,
-      color:
-        colors.brass,
-      marginBottom:
-        spacing[2],
-    },
-
-    pageTitle: {
-      fontFamily:
-        fontFamily.serifSemiBold,
-      fontSize:
-        fontSize.display,
-      lineHeight:
-        lineHeight.display,
-      color:
-        colors.textPrimary,
-    },
-
-    subtitle: {
-      fontFamily:
-        fontFamily.sansRegular,
-      fontSize:
-        fontSize.bodySmall,
-      color:
-        colors.textSecondary,
-      marginTop:
-        spacing[3],
-    },
-
     timeline: {
       gap:
-        spacing[8],
+        spacing[4],
     },
 
     daySection: {
       gap:
-        spacing[4],
+        spacing[2],
     },
 
     dayHeader: {
@@ -1704,11 +1643,22 @@ const styles =
         'row',
       alignItems:
         'center',
+      minHeight: 48,
+      paddingBottom: spacing[1],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+
+    dayToggle: {
+      flex: 1,
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
     },
 
     dayNumber: {
-      width: 42,
-      height: 42,
+      width: 34,
+      height: 34,
       borderRadius:
         radius.pill,
       backgroundColor:
@@ -1723,7 +1673,7 @@ const styles =
       fontFamily:
         fontFamily.serifSemiBold,
       fontSize:
-        fontSize.bodyLarge,
+        fontSize.bodySmall,
       color:
         colors.textInverse,
     },
@@ -1749,7 +1699,7 @@ const styles =
       fontFamily:
         fontFamily.sansSemiBold,
       fontSize:
-        fontSize.body,
+        fontSize.bodySmall,
       color:
         colors.textPrimary,
       marginTop: 2,
@@ -1772,20 +1722,14 @@ const styles =
     },
 
     emptyDay: {
-      minHeight: 66,
-      borderRadius:
-        radius.md,
-      borderWidth: 1,
-      borderStyle:
-        'dashed',
-      borderColor:
-        colors.borderStrong,
+      minHeight: 38,
       flexDirection:
         'row',
       alignItems:
         'center',
-      justifyContent:
-        'center',
+      paddingLeft: 46,
+      paddingRight:
+        spacing[2],
       gap:
         spacing[2],
     },
@@ -1801,11 +1745,11 @@ const styles =
 
     stopList: {
       gap:
-        spacing[3],
+        spacing[2],
     },
 
     stopCard: {
-      minHeight: 78,
+      minHeight: 70,
       backgroundColor:
         colors.surface,
       borderWidth: 1,
@@ -1819,12 +1763,11 @@ const styles =
         'center',
       paddingHorizontal:
         spacing[3],
-      ...shadows.subtle,
     },
 
     stopMain: {
       flex: 1,
-      minHeight: 76,
+      minHeight: 68,
       flexDirection:
         'row',
       alignItems:
@@ -1920,8 +1863,8 @@ const styles =
     },
 
     smallAction: {
-      width: 30,
-      height: 34,
+      width: 34,
+      height: 44,
       alignItems:
         'center',
       justifyContent:
@@ -2249,20 +2192,6 @@ const styles =
         colors.textSecondary,
 
       marginTop: 3,
-    },
-
-    coordinateText: {
-      fontFamily:
-        fontFamily.sansMedium,
-
-      fontSize:
-        fontSize.micro,
-
-      color:
-        colors.textMuted,
-
-      marginTop:
-        spacing[2],
     },
 
     locationEmpty: {

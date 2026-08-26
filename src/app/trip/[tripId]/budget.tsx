@@ -1,8 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, {
   DateTimePickerAndroid,
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import {
   useMemo,
@@ -24,6 +24,7 @@ import {
 } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ui/screen';
+import { UtilityScreenHeader } from '@/components/ui/utility-screen';
 import type {
   BudgetCategory,
   BudgetItem,
@@ -220,6 +221,16 @@ export default function BudgetScreen() {
         '',
     );
     setPlanModalVisible(true);
+  };
+
+  const openTripCurrencySettings = () => {
+    setPlanModalVisible(false);
+    router.push({
+      pathname: '/trip/[tripId]/details',
+      params: {
+        tripId: workspace.trip.id,
+      },
+    });
   };
 
   const resetExpenseForm = () => {
@@ -446,51 +457,43 @@ export default function BudgetScreen() {
   return (
     <>
       <Screen scroll>
-        <View style={styles.header}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back to More"
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons
-              name="arrow-back"
-              size={21}
-              color={colors.textPrimary}
-            />
-          </Pressable>
-
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>
-              TRIP MONEY · {accountingCurrency}
-            </Text>
-
-            <Text style={styles.pageTitle}>
-              Budget
-            </Text>
-
-            <Text style={styles.subtitle}>
-              A truthful view of what you planned and what you have actually spent.
-            </Text>
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add expense"
-            disabled={!canAddExpense}
-            style={[
-              styles.addButton,
-              !canAddExpense && styles.disabled,
-            ]}
-            onPress={openCreateExpense}
-          >
-            <Ionicons
-              name="add"
-              size={24}
-              color={colors.textInverse}
-            />
-          </Pressable>
-        </View>
+        <UtilityScreenHeader
+          eyebrow={`TRIP MONEY · ${accountingCurrency}`}
+          title="Budget"
+          subtitle="Plan your spending and see what’s left."
+          leading={(
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Back to More"
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <Ionicons
+                name="arrow-back"
+                size={21}
+                color={colors.textPrimary}
+              />
+            </Pressable>
+          )}
+          action={(
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add expense"
+              disabled={!canAddExpense}
+              style={[
+                styles.addButton,
+                !canAddExpense && styles.disabled,
+              ]}
+              onPress={openCreateExpense}
+            >
+              <Ionicons
+                name="add"
+                size={24}
+                color={colors.textInverse}
+              />
+            </Pressable>
+          )}
+        />
 
         {summary.hasBudgetCurrencyConflict ? (
           <View style={styles.conflictCard}>
@@ -505,7 +508,7 @@ export default function BudgetScreen() {
                 Budget currency needs review
               </Text>
               <Text style={styles.conflictBody}>
-                This saved budget uses {workspace.budget?.currencyCode}, while the trip accounting currency is {accountingCurrency}. TravelOS will not reinterpret or convert those amounts automatically.
+                This budget uses {workspace.budget?.currencyCode}, while the trip budget currency is {accountingCurrency}. The amounts remain unchanged and separate.
               </Text>
             </View>
           </View>
@@ -599,7 +602,7 @@ export default function BudgetScreen() {
                     Kept outside the {accountingCurrency} total
                   </Text>
                   <Text style={styles.currencyNoticeBody}>
-                    No exchange rate has been assumed. These original amounts remain separate until TravelOS has a confirmed FX strategy.
+                    These amounts stay in their original currencies and are not included in the trip total.
                   </Text>
 
                   <View style={styles.currencyPills}>
@@ -695,7 +698,7 @@ export default function BudgetScreen() {
               </View>
             ) : (
               <Text style={styles.sectionEmptyText}>
-                Accounting-currency expenses will create your category view.
+                Expenses in {accountingCurrency} will appear here.
               </Text>
             )}
 
@@ -708,25 +711,31 @@ export default function BudgetScreen() {
 
             {expenses.length === 0 ? (
               <View style={styles.emptyExpenses}>
-                <View style={styles.emptyIcon}>
-                  <Ionicons
-                    name="receipt-outline"
-                    size={28}
-                    color={colors.brand}
-                  />
+                <View style={styles.emptyExpensesTop}>
+                  <View style={styles.emptyIcon}>
+                    <Ionicons
+                      name="receipt-outline"
+                      size={21}
+                      color={colors.brand}
+                    />
+                  </View>
+
+                  <View style={styles.emptyExpensesCopy}>
+                    <Text style={styles.emptyTitle}>
+                      No expenses yet
+                    </Text>
+                    <Text style={styles.emptyBody}>
+                      Add what you spend as the trip takes shape.
+                    </Text>
+                  </View>
                 </View>
-                <Text style={styles.emptyTitle}>
-                  No expenses yet
-                </Text>
-                <Text style={styles.emptyBody}>
-                  Record actual spending in its original currency. TravelOS will only aggregate what it can do truthfully.
-                </Text>
+
                 <Pressable
-                  style={styles.primaryButton}
+                  style={styles.secondaryActionButton}
                   onPress={openCreateExpense}
                 >
-                  <Text style={styles.primaryButtonText}>
-                    Add first expense
+                  <Text style={styles.secondaryActionButtonText}>
+                    Add expense
                   </Text>
                 </Pressable>
               </View>
@@ -752,30 +761,51 @@ export default function BudgetScreen() {
           </>
         ) : (
           <View style={styles.emptyBudget}>
-            <View style={styles.emptyBudgetIcon}>
-              <Ionicons
-                name="wallet-outline"
-                size={31}
-                color={colors.brand}
-              />
+            <View style={styles.emptyBudgetTop}>
+              <View style={styles.emptyBudgetIcon}>
+                <Ionicons
+                  name="wallet-outline"
+                  size={23}
+                  color={colors.brand}
+                />
+              </View>
+
+              <View style={styles.emptyBudgetCopy}>
+                <Text style={styles.emptyBudgetTitle}>
+                  Set a budget for this trip
+                </Text>
+                <Text style={styles.emptyBudgetBody}>
+                  Choose how much you want to spend in {accountingCurrency}. Expenses can still use the currency you paid.
+                </Text>
+              </View>
             </View>
-            <Text style={styles.emptyBudgetEyebrow}>
-              START WITH A NUMBER
-            </Text>
-            <Text style={styles.emptyBudgetTitle}>
-              Give this trip a spending plan.
-            </Text>
-            <Text style={styles.emptyBudgetBody}>
-              Your budget lives in {accountingCurrency}, the trip accounting currency. Every expense can still keep its own original currency.
-            </Text>
-            <Pressable
-              style={styles.primaryButton}
-              onPress={openPlan}
-            >
-              <Text style={styles.primaryButtonText}>
-                Set planned budget
-              </Text>
-            </Pressable>
+
+            <View style={styles.emptyBudgetActions}>
+              <Pressable
+                style={styles.primaryButton}
+                onPress={openPlan}
+              >
+                <Text style={styles.primaryButtonText}>
+                  Set budget
+                </Text>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Change trip currency from ${accountingCurrency}`}
+                style={styles.currencyTextButton}
+                onPress={openTripCurrencySettings}
+              >
+                <Text style={styles.currencyTextButtonText}>
+                  Change {accountingCurrency}
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={15}
+                  color={colors.brand}
+                />
+              </Pressable>
+            </View>
           </View>
         )}
 
@@ -818,25 +848,61 @@ export default function BudgetScreen() {
             <Text style={styles.fieldLabel}>
               PLANNED BUDGET
             </Text>
-            <View style={styles.moneyInputRow}>
-              <TextInput
-                accessibilityLabel="Planned budget amount"
-                value={plannedAmount}
-                onChangeText={setPlannedAmount}
-                placeholder="0.00"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="decimal-pad"
-                style={styles.moneyInput}
-              />
-              <View style={styles.currencyLock}>
-                <Text style={styles.currencyLockText}>
+
+            <TextInput
+              accessibilityLabel="Planned budget amount"
+              value={plannedAmount}
+              onChangeText={setPlannedAmount}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="decimal-pad"
+              style={styles.planMoneyInput}
+            />
+
+            <View style={styles.tripCurrencyRow}>
+              <View style={styles.tripCurrencyCopy}>
+                <Text style={styles.tripCurrencyLabel}>
+                  TRIP CURRENCY
+                </Text>
+                <Text style={styles.tripCurrencyValue}>
                   {accountingCurrency}
                 </Text>
               </View>
+
+              {workspace.budget ? (
+                <View style={styles.currencyLockedPill}>
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={14}
+                    color={colors.textMuted}
+                  />
+                  <Text style={styles.currencyLockedText}>
+                    Locked
+                  </Text>
+                </View>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Change trip currency from ${accountingCurrency}`}
+                  style={styles.currencyChangeButton}
+                  onPress={openTripCurrencySettings}
+                >
+                  <Text style={styles.currencyChangeButtonText}>
+                    Change
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={15}
+                    color={colors.brand}
+                  />
+                </Pressable>
+              )}
             </View>
 
             <Text style={styles.fieldHelp}>
-              The planned budget always uses the trip accounting currency. Expense currencies remain independent.
+              {workspace.budget
+                ? 'The trip currency is locked while saved budget data exists.'
+                : 'Set the trip currency before saving your first budget. Expenses can still use the currency you paid.'}
             </Text>
 
             <Pressable
@@ -920,7 +986,7 @@ export default function BudgetScreen() {
             </View>
 
             <Text style={styles.fieldHelpInline}>
-              Keep the currency you actually paid. Different currencies are never silently converted.
+              Use the currency you actually paid.
             </Text>
 
             <Text style={styles.fieldLabel}>
@@ -1300,43 +1366,15 @@ function Field({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingTop: spacing[5],
-    paddingBottom: spacing[7],
-  },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing[3],
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-  },
-  headerCopy: { flex: 1 },
-  eyebrow: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.6,
-    color: colors.brass,
-  },
-  pageTitle: {
-    marginTop: spacing[1],
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.display,
-    lineHeight: lineHeight.display,
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    marginTop: spacing[2],
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.bodySmall,
-    lineHeight: lineHeight.bodySmall,
-    color: colors.textSecondary,
   },
   addButton: {
     width: 48,
@@ -1344,12 +1382,11 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: spacing[3],
     backgroundColor: colors.brand,
   },
   summaryCard: {
-    padding: spacing[6],
-    borderRadius: radius.xl,
+    padding: spacing[5],
+    borderRadius: radius.lg,
     backgroundColor: colors.brand,
     ...shadows.card,
   },
@@ -1365,10 +1402,10 @@ const styles = StyleSheet.create({
     color: colors.brass,
   },
   summaryAmount: {
-    marginTop: spacing[2],
+    marginTop: spacing[1],
     fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.titleLarge,
-    lineHeight: lineHeight.titleLarge,
+    fontSize: fontSize.title,
+    lineHeight: lineHeight.title,
     color: colors.textInverse,
   },
   editPlanButton: {
@@ -1381,8 +1418,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.25)',
   },
   progressTrack: {
-    height: 8,
-    marginTop: spacing[7],
+    height: 7,
+    marginTop: spacing[5],
     overflow: 'hidden',
     borderRadius: radius.pill,
     backgroundColor: 'rgba(255,255,255,0.14)',
@@ -1394,7 +1431,7 @@ const styles = StyleSheet.create({
   },
   metricsRow: {
     flexDirection: 'row',
-    marginTop: spacing[6],
+    marginTop: spacing[4],
   },
   metric: { flex: 1 },
   metricDivider: {
@@ -1493,8 +1530,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    marginTop: spacing[10],
-    marginBottom: spacing[4],
+    marginTop: spacing[7],
+    marginBottom: spacing[3],
   },
   sectionEyebrow: {
     fontFamily: fontFamily.sansBold,
@@ -1565,82 +1602,82 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   emptyBudget: {
-    alignItems: 'center',
-    paddingHorizontal: spacing[6],
-    paddingVertical: spacing[10],
-    borderRadius: radius.xl,
+    padding: spacing[5],
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
+  emptyBudgetTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[3],
+  },
   emptyBudgetIcon: {
-    width: 66,
-    height: 66,
-    borderRadius: radius.lg,
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.brandSoft,
   },
-  emptyBudgetEyebrow: {
-    marginTop: spacing[6],
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.5,
-    color: colors.brass,
+  emptyBudgetCopy: {
+    flex: 1,
   },
   emptyBudgetTitle: {
-    marginTop: spacing[2],
     fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.title,
-    lineHeight: lineHeight.title,
+    fontSize: fontSize.titleSmall,
+    lineHeight: lineHeight.titleSmall,
     color: colors.textPrimary,
-    textAlign: 'center',
   },
   emptyBudgetBody: {
-    maxWidth: 340,
-    marginTop: spacing[3],
+    marginTop: spacing[1],
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.bodySmall,
     lineHeight: lineHeight.bodySmall,
     color: colors.textSecondary,
-    textAlign: 'center',
   },
   emptyExpenses: {
-    alignItems: 'center',
-    padding: spacing[7],
+    padding: spacing[4],
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
+  emptyExpensesTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[3],
+  },
+  emptyExpensesCopy: {
+    flex: 1,
+  },
   emptyIcon: {
-    width: 56,
-    height: 56,
+    width: 40,
+    height: 40,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.brandSoft,
   },
   emptyTitle: {
-    marginTop: spacing[4],
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.titleSmall,
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
     color: colors.textPrimary,
   },
   emptyBody: {
-    maxWidth: 330,
-    marginTop: spacing[2],
+    marginTop: spacing[1],
     fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.bodySmall,
-    lineHeight: lineHeight.bodySmall,
-    color: colors.textSecondary,
-    textAlign: 'center',
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textMuted,
   },
   primaryButton: {
-    minHeight: 50,
-    marginTop: spacing[6],
-    paddingHorizontal: spacing[6],
+    minHeight: 46,
+    marginTop: spacing[4],
+    paddingHorizontal: spacing[5],
     borderRadius: radius.md,
+    alignSelf: 'flex-start',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.brand,
@@ -1649,6 +1686,40 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.sansSemiBold,
     fontSize: fontSize.bodySmall,
     color: colors.textInverse,
+  },
+  emptyBudgetActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing[3],
+  },
+  currencyTextButton: {
+    minHeight: 42,
+    marginTop: spacing[4],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    paddingHorizontal: spacing[2],
+  },
+  currencyTextButtonText: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.brand,
+  },
+  secondaryActionButton: {
+    minHeight: 42,
+    marginTop: spacing[3],
+    paddingHorizontal: spacing[4],
+    borderRadius: radius.md,
+    alignSelf: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brandSoft,
+  },
+  secondaryActionButtonText: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.brand,
   },
   expenseList: { gap: spacing[3] },
   expenseCard: {
@@ -1811,16 +1882,10 @@ const styles = StyleSheet.create({
     lineHeight: lineHeight.caption,
     color: colors.textMuted,
   },
-  moneyInputRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
-  moneyInput: {
-    flex: 1,
+  planMoneyInput: {
     minHeight: 64,
     paddingHorizontal: spacing[4],
-    borderTopLeftRadius: radius.md,
-    borderBottomLeftRadius: radius.md,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -1828,18 +1893,62 @@ const styles = StyleSheet.create({
     fontSize: fontSize.title,
     color: colors.textPrimary,
   },
-  currencyLock: {
-    minWidth: 86,
+  tripCurrencyRow: {
+    minHeight: 58,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderTopRightRadius: radius.md,
-    borderBottomRightRadius: radius.md,
-    backgroundColor: colors.brand,
+    justifyContent: 'space-between',
+    gap: spacing[3],
+    marginTop: spacing[3],
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceWarm,
   },
-  currencyLockText: {
+  tripCurrencyCopy: {
+    flex: 1,
+  },
+  tripCurrencyLabel: {
     fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.2,
+    color: colors.textMuted,
+  },
+  tripCurrencyValue: {
+    marginTop: 2,
+    fontFamily: fontFamily.sansSemiBold,
     fontSize: fontSize.bodySmall,
-    color: colors.textInverse,
+    color: colors.textPrimary,
+  },
+  currencyChangeButton: {
+    minHeight: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.pill,
+    backgroundColor: colors.brandSoft,
+  },
+  currencyChangeButtonText: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.brand,
+  },
+  currencyLockedPill: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.pill,
+    backgroundColor: colors.backgroundSoft,
+  },
+  currencyLockedText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
   },
   fieldHelp: {
     marginTop: spacing[3],

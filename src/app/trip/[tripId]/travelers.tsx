@@ -19,6 +19,10 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
+import {
+  CompactSummaryStrip,
+  UtilityScreenHeader,
+} from '@/components/ui/utility-screen';
 import type {
   Traveler,
   TravelerType,
@@ -28,6 +32,9 @@ import {
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
 import {
+  tripDestinationLabel,
+} from '@/services/destination-authoring';
+import {
   TRAVELER_TYPES,
   travelerDisplayName,
   travelerInitials,
@@ -36,9 +43,6 @@ import {
 import {
   travelerService,
 } from '@/services/traveler-service';
-import {
-  tripDestinationLabel,
-} from '@/services/destination-authoring';
 import {
   colors,
   fontFamily,
@@ -249,7 +253,7 @@ export default function TravelersScreen() {
   ) => {
     Alert.alert(
       'Remove from this trip?',
-      `${travelerDisplayName(traveler)} will leave this trip only. Their saved identity and membership in any other trips will remain.`,
+      `${travelerDisplayName(traveler)} will be removed from this trip. They will remain available in your other trips.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -267,7 +271,7 @@ export default function TravelersScreen() {
               );
               Alert.alert(
                 'Could not remove traveler',
-                'The trip membership has not changed. Please try again.',
+                'Nothing changed. Please try again.',
               );
             }
           },
@@ -279,56 +283,42 @@ export default function TravelersScreen() {
   return (
     <>
       <Screen scroll>
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>
-              {tripDestinationLabel(
-                workspace.trip.destinations,
-              ).toUpperCase()}
-            </Text>
-            <Text style={styles.title}>
-              Travelers
-            </Text>
-            <Text style={styles.subtitle}>
-              The people who belong to this journey, connected through one reusable identity each.
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add traveler"
-            style={styles.addButton}
-            onPress={openAdd}
-          >
-            <Ionicons
-              name="person-add-outline"
-              size={22}
-              color={colors.textInverse}
-            />
-          </Pressable>
-        </View>
+        <UtilityScreenHeader
+          eyebrow={tripDestinationLabel(
+            workspace.trip.destinations,
+          ).toUpperCase()}
+          title="Travelers"
+          subtitle="The people joining this trip."
+          action={(
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add traveler"
+              style={styles.addButton}
+              onPress={openAdd}
+            >
+              <Ionicons
+                name="person-add-outline"
+                size={22}
+                color={colors.textInverse}
+              />
+            </Pressable>
+          )}
+        />
 
-        <View style={styles.countCard}>
-          <View style={styles.countIcon}>
-            <Ionicons
-              name="people-outline"
-              size={24}
-              color={colors.teal}
-            />
-          </View>
-          <View style={styles.countCopy}>
-            <Text style={styles.countValue}>
-              {workspace.travelers.length}
-            </Text>
-            <Text style={styles.countLabel}>
-              {workspace.travelers.length === 1
-                ? 'TRAVELER IN THIS TRIP'
-                : 'TRAVELERS IN THIS TRIP'}
-            </Text>
-          </View>
-          <Text style={styles.countMeta}>
-            Explicit membership
-          </Text>
-        </View>
+        {workspace.travelers.length > 0 ? (
+          <CompactSummaryStrip
+            accessibilityLabel={`${workspace.travelers.length} ${workspace.travelers.length === 1 ? 'traveler' : 'travelers'} in this trip`}
+            items={[
+              {
+                value: workspace.travelers.length,
+                label:
+                  workspace.travelers.length === 1
+                    ? 'traveler'
+                    : 'travelers',
+              },
+            ]}
+          />
+        ) : null}
 
         {workspace.travelers.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -343,7 +333,7 @@ export default function TravelersScreen() {
               Who is taking this trip?
             </Text>
             <Text style={styles.emptyBody}>
-              Add a lightweight traveler identity now. Reservation ownership, expense splitting and invitations stay separate until those relationships are designed.
+              Add someone new or choose a traveler you have saved before.
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -424,7 +414,7 @@ export default function TravelersScreen() {
                           color={colors.brand}
                         />
                         <Text style={styles.editActionText}>
-                          Edit identity
+                          Edit
                         </Text>
                       </Pressable>
                       <Pressable
@@ -455,11 +445,11 @@ export default function TravelersScreen() {
         <View style={styles.privacyNote}>
           <Ionicons
             name="shield-checkmark-outline"
-            size={19}
-            color={colors.brass}
+            size={17}
+            color={colors.textMuted}
           />
           <Text style={styles.privacyNoteText}>
-            Traveler identity stays local on this device. TravelOS does not collect passports, health details or inferred profiles here.
+            Keep passport and health information out of traveler profiles.
           </Text>
         </View>
         <View style={styles.bottomSpace} />
@@ -480,8 +470,8 @@ export default function TravelersScreen() {
               <View style={styles.modalHeaderCopy}>
                 <Text style={styles.modalEyebrow}>
                   {editorMode === 'choose'
-                    ? 'TRIP MEMBERSHIP'
-                    : 'CANONICAL IDENTITY'}
+                    ? 'ADD TO THIS TRIP'
+                    : 'TRAVELER'}
                 </Text>
                 <Text style={styles.modalTitle}>
                   {editorMode === 'choose'
@@ -526,7 +516,7 @@ export default function TravelersScreen() {
                       color={colors.teal}
                     />
                     <Text style={styles.sharedTruthText}>
-                      This is one reusable identity. Changes appear in every trip that includes this traveler.
+                      Changes to this traveler will appear in their other trips too.
                     </Text>
                   </View>
                 )}
@@ -617,7 +607,7 @@ export default function TravelersScreen() {
                     color={colors.brass}
                   />
                   <Text style={styles.dataBoundaryText}>
-                    Keep this lightweight. Passport, health and identity-document data do not belong in this profile.
+                    Only add the contact details you need for the trip.
                   </Text>
                 </View>
 
@@ -634,7 +624,7 @@ export default function TravelersScreen() {
                     {isSaving
                       ? 'Saving…'
                       : editorMode === 'edit'
-                        ? 'Save identity'
+                        ? 'Save changes'
                         : 'Create and add to trip'}
                   </Text>
                   {!isSaving && (
@@ -688,7 +678,7 @@ function TravelerChooser({
             Create a new traveler
           </Text>
           <Text style={styles.newTravelerMeta}>
-            Save one reusable identity and add it to this trip
+            Add someone new to this trip
           </Text>
         </View>
         <Ionicons
@@ -702,9 +692,7 @@ function TravelerChooser({
         <Text style={styles.fieldLabel}>
           SAVED TRAVELERS
         </Text>
-        <Text style={styles.libraryHint}>
-          Select by exact identity
-        </Text>
+        <Text style={styles.libraryHint}>Choose someone you’ve added before</Text>
       </View>
 
       {status === 'loading' ? (
@@ -722,7 +710,7 @@ function TravelerChooser({
             color={colors.brass}
           />
           <Text style={styles.libraryStateText}>
-            Saved travelers could not be loaded. You can still create a new identity.
+            Saved travelers could not be loaded. You can still create a new traveler.
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -740,7 +728,7 @@ function TravelerChooser({
             color={colors.textMuted}
           />
           <Text style={styles.libraryStateText}>
-            No other saved traveler identities are available.
+            No other saved travelers are available.
           </Text>
         </View>
       ) : (
@@ -780,16 +768,6 @@ function TravelerChooser({
         </View>
       )}
 
-      <View style={styles.selectionNote}>
-        <Ionicons
-          name="finger-print-outline"
-          size={18}
-          color={colors.teal}
-        />
-        <Text style={styles.selectionNoteText}>
-          TravelOS never merges people because their names look similar. Reuse happens only when you select an existing ID.
-        </Text>
-      </View>
     </>
   );
 }
@@ -837,37 +815,6 @@ function Field({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingTop: spacing[6],
-    paddingBottom: spacing[8],
-  },
-  headerCopy: {
-    flex: 1,
-    paddingRight: spacing[5],
-  },
-  eyebrow: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.8,
-    color: colors.brass,
-    marginBottom: spacing[2],
-  },
-  title: {
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.display,
-    lineHeight: lineHeight.display,
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    marginTop: spacing[3],
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.body,
-    lineHeight: lineHeight.body,
-    color: colors.textSecondary,
-  },
   addButton: {
     width: 48,
     height: 48,
@@ -877,49 +824,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand,
     ...shadows.subtle,
   },
-  countCard: {
-    minHeight: 112,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing[5],
-    marginBottom: spacing[6],
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-  },
-  countIcon: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    backgroundColor: colors.tealSoft,
-  },
-  countCopy: {
-    flex: 1,
-    marginLeft: spacing[4],
-  },
-  countValue: {
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.title,
-    color: colors.textPrimary,
-  },
-  countLabel: {
-    marginTop: spacing[1],
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 0.8,
-    color: colors.textMuted,
-  },
-  countMeta: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.micro,
-    color: colors.teal,
-  },
   emptyCard: {
     alignItems: 'flex-start',
-    padding: spacing[6],
+    padding: spacing[5],
     borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
@@ -927,32 +834,32 @@ const styles = StyleSheet.create({
     ...shadows.subtle,
   },
   emptyIcon: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,
     backgroundColor: colors.brandSoft,
   },
   emptyTitle: {
-    marginTop: spacing[6],
+    marginTop: spacing[4],
     fontFamily: fontFamily.serifSemiBold,
     fontSize: fontSize.titleSmall,
     color: colors.textPrimary,
   },
   emptyBody: {
-    marginTop: spacing[3],
+    marginTop: spacing[2],
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.bodySmall,
     lineHeight: lineHeight.bodySmall,
     color: colors.textSecondary,
   },
   primaryButton: {
-    minHeight: 52,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing[6],
-    marginTop: spacing[6],
+    paddingHorizontal: spacing[5],
+    marginTop: spacing[4],
     borderRadius: radius.md,
     backgroundColor: colors.brand,
   },
@@ -965,20 +872,19 @@ const styles = StyleSheet.create({
     gap: spacing[4],
   },
   travelerCard: {
-    padding: spacing[5],
+    padding: spacing[4],
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    ...shadows.subtle,
   },
   travelerTop: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatar: {
-    width: 54,
-    height: 54,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.pill,
@@ -1001,8 +907,8 @@ const styles = StyleSheet.create({
   },
   travelerName: {
     marginTop: spacing[1],
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.titleSmall,
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.body,
     color: colors.textPrimary,
   },
   memberBadge: {
@@ -1080,18 +986,16 @@ const styles = StyleSheet.create({
   privacyNote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing[3],
-    marginTop: spacing[6],
-    padding: spacing[4],
-    borderRadius: radius.md,
-    backgroundColor: colors.brassSoft,
+    gap: spacing[2],
+    marginTop: spacing[5],
+    paddingHorizontal: spacing[1],
   },
   privacyNoteText: {
     flex: 1,
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
   bottomSpace: {
     height: spacing[16],
@@ -1171,16 +1075,14 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   libraryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing[1],
     marginTop: spacing[8],
   },
   libraryHint: {
-    marginBottom: spacing[2],
+    marginBottom: spacing[3],
     fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.micro,
-    color: colors.teal,
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
   },
   libraryState: {
     minHeight: 128,
@@ -1258,22 +1160,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.pill,
     backgroundColor: colors.tealSoft,
-  },
-  selectionNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing[3],
-    marginTop: spacing[6],
-    padding: spacing[4],
-    borderRadius: radius.md,
-    backgroundColor: colors.tealSoft,
-  },
-  selectionNoteText: {
-    flex: 1,
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-    color: colors.textSecondary,
   },
   sharedTruthNote: {
     flexDirection: 'row',

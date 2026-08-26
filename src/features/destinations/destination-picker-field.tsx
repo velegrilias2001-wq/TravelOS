@@ -59,10 +59,11 @@ export function DestinationPickerField({
     destination &&
       hasRealDestinationCoordinates(destination),
   );
+
   const actionLabel = destination
     ? isMapped
-      ? 'Replace destination'
-      : 'Add destination details'
+      ? 'Replace map location'
+      : 'Add map location'
     : 'Choose destination';
 
   const chooseDestination = async () => {
@@ -113,7 +114,7 @@ export function DestinationPickerField({
     } catch {
       Alert.alert(
         'Could not choose destination',
-        'TravelOS could not open or read the map selection. Your saved destination has not changed.',
+        'The map selection could not be opened. Your destination is unchanged.',
       );
     } finally {
       setIsPicking(false);
@@ -154,16 +155,16 @@ export function DestinationPickerField({
 
           <View style={styles.copy}>
             <Text style={styles.stateLabel}>
-              {isMapped
-                ? 'MAP LOCATION SELECTED'
-                : destination
-                  ? 'DESTINATION LABEL ONLY'
-                  : 'WHERE ARE YOU GOING?'}
+              {destination
+                ? 'MAP LOCATION'
+                : 'WHERE ARE YOU GOING?'}
             </Text>
+
             <Text style={styles.name}>
               {destination?.name ||
                 'Choose a city, region or country'}
             </Text>
+
             {destination?.countryCode && (
               <Text style={styles.country}>
                 {destination.countryCode}
@@ -173,36 +174,31 @@ export function DestinationPickerField({
         </View>
 
         {destination && (
-          <View style={styles.facts}>
-            <Fact
-              icon={
+          <View style={styles.mapStatus}>
+            <Ionicons
+              name={
                 isMapped
                   ? 'map-outline'
-                  : 'document-text-outline'
+                  : 'map-outline'
               }
-              text={
+              size={17}
+              color={
                 isMapped
-                  ? 'Map location saved'
-                  : 'Map details not added yet'
+                  ? colors.teal
+                  : colors.textMuted
               }
-              ready={isMapped}
             />
-            <Fact
-              icon="time-outline"
-              text={
-                destination.timezone
-                  ? 'Live trip timing available'
-                  : 'Live trip timing not available yet'
-              }
-              ready={Boolean(destination.timezone)}
-            />
-            {destination.currencyCode && (
-              <Fact
-                icon="cash-outline"
-                text={`${destination.currencyCode} local currency`}
-                ready
-              />
-            )}
+            <Text
+              style={[
+                styles.mapStatusText,
+                isMapped &&
+                  styles.mapStatusTextReady,
+              ]}
+            >
+              {isMapped
+                ? 'Map location saved'
+                : 'Map location not added'}
+            </Text>
           </View>
         )}
 
@@ -213,7 +209,8 @@ export function DestinationPickerField({
           style={({ pressed }) => [
             styles.action,
             pressed && styles.pressed,
-            (disabled || isPicking) && styles.disabled,
+            (disabled || isPicking) &&
+              styles.disabled,
           ]}
           onPress={() => void chooseDestination()}
         >
@@ -230,37 +227,11 @@ export function DestinationPickerField({
         </Pressable>
       </View>
 
-      <Text style={styles.help}>
-        TravelOS saves only details returned by your map selection. Local time and currency stay unknown unless a trusted source provides them.
-      </Text>
-    </View>
-  );
-}
-
-function Fact({
-  icon,
-  text,
-  ready,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  text: string;
-  ready: boolean;
-}) {
-  return (
-    <View style={styles.fact}>
-      <Ionicons
-        name={icon}
-        size={16}
-        color={ready ? colors.teal : colors.textMuted}
-      />
-      <Text
-        style={[
-          styles.factText,
-          ready && styles.factTextReady,
-        ]}
-      >
-        {text}
-      </Text>
+      {destination && !isMapped ? (
+        <Text style={styles.help}>
+          Add a real location to place this destination on your trip map.
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -324,25 +295,22 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.textMuted,
   },
-  facts: {
-    gap: spacing[2],
-    marginTop: spacing[4],
-    paddingTop: spacing[4],
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  fact: {
+  mapStatus: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
+    marginTop: spacing[4],
+    paddingTop: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  factText: {
+  mapStatusText: {
     flex: 1,
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.caption,
     color: colors.textMuted,
   },
-  factTextReady: {
+  mapStatusTextReady: {
     color: colors.textSecondary,
   },
   action: {

@@ -12,8 +12,9 @@ import {
   View,
 } from 'react-native';
 
-import { Screen } from '@/components/ui/screen';
 import { CalendarDateField } from '@/components/ui/native-date-time-fields';
+import { Screen } from '@/components/ui/screen';
+import { UtilityScreenHeader } from '@/components/ui/utility-screen';
 import type {
   TripStatus,
 } from '@/domain/entities';
@@ -49,27 +50,22 @@ type EditableStatus = Exclude<
 const STATUS_OPTIONS: Array<{
   value: EditableStatus;
   label: string;
-  description: string;
 }> = [
   {
     value: 'draft',
     label: 'Draft',
-    description: 'Still taking shape',
   },
   {
     value: 'planned',
     label: 'Planned',
-    description: 'Ready for the journey',
   },
   {
     value: 'completed',
     label: 'Completed',
-    description: 'The journey has ended',
   },
   {
     value: 'archived',
     label: 'Archived',
-    description: 'Kept out of the way',
   },
 ];
 
@@ -227,7 +223,7 @@ export default function TripDetailsScreen() {
   const deleteTrip = () => {
     Alert.alert(
       `Delete “${trip.title}”?`,
-      'This permanently removes this trip and its related local itinerary, stops, bookings, accommodations, budget, expenses, runtime data, memories and Travel Book content from this device. This cannot be undone.',
+      'This permanently removes this trip and its related local plan, moments, bookings, stays, budget, expenses, memories and Travel Book content from this device. This cannot be undone.',
       [
         {
           text: 'Cancel',
@@ -285,25 +281,17 @@ export default function TripDetailsScreen() {
           </Pressable>
 
           <Text style={styles.topBarLabel}>
-            TRIP DETAILS
+            MORE
           </Text>
 
           <View style={styles.topBarSpacer} />
         </View>
 
-        <View style={styles.hero}>
-          <Text style={styles.eyebrow}>
-            TRIP OVERVIEW
-          </Text>
-          <Text style={styles.title}>
-            Shape the journey,
-            {'\n'}
-            keep its truth intact.
-          </Text>
-          <Text style={styles.subtitle}>
-            Keep the details that guide Companion, Plan, Map, Bookings and your trip budget in one place.
-          </Text>
-        </View>
+        <UtilityScreenHeader
+          eyebrow="TRIP OVERVIEW"
+          title="Trip details"
+          subtitle="Destination, dates, status and budget currency."
+        />
 
         {showSavedNotice && (
           <View style={styles.savedNotice}>
@@ -313,14 +301,14 @@ export default function TripDetailsScreen() {
               color={colors.success}
             />
             <Text style={styles.savedNoticeText}>
-              Trip details saved to this device.
+              Trip details saved.
             </Text>
           </View>
         )}
 
         <SectionHeader
           eyebrow="THE JOURNEY"
-          title="Identity"
+          title="Basics"
         />
 
         <View style={styles.card}>
@@ -348,7 +336,7 @@ export default function TripDetailsScreen() {
                   Active
                 </Text>
                 <Text style={styles.activeStatusBody}>
-                  Existing active status is preserved, but it cannot be assigned manually here.
+                  Active is set automatically while the trip is happening.
                 </Text>
               </View>
             </View>
@@ -383,23 +371,11 @@ export default function TripDetailsScreen() {
                   >
                     {option.label}
                   </Text>
-                  <Text
-                    style={[
-                      styles.statusChoiceBody,
-                      selected &&
-                        styles.statusChoiceBodySelected,
-                    ]}
-                  >
-                    {option.description}
-                  </Text>
                 </Pressable>
               );
             })}
           </View>
 
-          <Text style={styles.fieldHelp}>
-            Status helps you organize trips. Companion follows your travel dates and available destination timing details when deciding what is happening now.
-          </Text>
         </View>
 
         <SectionHeader
@@ -416,7 +392,7 @@ export default function TripDetailsScreen() {
                 color={colors.warning}
               />
               <Text style={styles.inlineNoticeText}>
-                This trip does not have a destination yet. You can still edit its other details; adding destinations will arrive with the multi-destination planning flow.
+                This trip does not have a destination yet. You can still edit its other details.
               </Text>
             </View>
           ) : (
@@ -455,7 +431,7 @@ export default function TripDetailsScreen() {
 
                     {destination.replacement && (
                       <Text style={styles.pendingDestinationText}>
-                        This map selection will replace the current destination when you save trip details.
+                        This destination will update when you save.
                       </Text>
                     )}
                   </View>
@@ -464,16 +440,6 @@ export default function TripDetailsScreen() {
             )
           )}
 
-          <View style={styles.truthNote}>
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={20}
-              color={colors.teal}
-            />
-            <Text style={styles.truthNoteText}>
-              Older destination labels remain unchanged until you choose a real map location. Replacing a destination keeps its place in this trip while using only details returned by the new selection.
-            </Text>
-          </View>
         </View>
 
         <SectionHeader
@@ -483,6 +449,7 @@ export default function TripDetailsScreen() {
 
         <View style={styles.card}>
           <CalendarDateField
+            compact
             label="START DATE"
             value={startDate}
             fallbackDate={endDate}
@@ -495,6 +462,7 @@ export default function TripDetailsScreen() {
           <View style={styles.dateDivider} />
 
           <CalendarDateField
+            compact
             label="END DATE"
             value={endDate}
             fallbackDate={startDate}
@@ -505,18 +473,18 @@ export default function TripDetailsScreen() {
           />
 
           <Text style={styles.fieldHelp}>
-            Your chosen calendar dates stay exactly as selected. Existing itinerary days outside a changed range are kept rather than silently deleted.
+            Days that already contain moments are kept when dates change.
           </Text>
         </View>
 
         <SectionHeader
           eyebrow="TRIP MONEY"
-          title="Accounting"
+          title="Budget currency"
         />
 
         <View style={styles.card}>
           <Field
-            label="ACCOUNTING CURRENCY"
+            label="BUDGET CURRENCY"
             value={accountingCurrency}
             placeholder="EUR"
             editable={!hasPersistedBudget}
@@ -550,8 +518,8 @@ export default function TripDetailsScreen() {
             />
             <Text style={styles.currencyPolicyText}>
               {hasPersistedBudget
-                ? 'Locked because this trip already has a saved budget. TravelOS will not relabel or reinterpret those amounts.'
-                : 'This is the trip accounting currency, not a destination’s local currency. Any budget created for this trip will use this value.'}
+                ? 'A saved budget is using this currency, so it can’t be changed.'
+                : 'Used for trip totals. Local currencies stay separate.'}
             </Text>
           </View>
         </View>
@@ -580,41 +548,42 @@ export default function TripDetailsScreen() {
           )}
         </Pressable>
 
-        <SectionHeader
-          eyebrow="LOCAL DATA"
-          title="Danger zone"
-        />
-
-        <View style={styles.dangerCard}>
-          <View style={styles.dangerIcon}>
-            <Ionicons
-              name="trash-outline"
-              size={22}
-              color={colors.danger}
-            />
+        <View style={styles.dangerSection}>
+          <Text style={styles.sectionEyebrow}>
+            DANGER ZONE
+          </Text>
+          <View style={styles.dangerRow}>
+            <View style={styles.dangerIcon}>
+              <Ionicons
+                name="trash-outline"
+                size={20}
+                color={colors.danger}
+              />
+            </View>
+            <View style={styles.dangerCopy}>
+              <Text style={styles.dangerTitle}>
+                Delete trip
+              </Text>
+              <Text style={styles.dangerBody}>
+                Permanently remove this trip from this device.
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Delete trip"
+              disabled={isSaving || isDeleting}
+              style={[
+                styles.deleteButton,
+                (isSaving || isDeleting) &&
+                  styles.disabled,
+              ]}
+              onPress={deleteTrip}
+            >
+              <Text style={styles.deleteButtonText}>
+                {isDeleting ? '…' : 'Delete'}
+              </Text>
+            </Pressable>
           </View>
-          <Text style={styles.dangerTitle}>
-            Delete this trip
-          </Text>
-          <Text style={styles.dangerBody}>
-            Permanently remove this trip and its related local data from this device.
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            disabled={isSaving || isDeleting}
-            style={[
-              styles.deleteButton,
-              (isSaving || isDeleting) &&
-                styles.disabled,
-            ]}
-            onPress={deleteTrip}
-          >
-            <Text style={styles.deleteButtonText}>
-              {isDeleting
-                ? 'Deleting trip…'
-                : 'Delete trip'}
-            </Text>
-          </Pressable>
         </View>
 
         <View style={styles.bottomSpace} />
@@ -719,31 +688,6 @@ const styles = StyleSheet.create({
   topBarSpacer: {
     width: 46,
   },
-  hero: {
-    paddingTop: spacing[10],
-    paddingBottom: spacing[4],
-  },
-  eyebrow: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.8,
-    color: colors.brass,
-    marginBottom: spacing[3],
-  },
-  title: {
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.titleLarge,
-    lineHeight: lineHeight.titleLarge,
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    maxWidth: 350,
-    marginTop: spacing[4],
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.bodySmall,
-    lineHeight: lineHeight.bodySmall,
-    color: colors.textSecondary,
-  },
   savedNotice: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -760,8 +704,8 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   sectionHeader: {
-    marginTop: spacing[10],
-    marginBottom: spacing[4],
+    marginTop: spacing[7],
+    marginBottom: spacing[3],
   },
   sectionEyebrow: {
     fontFamily: fontFamily.sansBold,
@@ -777,12 +721,11 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   card: {
-    padding: spacing[5],
+    padding: spacing[4],
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    ...shadows.subtle,
   },
   field: {
     gap: spacing[2],
@@ -848,17 +791,19 @@ const styles = StyleSheet.create({
   statusGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing[3],
+    gap: spacing[2],
     marginTop: spacing[3],
   },
   statusChoice: {
-    width: '47%',
-    minHeight: 82,
-    padding: spacing[3],
-    borderRadius: radius.md,
+    width: '48%',
+    minHeight: 48,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceWarm,
+    alignItems: 'center',
     justifyContent: 'center',
   },
   statusChoiceSelected: {
@@ -908,22 +853,6 @@ const styles = StyleSheet.create({
     lineHeight: lineHeight.bodySmall,
     color: colors.textSecondary,
   },
-  truthNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing[3],
-    marginTop: spacing[5],
-    paddingTop: spacing[4],
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  truthNoteText: {
-    flex: 1,
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-    color: colors.textSecondary,
-  },
   dateDivider: {
     height: spacing[5],
   },
@@ -940,13 +869,12 @@ const styles = StyleSheet.create({
   currencyPolicy: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing[3],
-    marginTop: spacing[4],
-    padding: spacing[4],
-    borderRadius: radius.md,
-    backgroundColor: colors.tealSoft,
+    gap: spacing[2],
+    marginTop: spacing[3],
   },
   currencyPolicyLocked: {
+    padding: spacing[3],
+    borderRadius: radius.md,
     backgroundColor: colors.brassSoft,
   },
   currencyPolicyText: {
@@ -966,45 +894,55 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing[2],
     backgroundColor: colors.brand,
-    ...shadows.card,
   },
   saveButtonText: {
     fontFamily: fontFamily.sansSemiBold,
     fontSize: fontSize.body,
     color: colors.textInverse,
   },
-  dangerCard: {
-    padding: spacing[5],
+  dangerSection: {
+    marginTop: spacing[8],
+  },
+  dangerRow: {
+    marginTop: spacing[3],
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    padding: spacing[4],
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.coral,
     backgroundColor: colors.surface,
   },
   dangerIcon: {
-    width: 44,
-    height: 44,
+    width: 38,
+    height: 38,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.coralSoft,
   },
+  dangerCopy: {
+    flex: 1,
+  },
   dangerTitle: {
-    marginTop: spacing[4],
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.titleSmall,
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
     color: colors.danger,
   },
   dangerBody: {
-    marginTop: spacing[2],
+    marginTop: 2,
     fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.bodySmall,
-    lineHeight: lineHeight.bodySmall,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     color: colors.textSecondary,
   },
   deleteButton: {
-    minHeight: 50,
-    marginTop: spacing[5],
-    borderRadius: radius.md,
+    minHeight: 40,
+    minWidth: 72,
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -1012,7 +950,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontFamily: fontFamily.sansSemiBold,
-    fontSize: fontSize.bodySmall,
+    fontSize: fontSize.caption,
     color: colors.danger,
   },
   disabled: {

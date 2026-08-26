@@ -4,18 +4,18 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
-import { Screen } from '@/components/ui/screen';
 import { CalendarDateField } from '@/components/ui/native-date-time-fields';
+import { Screen } from '@/components/ui/screen';
 import {
   DestinationPickerField,
 } from '@/features/destinations/destination-picker-field';
@@ -24,15 +24,14 @@ import type {
 } from '@/services/destination-authoring';
 import { buildNewTrip } from '@/services/trip-creation';
 import { useTripStore } from '@/store/trip-store';
-
 import {
-    colors,
-    fontFamily,
-    fontSize,
-    lineHeight,
-    radius,
-    shadows,
-    spacing,
+  colors,
+  fontFamily,
+  fontSize,
+  lineHeight,
+  radius,
+  shadows,
+  spacing,
 } from '@/theme';
 
 export default function NewTripScreen() {
@@ -45,27 +44,44 @@ export default function NewTripScreen() {
   const [title, setTitle] = useState('');
   const [destination, setDestination] =
     useState<DestinationSelection | null>(null);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [currency, setCurrency] = useState('EUR');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [startDate, setStartDate] =
-    useState('');
+  const isReady = Boolean(
+    destination &&
+      startDate &&
+      endDate &&
+      currency.length === 3,
+  );
 
-  const [endDate, setEndDate] =
-    useState('');
+  const tripNamePlaceholder = destination?.name
+    ? `${destination.name} trip`
+    : 'Give this trip a name';
 
-  const [currency, setCurrency] =
-    useState('EUR');
-
-  const [isSaving, setIsSaving] =
-    useState(false);
+  const updateCurrency = (value: string) => {
+    setCurrency(
+      value
+        .replace(/[^a-z]/gi, '')
+        .toUpperCase()
+        .slice(0, 3),
+    );
+  };
 
   const createTrip = async () => {
     if (!destination) {
       Alert.alert(
         'Choose a destination',
-        'Select a real city, region or country from the map before creating this trip.',
+        'Choose a city, region or country before creating this trip.',
       );
       return;
     }
+
+    const resolvedTitle =
+      title.trim() ||
+      destination.name?.trim() ||
+      'New trip';
 
     const now = new Date().toISOString();
     let trip;
@@ -73,7 +89,7 @@ export default function NewTripScreen() {
     try {
       trip = buildNewTrip(
         {
-          title,
+          title: resolvedTitle,
           destination,
           startDate,
           endDate,
@@ -90,7 +106,7 @@ export default function NewTripScreen() {
         'Check trip details',
         error instanceof Error
           ? error.message
-          : 'Add a trip name, choose a destination and check the travel dates.',
+          : 'Check the destination, travel dates and trip currency.',
       );
       return;
     }
@@ -109,7 +125,7 @@ export default function NewTripScreen() {
     } catch {
       Alert.alert(
         'Could not create trip',
-        'Travel OS could not save this trip. Please try again.',
+        'TravelOS could not save this trip. Please try again.',
       );
     } finally {
       setIsSaving(false);
@@ -128,6 +144,8 @@ export default function NewTripScreen() {
       <Screen scroll>
         <View style={styles.topBar}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
             style={styles.backButton}
             onPress={() => router.back()}
           >
@@ -139,7 +157,7 @@ export default function NewTripScreen() {
           </Pressable>
 
           <Text style={styles.topBarTitle}>
-            New trip
+            Create trip
           </Text>
 
           <View style={styles.topSpacer} />
@@ -147,84 +165,99 @@ export default function NewTripScreen() {
 
         <View style={styles.intro}>
           <Text style={styles.eyebrow}>
-            START A JOURNEY
+            NEW JOURNEY
           </Text>
 
           <Text style={styles.title}>
-            Where will life
-            {'\n'}
-            take you next?
+            Start with somewhere.
           </Text>
 
           <Text style={styles.subtitle}>
-            Give us the essentials. You can shape
-            every detail of the journey afterwards.
+            Pick a place and your dates. You can shape the rest once the trip is yours.
           </Text>
         </View>
 
         <View style={styles.form}>
-          <Field
-            label="TRIP NAME"
-            placeholder="Summer in Japan"
-            value={title}
-            onChangeText={setTitle}
-          />
-
           <DestinationPickerField
             destination={destination}
             disabled={isSaving}
             onSelect={setDestination}
           />
 
-          <View style={styles.dateFields}>
-            <CalendarDateField
-              label="START DATE"
-              value={startDate}
-              fallbackDate={endDate}
-              onChange={setStartDate}
-            />
+          <View style={styles.section}>
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionEyebrow}>
+                WHEN
+              </Text>
+              <Text style={styles.sectionTitle}>
+                Travel dates
+              </Text>
+            </View>
 
-            <CalendarDateField
-              label="END DATE"
-              value={endDate}
-              fallbackDate={startDate}
-              onChange={setEndDate}
-            />
+            <View style={styles.dateFields}>
+              <CalendarDateField
+                label="START DATE"
+                value={startDate}
+                fallbackDate={endDate}
+                disabled={isSaving}
+                onChange={setStartDate}
+              />
+
+              <CalendarDateField
+                label="END DATE"
+                value={endDate}
+                fallbackDate={startDate}
+                disabled={isSaving}
+                onChange={setEndDate}
+              />
+            </View>
           </View>
 
-          <Text style={styles.dateNote}>
-            Travel dates are calendar days. They stay exactly as chosen and are never shifted through a timezone.
-          </Text>
+          <View style={styles.section}>
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionEyebrow}>
+                MAKE IT YOURS
+              </Text>
+              <Text style={styles.sectionTitle}>
+                Trip details
+              </Text>
+            </View>
 
-          <Field
-            label="ACCOUNTING CURRENCY"
-            placeholder="EUR"
-            value={currency}
-            onChangeText={setCurrency}
-            autoCapitalize="characters"
-          />
-        </View>
+            <Field
+              label="TRIP NAME · OPTIONAL"
+              placeholder={tripNamePlaceholder}
+              value={title}
+              disabled={isSaving}
+              onChangeText={setTitle}
+            />
 
-        <View style={styles.currencyNote}>
-          <Ionicons
-            name="information-circle-outline"
-            size={19}
-            color={colors.teal}
-          />
+            <View style={styles.currencyField}>
+              <Field
+                label="TRIP CURRENCY"
+                placeholder="EUR"
+                value={currency}
+                disabled={isSaving}
+                maxLength={3}
+                onChangeText={updateCurrency}
+                autoCapitalize="characters"
+              />
 
-          <Text style={styles.currencyNoteText}>
-            Your budget currency stays separate
-            from the local currency of each
-            destination.
-          </Text>
+              <Text style={styles.helperText}>
+                Used for your budget and trip totals. Expenses can still use the currency you paid.
+              </Text>
+            </View>
+          </View>
         </View>
 
         <Pressable
-          disabled={isSaving}
+          accessibilityRole="button"
+          accessibilityLabel="Create trip"
+          disabled={isSaving || !isReady}
           style={({ pressed }) => [
             styles.createButton,
             pressed && styles.pressed,
-            isSaving && styles.disabled,
+            (isSaving || !isReady) &&
+              styles.disabled,
           ]}
           onPress={createTrip}
         >
@@ -243,6 +276,12 @@ export default function NewTripScreen() {
           )}
         </Pressable>
 
+        {!isReady && !isSaving ? (
+          <Text style={styles.ctaHint}>
+            Choose a destination and travel dates to continue.
+          </Text>
+        ) : null}
+
         <View style={styles.bottomSpace} />
       </Screen>
     </KeyboardAvoidingView>
@@ -259,6 +298,8 @@ interface FieldProps {
     | 'sentences'
     | 'words'
     | 'characters';
+  disabled?: boolean;
+  maxLength?: number;
 }
 
 function Field({
@@ -267,6 +308,8 @@ function Field({
   value,
   onChangeText,
   autoCapitalize = 'sentences',
+  disabled = false,
+  maxLength,
 }: FieldProps) {
   return (
     <View style={styles.field}>
@@ -278,11 +321,15 @@ function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={
-          colors.textMuted
-        }
+        placeholderTextColor={colors.textMuted}
         autoCapitalize={autoCapitalize}
-        style={styles.input}
+        autoCorrect={false}
+        editable={!disabled}
+        maxLength={maxLength}
+        style={[
+          styles.input,
+          disabled && styles.inputDisabled,
+        ]}
       />
     </View>
   );
@@ -324,16 +371,16 @@ const styles = StyleSheet.create({
   },
 
   intro: {
-    marginTop: spacing[10],
-    marginBottom: spacing[8],
+    marginTop: spacing[8],
+    marginBottom: spacing[7],
   },
 
   eyebrow: {
+    marginBottom: spacing[2],
     fontFamily: fontFamily.sansBold,
     fontSize: fontSize.micro,
     letterSpacing: 1.8,
     color: colors.brass,
-    marginBottom: spacing[3],
   },
 
   title: {
@@ -344,15 +391,43 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
+    maxWidth: 430,
+    marginTop: spacing[3],
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.bodySmall,
     lineHeight: lineHeight.bodySmall,
     color: colors.textSecondary,
-    marginTop: spacing[4],
   },
 
   form: {
-    gap: spacing[5],
+    gap: spacing[6],
+  },
+
+  section: {
+    gap: spacing[4],
+    padding: spacing[5],
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
+
+  sectionHeading: {
+    gap: spacing[1],
+  },
+
+  sectionEyebrow: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.4,
+    color: colors.brass,
+  },
+
+  sectionTitle: {
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleSmall,
+    lineHeight: lineHeight.titleSmall,
+    color: colors.textPrimary,
   },
 
   field: {
@@ -362,64 +437,50 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontFamily: fontFamily.sansBold,
     fontSize: fontSize.micro,
-    letterSpacing: 1.4,
+    letterSpacing: 1.3,
     color: colors.brass,
   },
 
   input: {
-    height: 56,
-    backgroundColor: colors.surface,
+    minHeight: 54,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
     paddingHorizontal: spacing[4],
-
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.body,
     color: colors.textPrimary,
+  },
 
-    ...shadows.subtle,
+  inputDisabled: {
+    opacity: 0.55,
   },
 
   dateFields: {
     gap: spacing[4],
   },
 
-  dateNote: {
-    marginTop: -spacing[2],
+  currencyField: {
+    gap: spacing[2],
+  },
+
+  helperText: {
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.caption,
-    lineHeight: 18,
+    lineHeight: lineHeight.caption,
     color: colors.textMuted,
   },
 
-  currencyNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing[3],
-    backgroundColor: colors.tealSoft,
-    padding: spacing[4],
-    borderRadius: radius.md,
-    marginTop: spacing[6],
-  },
-
-  currencyNoteText: {
-    flex: 1,
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.caption,
-    lineHeight: 18,
-    color: colors.textSecondary,
-  },
-
   createButton: {
-    height: 58,
+    minHeight: 56,
+    marginTop: spacing[7],
     borderRadius: radius.md,
     backgroundColor: colors.brand,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[3],
-    marginTop: spacing[8],
     ...shadows.card,
   },
 
@@ -429,12 +490,22 @@ const styles = StyleSheet.create({
     color: colors.textInverse,
   },
 
+  ctaHint: {
+    marginTop: spacing[2],
+    paddingHorizontal: spacing[2],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    textAlign: 'center',
+    color: colors.textMuted,
+  },
+
   pressed: {
     opacity: 0.84,
   },
 
   disabled: {
-    opacity: 0.6,
+    opacity: 0.45,
   },
 
   bottomSpace: {

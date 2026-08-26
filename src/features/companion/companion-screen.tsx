@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import {
-  type PropsWithChildren,
   useEffect,
   useMemo,
   useRef,
+  type PropsWithChildren,
 } from 'react';
 import {
   AccessibilityInfo,
@@ -36,10 +36,7 @@ import {
   type CompanionSelection,
   type CompanionStopContext,
 } from '@/services/companion';
-import {
-  formatCalendarDateForDisplay,
-  type TripTimeZoneReason,
-} from '@/services/time-truth';
+import { formatCalendarDateForDisplay } from '@/services/time-truth';
 import {
   colors,
   fontFamily,
@@ -98,19 +95,6 @@ function stopIcon(
       return 'location-outline';
     default:
       return 'ellipse-outline';
-  }
-}
-
-function timeZoneFallbackCopy(reason: TripTimeZoneReason): string {
-  switch (reason) {
-    case 'ambiguous-destination-timezones':
-      return 'Live timing is not available across these destinations yet. Today’s plan stays in your saved order.';
-    case 'invalid-destination-timezone':
-      return 'Live timing is not available for this trip yet. Today’s plan stays in your saved order.';
-    case 'no-destination':
-      return 'Choose a destination to unlock live trip timing.';
-    default:
-      return 'Add destination details to unlock live trip timing. Today’s plan stays in your saved order.';
   }
 }
 
@@ -180,14 +164,6 @@ export function CompanionScreen() {
           {formatTripDate(workspace.trip.endDate)}
         </Text>
 
-        {selection.runtime.timeZone.certainty === 'fallback' && (
-          <TruthNotice
-            icon="time-outline"
-            body={timeZoneFallbackCopy(
-              selection.runtime.timeZone.reason,
-            )}
-          />
-        )}
         {selection.runtime.statusConflict && (
           <TruthNotice
             icon="shield-checkmark-outline"
@@ -243,45 +219,12 @@ function Upcoming({
         </Text>
         <View style={styles.brassRule} />
         <Text style={styles.darkBody}>
-          This trip is still ahead. Companion is showing preparation and first known context—not live travel state.
+          Finish the essentials and take a first look at the journey ahead.
         </Text>
       </View>
 
       {selection.displayDay && (
-        <Section
-          eyebrow="FIRST DAY"
-          title="The journey begins here"
-          meta={formatDayDate(selection.displayDay.date)}
-          action="Open Plan"
-          onAction={() => openRoute('/trip/[tripId]/plan')}
-        >
-          {selection.stopContexts.length === 0 ? (
-            <Empty
-              icon="calendar-outline"
-              title="Your first day is open"
-              body="Add a stop when the plan is known. An empty day is not treated as a problem."
-            />
-          ) : (
-            <View style={styles.list}>
-              {selection.stopContexts.slice(0, 3).map((context) => (
-                <CompactStop
-                  key={context.stop.id}
-                  context={context}
-                  onPress={() =>
-                    openRoute('/trip/[tripId]/plan', {
-                      stopId: context.stop.id,
-                    })
-                  }
-                />
-              ))}
-              {selection.stopContexts.length > 3 && (
-                <Text style={styles.moreText}>
-                  +{selection.stopContexts.length - 3} more in Plan
-                </Text>
-              )}
-            </View>
-          )}
-        </Section>
+        <FirstDayPreview selection={selection} openRoute={openRoute} />
       )}
 
       {selection.nextAccommodation && (
@@ -312,6 +255,68 @@ function Upcoming({
   );
 }
 
+function FirstDayPreview({
+  selection,
+  openRoute,
+}: {
+  selection: CompanionSelection;
+  openRoute: OpenRoute;
+}) {
+  if (!selection.displayDay) {
+    return null;
+  }
+
+  return (
+    <View style={styles.firstDayCard}>
+      <View style={styles.firstDayHeader}>
+        <View style={styles.flex}>
+          <Text style={styles.sectionEyebrow}>FIRST DAY</Text>
+          <Text style={styles.firstDayDate}>
+            {formatDayDate(selection.displayDay.date)}
+          </Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="View first day in Plan"
+          hitSlop={8}
+          onPress={() => openRoute('/trip/[tripId]/plan')}
+        >
+          <Text style={styles.sectionAction}>VIEW PLAN</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.firstDayBody}>
+        {selection.stopContexts.length === 0 ? (
+          <Empty
+            icon="calendar-outline"
+            title="Your first day is open"
+            body="Add a moment when you’re ready."
+          />
+        ) : (
+          <View style={styles.list}>
+            {selection.stopContexts.slice(0, 3).map((context) => (
+              <CompactStop
+                key={context.stop.id}
+                context={context}
+                onPress={() =>
+                  openRoute('/trip/[tripId]/plan', {
+                    stopId: context.stop.id,
+                  })
+                }
+              />
+            ))}
+            {selection.stopContexts.length > 3 && (
+              <Text style={styles.moreText}>
+                +{selection.stopContexts.length - 3} more moments in Plan
+              </Text>
+            )}
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
 function Active({
   selection,
   openRoute,
@@ -321,11 +326,11 @@ function Active({
 }) {
   if (!selection.displayDay) {
     return (
-      <Section eyebrow="TODAY" title="Today’s TripDay is unavailable">
+      <Section eyebrow="TODAY" title="Today’s plan is unavailable">
         <Empty
           icon="calendar-clear-outline"
-          title="Companion will not substitute another day"
-          body="The trip is active by date, but no TripDay exactly matches the resolved travel date."
+          title="Check your trip dates"
+          body="Today falls within this trip, but its itinerary could not be found."
         />
         <PrimaryButton
           label="Open Plan"
@@ -376,7 +381,7 @@ function Active({
       {!selection.timingReliable && selection.stopContexts.length > 0 && (
         <TruthNotice
           icon="reorder-three-outline"
-          body="Live now and next timing is not available yet. Today’s plan stays in your saved order."
+          body="Live now and next timing isn’t available yet. Today’s itinerary remains in plan order."
         />
       )}
       {selection.timingReliable &&
@@ -385,7 +390,7 @@ function Active({
         selection.stopContexts.length > 0 && (
           <TruthNotice
             icon="checkmark-done-outline"
-            body="No later timed stop is saved today. Untimed stops remain visible without being called current."
+            body="No later timed moment is saved today. Moments without a time remain visible without being called current."
           />
         )}
 
@@ -395,7 +400,7 @@ function Active({
         meta={
           selection.timingReliable && selection.localTime
             ? `${selection.localTime} in ${selection.runtime.timeZone.timeZone}`
-            : 'Canonical itinerary order'
+            : 'Plan order'
         }
         action="Full Plan"
         onAction={() => openRoute('/trip/[tripId]/plan')}
@@ -404,7 +409,7 @@ function Active({
           <Empty
             icon="sunny-outline"
             title="Nothing is planned for this day"
-            body="Companion has no stop to call current or next. The day remains open."
+            body="Companion has no moment to call current or next. The day remains open."
           />
         ) : (
           <View>
@@ -481,11 +486,11 @@ function Completed({
         <Text style={styles.darkEyebrow}>JOURNEY COMPLETE</Text>
         <Text style={styles.completeTitle}>This trip is no longer live.</Text>
         <Text style={styles.darkBody}>
-          Companion now shows saved history and real counts. It does not imply that a stop or stay is happening now.
+          Companion now shows your saved trip history. Nothing is presented as happening now.
         </Text>
         <View style={styles.summaryRow}>
           <Summary value={selection.summary.dayCount} label="DAYS" />
-          <Summary value={selection.summary.stopCount} label="STOPS" />
+          <Summary value={selection.summary.stopCount} label="MOMENTS" />
           <Summary value={selection.summary.bookingCount} label="BOOKINGS" />
         </View>
       </View>
@@ -502,7 +507,7 @@ function Completed({
             <Empty
               icon="book-outline"
               title="No final-day itinerary was recorded"
-              body="TravelOS keeps history honest and does not fill the day with inferred places."
+              body="No moments were added to this day."
             />
           ) : (
             <View style={styles.list}>
@@ -525,7 +530,7 @@ function Completed({
         <Text style={styles.sectionEyebrow}>AFTER TRAVEL</Text>
         <Text style={styles.futureTitle}>Memories and Travel Book</Text>
         <Text style={styles.futureBody}>
-          These experiences are planned, but are not implemented in this version.
+          Memories and Travel Book will help you relive this journey in a future update.
         </Text>
       </View>
       <ModuleActions openRoute={openRoute} />
@@ -539,7 +544,7 @@ function DateReview({ onPress }: { onPress: () => void }) {
       <Empty
         icon="alert-circle-outline"
         title="Live context is unavailable"
-        body="The saved range cannot determine a trip phase. No day or stop has been substituted."
+        body="The saved dates need attention before Companion can show the right day or moment."
       />
       <PrimaryButton label="Review Trip Details" onPress={onPress} />
     </Section>
@@ -803,7 +808,7 @@ function CompactStop({
           {context.stop.title}
         </Text>
         <Text style={styles.rowMeta}>
-          {context.stop.startTime ? `${context.stop.startTime} · ` : 'Untimed · '}
+          {context.stop.startTime ? `${context.stop.startTime} · ` : 'No time · '}
           {context.stop.type}
           {context.bookings.length > 0
             ? ` · ${context.bookings.length} linked ${context.bookings.length === 1 ? 'booking' : 'bookings'}`
@@ -956,15 +961,17 @@ function Readiness({
     title: string;
     body: string;
     ready: boolean;
+    action: 'ADD' | 'CONTINUE' | 'VIEW';
     route: CompanionPath;
   }> = [
     {
       icon: 'calendar-outline',
-      title: 'Itinerary',
-      body: `${readiness.populatedDayCount} of ${readiness.totalDayCount} days populated`,
+      title: 'Plan',
+      body: `${readiness.populatedDayCount} of ${readiness.totalDayCount} days planned`,
       ready:
         readiness.totalDayCount > 0 &&
         readiness.populatedDayCount === readiness.totalDayCount,
+      action: readiness.populatedDayCount > 0 ? 'CONTINUE' : 'ADD',
       route: '/trip/[tripId]/plan',
     },
     {
@@ -973,8 +980,9 @@ function Readiness({
       body:
         readiness.accommodationCount > 0
           ? `${readiness.accommodationCount} ${readiness.accommodationCount === 1 ? 'stay' : 'stays'} saved`
-          : 'No stay saved yet',
+          : 'Stay not added',
       ready: readiness.accommodationCount > 0,
+      action: readiness.accommodationCount > 0 ? 'VIEW' : 'ADD',
       route: '/trip/[tripId]/accommodation',
     },
     {
@@ -983,8 +991,9 @@ function Readiness({
       body:
         readiness.bookingCount > 0
           ? `${readiness.bookingCount} active ${readiness.bookingCount === 1 ? 'booking' : 'bookings'}`
-          : 'No active bookings saved',
+          : 'Bookings not added',
       ready: readiness.bookingCount > 0,
+      action: readiness.bookingCount > 0 ? 'VIEW' : 'ADD',
       route: '/trip/[tripId]/bookings',
     },
     {
@@ -993,57 +1002,66 @@ function Readiness({
       body:
         readiness.travelerCount > 0
           ? `${readiness.travelerCount} ${readiness.travelerCount === 1 ? 'traveler' : 'travelers'} added`
-          : 'No travelers added yet',
+          : 'Travelers not added',
       ready: readiness.travelerCount > 0,
+      action: readiness.travelerCount > 0 ? 'VIEW' : 'ADD',
       route: '/trip/[tripId]/travelers',
     },
     {
       icon: 'wallet-outline',
       title: 'Budget',
-      body: readiness.budgetConfigured
-        ? 'Planned budget configured'
-        : 'No planned budget yet',
+      body: readiness.budgetConfigured ? 'Budget set' : 'Budget not set',
       ready: readiness.budgetConfigured,
+      action: readiness.budgetConfigured ? 'VIEW' : 'ADD',
       route: '/trip/[tripId]/budget',
     },
   ];
+  const orderedRows = [...rows].sort(
+    (a, b) => Number(a.ready) - Number(b.ready),
+  );
 
   return (
-    <Section
-      eyebrow="PREPARATION"
-      title="Your saved trip shape"
-      meta="Optional modules stay neutral until you use them"
-    >
-      <View style={styles.list}>
-        {rows.map((row) => (
+    <View style={styles.readiness}>
+      <View style={styles.readinessHeader}>
+        <View>
+          <Text style={styles.readinessEyebrow}>BEFORE YOU GO</Text>
+          <Text style={styles.readinessTitle}>Trip readiness</Text>
+        </View>
+      </View>
+      <View style={styles.readinessList}>
+        {orderedRows.map((row, index) => (
           <Pressable
             key={row.title}
             accessibilityRole="button"
             accessibilityLabel={`Open ${row.title}. ${row.body}`}
-            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.readinessRow,
+              index < orderedRows.length - 1 && styles.readinessDivider,
+              pressed && styles.pressed,
+            ]}
             onPress={() => openRoute(row.route)}
           >
-            <View style={styles.rowIcon}>
-              <Ionicons name={row.icon} size={18} color={colors.teal} />
+            <View
+              style={[
+                styles.readinessIcon,
+                row.ready && styles.readinessIconReady,
+              ]}
+            >
+              <Ionicons
+                name={row.ready ? 'checkmark' : row.icon}
+                size={16}
+                color={row.ready ? colors.teal : colors.textMuted}
+              />
             </View>
             <View style={styles.flex}>
-              <Text style={styles.rowTitle}>{row.title}</Text>
-              <Text style={styles.rowMeta}>{row.body}</Text>
+              <Text style={styles.readinessRowTitle}>{row.title}</Text>
+              <Text style={styles.readinessRowMeta}>{row.body}</Text>
             </View>
-            <View style={[styles.state, row.ready && styles.stateReady]}>
-              <Text
-                style={[
-                  styles.stateText,
-                  row.ready && styles.stateTextReady,
-                ]}
-              >
-                {row.ready ? 'SAVED' : 'OPEN'}
-              </Text>
-            </View>
+            <Text style={styles.readinessAction}>{row.action}</Text>
           </Pressable>
         ))}
       </View>
-    </Section>
+    </View>
   );
 }
 
@@ -1349,6 +1367,35 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: '#D4C29F',
   },
+  firstDayCard: {
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+    ...shadows.subtle,
+  },
+  firstDayHeader: {
+    minHeight: 72,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[3],
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surfaceWarm,
+  },
+  firstDayDate: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodyLarge,
+    color: colors.textPrimary,
+  },
+  firstDayBody: {
+    padding: spacing[4],
+  },
   section: {
     padding: spacing[5],
     borderRadius: radius.xl,
@@ -1599,20 +1646,77 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.textSecondary,
   },
-  state: {
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[1],
-    borderRadius: radius.pill,
+  readiness: {
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+  },
+  readinessHeader: {
+    minHeight: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[3],
+    paddingHorizontal: spacing[4],
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surfaceWarm,
+  },
+  readinessEyebrow: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.3,
+    color: colors.brass,
+  },
+  readinessTitle: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.bodyLarge,
+    color: colors.textPrimary,
+  },
+  readinessList: {
+    paddingHorizontal: spacing[4],
+  },
+  readinessRow: {
+    minHeight: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+  readinessDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  readinessIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.backgroundSoft,
   },
-  stateReady: { backgroundColor: colors.tealSoft },
-  stateText: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 9,
-    letterSpacing: 0.7,
+  readinessIconReady: {
+    backgroundColor: colors.tealSoft,
+  },
+  readinessRowTitle: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.textPrimary,
+  },
+  readinessRowMeta: {
+    marginTop: 2,
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.micro,
     color: colors.textMuted,
   },
-  stateTextReady: { color: colors.teal },
+  readinessAction: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 9,
+    letterSpacing: 0.8,
+    color: colors.teal,
+  },
   empty: {
     padding: spacing[3],
     borderRadius: radius.md,
