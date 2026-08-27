@@ -9,16 +9,20 @@ import type {
 } from './trip-service';
 
 import {
-  accommodationContextsForDay,
-  splitAccommodationDateTime,
-  type AccommodationDayContext,
-} from './accommodation-details';
+  selectTripReadiness,
+  type TripReadinessSnapshot,
+} from './trip-readiness';
+
 import {
-  parseBookingTemporalValue,
-} from './booking-time';
+  accommodationContextsForDay,
+  type AccommodationDayContext
+} from './accommodation-details';
 import {
   bookingsLinkedToStop,
 } from './booking-stop-relationship';
+import {
+  parseBookingTemporalValue,
+} from './booking-time';
 import {
   calendarDayDistance,
   isCanonicalDateKey,
@@ -53,14 +57,8 @@ export interface CompanionStopContext {
   isMapped: boolean;
 }
 
-export interface CompanionReadiness {
-  accommodationCount: number;
-  bookingCount: number;
-  populatedDayCount: number;
-  totalDayCount: number;
-  travelerCount: number;
-  budgetConfigured: boolean;
-}
+export type CompanionReadiness =
+  TripReadinessSnapshot;
 
 export interface CompanionSummary {
   dayCount: number;
@@ -92,25 +90,6 @@ export interface CompanionSelection {
   relevantUnlinkedBookings: Booking[];
   readiness: CompanionReadiness;
   summary: CompanionSummary;
-}
-
-function canonicalTripDays(
-  workspace: TripWorkspace,
-): TripDay[] {
-  return workspace.days
-    .filter(
-      (day) =>
-        day.tripId === workspace.trip.id &&
-        isCanonicalDateKey(day.date) &&
-        day.date >= workspace.trip.startDate &&
-        day.date <= workspace.trip.endDate,
-    )
-    .sort(
-      (left, right) =>
-        left.date.localeCompare(right.date) ||
-        left.dayNumber - right.dayNumber ||
-        left.id.localeCompare(right.id),
-    );
 }
 
 function stopsForDay(
@@ -397,7 +376,10 @@ export function selectCompanion(
     workspace.days,
     clock,
   );
-  const canonicalDays = canonicalTripDays(workspace);
+  const {
+    canonicalDays,
+    readiness,
+  } = selectTripReadiness(workspace);
   const mode: CompanionMode =
     runtime.phase === 'unknown'
       ? 'date-review'
@@ -465,12 +447,6 @@ export function selectCompanion(
         displayDay.date,
       )
     : [];
-  const populatedDayIds = new Set(
-    workspace.stops
-      .filter((stop) => stop.tripId === workspace.trip.id)
-      .map((stop) => stop.dayId),
-  );
-
   return {
     mode,
     runtime,
@@ -516,20 +492,7 @@ export function selectCompanion(
       workspace.trip.endDate,
       timingReliable,
     ),
-    readiness: {
-      accommodationCount: workspace.accommodations.length,
-      bookingCount: workspace.bookings.filter(
-        (booking) => booking.status !== 'cancelled',
-      ).length,
-      populatedDayCount: canonicalDays.filter((day) =>
-        populatedDayIds.has(day.id),
-      ).length,
-      totalDayCount: canonicalDays.length,
-      travelerCount: workspace.travelers.length,
-      budgetConfigured:
-        workspace.budget !== null &&
-        typeof workspace.budget.plannedAmount === 'number',
-    },
+    readiness,
     summary: {
       dayCount: canonicalDays.length,
       stopCount: workspace.stops.length,
