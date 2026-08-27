@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import {
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -72,7 +74,7 @@ export default function ProfileScreen() {
           </Text>
 
           <Text style={styles.identityBody}>
-            Personal preferences, travel style and smarter recommendations will live here.
+            Your Travel DNA keeps the preferences you explicitly choose for how you like to travel.
           </Text>
         </View>
       </View>
@@ -123,10 +125,11 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.settingsCard}>
-        <FutureRow
-          icon="options-outline"
-          title="Travel preferences"
-          body="Interests, pace, budget style and the way you like to travel."
+        <ActiveRow
+          icon="finger-print-outline"
+          title="Travel DNA"
+          body="Interests, pace, travel style, budget style, daily rhythm and typical travel party."
+          onPress={() => router.push('/travel-dna')}
         />
 
         <View style={styles.rowDivider} />
@@ -201,6 +204,54 @@ function Stat({
   );
 }
 
+function ActiveRow({
+  icon,
+  title,
+  body,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  body: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${title}`}
+      style={({ pressed }) => [
+        styles.settingsRow,
+        pressed && styles.pressed,
+      ]}
+      onPress={onPress}
+    >
+      <View style={styles.activeIcon}>
+        <Ionicons
+          name={icon}
+          size={20}
+          color={colors.brand}
+        />
+      </View>
+
+      <View style={styles.futureCopy}>
+        <Text style={styles.futureTitle}>
+          {title}
+        </Text>
+
+        <Text style={styles.futureBody}>
+          {body}
+        </Text>
+      </View>
+
+      <Ionicons
+        name="chevron-forward"
+        size={20}
+        color={colors.textMuted}
+      />
+    </Pressable>
+  );
+}
+
 function FutureRow({
   icon,
   title,
@@ -211,7 +262,7 @@ function FutureRow({
   body: string;
 }) {
   return (
-    <View style={styles.futureRow}>
+    <View style={styles.settingsRow}>
       <View style={styles.futureIcon}>
         <Ionicons
           name={icon}
@@ -378,11 +429,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
 
-  futureRow: {
+  settingsRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing[3],
     paddingVertical: spacing[4],
+  },
+
+  pressed: {
+    opacity: 0.72,
+  },
+
+  activeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brandSoft,
   },
 
   futureIcon: {

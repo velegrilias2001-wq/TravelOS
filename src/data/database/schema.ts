@@ -100,6 +100,40 @@ CREATE TABLE IF NOT EXISTS trip_travelers (
     ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS travel_dna (
+  singleton_key INTEGER PRIMARY KEY NOT NULL
+    CHECK (singleton_key = 1),
+  id TEXT NOT NULL UNIQUE,
+  pace TEXT
+    CHECK (
+      pace IS NULL OR
+      pace IN ('slow', 'balanced', 'full')
+    ),
+  interests_json TEXT NOT NULL DEFAULT '[]',
+  travel_style TEXT
+    CHECK (
+      travel_style IS NULL OR
+      travel_style IN ('local', 'iconic', 'mix')
+    ),
+  budget_style TEXT
+    CHECK (
+      budget_style IS NULL OR
+      budget_style IN ('value', 'comfortable', 'premium')
+    ),
+  daily_rhythm TEXT
+    CHECK (
+      daily_rhythm IS NULL OR
+      daily_rhythm IN ('morning', 'flexible', 'night')
+    ),
+  typical_party TEXT
+    CHECK (
+      typical_party IS NULL OR
+      typical_party IN ('solo', 'couple', 'friends', 'family')
+    ),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS bookings (
   id TEXT PRIMARY KEY NOT NULL,
   trip_id TEXT NOT NULL,

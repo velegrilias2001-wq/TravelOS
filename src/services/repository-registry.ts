@@ -1,12 +1,13 @@
 import {
-    accommodationRepository,
-    bookingRepository,
-    budgetRepository,
-    memoryRepository,
-    travelBookRepository,
-    travelerRepository,
-    tripRepository,
-    tripRuntimeStateRepository,
+  accommodationRepository,
+  bookingRepository,
+  budgetRepository,
+  memoryRepository,
+  travelBookRepository,
+  travelDNARepository,
+  travelerRepository,
+  tripRepository,
+  tripRuntimeStateRepository,
 } from '@/data/repositories';
 
 export const repositories = {
@@ -16,8 +17,9 @@ export const repositories = {
   budget: budgetRepository,
   traveler: travelerRepository,
   memory: memoryRepository,
-  runtimeState: tripRuntimeStateRepository,
   travelBook: travelBookRepository,
+  travelDNA: travelDNARepository,
+  runtimeState: tripRuntimeStateRepository,
 } as const;
 
 export type RepositoryRegistry = typeof repositories;

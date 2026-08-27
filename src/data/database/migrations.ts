@@ -6,7 +6,7 @@ import {
   reconcileMemoryRelationships,
 } from './memory-integrity-migration';
 
-export const DATABASE_VERSION = 7;
+export const DATABASE_VERSION = 8;
 
 interface UserVersionRow {
   user_version: number;
@@ -936,6 +936,69 @@ export async function migrateDatabase(
         await transaction.execAsync(
           'PRAGMA user_version = 7;',
         );
+      },
+    );
+  }
+
+  /**
+   * Version 8
+   * Persist one explicit, editable local Travel DNA
+   * profile. V1 stores only user-selected preferences;
+   * no inferred or AI-generated traits are created.
+   */
+  if (currentVersion < 8) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await transaction.execAsync(`
+          CREATE TABLE IF NOT EXISTS travel_dna (
+            singleton_key INTEGER PRIMARY KEY NOT NULL
+              CHECK (singleton_key = 1),
+            id TEXT NOT NULL UNIQUE,
+            pace TEXT
+              CHECK (
+                pace IS NULL OR
+                pace IN ('slow', 'balanced', 'full')
+              ),
+            interests_json TEXT NOT NULL DEFAULT '[]',
+            travel_style TEXT
+              CHECK (
+                travel_style IS NULL OR
+                travel_style IN ('local', 'iconic', 'mix')
+              ),
+            budget_style TEXT
+              CHECK (
+                budget_style IS NULL OR
+                budget_style IN (
+                  'value',
+                  'comfortable',
+                  'premium'
+                )
+              ),
+            daily_rhythm TEXT
+              CHECK (
+                daily_rhythm IS NULL OR
+                daily_rhythm IN (
+                  'morning',
+                  'flexible',
+                  'night'
+                )
+              ),
+            typical_party TEXT
+              CHECK (
+                typical_party IS NULL OR
+                typical_party IN (
+                  'solo',
+                  'couple',
+                  'friends',
+                  'family'
+                )
+              ),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          );
+
+          PRAGMA user_version = 8;
+        `);
       },
     );
   }

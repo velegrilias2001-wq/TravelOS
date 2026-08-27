@@ -1390,12 +1390,7 @@ test(
 
       assert.equal(
         version.user_version,
-        7,
-      );
-
-      assert.equal(
         DATABASE_VERSION,
-        7,
       );
 
       const validMemory =
