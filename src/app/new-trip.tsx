@@ -16,6 +16,10 @@ import {
 
 import { CalendarDateField } from '@/components/ui/native-date-time-fields';
 import { Screen } from '@/components/ui/screen';
+import type {
+  TripIntent,
+  TripPace,
+} from '@/domain/entities';
 import {
   DestinationPickerField,
 } from '@/features/destinations/destination-picker-field';
@@ -34,6 +38,73 @@ import {
   spacing,
 } from '@/theme';
 
+interface ChoiceOption<Value extends string> {
+  value: Value;
+  label: string;
+  description?: string;
+}
+
+const INTENT_OPTIONS: ChoiceOption<TripIntent>[] = [
+  {
+    value: 'relax',
+    label: 'Relax',
+  },
+  {
+    value: 'explore',
+    label: 'Explore',
+  },
+  {
+    value: 'food',
+    label: 'Food',
+  },
+  {
+    value: 'nature',
+    label: 'Nature',
+  },
+  {
+    value: 'event',
+    label: 'Event',
+  },
+  {
+    value: 'social',
+    label: 'Social',
+  },
+  {
+    value: 'romantic',
+    label: 'Romantic',
+  },
+  {
+    value: 'family',
+    label: 'Family',
+  },
+  {
+    value: 'work_leisure',
+    label: 'Work + Leisure',
+  },
+  {
+    value: 'other',
+    label: 'Other',
+  },
+];
+
+const PACE_OPTIONS: ChoiceOption<TripPace>[] = [
+  {
+    value: 'slow',
+    label: 'Slow',
+    description: 'More breathing room.',
+  },
+  {
+    value: 'balanced',
+    label: 'Balanced',
+    description: 'A mix of plans and space.',
+  },
+  {
+    value: 'full',
+    label: 'Full',
+    description: 'Make the most of each day.',
+  },
+];
+
 export default function NewTripScreen() {
   const router = useRouter();
 
@@ -46,6 +117,10 @@ export default function NewTripScreen() {
     useState<DestinationSelection | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [intent, setIntent] =
+    useState<TripIntent | undefined>();
+  const [pace, setPace] =
+    useState<TripPace | undefined>();
   const [currency, setCurrency] = useState('EUR');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -66,6 +141,26 @@ export default function NewTripScreen() {
         .replace(/[^a-z]/gi, '')
         .toUpperCase()
         .slice(0, 3),
+    );
+  };
+
+  const toggleIntent = (
+    value: TripIntent,
+  ) => {
+    setIntent((current) =>
+      current === value
+        ? undefined
+        : value,
+    );
+  };
+
+  const togglePace = (
+    value: TripPace,
+  ) => {
+    setPace((current) =>
+      current === value
+        ? undefined
+        : value,
     );
   };
 
@@ -94,6 +189,8 @@ export default function NewTripScreen() {
           startDate,
           endDate,
           accountingCurrency: currency,
+          intent,
+          pace,
         },
         {
           tripId: () => Crypto.randomUUID(),
@@ -173,7 +270,7 @@ export default function NewTripScreen() {
           </Text>
 
           <Text style={styles.subtitle}>
-            Pick a place and your dates. You can shape the rest once the trip is yours.
+            Pick a place and your dates, then add a little context about the kind of trip you want.
           </Text>
         </View>
 
@@ -210,6 +307,148 @@ export default function NewTripScreen() {
                 disabled={isSaving}
                 onChange={setEndDate}
               />
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionEyebrow}>
+                WHY THIS TRIP
+              </Text>
+              <Text style={styles.sectionTitle}>
+                Shape the journey
+              </Text>
+              <Text style={styles.sectionDescription}>
+                Optional. Choose what matters most for this trip and how full you want the days to feel.
+              </Text>
+            </View>
+
+            <View style={styles.choiceGroup}>
+              <Text style={styles.fieldLabel}>
+                PRIMARY INTENT · OPTIONAL
+              </Text>
+
+              <View style={styles.intentGrid}>
+                {INTENT_OPTIONS.map(
+                  (option) => {
+                    const selected =
+                      intent === option.value;
+
+                    return (
+                      <Pressable
+                        key={option.value}
+                        accessibilityRole="button"
+                        accessibilityState={{
+                          selected,
+                        }}
+                        accessibilityLabel={`Trip intent: ${option.label}`}
+                        disabled={isSaving}
+                        onPress={() =>
+                          toggleIntent(option.value)
+                        }
+                        style={({ pressed }) => [
+                          styles.intentChip,
+                          selected &&
+                            styles.choiceSelected,
+                          pressed &&
+                            styles.pressed,
+                          isSaving &&
+                            styles.inputDisabled,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.intentChipText,
+                            selected &&
+                              styles.choiceSelectedText,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  },
+                )}
+              </View>
+            </View>
+
+            <View style={styles.choiceGroup}>
+              <Text style={styles.fieldLabel}>
+                TRIP PACE · OPTIONAL
+              </Text>
+
+              <View style={styles.paceOptions}>
+                {PACE_OPTIONS.map(
+                  (option) => {
+                    const selected =
+                      pace === option.value;
+
+                    return (
+                      <Pressable
+                        key={option.value}
+                        accessibilityRole="button"
+                        accessibilityState={{
+                          selected,
+                        }}
+                        accessibilityLabel={`Trip pace: ${option.label}`}
+                        disabled={isSaving}
+                        onPress={() =>
+                          togglePace(option.value)
+                        }
+                        style={({ pressed }) => [
+                          styles.paceCard,
+                          selected &&
+                            styles.choiceSelected,
+                          pressed &&
+                            styles.pressed,
+                          isSaving &&
+                            styles.inputDisabled,
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.radioOuter,
+                            selected &&
+                              styles.radioOuterSelected,
+                          ]}
+                        >
+                          {selected ? (
+                            <View
+                              style={
+                                styles.radioInner
+                              }
+                            />
+                          ) : null}
+                        </View>
+
+                        <View
+                          style={
+                            styles.paceCopy
+                          }
+                        >
+                          <Text
+                            style={[
+                              styles.paceLabel,
+                              selected &&
+                                styles.choiceSelectedText,
+                            ]}
+                          >
+                            {option.label}
+                          </Text>
+
+                          <Text
+                            style={
+                              styles.paceDescription
+                            }
+                          >
+                            {option.description}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    );
+                  },
+                )}
+              </View>
             </View>
           </View>
 
@@ -430,6 +669,14 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
 
+  sectionDescription: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textSecondary,
+  },
+
   field: {
     gap: spacing[2],
   },
@@ -459,6 +706,97 @@ const styles = StyleSheet.create({
 
   dateFields: {
     gap: spacing[4],
+  },
+
+  choiceGroup: {
+    gap: spacing[3],
+  },
+
+  intentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+  },
+
+  intentChip: {
+    minHeight: 42,
+    justifyContent: 'center',
+    paddingHorizontal: spacing[4],
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+
+  intentChipText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+  },
+
+  choiceSelected: {
+    borderColor: colors.brand,
+    backgroundColor: colors.brandSoft,
+  },
+
+  choiceSelectedText: {
+    color: colors.brand,
+  },
+
+  paceOptions: {
+    gap: spacing[2],
+  },
+
+  paceCard: {
+    minHeight: 66,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.textMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  radioOuterSelected: {
+    borderColor: colors.brand,
+  },
+
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: radius.pill,
+    backgroundColor: colors.brand,
+  },
+
+  paceCopy: {
+    flex: 1,
+    gap: spacing[1],
+  },
+
+  paceLabel: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+  },
+
+  paceDescription: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textMuted,
   },
 
   currencyField: {

@@ -7,6 +7,23 @@ export type TripStatus =
   | 'completed'
   | 'archived';
 
+export type TripIntent =
+  | 'relax'
+  | 'explore'
+  | 'food'
+  | 'nature'
+  | 'event'
+  | 'social'
+  | 'romantic'
+  | 'family'
+  | 'work_leisure'
+  | 'other';
+
+export type TripPace =
+  | 'slow'
+  | 'balanced'
+  | 'full';
+
 export interface TripDestination {
   id: string;
   name: string;
@@ -34,6 +51,22 @@ export interface Trip {
    * calendar dates and explicit timezone truth, never from this field.
    */
   status: TripStatus;
+
+  /**
+   * Primary purpose for this specific trip.
+   *
+   * Trip Intent is explicit and trip-specific.
+   * It is not inferred from the traveller's global Travel DNA.
+   */
+  intent?: TripIntent;
+
+  /**
+   * Preferred pace for this specific trip.
+   *
+   * This is intentionally separate from the traveller's
+   * global Travel DNA pace.
+   */
+  pace?: TripPace;
 
   destinations: TripDestination[];
 

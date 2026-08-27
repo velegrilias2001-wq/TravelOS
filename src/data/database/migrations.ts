@@ -6,7 +6,7 @@ import {
   reconcileMemoryRelationships,
 } from './memory-integrity-migration';
 
-export const DATABASE_VERSION = 8;
+export const DATABASE_VERSION = 9;
 
 interface UserVersionRow {
   user_version: number;
@@ -999,6 +999,74 @@ export async function migrateDatabase(
 
           PRAGMA user_version = 8;
         `);
+      },
+    );
+  }
+
+  /**
+   * Version 9
+   * Persist explicit, trip-specific intent and pace.
+   *
+   * Existing trips keep both fields unset. Fresh installs
+   * already receive the columns from DATABASE_SCHEMA, so
+   * column checks keep this migration safe in both paths.
+   */
+  if (currentVersion < 9) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        const columns =
+          await transaction.getAllAsync<TableInfoRow>(
+            'PRAGMA table_info(trips);',
+          );
+
+        const hasIntent = columns.some(
+          (column) => column.name === 'intent',
+        );
+
+        if (!hasIntent) {
+          await transaction.execAsync(`
+            ALTER TABLE trips
+            ADD COLUMN intent TEXT
+              CHECK (
+                intent IS NULL OR
+                intent IN (
+                  'relax',
+                  'explore',
+                  'food',
+                  'nature',
+                  'event',
+                  'social',
+                  'romantic',
+                  'family',
+                  'work_leisure',
+                  'other'
+                )
+              );
+          `);
+        }
+
+        const hasPace = columns.some(
+          (column) => column.name === 'pace',
+        );
+
+        if (!hasPace) {
+          await transaction.execAsync(`
+            ALTER TABLE trips
+            ADD COLUMN pace TEXT
+              CHECK (
+                pace IS NULL OR
+                pace IN (
+                  'slow',
+                  'balanced',
+                  'full'
+                )
+              );
+          `);
+        }
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 9;',
+        );
       },
     );
   }

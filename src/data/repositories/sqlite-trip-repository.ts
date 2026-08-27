@@ -4,6 +4,8 @@ import { travelOSDatabase } from '../database/expo-sqlite-database';
 import type {
   Trip,
   TripId,
+  TripIntent,
+  TripPace,
   TripStatus,
 } from '../../domain/entities/trip';
 
@@ -32,6 +34,8 @@ interface TripRow {
   id: string;
   title: string;
   status: string;
+  intent: string | null;
+  pace: string | null;
   start_date: string;
   end_date: string;
   accounting_currency: string;
@@ -177,6 +181,14 @@ export class SQLiteTripRepository
       id: row.id,
       title: row.title,
       status: row.status as TripStatus,
+
+      intent:
+        (row.intent as TripIntent | null) ??
+        undefined,
+
+      pace:
+        (row.pace as TripPace | null) ??
+        undefined,
 
       destinations,
 

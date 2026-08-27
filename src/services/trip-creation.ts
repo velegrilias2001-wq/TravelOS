@@ -1,10 +1,17 @@
-import type { Trip } from '@/domain/entities';
+import type {
+  Trip,
+  TripIntent,
+  TripPace,
+} from '@/domain/entities';
 
 import {
   applyDestinationSelection,
   type DestinationSelection,
 } from './destination-authoring';
-import { validateCalendarDateRange } from './time-truth';
+
+import {
+  validateCalendarDateRange,
+} from './time-truth';
 
 export interface NewTripInput {
   title: string;
@@ -12,6 +19,8 @@ export interface NewTripInput {
   startDate: string;
   endDate: string;
   accountingCurrency: string;
+  intent?: TripIntent;
+  pace?: TripPace;
 }
 
 export interface NewTripIdentityFactory {
@@ -19,14 +28,36 @@ export interface NewTripIdentityFactory {
   destinationId(): string;
 }
 
+const TRIP_INTENTS: TripIntent[] = [
+  'relax',
+  'explore',
+  'food',
+  'nature',
+  'event',
+  'social',
+  'romantic',
+  'family',
+  'work_leisure',
+  'other',
+];
+
+const TRIP_PACES: TripPace[] = [
+  'slow',
+  'balanced',
+  'full',
+];
+
 export function buildNewTrip(
   input: NewTripInput,
   identities: NewTripIdentityFactory,
   timestamp: string,
 ): Trip {
   const title = input.title.trim();
+
   const accountingCurrency =
-    input.accountingCurrency.trim().toUpperCase();
+    input.accountingCurrency
+      .trim()
+      .toUpperCase();
 
   if (!title) {
     throw new Error(
@@ -39,9 +70,29 @@ export function buildNewTrip(
     input.endDate,
   );
 
-  if (!/^[A-Z]{3}$/.test(accountingCurrency)) {
+  if (
+    !/^[A-Z]{3}$/.test(accountingCurrency)
+  ) {
     throw new Error(
       'Accounting currency must be a three-letter code',
+    );
+  }
+
+  if (
+    input.intent !== undefined &&
+    !TRIP_INTENTS.includes(input.intent)
+  ) {
+    throw new Error(
+      'Trip intent is not supported',
+    );
+  }
+
+  if (
+    input.pace !== undefined &&
+    !TRIP_PACES.includes(input.pace)
+  ) {
+    throw new Error(
+      'Trip pace is not supported',
     );
   }
 
@@ -49,6 +100,8 @@ export function buildNewTrip(
     id: identities.tripId(),
     title,
     status: 'planned',
+    intent: input.intent,
+    pace: input.pace,
     destinations: [
       applyDestinationSelection(
         identities.destinationId(),

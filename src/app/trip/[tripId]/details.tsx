@@ -16,6 +16,8 @@ import { CalendarDateField } from '@/components/ui/native-date-time-fields';
 import { Screen } from '@/components/ui/screen';
 import { UtilityScreenHeader } from '@/components/ui/utility-screen';
 import type {
+  TripIntent,
+  TripPace,
   TripStatus,
 } from '@/domain/entities';
 import {
@@ -69,6 +71,46 @@ const STATUS_OPTIONS: Array<{
   },
 ];
 
+interface ChoiceOption<Value extends string> {
+  value: Value;
+  label: string;
+  description?: string;
+}
+
+const INTENT_OPTIONS: ChoiceOption<TripIntent>[] = [
+  { value: 'relax', label: 'Relax' },
+  { value: 'explore', label: 'Explore' },
+  { value: 'food', label: 'Food' },
+  { value: 'nature', label: 'Nature' },
+  { value: 'event', label: 'Event' },
+  { value: 'social', label: 'Social' },
+  { value: 'romantic', label: 'Romantic' },
+  { value: 'family', label: 'Family' },
+  {
+    value: 'work_leisure',
+    label: 'Work + Leisure',
+  },
+  { value: 'other', label: 'Other' },
+];
+
+const PACE_OPTIONS: ChoiceOption<TripPace>[] = [
+  {
+    value: 'slow',
+    label: 'Slow',
+    description: 'More breathing room.',
+  },
+  {
+    value: 'balanced',
+    label: 'Balanced',
+    description: 'A mix of plans and space.',
+  },
+  {
+    value: 'full',
+    label: 'Full',
+    description: 'Make the most of each day.',
+  },
+];
+
 export default function TripDetailsScreen() {
   const router = useRouter();
   const { workspace, actions } =
@@ -102,6 +144,14 @@ export default function TripDetailsScreen() {
     useState(trip.accountingCurrency);
   const [status, setStatus] =
     useState<TripStatus>(trip.status);
+  const [intent, setIntent] =
+    useState<TripIntent | undefined>(
+      trip.intent,
+    );
+  const [pace, setPace] =
+    useState<TripPace | undefined>(
+      trip.pace,
+    );
   const [isSaving, setIsSaving] =
     useState(false);
   const [isDeleting, setIsDeleting] =
@@ -189,6 +239,8 @@ export default function TripDetailsScreen() {
         endDate,
         accountingCurrency: cleanCurrency,
         status,
+        intent: intent ?? null,
+        pace: pace ?? null,
       });
 
       setTitle(cleanTitle);
@@ -376,6 +428,143 @@ export default function TripDetailsScreen() {
             })}
           </View>
 
+        </View>
+
+        <SectionHeader
+          eyebrow="TRIP CHARACTER"
+          title="Intent & pace"
+        />
+
+        <View style={styles.card}>
+          <Text style={styles.fieldLabel}>
+            PRIMARY INTENT · OPTIONAL
+          </Text>
+
+          <Text style={styles.choiceHelp}>
+            What matters most for this trip?
+          </Text>
+
+          <View style={styles.intentGrid}>
+            {INTENT_OPTIONS.map((option) => {
+              const selected =
+                intent === option.value;
+
+              return (
+                <Pressable
+                  key={option.value}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`Trip intent: ${option.label}`}
+                  disabled={isSaving || isDeleting}
+                  style={({ pressed }) => [
+                    styles.intentChoice,
+                    selected &&
+                      styles.intentChoiceSelected,
+                    pressed && styles.pressed,
+                    (isSaving || isDeleting) &&
+                      styles.disabled,
+                  ]}
+                  onPress={() => {
+                    setShowSavedNotice(false);
+                    setIntent((current) =>
+                      current === option.value
+                        ? undefined
+                        : option.value,
+                    );
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.intentChoiceText,
+                      selected &&
+                        styles.intentChoiceTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={styles.divider} />
+
+          <Text style={styles.fieldLabel}>
+            TRIP PACE · OPTIONAL
+          </Text>
+
+          <Text style={styles.choiceHelp}>
+            How full should the days feel?
+          </Text>
+
+          <View style={styles.paceOptions}>
+            {PACE_OPTIONS.map((option) => {
+              const selected =
+                pace === option.value;
+
+              return (
+                <Pressable
+                  key={option.value}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`Trip pace: ${option.label}`}
+                  disabled={isSaving || isDeleting}
+                  style={({ pressed }) => [
+                    styles.paceChoice,
+                    selected &&
+                      styles.paceChoiceSelected,
+                    pressed && styles.pressed,
+                    (isSaving || isDeleting) &&
+                      styles.disabled,
+                  ]}
+                  onPress={() => {
+                    setShowSavedNotice(false);
+                    setPace((current) =>
+                      current === option.value
+                        ? undefined
+                        : option.value,
+                    );
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.choiceRadio,
+                      selected &&
+                        styles.choiceRadioSelected,
+                    ]}
+                  >
+                    {selected ? (
+                      <View
+                        style={styles.choiceRadioDot}
+                      />
+                    ) : null}
+                  </View>
+
+                  <View style={styles.paceChoiceCopy}>
+                    <Text
+                      style={[
+                        styles.paceChoiceTitle,
+                        selected &&
+                          styles.paceChoiceTitleSelected,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+
+                    <Text
+                      style={styles.paceChoiceBody}
+                    >
+                      {option.description}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.choiceFootnote}>
+            Tap the selected option again to leave it unset.
+          </Text>
         </View>
 
         <SectionHeader
@@ -827,6 +1016,107 @@ const styles = StyleSheet.create({
   },
   statusChoiceBodySelected: {
     color: 'rgba(255,255,255,0.72)',
+  },
+  choiceHelp: {
+    marginTop: spacing[2],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textSecondary,
+  },
+  intentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+    marginTop: spacing[3],
+  },
+  intentChoice: {
+    minHeight: 42,
+    paddingHorizontal: spacing[4],
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  intentChoiceSelected: {
+    borderColor: colors.brand,
+    backgroundColor: colors.brandSoft,
+  },
+  intentChoiceText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+  },
+  intentChoiceTextSelected: {
+    color: colors.brand,
+  },
+  paceOptions: {
+    gap: spacing[2],
+    marginTop: spacing[3],
+  },
+  paceChoice: {
+    minHeight: 66,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceWarm,
+  },
+  paceChoiceSelected: {
+    borderColor: colors.brand,
+    backgroundColor: colors.brandSoft,
+  },
+  choiceRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.textMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  choiceRadioSelected: {
+    borderColor: colors.brand,
+  },
+  choiceRadioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: radius.pill,
+    backgroundColor: colors.brand,
+  },
+  paceChoiceCopy: {
+    flex: 1,
+  },
+  paceChoiceTitle: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+  },
+  paceChoiceTitleSelected: {
+    color: colors.brand,
+  },
+  paceChoiceBody: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textMuted,
+  },
+  choiceFootnote: {
+    marginTop: spacing[3],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.micro,
+    lineHeight: lineHeight.micro,
+    color: colors.textMuted,
+  },
+  pressed: {
+    opacity: 0.84,
   },
   destinationAfter: {
     marginTop: spacing[5],

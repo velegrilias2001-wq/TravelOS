@@ -1,6 +1,8 @@
 import type {
   Trip,
   TripDestination,
+  TripIntent,
+  TripPace,
   TripStatus,
 } from '@/domain/entities';
 
@@ -29,7 +31,33 @@ export interface TripDetailsInput {
   endDate: string;
   accountingCurrency: string;
   status: TripStatus;
+
+  /**
+   * undefined means "leave the current value unchanged".
+   * null explicitly clears the trip-specific preference.
+   */
+  intent?: TripIntent | null;
+  pace?: TripPace | null;
 }
+
+export const TRIP_INTENTS: TripIntent[] = [
+  'relax',
+  'explore',
+  'food',
+  'nature',
+  'event',
+  'social',
+  'romantic',
+  'family',
+  'work_leisure',
+  'other',
+];
+
+export const TRIP_PACES: TripPace[] = [
+  'slow',
+  'balanced',
+  'full',
+];
 
 const TRIP_STATUSES: TripStatus[] = [
   'draft',
@@ -84,6 +112,26 @@ export function buildUpdatedTrip(
   if (!TRIP_STATUSES.includes(input.status)) {
     throw new Error(
       'Trip status is not supported',
+    );
+  }
+
+  if (
+    input.intent !== undefined &&
+    input.intent !== null &&
+    !TRIP_INTENTS.includes(input.intent)
+  ) {
+    throw new Error(
+      'Trip intent is not supported',
+    );
+  }
+
+  if (
+    input.pace !== undefined &&
+    input.pace !== null &&
+    !TRIP_PACES.includes(input.pace)
+  ) {
+    throw new Error(
+      'Trip pace is not supported',
     );
   }
 
@@ -165,9 +213,21 @@ export function buildUpdatedTrip(
     );
   }
 
+  const intent =
+    input.intent === undefined
+      ? trip.intent
+      : input.intent ?? undefined;
+
+  const pace =
+    input.pace === undefined
+      ? trip.pace
+      : input.pace ?? undefined;
+
   return {
     ...trip,
     title,
+    intent,
+    pace,
     destinations,
     startDate: input.startDate,
     endDate: input.endDate,

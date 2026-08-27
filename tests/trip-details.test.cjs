@@ -36,6 +36,8 @@ function makeTrip(overrides = {}) {
     id: 'trip-details-1',
     title: 'Original journey',
     status: 'planned',
+    intent: 'relax',
+    pace: 'slow',
     destinations: [
       {
         id: 'destination-1',
@@ -78,6 +80,8 @@ function makeInput(overrides = {}) {
     endDate: '2026-09-12',
     accountingCurrency: 'usd',
     status: 'completed',
+    intent: 'explore',
+    pace: 'balanced',
     ...overrides,
   };
 }
@@ -131,6 +135,8 @@ test(
     assert.equal(updated.endDate, '2026-09-12');
     assert.equal(updated.accountingCurrency, 'USD');
     assert.equal(updated.status, 'completed');
+    assert.equal(updated.intent, 'explore');
+    assert.equal(updated.pace, 'balanced');
     assert.equal(updated.updatedAt, UPDATED_AT);
     assert.deepEqual(
       updated.destinations.map(
@@ -220,6 +226,83 @@ test(
           UPDATED_AT,
         ),
       /location-aware replacement/i,
+    );
+  },
+);
+
+test(
+  'trip detail updates preserve, change and explicitly clear trip intent and pace',
+  () => {
+    const trip = makeTrip();
+
+    const preserved = buildUpdatedTrip(
+      trip,
+      makeInput({
+        accountingCurrency: 'EUR',
+        intent: undefined,
+        pace: undefined,
+      }),
+      false,
+      UPDATED_AT,
+    );
+
+    assert.equal(preserved.intent, 'relax');
+    assert.equal(preserved.pace, 'slow');
+
+    const changed = buildUpdatedTrip(
+      trip,
+      makeInput({
+        accountingCurrency: 'EUR',
+        intent: 'nature',
+        pace: 'full',
+      }),
+      false,
+      UPDATED_AT,
+    );
+
+    assert.equal(changed.intent, 'nature');
+    assert.equal(changed.pace, 'full');
+
+    const cleared = buildUpdatedTrip(
+      trip,
+      makeInput({
+        accountingCurrency: 'EUR',
+        intent: null,
+        pace: null,
+      }),
+      false,
+      UPDATED_AT,
+    );
+
+    assert.equal(cleared.intent, undefined);
+    assert.equal(cleared.pace, undefined);
+
+    assert.throws(
+      () =>
+        buildUpdatedTrip(
+          trip,
+          makeInput({
+            accountingCurrency: 'EUR',
+            intent: 'impossible',
+          }),
+          false,
+          UPDATED_AT,
+        ),
+      /trip intent is not supported/i,
+    );
+
+    assert.throws(
+      () =>
+        buildUpdatedTrip(
+          trip,
+          makeInput({
+            accountingCurrency: 'EUR',
+            pace: 'impossible',
+          }),
+          false,
+          UPDATED_AT,
+        ),
+      /trip pace is not supported/i,
     );
   },
 );
@@ -325,6 +408,8 @@ test(
             SELECT
               title,
               status,
+              intent,
+              pace,
               start_date,
               end_date,
               accounting_currency,
@@ -339,6 +424,8 @@ test(
       assert.deepEqual({ ...row }, {
         title: 'Edited journey',
         status: 'completed',
+        intent: 'explore',
+        pace: 'balanced',
         start_date: '2026-09-02',
         end_date: '2026-09-12',
         accounting_currency: 'EUR',

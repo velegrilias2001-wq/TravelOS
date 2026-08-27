@@ -59,11 +59,6 @@ test(
         DATABASE_VERSION,
       );
 
-      assert.equal(
-        DATABASE_VERSION,
-        8,
-      );
-
       const table =
         await database.queryFirst(
           `

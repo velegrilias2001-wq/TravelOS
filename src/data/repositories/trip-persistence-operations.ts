@@ -36,16 +36,20 @@ export async function saveCanonicalTrip(
             id,
             title,
             status,
+            intent,
+            pace,
             start_date,
             end_date,
             accounting_currency,
             created_at,
             updated_at
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(id) DO UPDATE SET
             title = excluded.title,
             status = excluded.status,
+            intent = excluded.intent,
+            pace = excluded.pace,
             start_date = excluded.start_date,
             end_date = excluded.end_date,
             accounting_currency =
@@ -56,6 +60,8 @@ export async function saveCanonicalTrip(
           trip.id,
           trip.title,
           trip.status,
+          trip.intent ?? null,
+          trip.pace ?? null,
           trip.startDate,
           trip.endDate,
           trip.accountingCurrency,
