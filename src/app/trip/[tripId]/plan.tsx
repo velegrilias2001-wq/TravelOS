@@ -52,6 +52,10 @@ import {
   singleMappedDestinationCoordinate,
   tripDestinationLabel,
 } from '@/services/destination-authoring';
+import {
+  deriveDayFreeTimeGaps,
+  deriveDayTimeConflicts,
+} from '@/services/itinerary-flexibility';
 
 import {
   colors,
@@ -123,6 +127,44 @@ function getStopIcon(
     )?.icon ??
     'location-outline'
   );
+}
+
+function formatStopTimeRange(
+  stop: Pick<TripStop, 'startTime' | 'endTime'>,
+): string | null {
+  if (stop.startTime && stop.endTime) {
+    return `${stop.startTime}–${stop.endTime}`;
+  }
+
+  if (stop.startTime) {
+    return stop.startTime;
+  }
+
+  if (stop.endTime) {
+    return `Until ${stop.endTime}`;
+  }
+
+  return null;
+}
+
+function formatFreeTimeDuration(
+  minutes: number,
+): string {
+  const hours =
+    Math.floor(minutes / 60);
+
+  const remainingMinutes =
+    minutes % 60;
+
+  if (hours === 0) {
+    return `${remainingMinutes} min`;
+  }
+
+  if (remainingMinutes === 0) {
+    return `${hours} hr`;
+  }
+
+  return `${hours} hr ${remainingMinutes} min`;
 }
 
 function hasCoordinates(
@@ -216,6 +258,24 @@ export default function PlanScreen() {
     useState<string | undefined>();
 
   const [
+    endTime,
+    setEndTime,
+  ] =
+    useState('');
+
+  const [
+    endTimeEdited,
+    setEndTimeEdited,
+  ] =
+    useState(false);
+
+  const [
+    originalEndTime,
+    setOriginalEndTime,
+  ] =
+    useState<string | undefined>();
+
+  const [
     type,
     setType,
   ] =
@@ -252,6 +312,9 @@ export default function PlanScreen() {
     setTime('');
     setTimeEdited(false);
     setOriginalTime(undefined);
+    setEndTime('');
+    setEndTimeEdited(false);
+    setOriginalEndTime(undefined);
 
     setType('place');
 
@@ -269,6 +332,9 @@ export default function PlanScreen() {
     setTime('');
     setTimeEdited(false);
     setOriginalTime(undefined);
+    setEndTime('');
+    setEndTimeEdited(false);
+    setOriginalEndTime(undefined);
 
     setType('place');
 
@@ -292,6 +358,12 @@ export default function PlanScreen() {
     );
     setTimeEdited(false);
     setOriginalTime(stop.startTime);
+
+    setEndTime(
+      stop.endTime ?? '',
+    );
+    setEndTimeEdited(false);
+    setOriginalEndTime(stop.endTime);
 
     setType(
       stop.type,
@@ -539,6 +611,11 @@ export default function PlanScreen() {
                   ? time || undefined
                   : originalTime,
 
+              endTime:
+                endTimeEdited
+                  ? endTime || undefined
+                  : originalEndTime,
+
               location:
                 pickedLocation ??
                 undefined,
@@ -578,6 +655,9 @@ export default function PlanScreen() {
 
               startTime: time || undefined,
 
+              endTime:
+                endTime || undefined,
+
               location:
                 pickedLocation ??
                 undefined,
@@ -596,17 +676,42 @@ export default function PlanScreen() {
 
         resetModal();
       } catch (error) {
-        console.error(
-          '[Plan] Save error:',
-          error,
-        );
-
-        Alert.alert(
-          'Could not save moment',
+        const message =
           error instanceof Error
             ? error.message
-            : 'Please try again.',
-        );
+            : 'Please try again.';
+
+        const isTimeValidationError =
+          message.includes(
+            'Stop end time must be after stop start time',
+          ) ||
+          message.includes(
+            'must use HH:mm local time',
+          ) ||
+          message.includes(
+            'saved stop time needs review',
+          );
+
+        if (isTimeValidationError) {
+          Alert.alert(
+            'Check moment time',
+            message.includes(
+              'Stop end time must be after stop start time',
+            )
+              ? 'End time must be later than start time.'
+              : message,
+          );
+        } else {
+          console.error(
+            '[Plan] Save error:',
+            error,
+          );
+
+          Alert.alert(
+            'Could not save moment',
+            message,
+          );
+        }
       } finally {
         setIsSaving(false);
       }
@@ -780,6 +885,38 @@ export default function PlanScreen() {
                       a.order -
                       b.order,
                   );
+              const freeTimeGaps =
+                deriveDayFreeTimeGaps(
+                  day,
+                  stops,
+                );
+
+              const timeConflicts =
+                deriveDayTimeConflicts(
+                  day,
+                  stops,
+                );
+
+              const stopById =
+                new Map(
+                  stops.map(
+                    (stop) => [
+                      stop.id,
+                      stop,
+                    ],
+                  ),
+                );
+
+              const freeTimeByAfterStopId =
+                new Map(
+                  freeTimeGaps.map(
+                    (gap) => [
+                      gap.afterStopId,
+                      gap,
+                    ],
+                  ),
+                );
+
               const collapsed =
                 collapsedDayIds.has(day.id);
 
@@ -854,6 +991,88 @@ export default function PlanScreen() {
                     )}
                   </View>
 
+                  {!collapsed &&
+                    timeConflicts.length > 0 && (
+                      <View
+                        style={
+                          styles.conflictList
+                        }
+                      >
+                        {timeConflicts.map(
+                          (conflict) => {
+                            const firstStop =
+                              stopById.get(
+                                conflict.firstStopId,
+                              );
+
+                            const secondStop =
+                              stopById.get(
+                                conflict.secondStopId,
+                              );
+
+                            return (
+                              <View
+                                key={`${conflict.firstStopId}-${conflict.secondStopId}-${conflict.startTime}`}
+                                style={
+                                  styles.conflictCard
+                                }
+                              >
+                                <View
+                                  style={
+                                    styles.conflictIcon
+                                  }
+                                >
+                                  <Ionicons
+                                    name="warning-outline"
+                                    size={18}
+                                    color={
+                                      colors.warning
+                                    }
+                                  />
+                                </View>
+
+                                <View
+                                  style={
+                                    styles.conflictCopy
+                                  }
+                                >
+                                  <Text
+                                    style={
+                                      styles.conflictEyebrow
+                                    }
+                                  >
+                                    TIME CONFLICT
+                                  </Text>
+
+                                  <Text
+                                    style={
+                                      styles.conflictTitle
+                                    }
+                                  >
+                                    {firstStop?.title ??
+                                      'Moment'}{' '}
+                                    overlaps{' '}
+                                    {secondStop?.title ??
+                                      'another moment'}
+                                  </Text>
+
+                                  <Text
+                                    style={
+                                      styles.conflictMeta
+                                    }
+                                  >
+                                    {conflict.startTime}–{conflict.endTime} · {formatFreeTimeDuration(
+                                      conflict.durationMinutes,
+                                    )}
+                                  </Text>
+                                </View>
+                              </View>
+                            );
+                          },
+                        )}
+                      </View>
+                    )}
+
                   {stops.length === 0 ? (
                     <Pressable
                       style={
@@ -898,15 +1117,25 @@ export default function PlanScreen() {
                               stop.id,
                             );
 
+                          const freeTimeGap =
+                            freeTimeByAfterStopId.get(
+                              stop.id,
+                            );
+
                           return (
                             <View
                               key={
                                 stop.id
                               }
                               style={
-                                styles.stopCard
+                                styles.stopWithGap
                               }
                             >
+                              <View
+                                style={
+                                  styles.stopCard
+                                }
+                              >
                             <Pressable
                               style={
                                 styles.stopMain
@@ -956,8 +1185,12 @@ export default function PlanScreen() {
                                     styles.stopMeta
                                   }
                                 >
-                                  {stop.startTime
-                                    ? `${stop.startTime} · `
+                                  {formatStopTimeRange(
+                                    stop,
+                                  )
+                                    ? `${formatStopTimeRange(
+                                        stop,
+                                      )} · `
                                     : ''}
 
                                   {
@@ -1167,6 +1400,61 @@ export default function PlanScreen() {
                                 />
                               </Pressable>
                             </View>
+                              </View>
+
+                              {freeTimeGap && (
+                                <View
+                                  style={
+                                    styles.freeTimeCard
+                                  }
+                                >
+                                  <View
+                                    style={
+                                      styles.freeTimeIcon
+                                    }
+                                  >
+                                    <Ionicons
+                                      name="time-outline"
+                                      size={17}
+                                      color={
+                                        colors.teal
+                                      }
+                                    />
+                                  </View>
+
+                                  <View
+                                    style={
+                                      styles.freeTimeCopy
+                                    }
+                                  >
+                                    <Text
+                                      style={
+                                        styles.freeTimeEyebrow
+                                      }
+                                    >
+                                      FREE TIME
+                                    </Text>
+
+                                    <Text
+                                      style={
+                                        styles.freeTimeRange
+                                      }
+                                    >
+                                      {freeTimeGap.startTime}–{freeTimeGap.endTime}
+                                    </Text>
+                                  </View>
+
+                                  <Text
+                                    style={
+                                      styles.freeTimeDuration
+                                    }
+                                  >
+                                    {formatFreeTimeDuration(
+                                      freeTimeGap.durationMinutes,
+                                    )}
+                                  </Text>
+                                </View>
+                              )}
                             </View>
                           );
                         },
@@ -1558,19 +1846,50 @@ export default function PlanScreen() {
                 </View>
               </View>
 
-              <View style={styles.field}>
-                <LocalTimeField
-                  label="TIME"
-                  value={time}
-                  onChange={(value) => {
-                    setTime(value);
-                    setTimeEdited(true);
-                  }}
-                  onClear={() => {
-                    setTime('');
-                    setTimeEdited(true);
-                  }}
-                />
+              <View style={styles.timeSection}>
+                <Text
+                  style={
+                    styles.fieldLabel
+                  }
+                >
+                  TIME · OPTIONAL
+                </Text>
+
+                <View style={styles.timeRow}>
+                  <View style={styles.timeColumn}>
+                    <LocalTimeField
+                      label="START TIME"
+                      value={time}
+                      onChange={(value) => {
+                        setTime(value);
+                        setTimeEdited(true);
+                      }}
+                      onClear={() => {
+                        setTime('');
+                        setTimeEdited(true);
+                      }}
+                    />
+                  </View>
+
+                  <View style={styles.timeColumn}>
+                    <LocalTimeField
+                      label="END TIME"
+                      value={endTime}
+                      onChange={(value) => {
+                        setEndTime(value);
+                        setEndTimeEdited(true);
+                      }}
+                      onClear={() => {
+                        setEndTime('');
+                        setEndTimeEdited(true);
+                      }}
+                    />
+                  </View>
+                </View>
+
+                <Text style={styles.timeHelp}>
+                  Add an end time when you know it. TravelOS can use real gaps between moments as flexible time.
+                </Text>
               </View>
 
               <Pressable
@@ -1748,6 +2067,87 @@ const styles =
         spacing[2],
     },
 
+    conflictList: {
+      gap:
+        spacing[2],
+      marginBottom:
+        spacing[2],
+    },
+
+    conflictCard: {
+      minHeight: 64,
+      marginLeft: 46,
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      gap:
+        spacing[3],
+      paddingHorizontal:
+        spacing[3],
+      paddingVertical:
+        spacing[3],
+      borderRadius:
+        radius.md,
+      borderWidth: 1,
+      borderColor:
+        colors.warning,
+      backgroundColor:
+        colors.brassSoft,
+    },
+
+    conflictIcon: {
+      width: 34,
+      height: 34,
+      borderRadius:
+        radius.pill,
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+      backgroundColor:
+        colors.surface,
+    },
+
+    conflictCopy: {
+      flex: 1,
+    },
+
+    conflictEyebrow: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 1.1,
+      color:
+        colors.warning,
+    },
+
+    conflictTitle: {
+      marginTop: 2,
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize:
+        fontSize.bodySmall,
+      color:
+        colors.textPrimary,
+    },
+
+    conflictMeta: {
+      marginTop: 2,
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.caption,
+      color:
+        colors.textSecondary,
+    },
+
+    stopWithGap: {
+      gap:
+        spacing[2],
+    },
+
     stopCard: {
       minHeight: 70,
       backgroundColor:
@@ -1763,6 +2163,74 @@ const styles =
         'center',
       paddingHorizontal:
         spacing[3],
+    },
+
+    freeTimeCard: {
+      minHeight: 54,
+      marginLeft: 46,
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      gap:
+        spacing[3],
+      paddingHorizontal:
+        spacing[3],
+      paddingVertical:
+        spacing[2],
+      borderRadius:
+        radius.md,
+      borderWidth: 1,
+      borderColor:
+        colors.teal,
+      backgroundColor:
+        colors.tealSoft,
+    },
+
+    freeTimeIcon: {
+      width: 32,
+      height: 32,
+      borderRadius:
+        radius.pill,
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+      backgroundColor:
+        colors.surface,
+    },
+
+    freeTimeCopy: {
+      flex: 1,
+    },
+
+    freeTimeEyebrow: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 1.1,
+      color:
+        colors.teal,
+    },
+
+    freeTimeRange: {
+      marginTop: 2,
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize:
+        fontSize.bodySmall,
+      color:
+        colors.textPrimary,
+    },
+
+    freeTimeDuration: {
+      fontFamily:
+        fontFamily.sansMedium,
+      fontSize:
+        fontSize.caption,
+      color:
+        colors.textSecondary,
     },
 
     stopMain: {
@@ -2064,6 +2532,39 @@ const styles =
 
       color:
         colors.brass,
+    },
+
+    timeSection: {
+      gap:
+        spacing[2],
+
+      marginBottom:
+        spacing[4],
+    },
+
+    timeRow: {
+      flexDirection:
+        'row',
+
+      gap:
+        spacing[2],
+    },
+
+    timeColumn: {
+      flex: 1,
+    },
+
+    timeHelp: {
+      fontFamily:
+        fontFamily.sansRegular,
+
+      fontSize:
+        fontSize.caption,
+
+      lineHeight: 18,
+
+      color:
+        colors.textMuted,
     },
 
     input: {

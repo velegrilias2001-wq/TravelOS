@@ -59,9 +59,7 @@ export function CalendarDateField({
   };
 
   const open = () => {
-    if (disabled) {
-      return;
-    }
+    if (disabled) return;
 
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
@@ -86,16 +84,8 @@ export function CalendarDateField({
     ? formatCalendarDateForDisplay(
         value,
         compact
-          ? {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            }
-          : {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            },
+          ? { day: 'numeric', month: 'short', year: 'numeric' }
+          : { day: 'numeric', month: 'long', year: 'numeric' },
       )
     : compact
       ? 'Choose date'
@@ -198,14 +188,13 @@ export function LocalTimeField({
   };
 
   const open = () => {
-    if (disabled) {
-      return;
-    }
+    if (disabled) return;
 
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
         value: pickerValue,
         mode: 'time',
+        display: 'spinner',
         is24Hour: true,
         onChange: (
           event: DateTimePickerEvent,
@@ -237,6 +226,7 @@ export function LocalTimeField({
           </Pressable>
         ) : null}
       </View>
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Choose ${label.toLowerCase()}`}
@@ -283,6 +273,7 @@ export function LocalTimeField({
           color={colors.textMuted}
         />
       </Pressable>
+
       {help ? <Text style={styles.help}>{help}</Text> : null}
 
       {Platform.OS === 'ios' && isIOSPickerOpen && (
@@ -311,9 +302,7 @@ export function LocalTimeField({
 }
 
 const styles = StyleSheet.create({
-  field: {
-    gap: spacing[2],
-  },
+  field: { gap: spacing[2] },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -351,31 +340,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.brandSoft,
   },
-  iconCompact: {
-    width: 30,
-    height: 30,
-  },
-  copy: {
-    flex: 1,
-    gap: 2,
-    minWidth: 0,
-  },
+  iconCompact: { width: 30, height: 30 },
+  copy: { flex: 1, gap: 2, minWidth: 0 },
   value: {
     fontFamily: fontFamily.sansSemiBold,
     fontSize: fontSize.bodySmall,
     color: colors.textPrimary,
   },
-  valueCompact: {
-    fontSize: fontSize.caption,
-  },
+  valueCompact: { fontSize: fontSize.caption },
   raw: {
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.caption,
     color: colors.textMuted,
   },
-  review: {
-    color: colors.warning,
-  },
+  review: { color: colors.warning },
   clear: {
     fontFamily: fontFamily.sansBold,
     fontSize: fontSize.micro,
@@ -400,7 +378,5 @@ const styles = StyleSheet.create({
     fontSize: fontSize.bodySmall,
     color: colors.brand,
   },
-  disabled: {
-    opacity: 0.55,
-  },
+  disabled: { opacity: 0.55 },
 });

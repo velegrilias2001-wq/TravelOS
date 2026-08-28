@@ -31,6 +31,7 @@
     "src/services/trip-day-generation.ts",
     "src/services/booking-time.ts",
     "src/services/stop-time.ts",
+    "src/services/itinerary-flexibility.ts",
     "src/services/time-truth.ts",
     "src/services/destination-authoring.ts",
     "src/services/companion.ts",
