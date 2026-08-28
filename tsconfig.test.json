@@ -37,6 +37,9 @@
     "src/services/companion.ts",
     "src/services/companion-refresh.ts",
     "src/services/trip-creation.ts",
-    "src/services/travel-dna-service.ts"
+    "src/services/travel-dna-service.ts",
+    "src/services/ai-context.ts",
+    "src/services/ai-context-service.ts",
+    "src/services/ai-api-client.ts"
   ]
 }

@@ -13,6 +13,7 @@ import {
 } from 'expo-router';
 
 import {
+  ActivityIndicator,
   Alert,
   Modal,
   Pressable,
@@ -55,7 +56,18 @@ import {
 import {
   deriveDayFreeTimeGaps,
   deriveDayTimeConflicts,
+  type FreeTimeGap,
 } from '@/services/itinerary-flexibility';
+import type {
+  FreeTimeActivityType,
+  FreeTimeAdviceResult,
+} from '@/services/ai-api-client';
+import {
+  aiAPIClient,
+} from '@/services/ai-api-runtime';
+import {
+  aiContextService,
+} from '@/services/ai-context-runtime';
 
 import {
   colors,
@@ -92,6 +104,80 @@ const STOP_TYPES: {
     icon: 'car-outline',
   },
 ];
+
+const FREE_TIME_ACTIVITY_COPY: Record<
+  FreeTimeActivityType,
+  {
+    title: string;
+    body: string;
+    icon: keyof typeof Ionicons.glyphMap;
+  }
+> = {
+  slow_walk: {
+    title: 'Take a slow walk',
+    body: 'Keep the gap easy and unstructured.',
+    icon: 'walk-outline',
+  },
+  coffee_or_rest: {
+    title: 'Pause for coffee or rest',
+    body: 'Use the time as a low-pressure reset.',
+    icon: 'cafe-outline',
+  },
+  food_browse: {
+    title: 'Browse local food',
+    body: 'Explore food casually without committing to a specific venue.',
+    icon: 'restaurant-outline',
+  },
+  culture_browse: {
+    title: 'Add a little culture',
+    body: 'Use the gap for a light cultural detour.',
+    icon: 'library-outline',
+  },
+  local_browse: {
+    title: 'Explore the area',
+    body: 'Wander locally without turning it into a fixed stop.',
+    icon: 'compass-outline',
+  },
+  photo_walk: {
+    title: 'Take a photo walk',
+    body: 'Slow down and notice the surroundings through your camera.',
+    icon: 'camera-outline',
+  },
+  shopping_browse: {
+    title: 'Browse a little',
+    body: 'Leave room for casual shopping without a fixed destination.',
+    icon: 'bag-outline',
+  },
+  wellness_pause: {
+    title: 'Take a wellness pause',
+    body: 'Use the gap for a calm reset before the next moment.',
+    icon: 'leaf-outline',
+  },
+  scenic_pause: {
+    title: 'Take a scenic pause',
+    body: 'Keep the time open for a quiet view or a slower moment.',
+    icon: 'sunny-outline',
+  },
+  flexible_buffer: {
+    title: 'Keep the buffer',
+    body: 'Protect the free time instead of filling every minute.',
+    icon: 'time-outline',
+  },
+};
+
+function freeTimeAdviceKey(
+  dayId: string,
+  gap: FreeTimeGap,
+): string {
+  return [
+    dayId,
+    gap.afterStopId,
+    gap.beforeStopId,
+    gap.startTime,
+    gap.endTime,
+    gap.durationMinutes,
+  ].join(':');
+}
 
 type StopLocation =
   NonNullable<
@@ -302,6 +388,23 @@ export default function PlanScreen() {
     setIsSaving,
   ] =
     useState(false);
+
+  const [
+    loadingFreeTimeKey,
+    setLoadingFreeTimeKey,
+  ] = useState<string | null>(null);
+
+  const [
+    freeTimeAdviceByKey,
+    setFreeTimeAdviceByKey,
+  ] = useState<
+    Record<string, FreeTimeAdviceResult>
+  >({});
+
+  const [
+    freeTimeAdviceErrorByKey,
+    setFreeTimeAdviceErrorByKey,
+  ] = useState<Record<string, string>>({});
 
   const resetModal = () => {
     setSelectedDay(null);
@@ -855,6 +958,103 @@ export default function PlanScreen() {
       }
     };
 
+  const requestFreeTimeAdvice =
+    async (
+      day: TripDay,
+      gap: FreeTimeGap,
+    ) => {
+      if (loadingFreeTimeKey) {
+        return;
+      }
+
+      const adviceKey =
+        freeTimeAdviceKey(
+          day.id,
+          gap,
+        );
+
+      setLoadingFreeTimeKey(
+        adviceKey,
+      );
+
+      setFreeTimeAdviceErrorByKey(
+        (current) => {
+          const next = {
+            ...current,
+          };
+
+          delete next[adviceKey];
+
+          return next;
+        },
+      );
+
+      try {
+        const context =
+          await aiContextService.getSnapshot(
+            workspace.trip.id,
+          );
+
+        if (!context) {
+          throw new Error(
+            'Trip context is unavailable',
+          );
+        }
+
+        const result =
+          await aiAPIClient.suggestForFreeTime(
+            {
+              context,
+              dayId: day.id,
+              afterStopId:
+                gap.afterStopId,
+              beforeStopId:
+                gap.beforeStopId,
+            },
+          );
+
+        if (
+          result.verifiedGap.startTime !==
+            gap.startTime ||
+          result.verifiedGap.endTime !==
+            gap.endTime ||
+          result.verifiedGap.durationMinutes !==
+            gap.durationMinutes
+        ) {
+          throw new Error(
+            'Free-time context changed before the AI response returned',
+          );
+        }
+
+        setFreeTimeAdviceByKey(
+          (current) => ({
+            ...current,
+            [adviceKey]: result,
+          }),
+        );
+      } catch (error) {
+        console.error(
+          '[Plan] Free-time AI error:',
+          error,
+        );
+
+        setFreeTimeAdviceErrorByKey(
+          (current) => ({
+            ...current,
+            [adviceKey]:
+              'TravelOS AI is unavailable right now. Your plan has not changed.',
+          }),
+        );
+      } finally {
+        setLoadingFreeTimeKey(
+          (current) =>
+            current === adviceKey
+              ? null
+              : current,
+        );
+      }
+    };
+
   return (
     <>
       <Screen scroll>
@@ -1121,6 +1321,33 @@ export default function PlanScreen() {
                             freeTimeByAfterStopId.get(
                               stop.id,
                             );
+
+                          const adviceKey =
+                            freeTimeGap
+                              ? freeTimeAdviceKey(
+                                  day.id,
+                                  freeTimeGap,
+                                )
+                              : null;
+
+                          const freeTimeAdvice =
+                            adviceKey
+                              ? freeTimeAdviceByKey[
+                                  adviceKey
+                                ]
+                              : undefined;
+
+                          const freeTimeAdviceError =
+                            adviceKey
+                              ? freeTimeAdviceErrorByKey[
+                                  adviceKey
+                                ]
+                              : undefined;
+
+                          const isFreeTimeAdviceLoading =
+                            adviceKey !== null &&
+                            loadingFreeTimeKey ===
+                              adviceKey;
 
                           return (
                             <View
@@ -1410,49 +1637,221 @@ export default function PlanScreen() {
                                 >
                                   <View
                                     style={
-                                      styles.freeTimeIcon
+                                      styles.freeTimeHeader
                                     }
                                   >
-                                    <Ionicons
-                                      name="time-outline"
-                                      size={17}
-                                      color={
-                                        colors.teal
-                                      }
-                                    />
-                                  </View>
-
-                                  <View
-                                    style={
-                                      styles.freeTimeCopy
-                                    }
-                                  >
-                                    <Text
+                                    <View
                                       style={
-                                        styles.freeTimeEyebrow
+                                        styles.freeTimeIcon
                                       }
                                     >
-                                      FREE TIME
-                                    </Text>
+                                      <Ionicons
+                                        name="time-outline"
+                                        size={17}
+                                        color={
+                                          colors.teal
+                                        }
+                                      />
+                                    </View>
+
+                                    <View
+                                      style={
+                                        styles.freeTimeCopy
+                                      }
+                                    >
+                                      <Text
+                                        style={
+                                          styles.freeTimeEyebrow
+                                        }
+                                      >
+                                        FREE TIME
+                                      </Text>
+
+                                      <Text
+                                        style={
+                                          styles.freeTimeRange
+                                        }
+                                      >
+                                        {freeTimeGap.startTime}–{freeTimeGap.endTime}
+                                      </Text>
+                                    </View>
 
                                     <Text
                                       style={
-                                        styles.freeTimeRange
+                                        styles.freeTimeDuration
                                       }
                                     >
-                                      {freeTimeGap.startTime}–{freeTimeGap.endTime}
+                                      {formatFreeTimeDuration(
+                                        freeTimeGap.durationMinutes,
+                                      )}
                                     </Text>
                                   </View>
 
-                                  <Text
-                                    style={
-                                      styles.freeTimeDuration
+                                  <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Ask TravelOS how to use free time from ${freeTimeGap.startTime} to ${freeTimeGap.endTime}`}
+                                    disabled={
+                                      loadingFreeTimeKey !==
+                                      null
+                                    }
+                                    style={[
+                                      styles.freeTimeAIButton,
+
+                                      loadingFreeTimeKey !==
+                                        null &&
+                                        !isFreeTimeAdviceLoading &&
+                                        styles.freeTimeAIButtonDisabled,
+                                    ]}
+                                    onPress={() =>
+                                      requestFreeTimeAdvice(
+                                        day,
+                                        freeTimeGap,
+                                      )
                                     }
                                   >
-                                    {formatFreeTimeDuration(
-                                      freeTimeGap.durationMinutes,
+                                    {isFreeTimeAdviceLoading ? (
+                                      <ActivityIndicator
+                                        size="small"
+                                        color={
+                                          colors.textInverse
+                                        }
+                                      />
+                                    ) : (
+                                      <Ionicons
+                                        name="sparkles-outline"
+                                        size={16}
+                                        color={
+                                          colors.textInverse
+                                        }
+                                      />
                                     )}
-                                  </Text>
+
+                                    <Text
+                                      style={
+                                        styles.freeTimeAIButtonText
+                                      }
+                                    >
+                                      {isFreeTimeAdviceLoading
+                                        ? 'Thinking…'
+                                        : freeTimeAdvice
+                                          ? 'Refresh ideas'
+                                          : 'Fill this time'}
+                                    </Text>
+                                  </Pressable>
+
+                                  {freeTimeAdviceError && (
+                                    <Text
+                                      style={
+                                        styles.freeTimeAIError
+                                      }
+                                    >
+                                      {freeTimeAdviceError}
+                                    </Text>
+                                  )}
+
+                                  {freeTimeAdvice && (
+                                    <View
+                                      style={
+                                        styles.freeTimeSuggestionList
+                                      }
+                                    >
+                                      <View
+                                        style={
+                                          styles.freeTimeSuggestionHeadingRow
+                                        }
+                                      >
+                                        <Ionicons
+                                          name="sparkles-outline"
+                                          size={15}
+                                          color={
+                                            colors.brass
+                                          }
+                                        />
+
+                                        <Text
+                                          style={
+                                            styles.freeTimeSuggestionHeading
+                                          }
+                                        >
+                                          TRAVELOS IDEAS
+                                        </Text>
+                                      </View>
+
+                                      {freeTimeAdvice.suggestions.map(
+                                        (suggestion) => {
+                                          const copy =
+                                            FREE_TIME_ACTIVITY_COPY[
+                                              suggestion.activityType
+                                            ];
+
+                                          return (
+                                            <View
+                                              key={
+                                                suggestion.activityType
+                                              }
+                                              style={
+                                                styles.freeTimeSuggestionCard
+                                              }
+                                            >
+                                              <View
+                                                style={
+                                                  styles.freeTimeSuggestionIcon
+                                                }
+                                              >
+                                                <Ionicons
+                                                  name={
+                                                    copy.icon
+                                                  }
+                                                  size={17}
+                                                  color={
+                                                    colors.teal
+                                                  }
+                                                />
+                                              </View>
+
+                                              <View
+                                                style={
+                                                  styles.freeTimeSuggestionCopy
+                                                }
+                                              >
+                                                <Text
+                                                  style={
+                                                    styles.freeTimeSuggestionTitle
+                                                  }
+                                                >
+                                                  {copy.title}
+                                                </Text>
+
+                                                <Text
+                                                  style={
+                                                    styles.freeTimeSuggestionBody
+                                                  }
+                                                >
+                                                  {copy.body}
+                                                </Text>
+                                              </View>
+
+                                              <Text
+                                                style={
+                                                  styles.freeTimeSuggestionMinutes
+                                                }
+                                              >
+                                                {suggestion.suggestedMinutes} min
+                                              </Text>
+                                            </View>
+                                          );
+                                        },
+                                      )}
+
+                                      <Text
+                                        style={
+                                          styles.freeTimeAIHint
+                                        }
+                                      >
+                                        Ideas only · nothing has been added to your plan.
+                                      </Text>
+                                    </View>
+                                  )}
                                 </View>
                               )}
                             </View>
@@ -2168,16 +2567,12 @@ const styles =
     freeTimeCard: {
       minHeight: 54,
       marginLeft: 46,
-      flexDirection:
-        'row',
-      alignItems:
-        'center',
       gap:
         spacing[3],
       paddingHorizontal:
         spacing[3],
       paddingVertical:
-        spacing[2],
+        spacing[3],
       borderRadius:
         radius.md,
       borderWidth: 1,
@@ -2185,6 +2580,15 @@ const styles =
         colors.teal,
       backgroundColor:
         colors.tealSoft,
+    },
+
+    freeTimeHeader: {
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      gap:
+        spacing[3],
     },
 
     freeTimeIcon: {
@@ -2231,6 +2635,151 @@ const styles =
         fontSize.caption,
       color:
         colors.textSecondary,
+    },
+
+    freeTimeAIButton: {
+      minHeight: 42,
+      borderRadius:
+        radius.md,
+      backgroundColor:
+        colors.brand,
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+      gap:
+        spacing[2],
+      paddingHorizontal:
+        spacing[3],
+    },
+
+    freeTimeAIButtonDisabled: {
+      opacity: 0.5,
+    },
+
+    freeTimeAIButtonText: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize:
+        fontSize.bodySmall,
+      color:
+        colors.textInverse,
+    },
+
+    freeTimeAIError: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.caption,
+      lineHeight: 18,
+      color:
+        colors.danger,
+    },
+
+    freeTimeSuggestionList: {
+      gap:
+        spacing[2],
+      paddingTop:
+        spacing[1],
+      borderTopWidth: 1,
+      borderTopColor:
+        colors.border,
+    },
+
+    freeTimeSuggestionHeadingRow: {
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      gap: 6,
+      marginBottom: 2,
+    },
+
+    freeTimeSuggestionHeading: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 1.1,
+      color:
+        colors.brass,
+    },
+
+    freeTimeSuggestionCard: {
+      minHeight: 68,
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      gap:
+        spacing[2],
+      padding:
+        spacing[2],
+      borderRadius:
+        radius.sm,
+      backgroundColor:
+        colors.surface,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+    },
+
+    freeTimeSuggestionIcon: {
+      width: 34,
+      height: 34,
+      borderRadius:
+        radius.pill,
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+      backgroundColor:
+        colors.tealSoft,
+    },
+
+    freeTimeSuggestionCopy: {
+      flex: 1,
+    },
+
+    freeTimeSuggestionTitle: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize:
+        fontSize.bodySmall,
+      color:
+        colors.textPrimary,
+    },
+
+    freeTimeSuggestionBody: {
+      marginTop: 2,
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.caption,
+      lineHeight: 17,
+      color:
+        colors.textSecondary,
+    },
+
+    freeTimeSuggestionMinutes: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      color:
+        colors.teal,
+    },
+
+    freeTimeAIHint: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.micro,
+      lineHeight: 16,
+      color:
+        colors.textMuted,
     },
 
     stopMain: {
