@@ -1,5 +1,6 @@
 {
   "extends": "./tsconfig.json",
+
   "compilerOptions": {
     "declaration": false,
     "incremental": false,
@@ -11,18 +12,23 @@
     "sourceMap": false,
     "target": "ES2022"
   },
+
   "include": [
     "src/data/database/database.ts",
     "src/data/database/migrations.ts",
     "src/data/database/schema.ts",
+
     "src/data/repositories/booking-persistence-operations.ts",
     "src/data/repositories/accommodation-persistence-operations.ts",
     "src/data/repositories/traveler-persistence-operations.ts",
     "src/data/repositories/budget-persistence-operations.ts",
     "src/data/repositories/trip-persistence-operations.ts",
     "src/data/repositories/trip-destination-persistence.ts",
+
     "src/domain/entities/**/*.ts",
+
     "src/features/trip-workspace/trip-workspace-lifecycle.ts",
+
     "src/services/budget-calculations.ts",
     "src/services/accommodation-details.ts",
     "src/services/traveler-details.ts",
@@ -38,8 +44,13 @@
     "src/services/companion-refresh.ts",
     "src/services/trip-creation.ts",
     "src/services/travel-dna-service.ts",
+
     "src/services/ai-context.ts",
     "src/services/ai-context-service.ts",
-    "src/services/ai-api-client.ts"
+    "src/services/ai-api-client.ts",
+
+    "src/services/discover-brief.ts",
+    "src/services/discover-personalization.ts",
+    "src/services/discover-trip-handoff.ts"
   ]
 }
