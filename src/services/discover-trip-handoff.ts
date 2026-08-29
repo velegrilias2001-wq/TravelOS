@@ -1,20 +1,20 @@
 import type {
-    DestinationSelection,
+  DestinationSelection,
 } from './destination-authoring';
 
 import {
-    normalizeDestinationSelection,
+  normalizeDestinationSelection,
 } from './destination-authoring';
 
 import type {
-    DiscoverBrief,
-    DiscoverDestination,
-    TripIntent,
-    TripPace,
+  DiscoverBrief,
+  DiscoverDestination,
+  TripIntent,
+  TripPace,
 } from '@/domain/entities';
 
 import {
-    normalizeDiscoverBrief,
+  normalizeDiscoverBrief,
 } from './discover-brief';
 
 export interface DiscoverTripPrefill {
@@ -38,8 +38,15 @@ export interface DiscoverTripPrefill {
  *
  * Values stay primitive because Expo Router params are URL
  * parameters, not a second persistence layer.
+ *
+ * The string index signature also makes this object directly
+ * compatible with Expo Router's route params contract.
  */
-export interface DiscoverTripRouteParams {
+export interface DiscoverTripRouteParams
+  extends Record<
+    string,
+    string | undefined
+  > {
   source: 'discover';
 
   destinationName: string;
@@ -77,7 +84,9 @@ export function buildDiscoverTripPrefill(
   destination: DiscoverDestination,
 ): DiscoverTripPrefill {
   const brief =
-    normalizeDiscoverBrief(rawBrief);
+    normalizeDiscoverBrief(
+      rawBrief,
+    );
 
   const normalizedDestination =
     normalizeDestinationSelection(
@@ -85,7 +94,8 @@ export function buildDiscoverTripPrefill(
     );
 
   const exactTiming =
-    brief.timing?.kind === 'exact'
+    brief.timing?.kind ===
+    'exact'
       ? brief.timing
       : undefined;
 
@@ -122,10 +132,14 @@ export function serializeDiscoverTripPrefill(
       destination.name,
 
     destinationLatitude:
-      String(destination.latitude),
+      String(
+        destination.latitude,
+      ),
 
     destinationLongitude:
-      String(destination.longitude),
+      String(
+        destination.longitude,
+      ),
 
     destinationCountryCode:
       destination.countryCode,
@@ -157,8 +171,9 @@ export function parseDiscoverTripRouteParams(
   >,
 ): DiscoverTripPrefill | null {
   if (
-    firstParam(params.source) !==
-    'discover'
+    firstParam(
+      params.source,
+    ) !== 'discover'
   ) {
     return null;
   }
@@ -180,8 +195,10 @@ export function parseDiscoverTripRouteParams(
 
   if (
     !name ||
-    latitudeValue === undefined ||
-    longitudeValue === undefined
+    latitudeValue ===
+      undefined ||
+    longitudeValue ===
+      undefined
   ) {
     throw new Error(
       'Discover handoff is missing destination data',
@@ -239,21 +256,27 @@ export function parseDiscoverTripRouteParams(
   const intent =
     firstParam(
       params.intent,
-    ) as TripIntent | undefined;
+    ) as
+      | TripIntent
+      | undefined;
 
   const pace =
     firstParam(
       params.pace,
-    ) as TripPace | undefined;
+    ) as
+      | TripPace
+      | undefined;
 
   const brief =
     normalizeDiscoverBrief({
-      mode: 'find_destination',
+      mode:
+        'find_destination',
 
       destination,
 
       timing:
-        startDate && endDate
+        startDate &&
+        endDate
           ? {
               kind: 'exact',
               startDate,
@@ -263,6 +286,7 @@ export function parseDiscoverTripRouteParams(
 
       intent,
       pace,
+
       interests: [],
     });
 
@@ -270,13 +294,17 @@ export function parseDiscoverTripRouteParams(
     destination,
 
     startDate:
-      brief.timing?.kind === 'exact'
-        ? brief.timing.startDate
+      brief.timing?.kind ===
+      'exact'
+        ? brief.timing
+            .startDate
         : undefined,
 
     endDate:
-      brief.timing?.kind === 'exact'
-        ? brief.timing.endDate
+      brief.timing?.kind ===
+      'exact'
+        ? brief.timing
+            .endDate
         : undefined,
 
     intent:

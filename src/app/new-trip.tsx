@@ -1,6 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
-import { useRouter } from 'expo-router';
+
+import {
+  useLocalSearchParams,
+  useRouter,
+} from 'expo-router';
+
 import { useState } from 'react';
 
 import {
@@ -14,20 +19,39 @@ import {
   View,
 } from 'react-native';
 
-import { CalendarDateField } from '@/components/ui/native-date-time-fields';
-import { Screen } from '@/components/ui/screen';
+import {
+  CalendarDateField,
+} from '@/components/ui/native-date-time-fields';
+
+import {
+  Screen,
+} from '@/components/ui/screen';
+
 import type {
   TripIntent,
   TripPace,
 } from '@/domain/entities';
+
 import {
   DestinationPickerField,
 } from '@/features/destinations/destination-picker-field';
+
 import type {
   DestinationSelection,
 } from '@/services/destination-authoring';
-import { buildNewTrip } from '@/services/trip-creation';
-import { useTripStore } from '@/store/trip-store';
+
+import {
+  parseDiscoverTripRouteParams,
+} from '@/services/discover-trip-handoff';
+
+import {
+  buildNewTrip,
+} from '@/services/trip-creation';
+
+import {
+  useTripStore,
+} from '@/store/trip-store';
+
 import {
   colors,
   fontFamily,
@@ -38,91 +62,192 @@ import {
   spacing,
 } from '@/theme';
 
-interface ChoiceOption<Value extends string> {
+interface ChoiceOption<
+  Value extends string,
+> {
   value: Value;
   label: string;
   description?: string;
 }
 
-const INTENT_OPTIONS: ChoiceOption<TripIntent>[] = [
-  {
-    value: 'relax',
-    label: 'Relax',
-  },
-  {
-    value: 'explore',
-    label: 'Explore',
-  },
-  {
-    value: 'food',
-    label: 'Food',
-  },
-  {
-    value: 'nature',
-    label: 'Nature',
-  },
-  {
-    value: 'event',
-    label: 'Event',
-  },
-  {
-    value: 'social',
-    label: 'Social',
-  },
-  {
-    value: 'romantic',
-    label: 'Romantic',
-  },
-  {
-    value: 'family',
-    label: 'Family',
-  },
-  {
-    value: 'work_leisure',
-    label: 'Work + Leisure',
-  },
-  {
-    value: 'other',
-    label: 'Other',
-  },
-];
+const INTENT_OPTIONS:
+  ChoiceOption<TripIntent>[] = [
+    {
+      value: 'relax',
+      label: 'Relax',
+    },
+    {
+      value: 'explore',
+      label: 'Explore',
+    },
+    {
+      value: 'food',
+      label: 'Food',
+    },
+    {
+      value: 'nature',
+      label: 'Nature',
+    },
+    {
+      value: 'event',
+      label: 'Event',
+    },
+    {
+      value: 'social',
+      label: 'Social',
+    },
+    {
+      value: 'romantic',
+      label: 'Romantic',
+    },
+    {
+      value: 'family',
+      label: 'Family',
+    },
+    {
+      value: 'work_leisure',
+      label: 'Work + Leisure',
+    },
+    {
+      value: 'other',
+      label: 'Other',
+    },
+  ];
 
-const PACE_OPTIONS: ChoiceOption<TripPace>[] = [
-  {
-    value: 'slow',
-    label: 'Slow',
-    description: 'More breathing room.',
-  },
-  {
-    value: 'balanced',
-    label: 'Balanced',
-    description: 'A mix of plans and space.',
-  },
-  {
-    value: 'full',
-    label: 'Full',
-    description: 'Make the most of each day.',
-  },
-];
+const PACE_OPTIONS:
+  ChoiceOption<TripPace>[] = [
+    {
+      value: 'slow',
+      label: 'Slow',
+      description:
+        'More breathing room.',
+    },
+    {
+      value: 'balanced',
+      label: 'Balanced',
+      description:
+        'A mix of plans and space.',
+    },
+    {
+      value: 'full',
+      label: 'Full',
+      description:
+        'Make the most of each day.',
+    },
+  ];
 
 export default function NewTripScreen() {
   const router = useRouter();
 
-  const saveTrip = useTripStore(
-    (state) => state.saveTrip,
-  );
+  const routeParams =
+    useLocalSearchParams();
 
-  const [title, setTitle] = useState('');
-  const [destination, setDestination] =
-    useState<DestinationSelection | null>(null);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [intent, setIntent] =
-    useState<TripIntent | undefined>();
-  const [pace, setPace] =
-    useState<TripPace | undefined>();
-  const [currency, setCurrency] = useState('EUR');
-  const [isSaving, setIsSaving] = useState(false);
+  /**
+   * Discover prefill is read once when this screen opens.
+   *
+   * After that, local form state belongs to the user.
+   * Route params must never keep overwriting edits.
+   */
+  const [discoverPrefill] =
+    useState(() => {
+      try {
+        return (
+          parseDiscoverTripRouteParams(
+            routeParams,
+          )
+        );
+      } catch (error) {
+        console.error(
+          '[NewTrip] Discover prefill could not be parsed:',
+          error,
+        );
+
+        return null;
+      }
+    });
+
+  const saveTrip =
+    useTripStore(
+      (state) => state.saveTrip,
+    );
+
+  const [
+    title,
+    setTitle,
+  ] = useState('');
+
+  const [
+    destination,
+    setDestination,
+  ] =
+    useState<
+      DestinationSelection | null
+    >(
+      () =>
+        discoverPrefill
+          ?.destination ?? null,
+    );
+
+  const [
+    startDate,
+    setStartDate,
+  ] =
+    useState(
+      () =>
+        discoverPrefill
+          ?.startDate ?? '',
+    );
+
+  const [
+    endDate,
+    setEndDate,
+  ] =
+    useState(
+      () =>
+        discoverPrefill
+          ?.endDate ?? '',
+    );
+
+  const [
+    intent,
+    setIntent,
+  ] =
+    useState<
+      TripIntent | undefined
+    >(
+      () =>
+        discoverPrefill
+          ?.intent,
+    );
+
+  const [
+    pace,
+    setPace,
+  ] =
+    useState<
+      TripPace | undefined
+    >(
+      () =>
+        discoverPrefill
+          ?.pace,
+    );
+
+  /**
+   * Accounting currency is deliberately not inferred from
+   * destination currency or Discover.
+   *
+   * Destination/local currency and accounting currency are
+   * separate concepts.
+   */
+  const [
+    currency,
+    setCurrency,
+  ] = useState('EUR');
+
+  const [
+    isSaving,
+    setIsSaving,
+  ] = useState(false);
 
   const isReady = Boolean(
     destination &&
@@ -131,14 +256,20 @@ export default function NewTripScreen() {
       currency.length === 3,
   );
 
-  const tripNamePlaceholder = destination?.name
-    ? `${destination.name} trip`
-    : 'Give this trip a name';
+  const tripNamePlaceholder =
+    destination?.name
+      ? `${destination.name} trip`
+      : 'Give this trip a name';
 
-  const updateCurrency = (value: string) => {
+  const updateCurrency = (
+    value: string,
+  ) => {
     setCurrency(
       value
-        .replace(/[^a-z]/gi, '')
+        .replace(
+          /[^a-z]/gi,
+          '',
+        )
         .toUpperCase()
         .slice(0, 3),
     );
@@ -147,87 +278,111 @@ export default function NewTripScreen() {
   const toggleIntent = (
     value: TripIntent,
   ) => {
-    setIntent((current) =>
-      current === value
-        ? undefined
-        : value,
+    setIntent(
+      (current) =>
+        current === value
+          ? undefined
+          : value,
     );
   };
 
   const togglePace = (
     value: TripPace,
   ) => {
-    setPace((current) =>
-      current === value
-        ? undefined
-        : value,
+    setPace(
+      (current) =>
+        current === value
+          ? undefined
+          : value,
     );
   };
 
-  const createTrip = async () => {
-    if (!destination) {
-      Alert.alert(
-        'Choose a destination',
-        'Choose a city, region or country before creating this trip.',
-      );
-      return;
-    }
+  const createTrip =
+    async () => {
+      if (!destination) {
+        Alert.alert(
+          'Choose a destination',
+          'Choose a city, region or country before creating this trip.',
+        );
 
-    const resolvedTitle =
-      title.trim() ||
-      destination.name?.trim() ||
-      'New trip';
+        return;
+      }
 
-    const now = new Date().toISOString();
-    let trip;
+      const resolvedTitle =
+        title.trim() ||
+        destination.name?.trim() ||
+        'New trip';
 
-    try {
-      trip = buildNewTrip(
-        {
-          title: resolvedTitle,
-          destination,
-          startDate,
-          endDate,
-          accountingCurrency: currency,
-          intent,
-          pace,
-        },
-        {
-          tripId: () => Crypto.randomUUID(),
-          destinationId: () => Crypto.randomUUID(),
-        },
-        now,
-      );
-    } catch (error) {
-      Alert.alert(
-        'Check trip details',
-        error instanceof Error
-          ? error.message
-          : 'Check the destination, travel dates and trip currency.',
-      );
-      return;
-    }
+      const now =
+        new Date().toISOString();
 
-    try {
-      setIsSaving(true);
+      let trip;
 
-      await saveTrip(trip);
+      try {
+        trip =
+          buildNewTrip(
+            {
+              title:
+                resolvedTitle,
 
-      router.replace({
-        pathname: '/trip/[tripId]',
-        params: {
-          tripId: trip.id,
-        },
-      });
-    } catch {
-      Alert.alert(
-        'Could not create trip',
-        'TravelOS could not save this trip. Please try again.',
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
+              destination,
+
+              startDate,
+
+              endDate,
+
+              accountingCurrency:
+                currency,
+
+              intent,
+
+              pace,
+            },
+
+            {
+              tripId: () =>
+                Crypto.randomUUID(),
+
+              destinationId: () =>
+                Crypto.randomUUID(),
+            },
+
+            now,
+          );
+      } catch (error) {
+        Alert.alert(
+          'Check trip details',
+
+          error instanceof Error
+            ? error.message
+            : 'Check the destination, travel dates and trip currency.',
+        );
+
+        return;
+      }
+
+      try {
+        setIsSaving(true);
+
+        await saveTrip(trip);
+
+        router.replace({
+          pathname:
+            '/trip/[tripId]',
+
+          params: {
+            tripId: trip.id,
+          },
+        });
+      } catch {
+        Alert.alert(
+          'Could not create trip',
+          'TravelOS could not save this trip. Please try again.',
+        );
+      } finally {
+        setIsSaving(false);
+      }
+    };
 
   return (
     <KeyboardAvoidingView
@@ -239,12 +394,18 @@ export default function NewTripScreen() {
       }
     >
       <Screen scroll>
-        <View style={styles.topBar}>
+        <View
+          style={styles.topBar}
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Go back"
-            style={styles.backButton}
-            onPress={() => router.back()}
+            style={
+              styles.backButton
+            }
+            onPress={() =>
+              router.back()
+            }
           >
             <Ionicons
               name="arrow-back"
@@ -253,105 +414,246 @@ export default function NewTripScreen() {
             />
           </Pressable>
 
-          <Text style={styles.topBarTitle}>
+          <Text
+            style={
+              styles.topBarTitle
+            }
+          >
             Create trip
           </Text>
 
-          <View style={styles.topSpacer} />
+          <View
+            style={
+              styles.topSpacer
+            }
+          />
         </View>
 
         <View style={styles.intro}>
-          <Text style={styles.eyebrow}>
+          <Text
+            style={styles.eyebrow}
+          >
             NEW JOURNEY
           </Text>
 
           <Text style={styles.title}>
-            Start with somewhere.
+            {discoverPrefill
+              ? 'Make it a trip.'
+              : 'Start with somewhere.'}
           </Text>
 
-          <Text style={styles.subtitle}>
-            Pick a place and your dates, then add a little context about the kind of trip you want.
+          <Text
+            style={styles.subtitle}
+          >
+            {discoverPrefill
+              ? 'Your Discover choice is ready. Add the remaining trip details, review anything you want to change, and create the trip when you are ready.'
+              : 'Pick a place and your dates, then add a little context about the kind of trip you want.'}
           </Text>
         </View>
 
+        {discoverPrefill ? (
+          <View
+            style={
+              styles.discoverCard
+            }
+          >
+            <View
+              style={
+                styles.discoverIcon
+              }
+            >
+              <Ionicons
+                name="compass-outline"
+                size={21}
+                color={colors.teal}
+              />
+            </View>
+
+            <View
+              style={
+                styles.discoverCopy
+              }
+            >
+              <Text
+                style={
+                  styles.discoverEyebrow
+                }
+              >
+                FROM DISCOVER
+              </Text>
+
+              <Text
+                style={
+                  styles.discoverTitle
+                }
+              >
+                Destination prefilled
+              </Text>
+
+              <Text
+                style={
+                  styles.discoverBody
+                }
+              >
+                Nothing has been created yet. Review the details below and create the trip only when you are ready.
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.form}>
           <DestinationPickerField
-            destination={destination}
+            destination={
+              destination
+            }
             disabled={isSaving}
-            onSelect={setDestination}
+            onSelect={
+              setDestination
+            }
           />
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeading}>
-              <Text style={styles.sectionEyebrow}>
+          <View
+            style={styles.section}
+          >
+            <View
+              style={
+                styles.sectionHeading
+              }
+            >
+              <Text
+                style={
+                  styles.sectionEyebrow
+                }
+              >
                 WHEN
               </Text>
-              <Text style={styles.sectionTitle}>
+
+              <Text
+                style={
+                  styles.sectionTitle
+                }
+              >
                 Travel dates
               </Text>
             </View>
 
-            <View style={styles.dateFields}>
+            <View
+              style={
+                styles.dateFields
+              }
+            >
               <CalendarDateField
                 label="START DATE"
                 value={startDate}
-                fallbackDate={endDate}
+                fallbackDate={
+                  endDate
+                }
                 disabled={isSaving}
-                onChange={setStartDate}
+                onChange={
+                  setStartDate
+                }
               />
 
               <CalendarDateField
                 label="END DATE"
                 value={endDate}
-                fallbackDate={startDate}
+                fallbackDate={
+                  startDate
+                }
                 disabled={isSaving}
-                onChange={setEndDate}
+                onChange={
+                  setEndDate
+                }
               />
             </View>
           </View>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeading}>
-              <Text style={styles.sectionEyebrow}>
+          <View
+            style={styles.section}
+          >
+            <View
+              style={
+                styles.sectionHeading
+              }
+            >
+              <Text
+                style={
+                  styles.sectionEyebrow
+                }
+              >
                 WHY THIS TRIP
               </Text>
-              <Text style={styles.sectionTitle}>
+
+              <Text
+                style={
+                  styles.sectionTitle
+                }
+              >
                 Shape the journey
               </Text>
-              <Text style={styles.sectionDescription}>
+
+              <Text
+                style={
+                  styles.sectionDescription
+                }
+              >
                 Optional. Choose what matters most for this trip and how full you want the days to feel.
               </Text>
             </View>
 
-            <View style={styles.choiceGroup}>
-              <Text style={styles.fieldLabel}>
+            <View
+              style={
+                styles.choiceGroup
+              }
+            >
+              <Text
+                style={
+                  styles.fieldLabel
+                }
+              >
                 PRIMARY INTENT · OPTIONAL
               </Text>
 
-              <View style={styles.intentGrid}>
+              <View
+                style={
+                  styles.intentGrid
+                }
+              >
                 {INTENT_OPTIONS.map(
                   (option) => {
                     const selected =
-                      intent === option.value;
+                      intent ===
+                      option.value;
 
                     return (
                       <Pressable
-                        key={option.value}
+                        key={
+                          option.value
+                        }
                         accessibilityRole="button"
                         accessibilityState={{
                           selected,
                         }}
                         accessibilityLabel={`Trip intent: ${option.label}`}
-                        disabled={isSaving}
-                        onPress={() =>
-                          toggleIntent(option.value)
+                        disabled={
+                          isSaving
                         }
-                        style={({ pressed }) => [
+                        onPress={() =>
+                          toggleIntent(
+                            option.value,
+                          )
+                        }
+                        style={({
+                          pressed,
+                        }) => [
                           styles.intentChip,
+
                           selected &&
                             styles.choiceSelected,
+
                           pressed &&
                             styles.pressed,
+
                           isSaving &&
                             styles.inputDisabled,
                         ]}
@@ -359,11 +661,14 @@ export default function NewTripScreen() {
                         <Text
                           style={[
                             styles.intentChipText,
+
                             selected &&
                               styles.choiceSelectedText,
                           ]}
                         >
-                          {option.label}
+                          {
+                            option.label
+                          }
                         </Text>
                       </Pressable>
                     );
@@ -372,35 +677,59 @@ export default function NewTripScreen() {
               </View>
             </View>
 
-            <View style={styles.choiceGroup}>
-              <Text style={styles.fieldLabel}>
+            <View
+              style={
+                styles.choiceGroup
+              }
+            >
+              <Text
+                style={
+                  styles.fieldLabel
+                }
+              >
                 TRIP PACE · OPTIONAL
               </Text>
 
-              <View style={styles.paceOptions}>
+              <View
+                style={
+                  styles.paceOptions
+                }
+              >
                 {PACE_OPTIONS.map(
                   (option) => {
                     const selected =
-                      pace === option.value;
+                      pace ===
+                      option.value;
 
                     return (
                       <Pressable
-                        key={option.value}
+                        key={
+                          option.value
+                        }
                         accessibilityRole="button"
                         accessibilityState={{
                           selected,
                         }}
                         accessibilityLabel={`Trip pace: ${option.label}`}
-                        disabled={isSaving}
-                        onPress={() =>
-                          togglePace(option.value)
+                        disabled={
+                          isSaving
                         }
-                        style={({ pressed }) => [
+                        onPress={() =>
+                          togglePace(
+                            option.value,
+                          )
+                        }
+                        style={({
+                          pressed,
+                        }) => [
                           styles.paceCard,
+
                           selected &&
                             styles.choiceSelected,
+
                           pressed &&
                             styles.pressed,
+
                           isSaving &&
                             styles.inputDisabled,
                         ]}
@@ -408,6 +737,7 @@ export default function NewTripScreen() {
                         <View
                           style={[
                             styles.radioOuter,
+
                             selected &&
                               styles.radioOuterSelected,
                           ]}
@@ -429,11 +759,14 @@ export default function NewTripScreen() {
                           <Text
                             style={[
                               styles.paceLabel,
+
                               selected &&
                                 styles.choiceSelectedText,
                             ]}
                           >
-                            {option.label}
+                            {
+                              option.label
+                            }
                           </Text>
 
                           <Text
@@ -441,7 +774,9 @@ export default function NewTripScreen() {
                               styles.paceDescription
                             }
                           >
-                            {option.description}
+                            {
+                              option.description
+                            }
                           </Text>
                         </View>
                       </Pressable>
@@ -452,36 +787,65 @@ export default function NewTripScreen() {
             </View>
           </View>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeading}>
-              <Text style={styles.sectionEyebrow}>
+          <View
+            style={styles.section}
+          >
+            <View
+              style={
+                styles.sectionHeading
+              }
+            >
+              <Text
+                style={
+                  styles.sectionEyebrow
+                }
+              >
                 MAKE IT YOURS
               </Text>
-              <Text style={styles.sectionTitle}>
+
+              <Text
+                style={
+                  styles.sectionTitle
+                }
+              >
                 Trip details
               </Text>
             </View>
 
             <Field
               label="TRIP NAME · OPTIONAL"
-              placeholder={tripNamePlaceholder}
+              placeholder={
+                tripNamePlaceholder
+              }
               value={title}
               disabled={isSaving}
-              onChangeText={setTitle}
+              onChangeText={
+                setTitle
+              }
             />
 
-            <View style={styles.currencyField}>
+            <View
+              style={
+                styles.currencyField
+              }
+            >
               <Field
                 label="TRIP CURRENCY"
                 placeholder="EUR"
                 value={currency}
                 disabled={isSaving}
                 maxLength={3}
-                onChangeText={updateCurrency}
+                onChangeText={
+                  updateCurrency
+                }
                 autoCapitalize="characters"
               />
 
-              <Text style={styles.helperText}>
+              <Text
+                style={
+                  styles.helperText
+                }
+              >
                 Used for your budget and trip totals. Expenses can still use the currency you paid.
               </Text>
             </View>
@@ -491,37 +855,61 @@ export default function NewTripScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Create trip"
-          disabled={isSaving || !isReady}
-          style={({ pressed }) => [
+          disabled={
+            isSaving ||
+            !isReady
+          }
+          style={({
+            pressed,
+          }) => [
             styles.createButton,
-            pressed && styles.pressed,
-            (isSaving || !isReady) &&
+
+            pressed &&
+              styles.pressed,
+
+            (isSaving ||
+              !isReady) &&
               styles.disabled,
           ]}
-          onPress={createTrip}
+          onPress={
+            createTrip
+          }
         >
-          <Text style={styles.createButtonText}>
+          <Text
+            style={
+              styles.createButtonText
+            }
+          >
             {isSaving
               ? 'Creating trip…'
               : 'Create trip'}
           </Text>
 
-          {!isSaving && (
+          {!isSaving ? (
             <Ionicons
               name="arrow-forward"
               size={20}
-              color={colors.textInverse}
+              color={
+                colors.textInverse
+              }
             />
-          )}
+          ) : null}
         </Pressable>
 
-        {!isReady && !isSaving ? (
-          <Text style={styles.ctaHint}>
+        {!isReady &&
+        !isSaving ? (
+          <Text
+            style={styles.ctaHint}
+          >
             Choose a destination and travel dates to continue.
           </Text>
         ) : null}
 
-        <View style={styles.bottomSpace} />
+        <View
+          style={
+            styles.bottomSpace
+          }
+        />
       </Screen>
     </KeyboardAvoidingView>
   );
@@ -529,15 +917,23 @@ export default function NewTripScreen() {
 
 interface FieldProps {
   label: string;
+
   placeholder: string;
+
   value: string;
-  onChangeText(value: string): void;
+
+  onChangeText(
+    value: string,
+  ): void;
+
   autoCapitalize?:
     | 'none'
     | 'sentences'
     | 'words'
     | 'characters';
+
   disabled?: boolean;
+
   maxLength?: number;
 }
 
@@ -552,301 +948,465 @@ function Field({
 }: FieldProps) {
   return (
     <View style={styles.field}>
-      <Text style={styles.fieldLabel}>
+      <Text
+        style={
+          styles.fieldLabel
+        }
+      >
         {label}
       </Text>
 
       <TextInput
         value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
-        autoCapitalize={autoCapitalize}
+        onChangeText={
+          onChangeText
+        }
+        placeholder={
+          placeholder
+        }
+        placeholderTextColor={
+          colors.textMuted
+        }
+        autoCapitalize={
+          autoCapitalize
+        }
         autoCorrect={false}
         editable={!disabled}
         maxLength={maxLength}
         style={[
           styles.input,
-          disabled && styles.inputDisabled,
+
+          disabled &&
+            styles.inputDisabled,
         ]}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+const styles =
+  StyleSheet.create({
+    flex: {
+      flex: 1,
+      backgroundColor:
+        colors.background,
+    },
 
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing[3],
-  },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent:
+        'space-between',
+      paddingTop: spacing[3],
+    },
 
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.subtle,
-  },
+    backButton: {
+      width: 42,
+      height: 42,
+      borderRadius:
+        radius.pill,
+      backgroundColor:
+        colors.surface,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      ...shadows.subtle,
+    },
 
-  topBarTitle: {
-    fontFamily: fontFamily.sansSemiBold,
-    fontSize: fontSize.bodySmall,
-    color: colors.textPrimary,
-  },
+    topBarTitle: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize:
+        fontSize.bodySmall,
+      color:
+        colors.textPrimary,
+    },
 
-  topSpacer: {
-    width: 42,
-  },
+    topSpacer: {
+      width: 42,
+    },
 
-  intro: {
-    marginTop: spacing[8],
-    marginBottom: spacing[7],
-  },
+    intro: {
+      marginTop: spacing[8],
+      marginBottom:
+        spacing[7],
+    },
 
-  eyebrow: {
-    marginBottom: spacing[2],
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.8,
-    color: colors.brass,
-  },
+    eyebrow: {
+      marginBottom:
+        spacing[2],
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize: fontSize.micro,
+      letterSpacing: 1.8,
+      color: colors.brass,
+    },
 
-  title: {
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.titleLarge,
-    lineHeight: lineHeight.titleLarge,
-    color: colors.textPrimary,
-  },
+    title: {
+      fontFamily:
+        fontFamily.serifSemiBold,
+      fontSize:
+        fontSize.titleLarge,
+      lineHeight:
+        lineHeight.titleLarge,
+      color:
+        colors.textPrimary,
+    },
 
-  subtitle: {
-    maxWidth: 430,
-    marginTop: spacing[3],
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.bodySmall,
-    lineHeight: lineHeight.bodySmall,
-    color: colors.textSecondary,
-  },
+    subtitle: {
+      maxWidth: 430,
+      marginTop: spacing[3],
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.bodySmall,
+      lineHeight:
+        lineHeight.bodySmall,
+      color:
+        colors.textSecondary,
+    },
 
-  form: {
-    gap: spacing[6],
-  },
+    discoverCard: {
+      flexDirection: 'row',
+      alignItems:
+        'flex-start',
+      gap: spacing[4],
+      marginBottom:
+        spacing[6],
+      padding: spacing[5],
+      borderRadius:
+        radius.lg,
+      backgroundColor:
+        colors.tealSoft,
+    },
 
-  section: {
-    gap: spacing[4],
-    padding: spacing[5],
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-  },
+    discoverIcon: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      borderRadius:
+        radius.pill,
+      backgroundColor:
+        colors.surface,
+    },
 
-  sectionHeading: {
-    gap: spacing[1],
-  },
+    discoverCopy: {
+      flex: 1,
+    },
 
-  sectionEyebrow: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.4,
-    color: colors.brass,
-  },
+    discoverEyebrow: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 1.2,
+      color: colors.teal,
+    },
 
-  sectionTitle: {
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.titleSmall,
-    lineHeight: lineHeight.titleSmall,
-    color: colors.textPrimary,
-  },
+    discoverTitle: {
+      marginTop:
+        spacing[1],
+      fontFamily:
+        fontFamily.serifSemiBold,
+      fontSize:
+        fontSize.titleSmall,
+      lineHeight:
+        lineHeight.titleSmall,
+      color:
+        colors.textPrimary,
+    },
 
-  sectionDescription: {
-    marginTop: spacing[1],
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-    color: colors.textSecondary,
-  },
+    discoverBody: {
+      marginTop:
+        spacing[2],
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.caption,
+      lineHeight:
+        lineHeight.caption,
+      color:
+        colors.textSecondary,
+    },
 
-  field: {
-    gap: spacing[2],
-  },
+    form: {
+      gap: spacing[6],
+    },
 
-  fieldLabel: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.3,
-    color: colors.brass,
-  },
+    section: {
+      gap: spacing[4],
+      padding: spacing[5],
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+      borderRadius:
+        radius.lg,
+      backgroundColor:
+        colors.surface,
+    },
 
-  input: {
-    minHeight: 54,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing[4],
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.body,
-    color: colors.textPrimary,
-  },
+    sectionHeading: {
+      gap: spacing[1],
+    },
 
-  inputDisabled: {
-    opacity: 0.55,
-  },
+    sectionEyebrow: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 1.4,
+      color: colors.brass,
+    },
 
-  dateFields: {
-    gap: spacing[4],
-  },
+    sectionTitle: {
+      fontFamily:
+        fontFamily.serifSemiBold,
+      fontSize:
+        fontSize.titleSmall,
+      lineHeight:
+        lineHeight.titleSmall,
+      color:
+        colors.textPrimary,
+    },
 
-  choiceGroup: {
-    gap: spacing[3],
-  },
+    sectionDescription: {
+      marginTop:
+        spacing[1],
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.caption,
+      lineHeight:
+        lineHeight.caption,
+      color:
+        colors.textSecondary,
+    },
 
-  intentGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-  },
+    field: {
+      gap: spacing[2],
+    },
 
-  intentChip: {
-    minHeight: 42,
-    justifyContent: 'center',
-    paddingHorizontal: spacing[4],
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-  },
+    fieldLabel: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 1.3,
+      color: colors.brass,
+    },
 
-  intentChipText: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.bodySmall,
-    color: colors.textPrimary,
-  },
+    input: {
+      minHeight: 54,
+      backgroundColor:
+        colors.background,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+      borderRadius:
+        radius.md,
+      paddingHorizontal:
+        spacing[4],
+      fontFamily:
+        fontFamily.sansMedium,
+      fontSize: fontSize.body,
+      color:
+        colors.textPrimary,
+    },
 
-  choiceSelected: {
-    borderColor: colors.brand,
-    backgroundColor: colors.brandSoft,
-  },
+    inputDisabled: {
+      opacity: 0.55,
+    },
 
-  choiceSelectedText: {
-    color: colors.brand,
-  },
+    dateFields: {
+      gap: spacing[4],
+    },
 
-  paceOptions: {
-    gap: spacing[2],
-  },
+    choiceGroup: {
+      gap: spacing[3],
+    },
 
-  paceCard: {
-    minHeight: 66,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-  },
+    intentGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+    },
 
-  radioOuter: {
-    width: 20,
-    height: 20,
-    borderRadius: radius.pill,
-    borderWidth: 1.5,
-    borderColor: colors.textMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    intentChip: {
+      minHeight: 42,
+      justifyContent:
+        'center',
+      paddingHorizontal:
+        spacing[4],
+      borderRadius:
+        radius.pill,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+      backgroundColor:
+        colors.background,
+    },
 
-  radioOuterSelected: {
-    borderColor: colors.brand,
-  },
+    intentChipText: {
+      fontFamily:
+        fontFamily.sansMedium,
+      fontSize:
+        fontSize.bodySmall,
+      color:
+        colors.textPrimary,
+    },
 
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: radius.pill,
-    backgroundColor: colors.brand,
-  },
+    choiceSelected: {
+      borderColor:
+        colors.brand,
+      backgroundColor:
+        colors.brandSoft,
+    },
 
-  paceCopy: {
-    flex: 1,
-    gap: spacing[1],
-  },
+    choiceSelectedText: {
+      color: colors.brand,
+    },
 
-  paceLabel: {
-    fontFamily: fontFamily.sansSemiBold,
-    fontSize: fontSize.bodySmall,
-    color: colors.textPrimary,
-  },
+    paceOptions: {
+      gap: spacing[2],
+    },
 
-  paceDescription: {
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-    color: colors.textMuted,
-  },
+    paceCard: {
+      minHeight: 66,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[3],
+      paddingHorizontal:
+        spacing[4],
+      paddingVertical:
+        spacing[3],
+      borderRadius:
+        radius.md,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+      backgroundColor:
+        colors.background,
+    },
 
-  currencyField: {
-    gap: spacing[2],
-  },
+    radioOuter: {
+      width: 20,
+      height: 20,
+      borderRadius:
+        radius.pill,
+      borderWidth: 1.5,
+      borderColor:
+        colors.textMuted,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+    },
 
-  helperText: {
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-    color: colors.textMuted,
-  },
+    radioOuterSelected: {
+      borderColor:
+        colors.brand,
+    },
 
-  createButton: {
-    minHeight: 56,
-    marginTop: spacing[7],
-    borderRadius: radius.md,
-    backgroundColor: colors.brand,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[3],
-    ...shadows.card,
-  },
+    radioInner: {
+      width: 10,
+      height: 10,
+      borderRadius:
+        radius.pill,
+      backgroundColor:
+        colors.brand,
+    },
 
-  createButtonText: {
-    fontFamily: fontFamily.sansSemiBold,
-    fontSize: fontSize.body,
-    color: colors.textInverse,
-  },
+    paceCopy: {
+      flex: 1,
+      gap: spacing[1],
+    },
 
-  ctaHint: {
-    marginTop: spacing[2],
-    paddingHorizontal: spacing[2],
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-    textAlign: 'center',
-    color: colors.textMuted,
-  },
+    paceLabel: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize:
+        fontSize.bodySmall,
+      color:
+        colors.textPrimary,
+    },
 
-  pressed: {
-    opacity: 0.84,
-  },
+    paceDescription: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.caption,
+      lineHeight:
+        lineHeight.caption,
+      color:
+        colors.textMuted,
+    },
 
-  disabled: {
-    opacity: 0.45,
-  },
+    currencyField: {
+      gap: spacing[2],
+    },
 
-  bottomSpace: {
-    height: spacing[12],
-  },
-});
+    helperText: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.caption,
+      lineHeight:
+        lineHeight.caption,
+      color:
+        colors.textMuted,
+    },
+
+    createButton: {
+      minHeight: 56,
+      marginTop: spacing[7],
+      borderRadius:
+        radius.md,
+      backgroundColor:
+        colors.brand,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      gap: spacing[3],
+      ...shadows.card,
+    },
+
+    createButtonText: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize: fontSize.body,
+      color:
+        colors.textInverse,
+    },
+
+    ctaHint: {
+      marginTop: spacing[2],
+      paddingHorizontal:
+        spacing[2],
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.caption,
+      lineHeight:
+        lineHeight.caption,
+      textAlign: 'center',
+      color:
+        colors.textMuted,
+    },
+
+    pressed: {
+      opacity: 0.84,
+    },
+
+    disabled: {
+      opacity: 0.45,
+    },
+
+    bottomSpace: {
+      height: spacing[12],
+    },
+  });
