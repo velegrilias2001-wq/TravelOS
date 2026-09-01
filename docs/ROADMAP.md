@@ -29,10 +29,12 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 
 ### Remaining Phase 0 work
 
-- [ ] Decide and enforce remaining relationship invariants and cardinality for memories, runtime state, and other workspace aggregates. Booking ↔ Stop is explicitly zero-or-one from Booking and zero-to-many from TripStop; Accommodation is explicitly zero-to-many from Trip with optional zero-or-one Booking and TripStop links. Both relationship families enforce same-trip IDs.
+- [ ] Decide and enforce remaining relationship invariants and cardinality for runtime state and other unfinished workspace aggregates. Booking ↔ Stop, Accommodation, Memory, and Travel Book same-trip rules are now explicit; Memory/Travel Book integrity is guarded by migration version 7 triggers. `TripRuntimeState` day/stop references are still not fully protected.
+- [ ] Route Memory and Travel Book writes through the shared TripWorkspace action/invalidation contract so other Trip Space tabs cannot remain stale after those mutations.
 - [ ] Remove N+1 loading patterns from the trip list and other obvious aggregate reads.
 - [ ] Expand automated coverage for the remaining repository relationships/cascades. Booking/stop unlink cascades for Bookings and Accommodations are covered, and deterministic upcoming/active/completed runtime plus exact-day selection now have fixed-clock coverage.
 - [ ] Rehearse migration version 3 against Expo SQLite on an iOS development build.
+- [ ] Rehearse migrations 7–9 on an Expo SQLite development build. Historical Android rehearsals stopped at `user_version = 6`. Node tests cover versions 7–9. No device `PRAGMA user_version = 9` rehearsal is recorded.
 - [ ] Commit a non-interactive lint configuration and add baseline CI checks.
 
 Exit condition: existing native flows survive retries, partial data, navigation refocus, and supported migrations without corrupting or misrepresenting trip truth.
@@ -42,7 +44,7 @@ Exit condition: existing native flows survive retries, partial data, navigation 
 Goal: turn the current vertical prototype into a coherent pre-trip workspace.
 
 - [x] Build one native trip budget and actual-expense flow with original currencies, explicit booking/stop IDs, truthful same-currency totals, category breakdown, persistence tests, and Android runtime verification.
-- [x] Implement More as a functional trip hub with canonical Trip Details, Budget, Itinerary, Bookings, Map, and Companion navigation while labelling future modules honestly.
+- [x] Implement More as a functional trip hub with canonical Trip Details, Budget, Accommodation, Travelers, Memories, Travel Book, Itinerary, Bookings, Map, and Companion navigation while labelling remaining future modules honestly.
 - [x] Add service-backed Trip Details editing for title, valid existing destination names, native dates, accounting currency, and lifecycle status.
 - [x] Reject invalid/reversed detail dates, prevent manual assignment of active truth, preserve structured destination metadata, and block accounting-currency changes once a Budget exists.
 - [x] Add confirmed cascade deletion for trip-owned local data, workspace not-found transition, trip-list refresh, automated coverage, and Android runtime verification with isolated data.
@@ -83,31 +85,57 @@ Goal: make TravelOS useful and correct while the traveler is moving.
 
 Exit condition: Companion presents the correct travel context and remains trustworthy during connectivity, timing, and plan changes.
 
-## Phase 3 — Post-trip
+## Phase 3 — Post-trip in progress
 
 Goal: turn completed trips into a meaningful personal history.
 
-- Build Memories with explicit trip, day, stop, and place relationships.
-- Distinguish planned places from visited and lived places.
-- Build the World view from confirmed history, not destination strings or recommendations.
-- Build Travel Book as a curated post-trip narrative from canonical travel facts and user-selected memories.
-- Preserve the difference between the planned itinerary and lived history.
-- Define media ownership, storage, export, deletion, and offline behavior before expanding media features.
+- [x] Memories V1: native create/edit/delete for note and photo memories with explicit Trip ID plus optional TripDay and TripStop IDs, local photo copies in app storage, and migration version 7 same-trip integrity guards. Video remains a domain type without an authoring path. Migration integrity is covered by Node tests. No Memories device rehearsal is recorded.
+- [x] Travel Book V1: one book per trip, ordered same-trip Memory membership, title/summary/cover from selected photo media, and a local `isPublished` flag that is not cloud publish or export. This documentation update did not run a device rehearsal.
+- [x] World V1: native map and destination cards from persisted Trip destinations with real saved coordinates only. Filters use durable `Trip.status` (planning / completed / archived), not the runtime phase resolver, and do not infer visited history from a destination title.
+- [ ] Distinguish planned places from visited and lived places using explicit relationships rather than destination strings or World filters on organizational status.
+- [ ] Derive a deeper World / travel-archive view from confirmed lived history, memories, and place relationships—not from recommendations or the current destination-coordinate V1 alone.
+- [ ] Preserve the difference between the planned itinerary and lived history; `TripRuntimeState` remains unused as lived progress.
+- [ ] Define remaining media ownership, backup, export, deletion, and offline behavior before expanding Memories beyond on-device photo/note storage.
+- [ ] Route Memory and Travel Book mutations through TripWorkspace invalidation (also remaining Phase 0 work).
 
 Exit condition: a completed trip becomes a durable, truthful, and user-controlled personal record.
 
-## Phase 4 — Discovery and Planning Intelligence
+## Phase 4 — Discovery and Planning Intelligence in progress
 
 Goal: support earlier travel decisions without contaminating confirmed trip data.
 
-- Build Discover around destination uncertainty, constraints, seasonality, pace, party, interests, and budget.
-- Add wishlist and candidate-place states distinct from visited and planned data.
-- Add best-season guidance with cited source and freshness where applicable.
-- Import supported booking and itinerary materials into a review queue.
-- Record provenance, extraction confidence, and conflicts for every imported claim.
-- Add AI assistance only behind explicit review and confirmation gates.
-- Never allow recommendations, imports, or AI suggestions to silently become canonical facts.
-- Define provider, privacy, retention, cost, and fallback behavior before shipping intelligence.
+Destination truth must come from grounded sources. AI is not a destination source. Embedding, reranker, and explanation-model choices are replaceable candidates to benchmark, not permanent architecture commitments.
+
+### Completed planning-intelligence milestones
+
+- [x] Travel DNA V1: one explicit local preference profile (pace, interests, travel style, budget style, daily rhythm, typical party). Values are user-chosen only; nothing is inferred or generated by AI.
+- [x] Trip Intent + Pace V1: optional trip-specific intent and pace on Create Trip and Trip Details, persisted by migration version 9, and not overwritten by Travel DNA.
+- [x] Flexible Itinerary / Free Time V1: optional stop end times, knowable free-time gaps between consecutive timed stops, and explicit overlapping time conflicts. Gaps are not invented before the first stop, after the last stop, or across untimed moments.
+- [x] AI Foundation V1: read-only deterministic AI context snapshots plus a local HTTP client/server for Plan free-time advice. Suggestions do not become itinerary stops unless the traveler later uses the existing stop editor. Node tests for context and payload parsing exist. No live Ollama or device round-trip is recorded.
+- [x] Discover Architecture V1: session Discover Brief (Zustand only), curated catalogue with provenance, matcher, personalization fallback from Travel DNA, and Create Trip route-param handoff. Candidates are not written into SQLite as trips.
+- [x] Discover Experience V1: native Discover tab supporting **Start with a place** (Create Trip) and **Find me somewhere** (explicit Brief → deterministic matching against grounded curated destinations → optional Create Trip confirmation). Trip-specific Brief values outrank Travel DNA. Flexible timing is not converted into invented calendar dates.
+
+Current Discover V1 does **not** include Best time, Ready-made journeys, wishlist persistence, live provider catalogues, semantic retrieval, reranking, or AI explanations.
+
+### Immediate planned Discover sequence
+
+These steps are ordered. Grounded destination data must exist before semantic retrieval or reranking.
+
+- [ ] **Grounded Destination Sourcing V1** — scale grounded destination candidates from explicit sources with provenance. Do not use AI to invent destinations.
+- [ ] **Semantic Discover V1** — local/open multilingual embeddings over grounded candidates. BGE-M3 is the current model candidate to benchmark, not a locked architecture choice.
+- [ ] **Discover reranking** — rerank grounded retrieval results. A BGE reranker is the current candidate to benchmark, not a locked architecture choice.
+- [ ] **Grounded AI explanations** — explain why a grounded candidate fits the Brief, using the existing local Qwen foundation. Explanations must not introduce destinations, coordinates, prices, or other facts that were not already in the grounded record.
+
+### Remaining Phase 4 work
+
+- [ ] Add Best time guidance for a known destination, with cited source and freshness.
+- [ ] Add Ready-made journeys that remain distinct from confirmed trips until the traveler accepts them.
+- [ ] Add wishlist and candidate-place persistence distinct from visited and planned data.
+- [ ] Import supported booking and itinerary materials into a review queue.
+- [ ] Record provenance, extraction confidence, and conflicts for every imported claim.
+- [ ] Keep AI assistance behind explicit review and confirmation gates.
+- [ ] Never allow recommendations, imports, or AI suggestions to silently become canonical facts.
+- [ ] Define production provider, privacy, retention, cost, and fallback behavior before shipping intelligence beyond the local-dev AI foundation.
 
 Exit condition: discovery and import reduce planning effort while every unconfirmed claim remains visibly separate from trip truth.
 
@@ -119,6 +147,7 @@ Goal: turn coherent functionality into a distinctive, accessible native product.
 - [x] Remove traveler-facing engineering terminology from Companion, Travelers, Trip Details, destination selection, and time/date form helpers while preserving the underlying canonical data rules.
 - [x] Establish shared compact utility-header and summary-strip primitives and apply them across Plan, Bookings, Budget, Accommodation, Travelers, More, and Trip Details without adding a UI framework.
 - [ ] Complete the remaining UX Refinement V1 Android visual/function matrix for Plan, Bookings, More, Travelers, forms, Map, CRUD, and cold relaunch; the debug build/install/launch and updated upcoming Companion first screenful are verified, but emulator control ended before the rest of the matrix could be observed.
+- [ ] Extend design QA to Discover, World, Profile, Memories, Travel Book, and Travel DNA screens that shipped after UX Refinement V1. Those surfaces were not part of the incomplete V1 visual matrix. No device visual matrix was run for this documentation handoff.
 - Consolidate stable primitives for typography, fields, cards, sheets, navigation, alerts, empty states, loading, and errors.
 - Add native gestures, transitions, motion, and haptics where they improve comprehension.
 - Create an imagery strategy with licensing, caching, attribution, fallbacks, and performance constraints.
@@ -152,5 +181,9 @@ Exit condition: TravelOS can be built, tested, observed, restored, and released 
 - SQLite remains the local durable truth; Zustand remains UI/session state.
 - Preserve existing user data and working behavior.
 - Do not fabricate data to make a screen appear complete.
+- Destination truth must come from grounded sources. AI is not a destination source.
+- Embedding, reranker, and explanation models named in this roadmap are candidates to evaluate, not permanent architecture commitments.
 - A phase is complete only when its behavior, failure states, tests, and documentation agree.
 - Update docs/CURRENT_STATE.md and this roadmap after each meaningful milestone.
+
+Unresolved work that remains in force across phases includes: multi-destination add/remove/reorder; Day → Destination semantics; secure timezone enrichment; FX strategy; Companion V2 lived-state decisions; Memory/Travel Book workspace invalidation; Expo SQLite rehearsal of migrations 7–9; accessibility and design-system consolidation; iOS; CI/EAS; and sync/backup. Those items stay open. They do not replace the immediate Discover sequence in Phase 4.

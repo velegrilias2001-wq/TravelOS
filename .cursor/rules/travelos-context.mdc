@@ -1,0 +1,23 @@
+---
+description: Read TravelOS project context before substantial work
+alwaysApply: true
+---
+
+# TravelOS agent bootstrap
+
+Before substantial TravelOS work, read and inspect — do not assume prior chat history or that docs are newer than the code.
+
+1. Read `AGENTS.md` (engineering contract).
+2. Read `docs/PRODUCT_VISION.md` (product contract).
+3. Read `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` (living state and sequence).
+4. Inspect `git status`, the current branch, and relevant recent commits.
+5. Inspect the relevant implementation (schema, services, screens) before changing code.
+
+Rules:
+
+- Native code and git history are implementation truth. Stale documentation must not override them.
+- Do not invent architecture, providers, or models that are not already in the tree or explicitly planned in `docs/ROADMAP.md`.
+- Do not treat Discover session data as a Trip. Canonical trips are created at `/new-trip`.
+- Do not use AI as a destination source or silently mutate SQLite from AI output.
+- Do not install embedding/reranker/extra models prematurely; named models are benchmark candidates.
+- Propose a concise plan before large changes. Do not broaden scope. Do not commit unless asked.

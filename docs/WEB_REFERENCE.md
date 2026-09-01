@@ -86,13 +86,13 @@ These are web-era solutions. Native accounts, sync, diagnostics, privacy, and re
 
 | Reference idea | Disposition | Native direction |
 | --- | --- | --- |
-| Full lifecycle navigation | Preserve | Keep Home, Trips, Discover, World, and Profile as product areas, activating them only when backed by real data |
-| Create / decide / import entry points | Preserve | Present context-aware native actions and clear truth states |
-| Rich trip-creation questions | Redesign | Use progressive native input; only persist fields with defined domain meaning |
-| Destination advisor and season guidance | Redesign | Add source, freshness, uncertainty, and confirmation boundaries |
+| Full lifecycle navigation | Preserve | Home, Trips, Discover, World, and Profile remain the native areas. Home is what matters now; Trips are owned trips; Discover is what could be next; World is the travel story |
+| Create / decide / import entry points | Preserve | Native Create Trip is `/new-trip`. Discover may prefill it. Import remains unshipped |
+| Rich trip-creation questions | Redesign | Native Create Trip persists destination, dates, accounting currency, and optional intent/pace; extra web fields stay hypotheses |
+| Destination advisor and season guidance | Redesign | Native Discover V1 is Start with a place plus Find me somewhere against a grounded curated catalogue. Best time and Ready-made journeys remain future |
 | Import breadth | Redesign | Start with a supportable subset and a mandatory review queue |
 | Wishlist | Preserve | Model an explicit candidate state separate from planned, visited, and lived |
-| World and travel archive | Preserve | Derive from confirmed trips, places, and memories |
+| World and travel archive | Preserve / reinterpret | Native World V1 maps persisted trip destinations with real coordinates and durable trip-status filters. It does not yet model visited/lived/wishlist history |
 | Editorial visual tone | Preserve | Translate to native typography, imagery, motion, gestures, and platform conventions |
 | Desktop grids and browser forms | Do not copy | Design phone-first flows, sheets, pickers, gestures, and focused steps |
 | Browser local-vault architecture | Do not copy | Design native local-first storage, accounts, backup, and sync around canonical IDs |
@@ -111,7 +111,7 @@ The public PWA expresses more of the before-travel product:
 - World and travel archive.
 - Cross-device vault concept.
 
-It also communicates a clearer full-product ambition in empty states than the current native placeholders.
+Native Discover, World, and Profile are no longer empty placeholders. The PWA still expresses a broader before-travel ambition (Best time, wishlist, import, vault, richer empty-state marketing) than native V1.
 
 ## Where native is already stronger
 
@@ -121,10 +121,12 @@ The native repository has a more credible foundation for:
 - Explicit ID relationships.
 - SQLite persistence and forward migrations.
 - Repository and service boundaries.
-- Real itinerary and booking CRUD.
-- Truth-aware trip timing.
+- Real itinerary, booking, accommodation, budget, traveler, memory, and travel-book CRUD.
+- Truth-aware trip timing and a deterministic Companion.
 - Native map rendering and real location selection.
 - Persisted coordinates rather than decorative map content.
+- Explicit Travel DNA and a Discover Brief that is not a Trip.
+- Grounded curated Discover matching with confirmation through `/new-trip`.
 - A path to offline-first behavior.
 
 The native app should keep these strengths while selectively adopting the web product ideas.
@@ -139,6 +141,7 @@ The native app should keep these strengths while selectively adopting the web pr
 - Show provenance and confirmation for imports, recommendations, and AI output.
 - Design Companion independently from pre-trip planning screens; it has different urgency and interaction needs.
 - Derive World and Travel Book from confirmed history rather than duplicating data.
+- Do not copy Gemini-coupled discovery. Native AI may explain or advise on grounded candidates only; it is not a destination source.
 
 ## Open verification items
 
