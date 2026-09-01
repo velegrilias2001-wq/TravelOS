@@ -49,10 +49,16 @@
     "src/services/ai-context-service.ts",
     "src/services/ai-api-client.ts",
 
+    "src/data/discover/index.ts",
+    "src/data/discover/curated-western-europe.ts",
+    "src/data/discover/curated-south-central-europe.ts",
+
     "src/services/discover-brief.ts",
     "src/services/discover-personalization.ts",
     "src/services/discover-trip-handoff.ts",
     "src/services/discover-catalogue.ts",
+    "src/services/discover-source.ts",
+    "src/services/discover-corpus.ts",
     "src/services/discover-catalogue-validation.ts",
     "src/services/discover-catalogue-candidates.ts",
     "src/services/discover-matcher.ts"

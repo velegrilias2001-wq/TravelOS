@@ -1,57 +1,44 @@
 import type {
-    DiscoverCandidate,
+  DiscoverCandidate,
 } from '@/domain/entities';
 
 import {
-    CURATED_DISCOVER_CATALOGUE,
-    type DiscoverCatalogueRecord,
-} from './discover-catalogue';
-
-import {
-    validateDiscoverCatalogue,
-} from './discover-catalogue-validation';
+  loadGroundedDiscoverCorpus,
+  type GroundedDiscoverRecord,
+} from './discover-corpus';
 
 /**
- * Convert one grounded curated catalogue record into
- * the canonical candidate shape understood by Discover.
+ * Convert one grounded corpus record into the canonical
+ * candidate shape understood by Discover.
  *
  * No facts are added here.
- * The candidate contains only destination truth that
- * already exists in the curated record.
  */
-export function mapCatalogueRecordToCandidate(
-  record: DiscoverCatalogueRecord,
+export function mapGroundedRecordToCandidate(
+  record: GroundedDiscoverRecord,
 ): DiscoverCandidate {
   return {
-    id: `curated:${record.id}`,
+    id: `${record.source}:${record.id}`,
 
     destination: {
       ...record.destination,
     },
 
-    source: 'curated',
+    source: record.source,
 
     sourceId: record.id,
   };
 }
 
 /**
- * Return the grounded destination candidates currently
- * available from the TravelOS curated catalogue.
+ * Return every grounded destination currently in the corpus,
+ * including records that have no editorial fit.
  *
- * The catalogue is validated before anything reaches
- * Discover.
- *
+ * The corpus is validated before anything reaches Discover.
  * AI is not involved in this step.
  */
-export function getCuratedDiscoverCandidates():
+export function getGroundedDiscoverCandidates():
   DiscoverCandidate[] {
-  const catalogue =
-    validateDiscoverCatalogue(
-      CURATED_DISCOVER_CATALOGUE,
-    );
-
-  return catalogue.map(
-    mapCatalogueRecordToCandidate,
-  );
+  return loadGroundedDiscoverCorpus()
+    .records
+    .map(mapGroundedRecordToCandidate);
 }

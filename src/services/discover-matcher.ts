@@ -6,17 +6,17 @@ import type {
 } from '@/domain/entities';
 
 import {
-    CURATED_DISCOVER_CATALOGUE,
-    type DiscoverCatalogueRecord,
+    type DiscoverMatchableRecord,
 } from './discover-catalogue';
 
 import {
-    mapCatalogueRecordToCandidate,
+    mapGroundedRecordToCandidate,
 } from './discover-catalogue-candidates';
 
 import {
-    validateDiscoverCatalogue,
-} from './discover-catalogue-validation';
+    loadGroundedDiscoverCorpus,
+    type GroundedDiscoverRecord,
+} from './discover-corpus';
 
 import {
     resolveDiscoverPersonalization,
@@ -79,9 +79,13 @@ const WEIGHTS = {
   dailyRhythm: 1,
 } as const;
 
+type MatchableGroundedRecord =
+  GroundedDiscoverRecord &
+    DiscoverMatchableRecord;
+
 function matchingInterests(
   requested: TravelInterest[],
-  record: DiscoverCatalogueRecord,
+  record: MatchableGroundedRecord,
 ): TravelInterest[] {
   return requested.filter(
     (interest) =>
@@ -92,7 +96,7 @@ function matchingInterests(
 }
 
 function scoreRecord(
-  record: DiscoverCatalogueRecord,
+  record: MatchableGroundedRecord,
   brief: DiscoverBrief,
   travelDNA: TravelDNA | null,
 ): DiscoverMatch {
@@ -263,7 +267,7 @@ function scoreRecord(
 
   return {
     candidate:
-      mapCatalogueRecordToCandidate(
+      mapGroundedRecordToCandidate(
         record,
       ),
 
@@ -274,11 +278,12 @@ function scoreRecord(
 }
 
 /**
- * Rank grounded curated destinations against the user's
- * explicit Discover context.
+ * Rank grounded destinations that have editorial fit
+ * against the user's explicit Discover context.
  *
  * Rules:
- * - only catalogue destinations can appear
+ * - only corpus records with fit can be ranked
+ * - grounded records without fit stay in the corpus
  * - AI creates no destinations
  * - AI creates no matching facts
  * - mismatches are not penalised in V1
@@ -288,12 +293,10 @@ export function matchCuratedDiscoverDestinations(
   brief: DiscoverBrief,
   travelDNA: TravelDNA | null,
 ): DiscoverMatch[] {
-  const catalogue =
-    validateDiscoverCatalogue(
-      CURATED_DISCOVER_CATALOGUE,
-    );
+  const corpus =
+    loadGroundedDiscoverCorpus();
 
-  return catalogue
+  return corpus.matchableRecords
     .map((record) =>
       scoreRecord(
         record,

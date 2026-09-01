@@ -1,3 +1,7 @@
+import {
+  isValidIanaTimeZone,
+} from './time-truth';
+
 import type {
   DiscoverCatalogueEvidence,
   DiscoverCatalogueRecord,
@@ -86,6 +90,46 @@ function validateEvidence(
   }
 }
 
+function validateOptionalDestinationFacts(
+  record: DiscoverCatalogueRecord,
+): void {
+  const countryCode =
+    record.destination.countryCode;
+
+  if (
+    countryCode !== undefined &&
+    !/^[A-Z]{2}$/.test(countryCode)
+  ) {
+    throw new Error(
+      `Discover catalogue: ${record.id} country code must use two letters.`,
+    );
+  }
+
+  const currencyCode =
+    record.destination.currencyCode;
+
+  if (
+    currencyCode !== undefined &&
+    !/^[A-Z]{3}$/.test(currencyCode)
+  ) {
+    throw new Error(
+      `Discover catalogue: ${record.id} currency must use a three-letter code.`,
+    );
+  }
+
+  const timezone =
+    record.destination.timezone;
+
+  if (
+    timezone !== undefined &&
+    !isValidIanaTimeZone(timezone)
+  ) {
+    throw new Error(
+      `Discover catalogue: ${record.id} timezone must be a valid IANA identifier.`,
+    );
+  }
+}
+
 function validateCoordinates(
   record: DiscoverCatalogueRecord,
 ): void {
@@ -167,6 +211,7 @@ export function validateDiscoverCatalogueRecord(
   );
 
   validateCoordinates(record);
+  validateOptionalDestinationFacts(record);
 
   if (
     record.evidence.length === 0

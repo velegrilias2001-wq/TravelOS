@@ -5,13 +5,13 @@ const test =
   require('node:test');
 
 const {
-  CURATED_DISCOVER_CATALOGUE,
+  CURATED_WESTERN_EUROPE_PACK,
 } = require(
-  '../.test-build/src/services/discover-catalogue.js',
+  '../.test-build/src/data/discover/index.js',
 );
 
 const {
-  getCuratedDiscoverCandidates,
+  getGroundedDiscoverCandidates,
 } = require(
   '../.test-build/src/services/discover-catalogue-candidates.js',
 );
@@ -62,7 +62,7 @@ test(
   () => {
     const result =
       validateDiscoverCatalogue(
-        CURATED_DISCOVER_CATALOGUE,
+        CURATED_WESTERN_EUROPE_PACK.records,
       );
 
     assert.equal(
@@ -76,7 +76,7 @@ test(
   'curated catalogue rejects impossible evidence calendar dates',
   () => {
     const original =
-      CURATED_DISCOVER_CATALOGUE[0];
+      CURATED_WESTERN_EUROPE_PACK.records[0];
 
     const invalidRecord = {
       ...original,
@@ -103,7 +103,7 @@ test(
   'curated catalogue rejects duplicate stable record ids',
   () => {
     const first =
-      CURATED_DISCOVER_CATALOGUE[0];
+      CURATED_WESTERN_EUROPE_PACK.records[0];
 
     assert.throws(
       () =>
@@ -120,11 +120,11 @@ test(
   'curated catalogue becomes canonical grounded Discover candidates',
   () => {
     const candidates =
-      getCuratedDiscoverCandidates();
+      getGroundedDiscoverCandidates();
 
     assert.equal(
       candidates.length,
-      8,
+      12,
     );
 
     for (
@@ -190,7 +190,7 @@ test(
 
     assert.equal(
       matches.length,
-      8,
+      11,
     );
 
     assert.equal(
@@ -328,12 +328,15 @@ test(
       ),
       [
         'Amsterdam',
+        'Athens',
         'Barcelona',
         'Copenhagen',
+        'Krakow',
         'Lisbon',
         'Porto',
         'Prague',
         'Rome',
+        'Seville',
         'Vienna',
       ],
     );

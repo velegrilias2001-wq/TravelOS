@@ -115,13 +115,13 @@ Destination truth must come from grounded sources. AI is not a destination sourc
 - [x] Discover Architecture V1: session Discover Brief (Zustand only), curated catalogue with provenance, matcher, personalization fallback from Travel DNA, and Create Trip route-param handoff. Candidates are not written into SQLite as trips.
 - [x] Discover Experience V1: native Discover tab supporting **Start with a place** (Create Trip) and **Find me somewhere** (explicit Brief → deterministic matching against grounded curated destinations → optional Create Trip confirmation). Trip-specific Brief values outrank Travel DNA. Flexible timing is not converted into invented calendar dates.
 
-Current Discover V1 does **not** include Best time, Ready-made journeys, wishlist persistence, live provider catalogues, semantic retrieval, reranking, or AI explanations.
+Current Discover V1 includes Start with a place, Find me somewhere, and a multi-pack grounded destination corpus. It does **not** include Best time, Ready-made journeys, wishlist persistence, live provider catalogues, semantic retrieval, reranking, or AI explanations.
 
 ### Immediate planned Discover sequence
 
 These steps are ordered. Grounded destination data must exist before semantic retrieval or reranking.
 
-- [ ] **Grounded Destination Sourcing V1** — scale grounded destination candidates from explicit sources with provenance. Do not use AI to invent destinations.
+- [x] **Grounded Destination Sourcing V1** — explicit multi-pack grounded corpus with provenance, optional editorial fit, identity by `(source, record id)`, and matcher ranking only fitted records. AI is not a destination source.
 - [ ] **Semantic Discover V1** — local/open multilingual embeddings over grounded candidates. BGE-M3 is the current model candidate to benchmark, not a locked architecture choice.
 - [ ] **Discover reranking** — rerank grounded retrieval results. A BGE reranker is the current candidate to benchmark, not a locked architecture choice.
 - [ ] **Grounded AI explanations** — explain why a grounded candidate fits the Brief, using the existing local Qwen foundation. Explanations must not introduce destinations, coordinates, prices, or other facts that were not already in the grounded record.
