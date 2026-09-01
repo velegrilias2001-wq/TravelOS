@@ -122,7 +122,7 @@ Current Discover V1 includes Start with a place, Find me somewhere, and a multi-
 These steps are ordered. Grounded destination data must exist before semantic retrieval or reranking.
 
 - [x] **Grounded Destination Sourcing V1** — explicit multi-pack grounded corpus with provenance, optional editorial fit, identity by `(source, record id)`, and matcher ranking only fitted records. AI is not a destination source.
-- [ ] **Semantic Discover V1** — local/open multilingual embeddings over grounded candidates. BGE-M3 is the current model candidate to benchmark, not a locked architecture choice.
+- [ ] **Semantic Discover V1** — in progress. The embedding benchmark harness is committed and BGE-M3 is measured: strong Greek/English parity, ~79 ms query embedding on CPU, and grounded no-fit records (Bergen) retrieved first for fjord-style briefs in both languages; precision is limited on tag-only document text. Remaining: hybrid retrieval design with the deterministic matcher, precomputed corpus embeddings, an explicit serving boundary, and app integration. BGE-M3 stays a replaceable candidate, not a locked choice.
 - [ ] **Discover reranking** — rerank grounded retrieval results. A BGE reranker is the current candidate to benchmark, not a locked architecture choice.
 - [ ] **Grounded AI explanations** — explain why a grounded candidate fits the Brief, using the existing local Qwen foundation. Explanations must not introduce destinations, coordinates, prices, or other facts that were not already in the grounded record.
 

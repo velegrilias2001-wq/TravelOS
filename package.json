@@ -50,7 +50,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "tsc --project tsconfig.test.json && node --test tests/*.test.cjs"
+    "test": "tsc --project tsconfig.test.json && node --test tests/*.test.cjs",
+    "benchmark:discover-embeddings": "tsc --project tsconfig.test.json && node scripts/benchmark-discover-embeddings.cjs"
   },
   "private": true
 }

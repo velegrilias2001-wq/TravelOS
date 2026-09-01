@@ -1,0 +1,481 @@
+{
+  "model": "bge-m3",
+  "ollamaBaseUrl": "http://127.0.0.1:11434",
+  "generatedAt": "2026-09-01T17:38:11.183Z",
+  "corpusSize": 12,
+  "embeddingDimension": 1024,
+  "documentBatchMs": 9286,
+  "documentAverageMs": 774,
+  "queryLatencyMs": {
+    "min": 61,
+    "average": 79,
+    "max": 156
+  },
+  "modelInfo": {
+    "diskBytes": 1157672605,
+    "loadedBytes": 664000265,
+    "loadedVramBytes": 664000265
+  },
+  "byLanguage": [
+    {
+      "language": "en",
+      "queries": 4,
+      "averageRecallAt3": 0.5833333333333334,
+      "averageRecallAt5": 0.7916666666666666,
+      "averageReciprocalRank": 0.75
+    },
+    {
+      "language": "el",
+      "queries": 4,
+      "averageRecallAt3": 0.5833333333333334,
+      "averageRecallAt5": 0.9166666666666666,
+      "averageReciprocalRank": 0.6666666666666666
+    }
+  ],
+  "queries": [
+    {
+      "id": "romantic-slow-en",
+      "language": "en",
+      "kind": "scored",
+      "text": "A romantic escape at a slow, unhurried pace",
+      "gold": [
+        "pt-porto",
+        "at-vienna",
+        "es-seville"
+      ],
+      "recallAt3": 1,
+      "recallAt5": 1,
+      "reciprocalRank": 1,
+      "top5": [
+        {
+          "recordId": "pt-porto",
+          "name": "Porto",
+          "score": 0.5272211892796073
+        },
+        {
+          "recordId": "es-seville",
+          "name": "Seville",
+          "score": 0.5268969248719151
+        },
+        {
+          "recordId": "at-vienna",
+          "name": "Vienna",
+          "score": 0.5124991297627598
+        },
+        {
+          "recordId": "pl-krakow",
+          "name": "Krakow",
+          "score": 0.506511590536705
+        },
+        {
+          "recordId": "dk-copenhagen",
+          "name": "Copenhagen",
+          "score": 0.4965385756657914
+        }
+      ]
+    },
+    {
+      "id": "romantic-slow-el",
+      "language": "el",
+      "kind": "scored",
+      "text": "Ρομαντική απόδραση με αργούς, χαλαρούς ρυθμούς",
+      "gold": [
+        "pt-porto",
+        "at-vienna",
+        "es-seville"
+      ],
+      "recallAt3": 1,
+      "recallAt5": 1,
+      "reciprocalRank": 1,
+      "top5": [
+        {
+          "recordId": "pt-porto",
+          "name": "Porto",
+          "score": 0.5632926821063737
+        },
+        {
+          "recordId": "es-seville",
+          "name": "Seville",
+          "score": 0.5469442347309863
+        },
+        {
+          "recordId": "at-vienna",
+          "name": "Vienna",
+          "score": 0.5365719733126556
+        },
+        {
+          "recordId": "pl-krakow",
+          "name": "Krakow",
+          "score": 0.5341393494558594
+        },
+        {
+          "recordId": "dk-copenhagen",
+          "name": "Copenhagen",
+          "score": 0.5255349574574198
+        }
+      ]
+    },
+    {
+      "id": "beach-nightlife-en",
+      "language": "en",
+      "kind": "scored",
+      "text": "A city with beaches and lively nightlife for a group of friends",
+      "gold": [
+        "pt-lisbon",
+        "es-barcelona"
+      ],
+      "recallAt3": 0.5,
+      "recallAt5": 0.5,
+      "reciprocalRank": 0.5,
+      "top5": [
+        {
+          "recordId": "dk-copenhagen",
+          "name": "Copenhagen",
+          "score": 0.6167519097671113
+        },
+        {
+          "recordId": "es-barcelona",
+          "name": "Barcelona",
+          "score": 0.6164701384271992
+        },
+        {
+          "recordId": "pt-porto",
+          "name": "Porto",
+          "score": 0.6145166764383247
+        },
+        {
+          "recordId": "es-seville",
+          "name": "Seville",
+          "score": 0.6071463348965336
+        },
+        {
+          "recordId": "nl-amsterdam",
+          "name": "Amsterdam",
+          "score": 0.6064657886528327
+        }
+      ]
+    },
+    {
+      "id": "beach-nightlife-el",
+      "language": "el",
+      "kind": "scored",
+      "text": "Πόλη με παραλίες και έντονη νυχτερινή ζωή για παρέα φίλων",
+      "gold": [
+        "pt-lisbon",
+        "es-barcelona"
+      ],
+      "recallAt3": 0.5,
+      "recallAt5": 1,
+      "reciprocalRank": 0.3333333333333333,
+      "top5": [
+        {
+          "recordId": "pt-porto",
+          "name": "Porto",
+          "score": 0.6202651754601191
+        },
+        {
+          "recordId": "cz-prague",
+          "name": "Prague",
+          "score": 0.6170365802783219
+        },
+        {
+          "recordId": "es-barcelona",
+          "name": "Barcelona",
+          "score": 0.603377696074428
+        },
+        {
+          "recordId": "dk-copenhagen",
+          "name": "Copenhagen",
+          "score": 0.5994368202367936
+        },
+        {
+          "recordId": "pt-lisbon",
+          "name": "Lisbon",
+          "score": 0.5968488005702296
+        }
+      ]
+    },
+    {
+      "id": "slow-local-nature-en",
+      "language": "en",
+      "kind": "scored",
+      "text": "A calm, local-feeling city close to nature",
+      "gold": [
+        "pt-porto",
+        "dk-copenhagen"
+      ],
+      "recallAt3": 0.5,
+      "recallAt5": 1,
+      "reciprocalRank": 0.5,
+      "top5": [
+        {
+          "recordId": "es-seville",
+          "name": "Seville",
+          "score": 0.5580363822585477
+        },
+        {
+          "recordId": "dk-copenhagen",
+          "name": "Copenhagen",
+          "score": 0.5520604644614409
+        },
+        {
+          "recordId": "pl-krakow",
+          "name": "Krakow",
+          "score": 0.5474844368899439
+        },
+        {
+          "recordId": "at-vienna",
+          "name": "Vienna",
+          "score": 0.544166975723201
+        },
+        {
+          "recordId": "pt-porto",
+          "name": "Porto",
+          "score": 0.5397565563438937
+        }
+      ]
+    },
+    {
+      "id": "slow-local-nature-el",
+      "language": "el",
+      "kind": "scored",
+      "text": "Ήρεμη πόλη με τοπικό χαρακτήρα κοντά στη φύση",
+      "gold": [
+        "pt-porto",
+        "dk-copenhagen"
+      ],
+      "recallAt3": 0.5,
+      "recallAt5": 1,
+      "reciprocalRank": 0.3333333333333333,
+      "top5": [
+        {
+          "recordId": "es-seville",
+          "name": "Seville",
+          "score": 0.5564941273612197
+        },
+        {
+          "recordId": "pl-krakow",
+          "name": "Krakow",
+          "score": 0.5460378538534635
+        },
+        {
+          "recordId": "dk-copenhagen",
+          "name": "Copenhagen",
+          "score": 0.5411101094062567
+        },
+        {
+          "recordId": "pt-porto",
+          "name": "Porto",
+          "score": 0.5381556341609073
+        },
+        {
+          "recordId": "at-vienna",
+          "name": "Vienna",
+          "score": 0.5330923693877353
+        }
+      ]
+    },
+    {
+      "id": "family-nature-en",
+      "language": "en",
+      "kind": "scored",
+      "text": "A family trip to a city with easy time in nature",
+      "gold": [
+        "pt-lisbon",
+        "nl-amsterdam",
+        "dk-copenhagen"
+      ],
+      "recallAt3": 0.3333333333333333,
+      "recallAt5": 0.6666666666666666,
+      "reciprocalRank": 1,
+      "top5": [
+        {
+          "recordId": "dk-copenhagen",
+          "name": "Copenhagen",
+          "score": 0.5921532954194361
+        },
+        {
+          "recordId": "at-vienna",
+          "name": "Vienna",
+          "score": 0.5833508214861992
+        },
+        {
+          "recordId": "pl-krakow",
+          "name": "Krakow",
+          "score": 0.5788934649005477
+        },
+        {
+          "recordId": "nl-amsterdam",
+          "name": "Amsterdam",
+          "score": 0.5750203727234002
+        },
+        {
+          "recordId": "gr-athens",
+          "name": "Athens",
+          "score": 0.5712580963329932
+        }
+      ]
+    },
+    {
+      "id": "family-nature-el",
+      "language": "el",
+      "kind": "scored",
+      "text": "Οικογενειακό ταξίδι σε πόλη κοντά στη φύση",
+      "gold": [
+        "pt-lisbon",
+        "nl-amsterdam",
+        "dk-copenhagen"
+      ],
+      "recallAt3": 0.3333333333333333,
+      "recallAt5": 0.6666666666666666,
+      "reciprocalRank": 1,
+      "top5": [
+        {
+          "recordId": "dk-copenhagen",
+          "name": "Copenhagen",
+          "score": 0.5680609420593385
+        },
+        {
+          "recordId": "at-vienna",
+          "name": "Vienna",
+          "score": 0.5613698039976366
+        },
+        {
+          "recordId": "pl-krakow",
+          "name": "Krakow",
+          "score": 0.5593834835726678
+        },
+        {
+          "recordId": "nl-amsterdam",
+          "name": "Amsterdam",
+          "score": 0.555178623406603
+        },
+        {
+          "recordId": "gr-athens",
+          "name": "Athens",
+          "score": 0.5548728191414284
+        }
+      ]
+    },
+    {
+      "id": "fjords-en",
+      "language": "en",
+      "kind": "probe",
+      "text": "Fjords, mountains and dramatic nature in Norway",
+      "watchRecordId": "no-bergen",
+      "watchedRank": 1,
+      "top5": [
+        {
+          "recordId": "no-bergen",
+          "name": "Bergen",
+          "score": 0.5550279685839875
+        },
+        {
+          "recordId": "dk-copenhagen",
+          "name": "Copenhagen",
+          "score": 0.4710955766968129
+        },
+        {
+          "recordId": "nl-amsterdam",
+          "name": "Amsterdam",
+          "score": 0.42909633970456074
+        },
+        {
+          "recordId": "pt-porto",
+          "name": "Porto",
+          "score": 0.4240606831715267
+        },
+        {
+          "recordId": "pl-krakow",
+          "name": "Krakow",
+          "score": 0.4184999042365637
+        }
+      ]
+    },
+    {
+      "id": "fjords-el",
+      "language": "el",
+      "kind": "probe",
+      "text": "Φιόρδ και άγρια φύση στη Νορβηγία",
+      "watchRecordId": "no-bergen",
+      "watchedRank": 1,
+      "top5": [
+        {
+          "recordId": "no-bergen",
+          "name": "Bergen",
+          "score": 0.4842071533357986
+        },
+        {
+          "recordId": "dk-copenhagen",
+          "name": "Copenhagen",
+          "score": 0.4183601464756687
+        },
+        {
+          "recordId": "nl-amsterdam",
+          "name": "Amsterdam",
+          "score": 0.3736357961965183
+        },
+        {
+          "recordId": "pt-porto",
+          "name": "Porto",
+          "score": 0.3615161116961486
+        },
+        {
+          "recordId": "pt-lisbon",
+          "name": "Lisbon",
+          "score": 0.3508127751312855
+        }
+      ]
+    }
+  ],
+  "documents": [
+    {
+      "recordId": "pt-lisbon",
+      "text": "Lisbon, PT. Trip intents: explore, food, social, romantic, family. Interests: food, culture, nature, beaches, nightlife, shopping. Pace: balanced, full. Travel style: local, iconic, mix. Daily rhythm: flexible, night. Typical party: solo, couple, friends, family"
+    },
+    {
+      "recordId": "pt-porto",
+      "text": "Porto, PT. Trip intents: explore, food, romantic. Interests: food, culture, nature, shopping. Pace: slow, balanced. Travel style: local, mix. Daily rhythm: morning, flexible. Typical party: solo, couple, friends"
+    },
+    {
+      "recordId": "es-barcelona",
+      "text": "Barcelona, ES. Trip intents: explore, food, social, family. Interests: food, culture, beaches, nightlife, shopping, adventure. Pace: balanced, full. Travel style: local, iconic, mix. Daily rhythm: flexible, night. Typical party: solo, couple, friends, family"
+    },
+    {
+      "recordId": "it-rome",
+      "text": "Rome, IT. Trip intents: explore, food, romantic, family. Interests: food, culture, nightlife, shopping. Pace: balanced, full. Travel style: iconic, mix. Daily rhythm: morning, flexible, night. Typical party: solo, couple, friends, family"
+    },
+    {
+      "recordId": "nl-amsterdam",
+      "text": "Amsterdam, NL. Trip intents: explore, food, social, family. Interests: food, culture, nature, nightlife, shopping. Pace: balanced, full. Travel style: local, iconic, mix. Daily rhythm: flexible, night. Typical party: solo, couple, friends, family"
+    },
+    {
+      "recordId": "at-vienna",
+      "text": "Vienna, AT. Trip intents: explore, food, romantic, family. Interests: food, culture, shopping. Pace: slow, balanced. Travel style: local, iconic, mix. Daily rhythm: morning, flexible. Typical party: solo, couple, friends, family"
+    },
+    {
+      "recordId": "dk-copenhagen",
+      "text": "Copenhagen, DK. Trip intents: explore, food, social, family. Interests: food, culture, nature, nightlife, shopping. Pace: slow, balanced. Travel style: local, mix. Daily rhythm: morning, flexible, night. Typical party: solo, couple, friends, family"
+    },
+    {
+      "recordId": "cz-prague",
+      "text": "Prague, CZ. Trip intents: explore, food, romantic, social. Interests: food, culture, nightlife, shopping. Pace: balanced, full. Travel style: iconic, mix. Daily rhythm: flexible, night. Typical party: solo, couple, friends, family"
+    },
+    {
+      "recordId": "gr-athens",
+      "text": "Athens, GR. Trip intents: explore, food, family. Interests: food, culture, shopping. Pace: balanced, full. Travel style: iconic, mix. Daily rhythm: morning, flexible. Typical party: solo, couple, friends, family"
+    },
+    {
+      "recordId": "es-seville",
+      "text": "Seville, ES. Trip intents: explore, food, romantic. Interests: food, culture. Pace: slow, balanced. Travel style: local, mix. Daily rhythm: morning, flexible. Typical party: couple, friends"
+    },
+    {
+      "recordId": "pl-krakow",
+      "text": "Krakow, PL. Trip intents: explore, food, family. Interests: food, culture, shopping. Pace: slow, balanced. Travel style: local, iconic, mix. Daily rhythm: morning, flexible. Typical party: solo, couple, friends, family"
+    },
+    {
+      "recordId": "no-bergen",
+      "text": "Bergen, NO"
+    }
+  ]
+}

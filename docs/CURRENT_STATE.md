@@ -13,10 +13,9 @@ Evidence classes used throughout:
 
 ## Repository checkpoint
 
-- Current development branch: `feature/grounded-destination-sourcing-v1`
-- Branch point: `735c964` — chore: complete Cursor project handoff
-- Discover Experience V1 remains `f714127`
-- Grounded Destination Sourcing V1 is the newest milestone and is committed on this branch.
+- Current development branch: `feature/semantic-discover-v1`
+- Branch point: `bad9d68` — feat: add grounded destination sourcing V1
+- Semantic Discover V1 is in progress on this branch: the embedding benchmark is complete; no retrieval is wired into the app yet.
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
 - Budget & Expenses checkpoint: 65b7f33 — Add native trip budget and expenses
@@ -37,6 +36,8 @@ Evidence classes used throughout:
 - AI Foundation V1 checkpoint: 27ca9e9 — feat: add AI foundation V1
 - Discover Architecture V1 checkpoint: 210f46d — feat: add Discover Architecture V1
 - Discover Experience V1 checkpoint: f714127 — feat: add Discover Experience V1
+- Cursor handoff checkpoint: 735c964 — chore: complete Cursor project handoff
+- Grounded Destination Sourcing V1 checkpoint: bad9d68 — feat: add grounded destination sourcing V1
 - The native architecture checkpoint remains ec0b28a — Add native location picker and mapped itinerary stops.
 - No Git remote or upstream branch was configured during this snapshot.
 - `.env.local` is gitignored. Its contents were not read.
@@ -441,6 +442,17 @@ Automated-test evidence: `tests/discover-architecture.test.cjs`, `tests/discover
 Not re-verified on device during this documentation pass.
 
 Current limitations include no live place provider as a Discover source, no Best time flow, no ready-made journeys, no wishlist persistence, no semantic retrieval, and no import of Discover results except through explicit Create Trip confirmation. Grounded records without editorial fit are held for later retrieval and are not shown as ranked matches.
+
+### Semantic Discover V1 (in progress)
+
+Implemented in code:
+
+- A local embedding benchmark harness (`scripts/benchmark-discover-embeddings.cjs`, run through `npm run benchmark:discover-embeddings`) that embeds the grounded Discover corpus plus paired English/Greek brief-style queries through local Ollama embeddings, scores retrieval against gold sets derived only from the corpus's explicit fit tags, and writes a JSON report to `docs/benchmarks/`.
+- No retrieval, embedding storage, or semantic ranking is wired into the native app or the AI server. The deterministic matcher remains the only shipped Discover ranking.
+
+Measured on 2026-09-01 with `bge-m3` through local Ollama (1.1 GB disk, ~633 MB loaded, CPU): English recall@3 0.58 / recall@5 0.79 / MRR 0.75; Greek recall@3 0.58 / recall@5 0.92 / MRR 0.67; ~79 ms average query embedding; ~774 ms per document one-time batch; dimension 1024. English and Greek produced nearly identical per-query rankings. Both fjords probe queries ranked Bergen — a grounded record with no fit tags whose document text is only "Bergen, NO" — first in both languages, which is the retrieval value tag matching cannot provide.
+
+Honest read: absolute precision is limited by tag-only document text (documents are near-duplicate tag lists, so cosine scores cluster tightly), not by cross-language quality. The planned response is hybrid scoring with the existing deterministic fit matcher and later reranking, not a larger embedding model by default. BGE-M3 remains a replaceable candidate; the harness accepts `--models=` for comparators. The benchmark is a manual local harness requiring a running Ollama and is not part of `npm test`.
 
 ### Bookings
 
