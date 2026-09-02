@@ -63,6 +63,6 @@ export async function pickImportCalendarFile(): Promise<{
 function isImportPickerError(error: Error): boolean {
   return (
     error.message === 'This calendar file is too large to import.' ||
-    /iCalendar|This zip|No calendar events/i.test(error.message)
+    /iCalendar|This zip|This PDF|No calendar events/i.test(error.message)
   );
 }

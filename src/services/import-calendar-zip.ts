@@ -4,8 +4,10 @@ import { IMPORT_CALENDAR_MAX_BYTES } from './import-calendar-file';
 import {
   decodeImportCalendarBytes,
   extractImportCalendarText,
+  mergeExtractedImportCalendars,
   type ExtractedImportCalendar,
 } from './import-calendar-extract';
+import { extractImportCalendarFromPdf, isPdfBytes } from './import-calendar-pdf';
 
 export const IMPORT_CALENDAR_ZIP_EMPTY_ERROR =
   'This zip does not contain an iCalendar (.ics) calendar.';
@@ -30,6 +32,10 @@ export function decodePickedImportCalendarBytes(
 ): string {
   if (isZipBytes(bytes)) {
     return extractImportCalendarFromZip(bytes).text;
+  }
+
+  if (isPdfBytes(bytes)) {
+    return extractImportCalendarFromPdf(bytes).text;
   }
 
   return decodeImportCalendarBytes(bytes);
@@ -105,34 +111,9 @@ export function extractImportCalendarFromZip(
   }
 
   return {
-    text: mergeExtractedCalendars(calendars),
+    text: mergeExtractedImportCalendars(calendars),
     wrapper: 'none',
   };
-}
-
-function mergeExtractedCalendars(calendars: string[]): string {
-  if (calendars.length === 1) {
-    return calendars[0];
-  }
-
-  const bodies = calendars
-    .map((calendar) => innerCalendarBody(calendar))
-    .filter((body) => body.length > 0);
-
-  return `BEGIN:VCALENDAR\n${bodies.join('\n')}\nEND:VCALENDAR`;
-}
-
-function innerCalendarBody(calendar: string): string {
-  const startToken = 'BEGIN:VCALENDAR';
-  const endToken = 'END:VCALENDAR';
-  const start = calendar.indexOf(startToken);
-  const end = calendar.indexOf(endToken);
-
-  if (start < 0 || end < 0 || end <= start) {
-    return calendar.trim();
-  }
-
-  return calendar.slice(start + startToken.length, end).trim();
 }
 
 function shouldConsiderZipMember(

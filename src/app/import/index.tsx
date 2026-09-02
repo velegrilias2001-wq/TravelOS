@@ -160,7 +160,7 @@ export default function ImportScreen() {
         </Text>
 
         <Text style={styles.subtitle}>
-          Choose or paste an .ics calendar, an email that contains one, or a zip of calendars. Nothing becomes a booking on its own.
+          Choose or paste an .ics calendar, an email that contains one, a zip of calendars, or a PDF that embeds one. Nothing becomes a booking on its own.
         </Text>
       </View>
 
@@ -184,7 +184,7 @@ export default function ImportScreen() {
           </Text>
 
           <Text style={styles.primaryButtonText}>
-            Review an .ics calendar or zip
+            Review an .ics, zip, or PDF
           </Text>
         </View>
 

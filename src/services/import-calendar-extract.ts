@@ -64,6 +64,35 @@ export function extractImportCalendarText(
   throw new Error(ICS_ERROR);
 }
 
+export function mergeExtractedImportCalendars(
+  calendars: string[],
+): string {
+  const first = calendars[0];
+
+  if (calendars.length === 1 && first) {
+    return first;
+  }
+
+  const bodies = calendars
+    .map((calendar) => innerCalendarBody(calendar))
+    .filter((body) => body.length > 0);
+
+  return `BEGIN:VCALENDAR\n${bodies.join('\n')}\nEND:VCALENDAR`;
+}
+
+function innerCalendarBody(calendar: string): string {
+  const startToken = 'BEGIN:VCALENDAR';
+  const endToken = 'END:VCALENDAR';
+  const start = calendar.indexOf(startToken);
+  const end = calendar.indexOf(endToken);
+
+  if (start < 0 || end < 0 || end <= start) {
+    return calendar.trim();
+  }
+
+  return calendar.slice(start + startToken.length, end).trim();
+}
+
 function looksLikeEmail(text: string): boolean {
   const head = text.slice(0, 800);
 
