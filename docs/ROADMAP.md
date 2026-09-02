@@ -133,11 +133,12 @@ These steps are ordered. Grounded destination data must exist before semantic re
 - [x] **Import email-wrapped iCalendar V1** — paste or a chosen file may be a raw calendar, UTF-16 calendar bytes, or an email that contains a `text/calendar` part. Extraction feeds the same review queue. The hash is of the extracted calendar, so the same events stay one batch. No PDF/HTML scraping and no AI. Automated tests exist. Android Pixel 8 chose `e2e-email.eml` from Downloads on 2026-09-02 and reviewed `E2E Email Catamaran` without writing a booking. iOS was not rebuilt.
 - [x] **Import calendar ZIP V1** — a chosen zip can contain calendars or emails with a calendar part. Nested zips are skipped. Members over 512 KiB are skipped. Extraction feeds the same review queue. No PDF/Office/image parsing and no AI. Automated tests exist. No device rehearsal was completed for this extractor.
 - [x] **Import PDF-embedded iCalendar V1** — a chosen PDF yields claims only when it contains a `BEGIN:VCALENDAR` block, including FlateDecode streams. Confirmation PDFs without a calendar fail closed. No AI parsing of invoice or ticket prose. Automated tests exist. No device rehearsal was run for this extractor.
+- [x] **Import Office-embedded iCalendar V1** — Word/Excel/PowerPoint Open XML packages yield claims only when visible text contains a `BEGIN:VCALENDAR` block, including text split across Office runs. Images fail closed without OCR. No AI parsing of confirmation prose. Automated tests exist. No device rehearsal was run for this extractor.
 
 ### Remaining Phase 4 work
 
 - [ ] Rebuild the iOS development client so the ICS file picker can be rehearsed there.
-- [ ] Add remaining import formats (Office/images) only with an explicit extractor contract that still cannot write bookings.
+- [ ] Add remaining import formats (image OCR) only with an explicit extractor contract that still cannot write bookings.
 - [ ] Keep AI-assisted extraction behind explicit review and confirmation gates if it is added later.
 - [ ] Never allow recommendations, imports, or AI suggestions to silently become canonical facts.
 - [ ] Define production provider, privacy, retention, cost, and fallback behavior before shipping intelligence beyond the local-dev AI foundation.

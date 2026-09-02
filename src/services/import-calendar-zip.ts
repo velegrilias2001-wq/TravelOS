@@ -8,6 +8,15 @@ import {
   type ExtractedImportCalendar,
 } from './import-calendar-extract';
 import { extractImportCalendarFromPdf, isPdfBytes } from './import-calendar-pdf';
+import {
+  IMPORT_CALENDAR_IMAGE_ERROR,
+  IMPORT_CALENDAR_OFFICE_EMPTY_ERROR,
+  isImageBytes,
+  isOfficeOpenXmlPackage,
+  isPreferredOfficeMember,
+  looksLikeXml,
+  xmlVisibleText,
+} from './import-calendar-office';
 
 export const IMPORT_CALENDAR_ZIP_EMPTY_ERROR =
   'This zip does not contain an iCalendar (.ics) calendar.';
@@ -38,6 +47,10 @@ export function decodePickedImportCalendarBytes(
     return extractImportCalendarFromPdf(bytes).text;
   }
 
+  if (isImageBytes(bytes)) {
+    throw new Error(IMPORT_CALENDAR_IMAGE_ERROR);
+  }
+
   return decodeImportCalendarBytes(bytes);
 }
 
@@ -56,15 +69,16 @@ export function extractImportCalendarFromZip(
 
     entries = unzipSync(bytes, {
       filter(file) {
-        if (accepted >= MAX_ZIP_ENTRIES) {
+        const size = file.originalSize ?? 0;
+        const preferred = isPreferredOfficeMember(file.name);
+
+        if (!preferred && accepted >= MAX_ZIP_ENTRIES) {
           return false;
         }
 
         if (!shouldConsiderZipMember(file.name, file.originalSize)) {
           return false;
         }
-
-        const size = file.originalSize ?? 0;
 
         if (uncompressed + size > IMPORT_CALENDAR_MAX_BYTES) {
           return false;
@@ -79,7 +93,8 @@ export function extractImportCalendarFromZip(
     if (
       caught instanceof Error &&
       (caught.message === IMPORT_CALENDAR_ZIP_EMPTY_ERROR ||
-        caught.message === IMPORT_CALENDAR_ZIP_READ_ERROR)
+        caught.message === IMPORT_CALENDAR_ZIP_READ_ERROR ||
+        caught.message === IMPORT_CALENDAR_OFFICE_EMPTY_ERROR)
     ) {
       throw caught;
     }
@@ -97,17 +112,20 @@ export function extractImportCalendarFromZip(
     }
 
     try {
-      const extracted = extractImportCalendarText(
-        decodeImportCalendarBytes(entries[name]),
-      );
-      calendars.push(extracted.text);
+      const text = decodeImportCalendarBytes(entries[name]);
+      const extracted = extractCalendarFromZipMember(text);
+      calendars.push(extracted);
     } catch {
       continue;
     }
   }
 
   if (calendars.length === 0) {
-    throw new Error(IMPORT_CALENDAR_ZIP_EMPTY_ERROR);
+    throw new Error(
+      isOfficeOpenXmlPackage(Object.keys(entries))
+        ? IMPORT_CALENDAR_OFFICE_EMPTY_ERROR
+        : IMPORT_CALENDAR_ZIP_EMPTY_ERROR,
+    );
   }
 
   return {
@@ -142,4 +160,16 @@ function shouldConsiderZipMember(
   }
 
   return true;
+}
+
+function extractCalendarFromZipMember(text: string): string {
+  try {
+    return extractImportCalendarText(text).text;
+  } catch (caught) {
+    if (!looksLikeXml(text)) {
+      throw caught;
+    }
+
+    return extractImportCalendarText(xmlVisibleText(text)).text;
+  }
 }
