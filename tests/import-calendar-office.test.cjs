@@ -4,7 +4,6 @@ const { zipSync, strToU8 } = require('fflate');
 
 const {
   xmlVisibleText,
-  isImageBytes,
 } = require('../.test-build/src/services/import-calendar-office.js');
 
 const {
@@ -156,17 +155,5 @@ test('an Office document without a calendar fails closed', () => {
   assert.throws(
     () => extractImportCalendarFromZip(docxWith('Invoice 1048 amount due')),
     /Office document does not contain an iCalendar/i,
-  );
-});
-
-test('images fail closed instead of being treated as calendars', () => {
-  const png = new Uint8Array([
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00,
-  ]);
-
-  assert.equal(isImageBytes(png), true);
-  assert.throws(
-    () => decodePickedImportCalendarBytes(png),
-    /does not extract calendars from images/i,
   );
 });

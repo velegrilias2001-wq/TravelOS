@@ -9,9 +9,11 @@ import {
 } from './import-calendar-extract';
 import { extractImportCalendarFromPdf, isPdfBytes } from './import-calendar-pdf';
 import {
-  IMPORT_CALENDAR_IMAGE_ERROR,
-  IMPORT_CALENDAR_OFFICE_EMPTY_ERROR,
+  extractImportCalendarFromImage,
   isImageBytes,
+} from './import-calendar-image';
+import {
+  IMPORT_CALENDAR_OFFICE_EMPTY_ERROR,
   isOfficeOpenXmlPackage,
   isPreferredOfficeMember,
   looksLikeXml,
@@ -48,7 +50,7 @@ export function decodePickedImportCalendarBytes(
   }
 
   if (isImageBytes(bytes)) {
-    throw new Error(IMPORT_CALENDAR_IMAGE_ERROR);
+    return extractImportCalendarFromImage(bytes).text;
   }
 
   return decodeImportCalendarBytes(bytes);
