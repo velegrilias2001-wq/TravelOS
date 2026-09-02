@@ -54,6 +54,7 @@ interface TripDayRow {
   day_number: number;
   title: string | null;
   notes: string | null;
+  destination_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -249,6 +250,7 @@ export class SQLiteTripRepository
 
       title: optional(row.title),
       notes: optional(row.notes),
+      destinationId: optional(row.destination_id),
 
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -267,16 +269,18 @@ export class SQLiteTripRepository
           day_number,
           title,
           notes,
+          destination_id,
           created_at,
           updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           trip_id = excluded.trip_id,
           date = excluded.date,
           day_number = excluded.day_number,
           title = excluded.title,
           notes = excluded.notes,
+          destination_id = excluded.destination_id,
           updated_at = excluded.updated_at;
       `,
       [
@@ -286,6 +290,7 @@ export class SQLiteTripRepository
         day.dayNumber,
         day.title ?? null,
         day.notes ?? null,
+        day.destinationId ?? null,
         day.createdAt,
         day.updatedAt,
       ],

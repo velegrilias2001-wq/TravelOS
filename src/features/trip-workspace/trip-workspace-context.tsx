@@ -27,6 +27,7 @@ import type {
   BookingId,
   BudgetItemId,
   TravelerId,
+  TripDayId,
   TripId,
   TripStop,
   TripStopId,
@@ -77,6 +78,10 @@ interface TripWorkspaceActions {
   updateStop(stop: TripStop): Promise<void>;
   deleteStop(stopId: TripStopId): Promise<void>;
   reorderStops(stops: TripStop[]): Promise<void>;
+  assignDayDestination(
+    dayId: TripDayId,
+    destinationId: string | null,
+  ): Promise<void>;
 
   addBooking(booking: Booking): Promise<void>;
   updateBooking(booking: Booking): Promise<void>;
@@ -241,6 +246,15 @@ export function TripWorkspaceProvider({
       reorderStops: (stops) =>
         lifecycle.runMutation(() =>
           tripService.reorderStops(stops),
+        ),
+
+      assignDayDestination: (dayId, destinationId) =>
+        lifecycle.runMutation(() =>
+          tripService.assignDayDestination(
+            requireWorkspaceTripId(tripId),
+            dayId,
+            destinationId,
+          ),
         ),
 
       addBooking: (booking) =>

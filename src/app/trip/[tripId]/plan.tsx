@@ -54,6 +54,9 @@ import {
   tripDestinationLabel,
 } from '@/services/destination-authoring';
 import {
+  tripDayDestination,
+} from '@/services/trip-day-destination';
+import {
   deriveDayFreeTimeGaps,
   deriveDayTimeConflicts,
   type FreeTimeGap,
@@ -307,6 +310,25 @@ export default function PlanScreen() {
 
       return next;
     });
+  };
+
+  const assignDayCity = async (
+    day: TripDay,
+    destinationId: string | null,
+  ) => {
+    try {
+      await actions.assignDayDestination(
+        day.id,
+        destinationId,
+      );
+    } catch (error) {
+      Alert.alert(
+        'City was not assigned',
+        error instanceof Error
+          ? error.message
+          : 'Try assigning the city again.',
+      );
+    }
   };
 
   const [
@@ -1120,6 +1142,12 @@ export default function PlanScreen() {
               const collapsed =
                 collapsedDayIds.has(day.id);
 
+              const assignedCity =
+                tripDayDestination(
+                  day,
+                  workspace.trip.destinations,
+                );
+
               return (
                 <View
                   key={
@@ -1156,6 +1184,12 @@ export default function PlanScreen() {
                         <Text style={styles.dayDate}>
                           {formatDayDate(day.date)}
                         </Text>
+
+                        {assignedCity && (
+                          <Text style={styles.dayCity}>
+                            {assignedCity.name}
+                          </Text>
+                        )}
                       </View>
 
                       {stops.length > 0 && (
@@ -1190,6 +1224,82 @@ export default function PlanScreen() {
                       </Pressable>
                     )}
                   </View>
+
+                  {workspace.trip.destinations.length > 0 && (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={
+                        styles.dayCityChips
+                      }
+                    >
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Leave day ${day.dayNumber} city unassigned`}
+                        accessibilityState={{
+                          selected: !assignedCity,
+                        }}
+                        style={[
+                          styles.dayCityChip,
+                          !assignedCity &&
+                            styles.dayCityChipSelected,
+                        ]}
+                        onPress={() => {
+                          void assignDayCity(day, null);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.dayCityChipText,
+                            !assignedCity &&
+                              styles.dayCityChipTextSelected,
+                          ]}
+                        >
+                          Not set
+                        </Text>
+                      </Pressable>
+
+                      {workspace.trip.destinations.map(
+                        (destination) => {
+                          const selected =
+                            assignedCity?.id ===
+                            destination.id;
+
+                          return (
+                            <Pressable
+                              key={destination.id}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Assign ${destination.name} to day ${day.dayNumber}`}
+                              accessibilityState={{
+                                selected,
+                              }}
+                              style={[
+                                styles.dayCityChip,
+                                selected &&
+                                  styles.dayCityChipSelected,
+                              ]}
+                              onPress={() => {
+                                void assignDayCity(
+                                  day,
+                                  destination.id,
+                                );
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  styles.dayCityChipText,
+                                  selected &&
+                                    styles.dayCityChipTextSelected,
+                                ]}
+                              >
+                                {destination.name}
+                              </Text>
+                            </Pressable>
+                          );
+                        },
+                      )}
+                    </ScrollView>
+                  )}
 
                   {!collapsed &&
                     timeConflicts.length > 0 && (
@@ -2421,6 +2531,48 @@ const styles =
       color:
         colors.textPrimary,
       marginTop: 2,
+    },
+
+    dayCity: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.micro,
+      color:
+        colors.textSecondary,
+      marginTop: 2,
+    },
+
+    dayCityChips: {
+      gap: spacing[2],
+      paddingTop: spacing[3],
+      paddingBottom: spacing[1],
+    },
+
+    dayCityChip: {
+      minHeight: 32,
+      paddingHorizontal: spacing[3],
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    dayCityChipSelected: {
+      borderColor: colors.brand,
+      backgroundColor: colors.brandSoft,
+    },
+
+    dayCityChipText: {
+      fontFamily: fontFamily.sansSemiBold,
+      fontSize: fontSize.micro,
+      color: colors.textSecondary,
+    },
+
+    dayCityChipTextSelected: {
+      color: colors.brand,
     },
 
     addButton: {

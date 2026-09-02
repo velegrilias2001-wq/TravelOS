@@ -10,6 +10,7 @@ import type {
   Traveler,
   Trip,
   TripDay,
+  TripDayId,
   TripId,
   TripRuntimeState,
   TripStop,
@@ -36,6 +37,7 @@ import {
   validateNewStopTimes,
   validateStopTimeUpdate,
 } from './stop-time';
+import { applyTripDayDestination } from './trip-day-destination';
 
 export interface TripWorkspace {
   trip: Trip;
@@ -289,6 +291,39 @@ export class TripService {
     id: TripId,
   ): Promise<void> {
     await this.repo.trip.delete(id);
+  }
+
+  async assignDayDestination(
+    tripId: TripId,
+    dayId: TripDayId,
+    destinationId: string | null,
+  ): Promise<void> {
+    const trip =
+      await this.repo.trip.getById(tripId);
+
+    if (!trip) {
+      throw new Error('Trip was not found');
+    }
+
+    const days =
+      await this.repo.trip.getDays(tripId);
+
+    const day = days.find(
+      (item) => item.id === dayId,
+    );
+
+    if (!day) {
+      throw new Error('That day was not found');
+    }
+
+    const updated = applyTripDayDestination(
+      day,
+      trip,
+      destinationId,
+      new Date().toISOString(),
+    );
+
+    await this.repo.trip.saveDay(updated);
   }
 }
 

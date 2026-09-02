@@ -110,6 +110,8 @@ CREATE TABLE IF NOT EXISTS trip_days (
 
   notes TEXT,
 
+  destination_id TEXT,
+
   created_at TEXT NOT NULL,
 
   updated_at TEXT NOT NULL,
@@ -118,7 +120,13 @@ CREATE TABLE IF NOT EXISTS trip_days (
 
     REFERENCES trips(id)
 
-    ON DELETE CASCADE
+    ON DELETE CASCADE,
+
+  FOREIGN KEY (destination_id)
+
+    REFERENCES trip_destinations(id)
+
+    ON DELETE SET NULL
 
 );
 
@@ -597,6 +605,10 @@ CREATE TABLE IF NOT EXISTS saved_places (
 CREATE INDEX IF NOT EXISTS idx_trip_days_trip_id
 
 ON trip_days(trip_id);
+
+CREATE INDEX IF NOT EXISTS idx_trip_days_destination_id
+
+ON trip_days(destination_id);
 
 CREATE INDEX IF NOT EXISTS idx_trip_stops_trip_id
 

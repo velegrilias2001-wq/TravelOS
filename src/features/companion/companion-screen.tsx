@@ -37,6 +37,7 @@ import {
   type CompanionStopContext,
 } from '@/services/companion';
 import { formatCalendarDateForDisplay } from '@/services/time-truth';
+import { companionActivePlaceLabel } from '@/services/trip-day-destination';
 import {
   colors,
   fontFamily,
@@ -125,6 +126,13 @@ export function CompanionScreen() {
     .map((destination) => destination.name.trim())
     .filter(Boolean)
     .join(' · ');
+  const heroPlace =
+    selection.mode === 'active'
+      ? companionActivePlaceLabel(
+          selection.displayDay,
+          workspace.trip.destinations,
+        )
+      : destinations || 'Destination not yet set';
 
   return (
     <Screen scroll contentStyle={styles.screenContent}>
@@ -156,7 +164,7 @@ export function CompanionScreen() {
           </Text>
         </View>
         <Text style={styles.destination}>
-          {(destinations || 'Destination not yet set').toUpperCase()}
+          {heroPlace.toUpperCase()}
         </Text>
         <Text style={styles.tripTitle}>{workspace.trip.title}</Text>
         <Text style={styles.tripDates}>

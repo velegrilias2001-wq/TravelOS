@@ -35,6 +35,7 @@
     "src/services/booking-stop-relationship.ts",
     "src/services/trip-details.ts",
     "src/services/trip-day-generation.ts",
+    "src/services/trip-day-destination.ts",
     "src/services/booking-time.ts",
     "src/services/stop-time.ts",
     "src/services/itinerary-flexibility.ts",

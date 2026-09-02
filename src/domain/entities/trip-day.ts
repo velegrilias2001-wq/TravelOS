@@ -33,6 +33,13 @@ export interface TripDay {
   notes?: string;
 
   /**
+   * Optional canonical link to one destination on
+   * this trip. Never inferred from destination order
+   * or display names. Unassigned is a valid state.
+   */
+  destinationId?: string;
+
+  /**
    * True ISO instants used only for persistence metadata.
    */
   createdAt: string;

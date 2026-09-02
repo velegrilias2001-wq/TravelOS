@@ -6,7 +6,7 @@ import {
   reconcileMemoryRelationships,
 } from './memory-integrity-migration';
 
-export const DATABASE_VERSION = 11;
+export const DATABASE_VERSION = 12;
 
 interface UserVersionRow {
   user_version: number;
@@ -1194,6 +1194,100 @@ export async function migrateDatabase(
             ON import_batches(created_at);
 
           PRAGMA user_version = 11;
+        `);
+      },
+    );
+  }
+
+  /**
+   * Version 12
+   * Optional Day → Destination assignment by exact
+   * destination ID. Unassigned days stay unassigned.
+   * Destination order is never treated as the day's
+   * city. Removing a destination clears the day's
+   * assignment rather than deleting the day.
+   *
+   * Fresh installs already receive destination_id
+   * from DATABASE_SCHEMA, so the column check keeps
+   * this migration safe in both paths.
+   */
+  if (currentVersion < 12) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        const columns =
+          await transaction.getAllAsync<TableInfoRow>(
+            'PRAGMA table_info(trip_days);',
+          );
+
+        const hasTripDays = columns.length > 0;
+
+        if (hasTripDays) {
+          const hasDestinationId = columns.some(
+            (column) =>
+              column.name === 'destination_id',
+          );
+
+          if (!hasDestinationId) {
+            await transaction.execAsync(`
+              ALTER TABLE trip_days
+              ADD COLUMN destination_id TEXT
+                REFERENCES trip_destinations(id)
+                ON DELETE SET NULL;
+            `);
+          }
+
+          await transaction.execAsync(`
+            CREATE INDEX IF NOT EXISTS
+              idx_trip_days_destination_id
+            ON trip_days(destination_id);
+
+            CREATE TRIGGER IF NOT EXISTS
+              validate_trip_day_destination_insert
+            BEFORE INSERT ON trip_days
+            WHEN NEW.destination_id IS NOT NULL
+            BEGIN
+              SELECT CASE
+                WHEN NOT EXISTS (
+                  SELECT 1
+                  FROM trip_destinations d
+                  WHERE
+                    d.id = NEW.destination_id AND
+                    d.trip_id = NEW.trip_id
+                )
+                THEN RAISE(
+                  ABORT,
+                  'trip day destination must belong to the same trip'
+                )
+              END;
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS
+              validate_trip_day_destination_update
+            BEFORE UPDATE OF
+              trip_id,
+              destination_id
+            ON trip_days
+            WHEN NEW.destination_id IS NOT NULL
+            BEGIN
+              SELECT CASE
+                WHEN NOT EXISTS (
+                  SELECT 1
+                  FROM trip_destinations d
+                  WHERE
+                    d.id = NEW.destination_id AND
+                    d.trip_id = NEW.trip_id
+                )
+                THEN RAISE(
+                  ABORT,
+                  'trip day destination must belong to the same trip'
+                )
+              END;
+            END;
+          `);
+        }
+
+        await transaction.execAsync(`
+          PRAGMA user_version = 12;
         `);
       },
     );

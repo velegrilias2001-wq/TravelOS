@@ -9,6 +9,7 @@ import type {
   TripId,
   TripStop,
 } from '../../domain/entities';
+import { saveTripDestinations } from './trip-destination-persistence';
 
 interface PersistedTripDayRow {
   id: string;
@@ -70,50 +71,10 @@ export async function saveCanonicalTrip(
         ],
       );
 
-      await transaction.execute(
-        `
-          DELETE FROM trip_destinations
-          WHERE trip_id = ?;
-        `,
-        [trip.id],
+      await saveTripDestinations(
+        transaction,
+        trip,
       );
-
-      for (
-        let position = 0;
-        position < trip.destinations.length;
-        position += 1
-      ) {
-        const destination =
-          trip.destinations[position];
-
-        await transaction.execute(
-          `
-            INSERT INTO trip_destinations (
-              id,
-              trip_id,
-              name,
-              country_code,
-              latitude,
-              longitude,
-              timezone,
-              currency_code,
-              position
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-          `,
-          [
-            destination.id,
-            trip.id,
-            destination.name,
-            destination.countryCode ?? null,
-            destination.latitude ?? null,
-            destination.longitude ?? null,
-            destination.timezone ?? null,
-            destination.currencyCode ?? null,
-            position,
-          ],
-        );
-      }
 
       await transaction.execute(
         `
@@ -434,10 +395,11 @@ export async function ensureCanonicalTripDays(
               day_number,
               title,
               notes,
+              destination_id,
               created_at,
               updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(trip_id, date)
             DO NOTHING;
           `,
@@ -448,6 +410,7 @@ export async function ensureCanonicalTripDays(
             day.dayNumber,
             day.title ?? null,
             day.notes ?? null,
+            day.destinationId ?? null,
             day.createdAt,
             day.updatedAt,
           ],

@@ -13,9 +13,10 @@ Evidence classes used throughout:
 
 ## Repository checkpoint
 
-- Current development branch: `feature/multi-destination-authoring-v1`
-- Branch point: `c0429e7` — feat: add Import image-embedded iCalendar V1
-- Multi-destination authoring V1 is implemented on this branch: Create Trip and Trip Details can add, reorder, and remove up to eight real map destinations. A trip cannot drop to zero destinations once it has one. New destinations require a picker selection. Removing a destination does not delete stops, bookings, or stays. Journey extra catalogue cities can prefill Create Trip. Day → Destination and timezone guessing are still out. Automated tests exist. No native device rehearsal was run for this authoring flow.
+- Current development branch: `feature/day-destination-v1`
+- Branch point: `5acf043` — feat: add Multi-destination authoring V1
+- Day → Destination V1 is implemented on this branch: a Plan day can be assigned to an existing trip destination by exact ID, or left unassigned. Companion’s active hero shows today’s assigned city or “City not set for today”. Removing a destination clears day assignments rather than deleting days. Trip destination saves upsert by ID so assignments survive Trip Details. Timezone is not inferred from the assignment. Automated tests exist. No native device rehearsal was run for this assignment flow.
+- Multi-destination authoring V1 remains on the parent history: Create Trip and Trip Details can add, reorder, and remove up to eight real map destinations. A trip cannot drop to zero destinations once it has one. New destinations require a picker selection. Removing a destination does not delete stops, bookings, or stays. Journey extra catalogue cities can prefill Create Trip. Automated tests exist. No native device rehearsal was run for this authoring flow.
 - Import image-embedded iCalendar V1 remains on the parent history: JPEG, PNG, GIF, and WEBP files yield a calendar only when metadata or file bytes contain a `BEGIN:VCALENDAR` block, including compressed PNG zTXt and text split across chunks. Ticket photos without a calendar fail closed. There is no OCR and no AI parsing of confirmation prose. Automated tests exist. No native device rehearsal was run for the image extractor.
 - Import Office-embedded iCalendar V1 remains on the parent history: Word/Excel/PowerPoint Open XML packages yield a calendar only when visible text contains a `BEGIN:VCALENDAR` block, including text split across Office runs. Automated tests exist. No native device rehearsal was run for the Office extractor.
 - Import PDF-embedded iCalendar V1 remains on the parent history: a chosen PDF can yield a calendar only when it actually contains a `BEGIN:VCALENDAR` block, including FlateDecode streams. Confirmation PDFs without a calendar fail closed. Automated tests exist. No native device rehearsal was run for the PDF extractor.
@@ -137,7 +138,7 @@ Discover types distinguish a session Brief, curated or provider-sourced candidat
 - Runtime timezone resolution uses a saved valid IANA timezone only when one destination supplies it or every saved destination supplies the same one. Missing, invalid, or differing timezones produce an explicit device-calendar fallback; destination order is never temporal authority.
 - The deterministic resolver derives upcoming, active, completed, or unknown phase, the calendar date used, timezone provenance, and an exact current TripDay only when its date matches. Its clock is injectable for boundary tests.
 - Durable `Trip.status` remains organizational and cannot override runtime date truth. Persisted `TripRuntimeState` is not required by the resolver and remains reserved for future explicit companion progress/lived state.
-- Multi-destination Trips need an explicit Day → Destination relationship before TravelOS can select different destination timezones across one journey.
+- Multi-destination Trips can assign an optional Day → Destination ID. Runtime timezone still uses a destination timezone only when every relevant saved destination has the same valid IANA timezone, or a single destination supplies one; the day’s city is presentation, not a clock.
 - Knowable free-time gaps are derived only between consecutive same-day stops when the earlier stop has a valid end time, the later stop has a valid start time, and itinerary order agrees with those times. TravelOS does not invent free time before the first stop, after the last stop, or across untimed moments.
 - Time conflicts are derived only from overlapping known start/end ranges on the same day.
 
@@ -146,7 +147,7 @@ Discover types distinguish a session Brief, curated or provider-sourced candidat
 The database is the current durable source of truth. Verified characteristics include:
 
 - SQLite WAL mode and foreign-key enforcement are enabled.
-- The current database version is **11** (`DATABASE_VERSION` in `src/data/database/migrations.ts`).
+- The current database version is **12** (`DATABASE_VERSION` in `src/data/database/migrations.ts`).
 - The core schema contains 18 tables: trips, trip_destinations, trip_days, trip_stops, travelers, trip_travelers, travel_dna, bookings, accommodations, budgets, budget_items, trip_runtime_states, memories, travel_books, travel_book_memories, saved_places, import_batches, and import_claims. Migrations also add recovery archives for reconciled duplicate TripDays, invalid historical Booking ↔ Stop links, invalid historical Accommodation links, and invalid historical Memory / Travel Book links.
 - Repository queries use bound parameters.
 - Historical version 1 and version 2 migration behavior remains unchanged.
@@ -166,7 +167,7 @@ The database is the current durable source of truth. Verified characteristics in
 - Deleting a linked stop is one atomic SQLite delete. Existing `ON DELETE SET NULL` behavior preserves every linked booking and unlinks it; deleting a booking never deletes or mutates its stop.
 - Each trip can persist one budget header, protected by the existing unique trip relationship. Plan updates preserve the canonical budget ID and existing expenses.
 - Budget expense create, edit, and delete preserve original currency, explicit booking/stop IDs, and the user-selected expense date.
-- Canonical Trip updates persist the trip row, ordered destination records, and traveler links in one transaction while preserving destination IDs and metadata. Optional intent and pace persist on the trip row.
+- Canonical Trip updates persist the trip row, upsert ordered destination records by ID, and rewrite traveler links in one transaction while preserving destination IDs and metadata. Optional intent and pace persist on the trip row. Days that referenced a removed destination have `destination_id` cleared rather than being deleted.
 - Trip deletion remains one atomic SQLite statement and relies on verified foreign-key cascades for trip-owned data. Independent traveler records survive because only trip membership belongs to the deleted trip. The Travel DNA singleton is not trip-owned and is not deleted with a trip.
 - Accommodation create and update validate required stay facts, real local date-time values, `checkInAt <= checkOutAt`, and same-trip optional booking/stop IDs. Deleting an Accommodation does not delete or mutate its linked Booking or TripStop; deleting a linked Booking or TripStop unlinks the Accommodation through `ON DELETE SET NULL`.
 - Traveler creation plus first membership is atomic. Existing identities are added only through an exact selected Traveler ID, duplicate membership is rejected, canonical edits are visible in every Trip that contains that ID, and membership removal never deletes the identity.
@@ -177,6 +178,8 @@ The database is the current durable source of truth. Verified characteristics in
 - Migration version 8 creates the singleton `travel_dna` table (`singleton_key = 1`).
 - Migration version 9 adds nullable `intent` and `pace` columns to existing `trips` rows. Existing trips keep both fields unset. Fresh schema already includes the columns; the migration checks before altering.
 - Migration version 10 creates `saved_places` for grounded Discover candidate identities. Rows are not Trips and do not copy destination coordinates. Existing trip rows are unchanged.
+- Migration version 11 adds `import_batches` and `import_claims` for the Import review queue.
+- Migration version 12 adds optional `trip_days.destination_id` with `ON DELETE SET NULL`, same-trip insert/update triggers, and a destination-id index. Existing days stay unassigned. Fresh schema already includes the column; the migration checks before altering.
 
 Important remaining gaps:
 
@@ -186,9 +189,9 @@ Important remaining gaps:
 - Trip-list loading performs repeated related-data queries and will not scale well.
 - Relationship cardinality and service aggregation still need explicit decisions for runtime state and some remaining aggregates. Booking ↔ Stop, Accommodation, Memory, and Travel Book relationships are now explicit.
 - TripDay records outside an edited trip date range are preserved and placed after the canonical range; no product flow exists yet for resolving them.
-- Multi-destination Trips still lack a Day → Destination relationship. Runtime calculations use a destination timezone only when every relevant saved destination has the same valid IANA timezone; otherwise the resolver reports an explicit device-calendar fallback. The current native picker does not provide timezone data, so securely enriching a selection requires Google Time Zone API enablement and a separately restricted service/server boundary (or a picker/provider that returns a reliable IANA timezone); the Android Maps key is not reused for a client-side web-service call.
+- Multi-destination Trips now persist an optional Day → Destination ID for presentation. Runtime calculations still use a destination timezone only when every relevant saved destination has the same valid IANA timezone; otherwise the resolver reports an explicit device-calendar fallback. The current native picker does not provide timezone data, so securely enriching a selection requires Google Time Zone API enablement and a separately restricted service/server boundary (or a picker/provider that returns a reliable IANA timezone); the Android Maps key is not reused for a client-side web-service call. A day’s assigned city is not used to decide which calendar date is “today.”
 - Archived migration-v3 duplicate-day metadata and migration-v7 invalid-link archives are retained for recovery but have no user-facing inspection tool.
-- Historical Android Expo SQLite rehearsals verified upgrades through `user_version = 6`. This documentation pass did not re-open a device database, so live `PRAGMA user_version = 11` on an installed development build is **not** claimed. Node tests exist for versions 7–11. Equivalent iOS rehearsals are still outstanding.
+- Historical Android Expo SQLite rehearsals verified upgrades through `user_version = 6`. This documentation pass did not re-open a device database, so live `PRAGMA user_version = 12` on an installed development build is **not** claimed. Node tests exist for versions 7–12. Equivalent iOS rehearsals are still outstanding.
 
 Historical migrations must not be edited to repair remaining issues. Corrections require new migrations.
 
@@ -240,8 +243,8 @@ Implemented behavior includes:
 - A dedicated native Trip Details route reached from More.
 - Canonical title editing, status selection, native date editing, accounting-currency editing, optional intent/pace editing, and structured destination replacement through TripService and TripWorkspace.
 - Strict real-calendar `YYYY-MM-DD` validation and rejection of reversed ranges before persistence.
-- Location-aware replacement preserves the destination ID and order while atomically replacing the selected place facts. Unrelated Trip metadata, travelers, accounting currency, and created timestamp remain intact.
-- Historical name-only destinations stay visible and loadable, and can be upgraded only through an explicit map selection. Structured destinations are not editable as disconnected text. Destination add, remove, and reorder remain outside this flow.
+- Location-aware replacement preserves the destination ID and order while atomically replacing the selected place facts. Unrelated Trip metadata, travelers, accounting currency, and created timestamp remain intact. Destination add, remove, and reorder keep destination IDs; removing a destination clears Day → Destination assignments instead of deleting days, stops, bookings, or stays.
+- Historical name-only destinations stay visible and loadable, and can be upgraded only through an explicit map selection. Structured destinations are not editable as disconnected text.
 - Manual status choices cover draft, planned, completed, and archived. An existing active status is preserved, but a future trip cannot be manually marked active because active truth needs date/runtime derivation.
 - Accounting currency cannot be changed once a persisted Budget exists. No amount is relabelled, converted, or assigned an invented exchange rate.
 - Trip deletion uses a destructive native confirmation, routes safely back to Trips, refreshes the global list cache, and leaves the deleted workspace in not-found state rather than retaining stale data.
@@ -253,14 +256,14 @@ Current limitations include no Day → Destination timezone mapping, no archive/
 Implemented behavior includes:
 
 - One provider-neutral destination-authoring service validates real coordinates and optional country, timezone, and currency codes without inferring missing facts.
-- Create Trip requires the existing native picker and persists one or more real selected destinations, up to eight. Trip Details uses the same picker to add another destination, replace a structured destination, or upgrade a historical name-only destination while preserving its TravelOS ID. Reorder and remove keep destination IDs; a trip that already has destinations cannot be saved with zero. Removing a destination does not delete itinerary stops, bookings, or stays.
+- Create Trip requires the existing native picker and persists one or more real selected destinations, up to eight. Trip Details uses the same picker to add another destination, replace a structured destination, or upgrade a historical name-only destination while preserving its TravelOS ID. Reorder and remove keep destination IDs; a trip that already has destinations cannot be saved with zero. Removing a destination does not delete itinerary stops, bookings, or stays; it clears Day → Destination assignments for that city.
 - Picker-returned locality/region/name/address and country context produce the saved display label. The current provider result does not expose a durable place ID, timezone, or currency, so none is invented or silently derived.
-- SQLite hydration and persistence round-trip the full existing destination record losslessly. No schema migration was required.
+- SQLite hydration and persistence round-trip the full existing destination record losslessly. Destination rows are upserted by ID on trip save so Day → Destination links survive unrelated Trip Details edits. Optional day assignment itself required migration version 12.
 - Map frames every mapped destination together with every mapped itinerary stop and renders distinct destination markers. Plan uses a destination coordinate as picker context only when exactly one mapped destination makes that context unambiguous.
 - Companion uses calm missing-timezone fallback copy and never shows exact NOW/NEXT timing without a saved reliable IANA timezone.
 - Trip-space headings use the full saved destination context instead of silently treating the first destination as authoritative.
 
-Current limitations include no stable provider place ID in the installed picker result, no secure timezone enrichment boundary, no destination-currency source, and no Day → Destination relationship. Provider enrichment and iOS verification remain future work.
+Current limitations include no stable provider place ID in the installed picker result, no secure timezone enrichment boundary, no destination-currency source, and no use of a day’s assigned city as a clock. Provider enrichment and iOS verification remain future work.
 
 ### Budget & Expenses
 
@@ -387,7 +390,7 @@ Implemented truth rules and behavior are:
 
 - A single valid destination IANA timezone, or one valid timezone shared by every destination, supplies exact travel-local date and time. Missing, invalid, or differing timezones produce an explicit device-calendar fallback; destination order is never temporal authority.
 - Upcoming Trips show a deterministic calendar-day countdown, first canonical TripDay preview, next safely dated local check-in, bounded early unlinked Booking context, and preparation signals derived only from Accommodation, Bookings, populated itinerary days, Travelers, and Budget data. Missing optional modules are not errors.
-- Active Trips use only the TripDay whose canonical date exactly matches runtime truth and show `Day X of N`. When canonical timezone truth exists, a stop is `NOW` only if exactly one valid start/end range contains the local clock time. `NEXT` is the first canonical-order stop with a valid start at or after that time. Earlier, later, and untimed stops remain explicit; an untimed stop is never called current.
+- Active Trips use only the TripDay whose canonical date exactly matches runtime truth and show `Day X of N`. The hero shows that day’s assigned city when one exists, or “City not set for today”; destination order is not substituted. When canonical timezone truth exists, a stop is `NOW` only if exactly one valid start/end range contains the local clock time. `NEXT` is the first canonical-order stop with a valid start at or after that time. Earlier, later, and untimed stops remain explicit; an untimed stop is never called current.
 - When exact active timing cannot be proven, Companion suppresses NOW/NEXT and active unlinked Booking claims, retains the canonical Plan order, and explains the timezone limitation. Missing active TripDays and invalid trip dates render explicit safe states instead of substituting another day.
 - Relevant stop Booking context uses exact `Booking.stopId` relationships, ignores cancelled Bookings, and exposes restrained status/provider/payment context. Unlinked Bookings are shown only when their local calendar context can be derived safely; no fuzzy relationship is created.
 - Current-stay language requires exactly one Accommodation whose canonical local check-in/out interval contains the reliable trip-local time. Otherwise only safely dated check-in/check-out context is shown. Historical absolute-offset stay values are preserved but are not reinterpreted as local live-stay truth.
@@ -396,13 +399,13 @@ Implemented truth rules and behavior are:
 - Runtime truth refreshes on route focus, app foreground return, and the next resolved local calendar-date boundary. The boundary calculation is DST-safe and uses one cleaned-up timer rather than polling.
 - Trip-level loading, refresh, not-found, and recoverable read-error behavior remains shared with the other Trip Space screens.
 
-Current Companion V1 limitations include no Day → Destination timezone relationship for multi-destination trips, no secure reliable timezone enrichment source, no persisted delayed/skipped/lived progress, no live provider data, notifications, routes, ETAs, weather, traffic, opening hours, recommendations, or AI. NOW/NEXT does not reschedule at each stop boundary while the screen stays continuously open; it refreshes at the required focus, foreground, and calendar-boundary lifecycle events. The Android rehearsal verified upcoming, incomplete/fallback, active canonical-day, linked Booking, mapped-stop, tab/lifecycle persistence, and completed non-live behavior with isolated data, then removed only that isolated trip. Exact canonical-timezone NOW/NEXT and Accommodation date-picker creation could not be exercised end-to-end because the current native destination provider does not return a timezone and the emulator diverted the native Accommodation picker into a system settings surface; deterministic selector tests cover those rules. Existing pre-test trip data survived, and bootstrap plus the persistence self-test passed after cold relaunch. iOS verification remains outstanding.
+Current Companion V1 limitations include no use of a day’s assigned city as a timezone for NOW/NEXT, no secure reliable timezone enrichment source, no persisted delayed/skipped/lived progress, no live provider data, notifications, routes, ETAs, weather, traffic, opening hours, recommendations, or AI. NOW/NEXT does not reschedule at each stop boundary while the screen stays continuously open; it refreshes at the required focus, foreground, and calendar-boundary lifecycle events. The Android rehearsal verified upcoming, incomplete/fallback, active canonical-day, linked Booking, mapped-stop, tab/lifecycle persistence, and completed non-live behavior with isolated data, then removed only that isolated trip. Exact canonical-timezone NOW/NEXT and Accommodation date-picker creation could not be exercised end-to-end because the current native destination provider does not return a timezone and the emulator diverted the native Accommodation picker into a system settings surface; deterministic selector tests cover those rules. Existing pre-test trip data survived, and bootstrap plus the persistence self-test passed after cold relaunch. iOS verification remains outstanding.
 
 ### Plan
 
 Implemented behavior includes:
 
-- Day-by-day itinerary rendering.
+- Day-by-day itinerary rendering with an optional city assignment per day from the trip’s existing destinations. Unassigned is valid. Assignment uses destination IDs, never names or destination order.
 - TripStop create, edit, delete, and reorder.
 - UI support for place, activity, food, and transport stop types.
 - Native real-location selection.
@@ -591,7 +594,7 @@ Android-verified on 2026-09-02: Trip Map for Nagawa rendered Google Maps with de
 - No iOS bundle identifier is configured.
 - iOS build, picker behavior, permissions, and release readiness are unverified.
 - Routes, travel times, offline map behavior, navigation handoff, clustering, and Day → Destination map semantics are not implemented.
-- Home, Trips, Companion, Plan, Map, Bookings, Accommodation, Travelers, More, Discover, World, and Profile render available destination or trip facts rather than silently treating the first destination as the whole trip. Full multi-destination authoring and per-day semantics remain unimplemented.
+- Home, Trips, Companion, Plan, Map, Bookings, Accommodation, Travelers, More, Discover, World, and Profile render available destination or trip facts rather than silently treating the first destination as the whole trip. Plan can assign a day to one of those destinations. Map still has no Day → Destination framing.
 
 ### World
 
@@ -735,6 +738,8 @@ Import image-embedded iCalendar V1 verification on 2026-09-02 re-ran `npx tsc --
 
 Multi-destination authoring V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (226 application tests passing, including destination add/reorder/remove and journey extra-city prefill). `git diff --check` was clean. No native rebuild was required. No device rehearsal was run for adding a second destination.
 
+Day → Destination V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (232 application tests passing, including day assignment, destination upsert, same-trip triggers, and migration version 12). `git diff --check` was clean. No native rebuild was required. No device rehearsal was run for assigning a city to a day.
+
 Grounded Destination Sourcing V1 verification re-ran `npx tsc --noEmit` and `npm test` (138 application tests passing, including the new corpus/sourcing suite) plus the unchanged server suite. No native device run was performed for that service-layer milestone.
 
 Android Pixel 8 development-build rehearsal on 2026-09-02 (installed `com.travelos.app`, Metro, AI server `PORT=8789`, `adb reverse`, live Ollama `bge-m3` / `qwen3:4b`):
@@ -754,7 +759,7 @@ Missing release foundations:
 - No production observability or crash reporting.
 - No backup, export, account, or sync mechanism.
 - No verified accessibility, offline, performance, upgrade, or destructive-migration test plan.
-- No device rehearsal of migration versions 7–11 on Expo SQLite.
+- No device rehearsal of migration versions 7–12 on Expo SQLite.
 
 ## Production-quality versus prototype
 
@@ -794,8 +799,8 @@ These pieces are promising foundations; they do not make the app production-read
 
 ### Prototype or incomplete implementation
 
-- Day → Destination semantics, stable provider identity, and secure timezone/currency enrichment. Multi-destination add/remove/reorder is implemented in Create Trip and Trip Details.
-- Companion V2 timezone authoring, Day → Destination semantics, stop-boundary refresh decisions, lived progress, and external live-data layers.
+- Day → Destination assignment is implemented for Plan and Companion presentation. Remaining gaps are stable provider identity, secure timezone/currency enrichment, and using a day’s city as a clock.
+- Companion V2 timezone authoring, stop-boundary refresh decisions, lived progress, and external live-data layers. A day’s assigned city is display-only until a reliable timezone source exists.
 - Discover live provider catalogues and reranking. Best time V1, Ready-made journeys V1, and Wishlist V1 are implemented in code over grounded catalogue identities. Semantic retrieval and opt-in grounded explanations exist as local-dev lanes over those identities.
 - Broader import formats. Native import now extracts iCalendar from paste, a chosen file, UTF-16 calendar bytes, an email `text/calendar` part, a zip of those calendars, a PDF that embeds an iCalendar, an Office Open XML document whose visible text contains an iCalendar, or a JPEG/PNG/GIF/WEBP file whose metadata contains an iCalendar. Image OCR of confirmation photos and AI parsing of confirmation prose remain out. Android Pixel 8 rehearsed choosing a local `.ics` file and an `.eml` with a calendar part; zip, PDF, Office, and image extractors were not rehearsed on device in this pass. iOS was not rebuilt.
 - Production AI provider, privacy, and cost contract; Plan free-time advice and Discover retrieve remain a local-dev backend.
@@ -811,6 +816,6 @@ These pieces are promising foundations; they do not make the app production-read
 
 TravelOS is a broader native vertical prototype than the 2026-08-23 snapshot described, and still not a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths. Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. Budget & Expenses, Trip Details, Booking ↔ Stop, Accommodation, Travelers, Time & Runtime Truth, Companion V1, Canonical Destination Authoring, and UX Refinement V1 remain the earlier completed core. After that, Memories V1 and Travel Book V1 give completed trips an on-device record and story, shared readiness selection keeps Companion honest about preparation, Travel DNA plus trip intent/pace give Discover and Create Trip explicit preference language, Plan can show knowable free time and conflicts, AI Foundation V1 can advise on free time without writing trip truth, Discover Experience V1 can recommend grounded destinations that become canonical only after Create Trip confirmation, Grounded Destination Sourcing V1 loads those destinations from explicit provenance-backed packs, and Semantic Discover V1 can add extra grounded catalogue identities from local retrieval without replacing deterministic matching, with opt-in grounded explanations of those catalogue facts. World and Profile are no longer empty tabs, but they are still thin compared with the trip workspace.
 
-The latest local git milestones on `feature/multi-destination-authoring-v1` follow Import image-embedded iCalendar V1 (`c0429e7`). Create Trip and Trip Details can now keep more than one real destination. There is still no usable git remote for push.
+The latest local git milestones on `feature/day-destination-v1` follow Multi-destination authoring V1 (`5acf043`). Plan can assign a day to an existing trip city by ID. There is still no usable git remote for push.
 
-The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, Ready-made journeys V1, Wishlist V1, and Import Review Queue V1 are implemented. Multi-destination authoring V1 lets a traveler add, reorder, and remove real destinations on Create Trip and Trip Details, including extra catalogue cities from a journey idea. Pixel 8 opened Best time, the journeys list, empty Saved ideas, the Import paste accept/delete path, the ICS file picker, and an email-wrapped calendar; zip/PDF/Office/image-file rehearsal, wishlist save, journey-to-Create-Trip, multi-destination device rehearsal, and iOS were not exercised. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–11, remaining visual/accessibility matrix, Phase 0 gaps, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, remaining import formats, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.
+The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, Ready-made journeys V1, Wishlist V1, and Import Review Queue V1 are implemented. Multi-destination authoring V1 lets a traveler add, reorder, and remove real destinations on Create Trip and Trip Details, including extra catalogue cities from a journey idea. Day → Destination V1 lets Plan assign a day to one of those cities without guessing timezone. Pixel 8 opened Best time, the journeys list, empty Saved ideas, the Import paste accept/delete path, the ICS file picker, and an email-wrapped calendar; zip/PDF/Office/image-file rehearsal, wishlist save, journey-to-Create-Trip, multi-destination device rehearsal, Day → Destination device rehearsal, and iOS were not exercised. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–12, remaining visual/accessibility matrix, Phase 0 gaps, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, remaining import formats, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.
