@@ -125,7 +125,7 @@ test(
       );
       assert.equal(stop.trip_id, 'trip-a');
       assert.equal(stop.day_id, 'day-a');
-      assert.equal(DATABASE_VERSION, 14);
+      assert.equal(DATABASE_VERSION, 15);
     } finally {
       database.close();
     }
@@ -282,7 +282,7 @@ test(
         await database.queryFirst(
           'PRAGMA user_version;',
         );
-      assert.equal(version.user_version, 14);
+      assert.equal(version.user_version, 15);
 
       const archived = await database.queryFirst(
         `

@@ -323,7 +323,20 @@ export async function reconcileMemoryRelationships(
         tb.id = travel_book_memories.travel_book_id AND
         tb.trip_id = m.trip_id
     );
+  `);
 
+  await installMemoryRelationshipGuards(db);
+}
+
+/**
+ * Indexes and same-trip/unlink triggers for Memory and
+ * Travel Book. Shared by migration v7 and by later
+ * table rebuilds that drop those objects.
+ */
+export async function installMemoryRelationshipGuards(
+  db: SQLiteDatabase,
+): Promise<void> {
+  await db.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_memories_day_id
     ON memories(day_id);
 

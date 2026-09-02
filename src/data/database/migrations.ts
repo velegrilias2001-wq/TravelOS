@@ -3,6 +3,9 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { DATABASE_SCHEMA } from './schema';
 
 import {
+  installMemoryDayStopForeignKeys,
+} from './memory-day-stop-fk-migration';
+import {
   reconcileMemoryRelationships,
 } from './memory-integrity-migration';
 import {
@@ -12,7 +15,7 @@ import {
   reconcileStopDayRelationships,
 } from './stop-day-integrity-migration';
 
-export const DATABASE_VERSION = 14;
+export const DATABASE_VERSION = 15;
 
 interface UserVersionRow {
   user_version: number;
@@ -1339,6 +1342,29 @@ export async function migrateDatabase(
 
         await transaction.execAsync(`
           PRAGMA user_version = 14;
+        `);
+      },
+    );
+  }
+
+  /**
+   * Version 15
+   * Declare Memory day and stop foreign keys so deleting
+   * itinerary context unlinks the Memory at the SQLite
+   * boundary. Same-trip ownership stays in the existing
+   * v7 triggers. Dangling historical IDs are cleared
+   * rather than deleting the Memory. Travel Book
+   * memberships are preserved across the table rebuild.
+   */
+  if (currentVersion < 15) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await installMemoryDayStopForeignKeys(
+          transaction,
+        );
+
+        await transaction.execAsync(`
+          PRAGMA user_version = 15;
         `);
       },
     );

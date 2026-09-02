@@ -532,7 +532,19 @@ CREATE TABLE IF NOT EXISTS memories (
 
     REFERENCES trips(id)
 
-    ON DELETE CASCADE
+    ON DELETE CASCADE,
+
+  FOREIGN KEY (day_id)
+
+    REFERENCES trip_days(id)
+
+    ON DELETE SET NULL,
+
+  FOREIGN KEY (stop_id)
+
+    REFERENCES trip_stops(id)
+
+    ON DELETE SET NULL
 
 );
 
@@ -641,6 +653,14 @@ ON budget_items(trip_id);
 CREATE INDEX IF NOT EXISTS idx_memories_trip_id
 
 ON memories(trip_id);
+
+CREATE INDEX IF NOT EXISTS idx_memories_day_id
+
+ON memories(day_id);
+
+CREATE INDEX IF NOT EXISTS idx_memories_stop_id
+
+ON memories(stop_id);
 
 CREATE INDEX IF NOT EXISTS idx_trip_runtime_states_current_day_id
 
