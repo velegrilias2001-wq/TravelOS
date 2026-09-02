@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
 import {
-  useCallback,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -19,18 +18,11 @@ import {
 import { Screen } from '@/components/ui/screen';
 import { UtilityScreenHeader } from '@/components/ui/utility-screen';
 import type { Memory } from '@/domain/entities/memory';
-import type { TravelBook } from '@/domain/entities/travel-book';
 import {
   useTripWorkspace,
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
 import { tripDestinationLabel } from '@/services/destination-authoring';
-import { memoryService } from '@/services/memory-service';
-import {
-  deleteTravelBook,
-  getTravelBook,
-  saveTravelBook,
-} from '@/services/travel-book-service';
 import {
   colors,
   fontFamily,
@@ -78,18 +70,59 @@ function formatMomentDate(value: string): string {
   });
 }
 
+function selectedMemoryIds(
+  memories: Memory[],
+  requestedIds: string[],
+): string[] {
+  const availableIds = new Set(
+    memories.map((memory) => memory.id),
+  );
+
+  return requestedIds.filter((id) =>
+    availableIds.has(id),
+  );
+}
+
+function coverFromMemories(
+  memories: Memory[],
+  selectedIds: string[],
+  requestedCoverImageUri?: string,
+): string | undefined {
+  const selected = new Set(selectedIds);
+
+  const photoMemories = memories.filter(
+    (memory) =>
+      selected.has(memory.id) &&
+      memory.type === 'photo' &&
+      Boolean(memory.mediaUri),
+  );
+
+  if (
+    requestedCoverImageUri &&
+    photoMemories.some(
+      (memory) =>
+        memory.mediaUri === requestedCoverImageUri,
+    )
+  ) {
+    return requestedCoverImageUri;
+  }
+
+  return photoMemories[0]?.mediaUri;
+}
+
 export default function TravelBookScreen() {
-  const { workspace } = useTripWorkspace();
+  const { workspace, actions } = useTripWorkspace();
 
   useTripWorkspaceFocusRefresh();
 
   const trip = workspace.trip;
   const destinationLabel =
     tripDestinationLabel(trip.destinations);
-
-  const [memories, setMemories] = useState<Memory[]>(
+  const memories = useMemo(
     () => chronologicalMemories(workspace.memories),
+    [workspace.memories],
   );
+  const book = workspace.travelBook;
 
   const dayById = useMemo(
     () =>
@@ -107,97 +140,60 @@ export default function TravelBookScreen() {
     [workspace.stops],
   );
 
-  const [book, setBook] =
-    useState<TravelBook | null>(null);
-  const [title, setTitle] = useState(trip.title);
-  const [summary, setSummary] = useState('');
+  const [title, setTitle] = useState(
+    book?.title ?? trip.title,
+  );
+  const [summary, setSummary] = useState(
+    book?.summary ?? '',
+  );
   const [selectedIds, setSelectedIds] = useState<
     string[]
-  >([]);
+  >(() =>
+    selectedMemoryIds(
+      chronologicalMemories(workspace.memories),
+      book?.memoryIds ?? [],
+    ),
+  );
   const [coverImageUri, setCoverImageUri] =
-    useState<string | undefined>();
+    useState<string | undefined>(() =>
+      coverFromMemories(
+        chronologicalMemories(workspace.memories),
+        book?.memoryIds ?? [],
+        book?.coverImageUri,
+      ),
+    );
   const [isPublished, setIsPublished] =
-    useState(false);
-  const [isLoading, setIsLoading] =
-    useState(true);
+    useState(book?.isPublished ?? false);
   const [isSaving, setIsSaving] =
     useState(false);
 
-  const resetDraft = useCallback(
-    (_availableMemories: Memory[]) => {
-      setBook(null);
+  useEffect(() => {
+    if (!book) {
       setTitle(trip.title);
       setSummary('');
       setSelectedIds([]);
       setCoverImageUri(undefined);
       setIsPublished(false);
-    },
-    [trip.title],
-  );
-
-  const loadBook = useCallback(async () => {
-    setIsLoading(true);
-
-    try {
-      const freshMemories = chronologicalMemories(
-        await memoryService.listTripMemories(trip.id),
-      );
-      setMemories(freshMemories);
-
-      const existing = await getTravelBook(trip.id);
-
-      if (!existing) {
-        resetDraft(freshMemories);
-        return;
-      }
-
-      const availableIds = new Set(
-        freshMemories.map((memory) => memory.id),
-      );
-      const validSelectedIds =
-        existing.memoryIds.filter((id) =>
-          availableIds.has(id),
-        );
-
-      const validCover = freshMemories.some(
-        (memory) =>
-          validSelectedIds.includes(memory.id) &&
-          memory.type === 'photo' &&
-          memory.mediaUri === existing.coverImageUri,
-      )
-        ? existing.coverImageUri
-        : freshMemories.find(
-            (memory) =>
-              validSelectedIds.includes(memory.id) &&
-              memory.type === 'photo' &&
-              Boolean(memory.mediaUri),
-          )?.mediaUri;
-
-      setBook(existing);
-      setTitle(existing.title);
-      setSummary(existing.summary ?? '');
-      setSelectedIds(validSelectedIds);
-      setCoverImageUri(validCover);
-      setIsPublished(existing.isPublished);
-    } catch (error) {
-      console.error(
-        '[TravelBook] Load failed:',
-        error,
-      );
-      Alert.alert(
-        'Travel Book unavailable',
-        'The saved book could not be loaded.',
-      );
-    } finally {
-      setIsLoading(false);
+      return;
     }
-  }, [resetDraft, trip.id]);
 
-  useFocusEffect(
-    useCallback(() => {
-      void loadBook();
-    }, [loadBook]),
-  );
+    const nextSelected = selectedMemoryIds(
+      memories,
+      book.memoryIds,
+    );
+
+    setTitle(book.title);
+    setSummary(book.summary ?? '');
+    setSelectedIds(nextSelected);
+    setCoverImageUri(
+      coverFromMemories(
+        memories,
+        book.memoryIds,
+        book.coverImageUri,
+      ),
+    );
+    setIsPublished(book.isPublished);
+  }, [book, memories, trip.title]);
 
   const selectedSet = useMemo(
     () => new Set(selectedIds),
@@ -290,9 +286,8 @@ export default function TravelBookScreen() {
     setIsSaving(true);
 
     try {
-      const saved = await saveTravelBook({
+      const saved = await actions.saveTravelBook({
         existing: book,
-        tripId: trip.id,
         title,
         summary,
         memoryIds: selectedIds,
@@ -301,7 +296,6 @@ export default function TravelBookScreen() {
         memories,
       });
 
-      setBook(saved);
       setTitle(saved.title);
       setSummary(saved.summary ?? '');
       setSelectedIds(saved.memoryIds);
@@ -346,8 +340,7 @@ export default function TravelBookScreen() {
           onPress: () => {
             void (async () => {
               try {
-                await deleteTravelBook(book.id);
-                await loadBook();
+                await actions.deleteTravelBook(book.id);
                 Alert.alert(
                   'Travel Book deleted',
                   'The book was removed. Your Memories are still saved.',
@@ -368,24 +361,6 @@ export default function TravelBookScreen() {
       ],
     );
   };
-
-  if (isLoading) {
-    return (
-      <Screen>
-        <UtilityScreenHeader
-          eyebrow={destinationLabel.toUpperCase()}
-          title="Travel Book"
-          subtitle="Shape real trip moments into a lasting story."
-        />
-        <View style={styles.loadingState}>
-          <ActivityIndicator color={colors.brand} />
-          <Text style={styles.loadingText}>
-            Opening your Travel Book…
-          </Text>
-        </View>
-      </Screen>
-    );
-  }
 
   return (
     <Screen scroll>
@@ -860,17 +835,6 @@ function StoryMoment({
 }
 
 const styles = StyleSheet.create({
-  loadingState: {
-    minHeight: 220,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[3],
-  },
-  loadingText: {
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.bodySmall,
-    color: colors.textMuted,
-  },
   truthNote: {
     flexDirection: 'row',
     alignItems: 'flex-start',

@@ -140,6 +140,7 @@ export class MemoryService {
   }
 
   async updateMemory(
+    tripId: TripId,
     id: MemoryId,
     input: UpdateMemoryInput,
   ): Promise<Memory> {
@@ -150,7 +151,10 @@ export class MemoryService {
         id,
       );
 
-    if (!existing) {
+    if (
+      !existing ||
+      existing.tripId !== tripId
+    ) {
       throw new Error(
         'This memory no longer exists.',
       );
@@ -180,6 +184,7 @@ export class MemoryService {
   }
 
   async deleteMemory(
+    tripId: TripId,
     id: MemoryId,
   ): Promise<Memory | null> {
     const existing =
@@ -189,6 +194,12 @@ export class MemoryService {
 
     if (!existing) {
       return null;
+    }
+
+    if (existing.tripId !== tripId) {
+      throw new Error(
+        'This memory belongs to another trip.',
+      );
     }
 
     await memoryRepository.delete(id);

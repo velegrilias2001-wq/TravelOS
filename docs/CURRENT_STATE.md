@@ -13,9 +13,10 @@ Evidence classes used throughout:
 
 ## Repository checkpoint
 
-- Current development branch: `feature/day-destination-v1`
-- Branch point: `5acf043` — feat: add Multi-destination authoring V1
-- Day → Destination V1 is implemented on this branch: a Plan day can be assigned to an existing trip destination by exact ID, or left unassigned. Companion’s active hero shows today’s assigned city or “City not set for today”. Removing a destination clears day assignments rather than deleting days. Trip destination saves upsert by ID so assignments survive Trip Details. Timezone is not inferred from the assignment. Automated tests exist. No native device rehearsal was run for this assignment flow.
+- Current development branch: `feature/memory-travel-book-workspace-v1`
+- Branch point: `87ed0c6` — feat: add Day to Destination V1
+- Memory / Travel Book workspace invalidation V1 is implemented on this branch: Memories create/edit/delete and Travel Book save/delete go through TripWorkspace actions that invalidate and reload the shared aggregate. More and other Trip Space tabs cannot remain stale after those writes. Missing or cross-trip records fail closed. Automated lifecycle tests exist. No native device rehearsal was run for this wiring.
+- Day → Destination V1 remains on the parent history: a Plan day can be assigned to an existing trip destination by exact ID, or left unassigned. Companion’s active hero shows today’s assigned city or “City not set for today”. Removing a destination clears day assignments rather than deleting days. Trip destination saves upsert by ID so assignments survive Trip Details. Timezone is not inferred from the assignment. Automated tests exist. No native device rehearsal was run for this assignment flow.
 - Multi-destination authoring V1 remains on the parent history: Create Trip and Trip Details can add, reorder, and remove up to eight real map destinations. A trip cannot drop to zero destinations once it has one. New destinations require a picker selection. Removing a destination does not delete stops, bookings, or stays. Journey extra catalogue cities can prefill Create Trip. Automated tests exist. No native device rehearsal was run for this authoring flow.
 - Import image-embedded iCalendar V1 remains on the parent history: JPEG, PNG, GIF, and WEBP files yield a calendar only when metadata or file bytes contain a `BEGIN:VCALENDAR` block, including compressed PNG zTXt and text split across chunks. Ticket photos without a calendar fail closed. There is no OCR and no AI parsing of confirmation prose. Automated tests exist. No native device rehearsal was run for the image extractor.
 - Import Office-embedded iCalendar V1 remains on the parent history: Word/Excel/PowerPoint Open XML packages yield a calendar only when visible text contains a `BEGIN:VCALENDAR` block, including text split across Office runs. Automated tests exist. No native device rehearsal was run for the Office extractor.
@@ -88,7 +89,7 @@ The codebase has a sensible layered direction:
 
 TripService builds a TripWorkspace aggregate from the canonical Trip and related records, including memories and the optional Travel Book. Companion, Plan, Map, Bookings, Accommodation, Budget, Travelers, More, Trip Details, Memories, and Travel Book consume one provider above the nested Trip Space tabs instead of maintaining independent durable copies. Successful TripWorkspace actions invalidate and reload that aggregate from SQLite. Focus refreshes are revision-aware, so current data does not trigger an unnecessary database reload. Trip edits and deletion also refresh the Zustand-backed global trip-list cache after SQLite and the workspace have been updated.
 
-Memory and Travel Book writes currently go through `memoryService` / `travel-book-service` from their screens rather than TripWorkspace actions. Memories then sync local UI from `workspace.memories` when that snapshot changes. Those writes sit outside the shared mutation/invalidation contract, so other Trip Space consumers can remain stale until a later workspace reload. That is an implemented lifecycle gap, not a second database.
+Memory and Travel Book writes now go through the same TripWorkspace action/invalidation contract as stops, bookings, accommodations, travelers, and budget. Memories still keep a local list that follows `workspace.memories`. Travel Book drafts follow `workspace.travelBook` and `workspace.memories` instead of issuing a second SQLite read on focus.
 
 Travel DNA is a singleton local profile loaded through `TravelDNAService`. It is not part of the trip aggregate and is not inferred from trip data.
 
@@ -185,7 +186,7 @@ Important remaining gaps:
 
 - Cross-table invariants do not yet prove that a stop's trip ID matches its TripDay's trip ID.
 - `memories.day_id` / `memories.stop_id` still lack declared foreign keys in `DATABASE_SCHEMA`; same-trip and unlink behavior is enforced by migration-v7 triggers rather than SQLite foreign keys. TripRuntimeState day/stop references are still not fully protected by foreign keys.
-- Memory and Travel Book product mutations are not yet TripWorkspace actions, so shared-tab invalidation is not automatic for those writes.
+- Memory and Travel Book product mutations are TripWorkspace actions, so More and other Trip Space tabs reload the shared aggregate after those writes.
 - Trip-list loading performs repeated related-data queries and will not scale well.
 - Relationship cardinality and service aggregation still need explicit decisions for runtime state and some remaining aggregates. Booking ↔ Stop, Accommodation, Memory, and Travel Book relationships are now explicit.
 - TripDay records outside an edited trip date range are preserved and placed after the canonical range; no product flow exists yet for resolving them.
@@ -314,7 +315,7 @@ Current limitations include no trip owner or default “Me” identity, no roles
 
 Implemented in code:
 
-- A dedicated native Memories route reached from More, using TripWorkspace loading/not-found behavior and focus refresh.
+- A dedicated native Memories route reached from More, using TripWorkspace loading/not-found behavior, focus refresh, and create/edit/delete actions that invalidate the shared workspace.
 - Create, edit, and delete for note and photo memories attached to the open Trip by ID.
 - Optional exact TripDay and TripStop links from that Trip. Names are presentation only.
 - Photo capture or library selection through `expo-image-picker`, with copies persisted under app document storage (`travelos/memories/`). TravelOS does not invent coordinates or capture times beyond the saved record.
@@ -325,13 +326,13 @@ Automated-test evidence: migration version 7 archives invalid historical Memory 
 
 Android-verified on 2026-09-02: Memories list on the Nagawa trip showed 2 memories, 1 photo, 1 note, with a Day 1 note linked to the tokyo stop. Camera/library capture, media copy durability across relaunch, and More-count refresh after a new write were not exercised.
 
-Current limitations include no video authoring, no cloud backup of media, Memory writes outside TripWorkspace actions, and no iOS rehearsal.
+Current limitations include no video authoring, no cloud backup of media, and no iOS rehearsal.
 
 ### Travel Book V1
 
 Implemented in code:
 
-- A dedicated native Travel Book route reached from More.
+- A dedicated native Travel Book route reached from More. Save and delete go through TripWorkspace actions and reload the shared aggregate.
 - One Travel Book per Trip.
 - Title, optional summary, optional cover image taken only from a selected photo memory's saved media URI, ordered Memory membership from the same Trip, and a local `isPublished` flag.
 - Cover and membership validation refuse memories from another trip and refuse a cover URI that is not among the selected photo memories.
@@ -632,14 +633,14 @@ Memories and Travel Book now have product UI. Their earlier “foundation only�
 
 - Companion, Plan, Map, Bookings, Accommodation, Budget, Travelers, More, Trip Details, Memories, and Travel Book share one route-scoped TripWorkspace lifecycle above the nested tabs.
 - Initial loading, ready, refreshing, not-found, and recoverable error states are explicit.
-- Stop, booking, Booking ↔ Stop, Trip Details, and trip-delete mutations use TripService; budget mutations use BudgetService; accommodation mutations use AccommodationService; traveler mutations use TravelerService; all of those invalidate and reload the shared aggregate from SQLite.
-- Memory and Travel Book screens persist through their own services and are not currently wired as TripWorkspace actions.
+- Stop, booking, Booking ↔ Stop, Trip Details, trip-delete, budget, accommodation, traveler, Memory, and Travel Book mutations invalidate and reload the shared aggregate from SQLite.
+- Memories and Travel Book persist through those workspace actions rather than writing around the shared lifecycle.
 - Focus-aware refresh retries invalid or failed snapshots but skips database reads when the shared revision is already current.
 - Missing and unknown trip IDs render a native not-found state with a safe route back to Trips instead of waiting indefinitely.
 - Fatal database, persistence self-test, or initial trip-list bootstrap failures render a retryable root state rather than opening the application against an unverified database.
 - Zustand no longer maintains the unused activeTrip/activeTripId path. It remains a UI cache for the global trip list, plus a session-only Discover Brief. Neither is a durable trip database.
 
-Remaining risks include requiring future Trip Space mutations to use the shared action/invalidation contract, Memory/Travel Book writes already sitting outside that contract, the absence of an external-change observer for writes made outside that contract, and the need to test the nested tab lifecycle on iOS and a broader range of Android devices.
+Remaining risks include requiring future Trip Space mutations to use the shared action/invalidation contract, the absence of an external-change observer for writes made outside that contract, and the need to test the nested tab lifecycle on iOS and a broader range of Android devices.
 
 ## Design system state
 
@@ -740,6 +741,8 @@ Multi-destination authoring V1 verification on 2026-09-02 re-ran `npx tsc --noEm
 
 Day → Destination V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (232 application tests passing, including day assignment, destination upsert, same-trip triggers, and migration version 12). `git diff --check` was clean. No native rebuild was required. No device rehearsal was run for assigning a city to a day.
 
+Memory / Travel Book workspace invalidation V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (234 application tests passing, including Memory and Travel Book workspace lifecycle coverage). `git diff --check` was clean. No native rebuild was required. No device rehearsal was run for this wiring.
+
 Grounded Destination Sourcing V1 verification re-ran `npx tsc --noEmit` and `npm test` (138 application tests passing, including the new corpus/sourcing suite) plus the unchanged server suite. No native device run was performed for that service-layer milestone.
 
 Android Pixel 8 development-build rehearsal on 2026-09-02 (installed `com.travelos.app`, Metro, AI server `PORT=8789`, `adb reverse`, live Ollama `bge-m3` / `qwen3:4b`):
@@ -816,6 +819,6 @@ These pieces are promising foundations; they do not make the app production-read
 
 TravelOS is a broader native vertical prototype than the 2026-08-23 snapshot described, and still not a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths. Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. Budget & Expenses, Trip Details, Booking ↔ Stop, Accommodation, Travelers, Time & Runtime Truth, Companion V1, Canonical Destination Authoring, and UX Refinement V1 remain the earlier completed core. After that, Memories V1 and Travel Book V1 give completed trips an on-device record and story, shared readiness selection keeps Companion honest about preparation, Travel DNA plus trip intent/pace give Discover and Create Trip explicit preference language, Plan can show knowable free time and conflicts, AI Foundation V1 can advise on free time without writing trip truth, Discover Experience V1 can recommend grounded destinations that become canonical only after Create Trip confirmation, Grounded Destination Sourcing V1 loads those destinations from explicit provenance-backed packs, and Semantic Discover V1 can add extra grounded catalogue identities from local retrieval without replacing deterministic matching, with opt-in grounded explanations of those catalogue facts. World and Profile are no longer empty tabs, but they are still thin compared with the trip workspace.
 
-The latest local git milestones on `feature/day-destination-v1` follow Multi-destination authoring V1 (`5acf043`). Plan can assign a day to an existing trip city by ID. There is still no usable git remote for push.
+The latest local git milestones on `feature/memory-travel-book-workspace-v1` follow Day → Destination V1 (`87ed0c6`). Memory and Travel Book writes now invalidate the shared TripWorkspace. There is still no usable git remote for push.
 
-The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, Ready-made journeys V1, Wishlist V1, and Import Review Queue V1 are implemented. Multi-destination authoring V1 lets a traveler add, reorder, and remove real destinations on Create Trip and Trip Details, including extra catalogue cities from a journey idea. Day → Destination V1 lets Plan assign a day to one of those cities without guessing timezone. Pixel 8 opened Best time, the journeys list, empty Saved ideas, the Import paste accept/delete path, the ICS file picker, and an email-wrapped calendar; zip/PDF/Office/image-file rehearsal, wishlist save, journey-to-Create-Trip, multi-destination device rehearsal, Day → Destination device rehearsal, and iOS were not exercised. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–12, remaining visual/accessibility matrix, Phase 0 gaps, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, remaining import formats, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.
+The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, Ready-made journeys V1, Wishlist V1, and Import Review Queue V1 are implemented. Multi-destination authoring V1 lets a traveler add, reorder, and remove real destinations on Create Trip and Trip Details, including extra catalogue cities from a journey idea. Day → Destination V1 lets Plan assign a day to one of those cities without guessing timezone. Memory and Travel Book writes now refresh the shared trip workspace. Pixel 8 opened Best time, the journeys list, empty Saved ideas, the Import paste accept/delete path, the ICS file picker, and an email-wrapped calendar; zip/PDF/Office/image-file rehearsal, wishlist save, journey-to-Create-Trip, multi-destination device rehearsal, Day → Destination device rehearsal, and iOS were not exercised. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Expo SQLite rehearsal of migrations 7–12, remaining visual/accessibility matrix, remaining Phase 0 gaps, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, remaining import formats, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.

@@ -138,7 +138,22 @@ export async function saveTravelBook(
 }
 
 export async function deleteTravelBook(
+  tripId: TripId,
   travelBookId: TravelBookId,
 ): Promise<void> {
+  const existing =
+    await travelBookRepository.getByTripId(
+      tripId,
+    );
+
+  if (
+    !existing ||
+    existing.id !== travelBookId
+  ) {
+    throw new Error(
+      'Travel Book was not found.',
+    );
+  }
+
   await travelBookRepository.delete(travelBookId);
 }

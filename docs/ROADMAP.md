@@ -30,7 +30,7 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 ### Remaining Phase 0 work
 
 - [ ] Decide and enforce remaining relationship invariants and cardinality for runtime state and other unfinished workspace aggregates. Booking ↔ Stop, Accommodation, Memory, and Travel Book same-trip rules are now explicit; Memory/Travel Book integrity is guarded by migration version 7 triggers. `TripRuntimeState` day/stop references are still not fully protected.
-- [ ] Route Memory and Travel Book writes through the shared TripWorkspace action/invalidation contract so other Trip Space tabs cannot remain stale after those mutations.
+- [x] **Memory / Travel Book workspace invalidation V1** — Memories create/edit/delete and Travel Book save/delete go through TripWorkspace actions. Those writes invalidate and reload the shared aggregate, so More counts and other Trip Space tabs cannot stay stale. Update/delete fail closed when the record is missing or belongs to another trip. Automated lifecycle tests exist. No device rehearsal.
 - [ ] Remove N+1 loading patterns from the trip list and other obvious aggregate reads.
 - [ ] Expand automated coverage for the remaining repository relationships/cascades. Booking/stop unlink cascades for Bookings and Accommodations are covered, and deterministic upcoming/active/completed runtime plus exact-day selection now have fixed-clock coverage.
 - [ ] Rehearse migration version 3 against Expo SQLite on an iOS development build.
@@ -98,7 +98,7 @@ Goal: turn completed trips into a meaningful personal history.
 - [ ] Derive a deeper World / travel-archive view from confirmed lived history, memories, and place relationships—not from recommendations or the current destination-coordinate V1 alone.
 - [ ] Preserve the difference between the planned itinerary and lived history; `TripRuntimeState` remains unused as lived progress.
 - [ ] Define remaining media ownership, backup, export, deletion, and offline behavior before expanding Memories beyond on-device photo/note storage.
-- [ ] Route Memory and Travel Book mutations through TripWorkspace invalidation (also remaining Phase 0 work).
+- [x] Route Memory and Travel Book mutations through TripWorkspace invalidation.
 
 Exit condition: a completed trip becomes a durable, truthful, and user-controlled personal record.
 
@@ -195,4 +195,4 @@ Exit condition: TravelOS can be built, tested, observed, restored, and released 
 - A phase is complete only when its behavior, failure states, tests, and documentation agree.
 - Update docs/CURRENT_STATE.md and this roadmap after each meaningful milestone.
 
-Unresolved work that remains in force across phases includes: Day → Destination semantics; secure timezone enrichment; FX strategy; Companion V2 lived-state decisions; Memory/Travel Book workspace invalidation; Expo SQLite rehearsal of migrations 7–9; accessibility and design-system consolidation; iOS; CI/EAS; and sync/backup. Those items stay open. They do not replace the immediate Discover sequence in Phase 4.
+Unresolved work that remains in force across phases includes: secure timezone enrichment; FX strategy; Companion V2 lived-state decisions; Expo SQLite rehearsal of migrations 7–12; accessibility and design-system consolidation; iOS; CI/EAS; and sync/backup. Those items stay open. They do not replace the immediate Discover sequence in Phase 4.

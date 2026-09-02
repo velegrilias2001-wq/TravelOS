@@ -41,7 +41,6 @@ import {
   persistMemoryImage,
 } from '@/services/memory-media';
 import {
-  memoryService,
   type EditableMemoryType,
 } from '@/services/memory-service';
 import {
@@ -205,8 +204,8 @@ function buildGroups(
 export default function MemoriesScreen() {
   const router = useRouter();
   const {
-    tripId,
     workspace,
+    actions,
   } = useTripWorkspace();
 
   useTripWorkspaceFocusRefresh();
@@ -596,7 +595,7 @@ export default function MemoriesScreen() {
 
         const saved =
           editing
-            ? await memoryService.updateMemory(
+            ? await actions.updateMemory(
                 editing.id,
                 {
                   dayId,
@@ -608,9 +607,8 @@ export default function MemoriesScreen() {
                     nextMediaUri,
                 },
               )
-            : await memoryService.createMemory(
+            : await actions.createMemory(
                 {
-                  tripId,
                   dayId,
                   stopId,
                   type,
@@ -637,35 +635,6 @@ export default function MemoriesScreen() {
             );
           }
         }
-
-        setMemories(
-          (current) => {
-            const exists =
-              current.some(
-                (memory) =>
-                  memory.id ===
-                  saved.id,
-              );
-
-            const next =
-              exists
-                ? current.map(
-                    (memory) =>
-                      memory.id ===
-                      saved.id
-                        ? saved
-                        : memory,
-                  )
-                : [
-                    ...current,
-                    saved,
-                  ];
-
-            return sortMemories(
-              next,
-            );
-          },
-        );
 
         setModalVisible(false);
         resetEditor();
@@ -715,18 +684,9 @@ export default function MemoriesScreen() {
             async () => {
               try {
                 const deleted =
-                  await memoryService.deleteMemory(
+                  await actions.deleteMemory(
                     memory.id,
                   );
-
-                setMemories(
-                  (current) =>
-                    current.filter(
-                      (item) =>
-                        item.id !==
-                        memory.id,
-                    ),
-                );
 
                 if (
                   deleted?.mediaUri

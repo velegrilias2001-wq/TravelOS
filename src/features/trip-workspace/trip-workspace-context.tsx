@@ -26,6 +26,8 @@ import type {
   Booking,
   BookingId,
   BudgetItemId,
+  MemoryId,
+  TravelBookId,
   TravelerId,
   TripDayId,
   TripId,
@@ -52,6 +54,20 @@ import {
 import type {
   TravelerInput,
 } from '@/services/traveler-details';
+import {
+  memoryService,
+  type CreateMemoryInput,
+  type UpdateMemoryInput,
+} from '@/services/memory-service';
+import {
+  deleteTravelBook,
+  saveTravelBook,
+  type SaveTravelBookInput,
+} from '@/services/travel-book-service';
+import type {
+  Memory,
+  TravelBook,
+} from '@/domain/entities';
 import type {
   TripDetailsInput,
 } from '@/services/trip-details';
@@ -119,6 +135,24 @@ interface TripWorkspaceActions {
     input: BudgetExpenseInput,
   ): Promise<void>;
   deleteExpense(expenseId: BudgetItemId): Promise<void>;
+
+  createMemory(
+    input: Omit<CreateMemoryInput, 'tripId'>,
+  ): Promise<Memory>;
+  updateMemory(
+    memoryId: MemoryId,
+    input: UpdateMemoryInput,
+  ): Promise<Memory>;
+  deleteMemory(
+    memoryId: MemoryId,
+  ): Promise<Memory | null>;
+
+  saveTravelBook(
+    input: Omit<SaveTravelBookInput, 'tripId'>,
+  ): Promise<TravelBook>;
+  deleteTravelBook(
+    travelBookId: TravelBookId,
+  ): Promise<void>;
 }
 
 interface TripWorkspaceContextValue {
@@ -365,6 +399,47 @@ export function TripWorkspaceProvider({
           budgetService.deleteExpense(
             requireWorkspaceTripId(tripId),
             expenseId,
+          ),
+        ),
+
+      createMemory: (input) =>
+        lifecycle.runMutation(() =>
+          memoryService.createMemory({
+            ...input,
+            tripId: requireWorkspaceTripId(tripId),
+          }),
+        ),
+
+      updateMemory: (memoryId, input) =>
+        lifecycle.runMutation(() =>
+          memoryService.updateMemory(
+            requireWorkspaceTripId(tripId),
+            memoryId,
+            input,
+          ),
+        ),
+
+      deleteMemory: (memoryId) =>
+        lifecycle.runMutation(() =>
+          memoryService.deleteMemory(
+            requireWorkspaceTripId(tripId),
+            memoryId,
+          ),
+        ),
+
+      saveTravelBook: (input) =>
+        lifecycle.runMutation(() =>
+          saveTravelBook({
+            ...input,
+            tripId: requireWorkspaceTripId(tripId),
+          }),
+        ),
+
+      deleteTravelBook: (travelBookId) =>
+        lifecycle.runMutation(() =>
+          deleteTravelBook(
+            requireWorkspaceTripId(tripId),
+            travelBookId,
           ),
         ),
     }),

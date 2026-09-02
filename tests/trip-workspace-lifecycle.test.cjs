@@ -340,6 +340,108 @@ test(
 );
 
 test(
+  'memory mutations refresh Memories, Travel Book and More from durable truth',
+  async () => {
+    const durableTruth = makeWorkspace();
+    const lifecycle = new TripWorkspaceLifecycle(
+      'trip-1',
+      async () => clone(durableTruth),
+    );
+
+    await lifecycle.refreshIfNeeded();
+
+    await lifecycle.runMutation(async () => {
+      durableTruth.memories.push({
+        id: 'memory-1',
+        tripId: 'trip-1',
+        type: 'note',
+        title: 'First espresso',
+        capturedAt: TIMESTAMP,
+        createdAt: TIMESTAMP,
+        updatedAt: TIMESTAMP,
+      });
+    });
+
+    assert.equal(
+      lifecycle.getSnapshot().workspace.memories[0]
+        .title,
+      'First espresso',
+    );
+
+    await lifecycle.runMutation(async () => {
+      durableTruth.memories[0].caption =
+        'At the corner cafe';
+    });
+
+    assert.equal(
+      lifecycle.getSnapshot().workspace.memories[0]
+        .caption,
+      'At the corner cafe',
+    );
+
+    await lifecycle.runMutation(async () => {
+      durableTruth.memories = [];
+    });
+
+    assert.deepEqual(
+      lifecycle.getSnapshot().workspace.memories,
+      [],
+    );
+  },
+);
+
+test(
+  'Travel Book mutations refresh More and Travel Book from durable truth',
+  async () => {
+    const durableTruth = makeWorkspace();
+    durableTruth.memories.push({
+      id: 'memory-1',
+      tripId: 'trip-1',
+      type: 'photo',
+      mediaUri: 'file://cover.jpg',
+      capturedAt: TIMESTAMP,
+      createdAt: TIMESTAMP,
+      updatedAt: TIMESTAMP,
+    });
+
+    const lifecycle = new TripWorkspaceLifecycle(
+      'trip-1',
+      async () => clone(durableTruth),
+    );
+
+    await lifecycle.refreshIfNeeded();
+
+    await lifecycle.runMutation(async () => {
+      durableTruth.travelBook = {
+        id: 'book-1',
+        tripId: 'trip-1',
+        title: 'Lisbon notes',
+        memoryIds: ['memory-1'],
+        coverImageUri: 'file://cover.jpg',
+        isPublished: false,
+        createdAt: TIMESTAMP,
+        updatedAt: TIMESTAMP,
+      };
+    });
+
+    assert.equal(
+      lifecycle.getSnapshot().workspace.travelBook
+        .title,
+      'Lisbon notes',
+    );
+
+    await lifecycle.runMutation(async () => {
+      durableTruth.travelBook = null;
+    });
+
+    assert.equal(
+      lifecycle.getSnapshot().workspace.travelBook,
+      null,
+    );
+  },
+);
+
+test(
   'booking-stop link mutations refresh Plan, Today, Map and Bookings from one snapshot',
   async () => {
     const durableTruth = makeWorkspace();
