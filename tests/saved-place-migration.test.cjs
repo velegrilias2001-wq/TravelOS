@@ -52,8 +52,8 @@ test(
         'PRAGMA user_version;',
       );
 
-      assert.equal(version.user_version, 12);
-      assert.equal(DATABASE_VERSION, 12);
+      assert.equal(version.user_version, 13);
+      assert.equal(DATABASE_VERSION, 13);
 
       const table = await database.queryFirst(
         `

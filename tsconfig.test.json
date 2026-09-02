@@ -16,6 +16,7 @@
   "include": [
     "src/data/database/database.ts",
     "src/data/database/migrations.ts",
+    "src/data/database/runtime-state-integrity-migration.ts",
     "src/data/database/schema.ts",
 
     "src/data/repositories/booking-persistence-operations.ts",

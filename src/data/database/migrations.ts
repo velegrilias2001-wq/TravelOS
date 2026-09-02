@@ -5,8 +5,11 @@ import { DATABASE_SCHEMA } from './schema';
 import {
   reconcileMemoryRelationships,
 } from './memory-integrity-migration';
+import {
+  reconcileRuntimeStateRelationships,
+} from './runtime-state-integrity-migration';
 
-export const DATABASE_VERSION = 12;
+export const DATABASE_VERSION = 13;
 
 interface UserVersionRow {
   user_version: number;
@@ -1288,6 +1291,29 @@ export async function migrateDatabase(
 
         await transaction.execAsync(`
           PRAGMA user_version = 12;
+        `);
+      },
+    );
+  }
+
+  /**
+   * Version 13
+   * Protect optional TripRuntimeState day/stop IDs
+   * with same-trip triggers and declared foreign keys.
+   * Invalid historical references are archived and
+   * cleared. Runtime state is still unused as lived
+   * Companion progress; this only fails closed at the
+   * database boundary.
+   */
+  if (currentVersion < 13) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await reconcileRuntimeStateRelationships(
+          transaction,
+        );
+
+        await transaction.execAsync(`
+          PRAGMA user_version = 13;
         `);
       },
     );

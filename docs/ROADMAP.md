@@ -29,12 +29,12 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 
 ### Remaining Phase 0 work
 
-- [ ] Decide and enforce remaining relationship invariants and cardinality for runtime state and other unfinished workspace aggregates. Booking ↔ Stop, Accommodation, Memory, and Travel Book same-trip rules are now explicit; Memory/Travel Book integrity is guarded by migration version 7 triggers. `TripRuntimeState` day/stop references are still not fully protected.
+- [x] **TripRuntimeState integrity V1** — optional `current_day_id` / `current_stop_id` must belong to the same trip; when both are set the stop must belong to that day. Invalid historical links are archived and cleared. Deleting a day or stop unlinks the reference (`ON DELETE SET NULL`) instead of deleting the runtime row. Migration version 13. Runtime state is still unused as lived Companion progress. Automated tests exist. No device rehearsal.
 - [x] **Memory / Travel Book workspace invalidation V1** — Memories create/edit/delete and Travel Book save/delete go through TripWorkspace actions. Those writes invalidate and reload the shared aggregate, so More counts and other Trip Space tabs cannot stay stale. Update/delete fail closed when the record is missing or belongs to another trip. Automated lifecycle tests exist. No device rehearsal.
 - [x] **Trip list batch read V1** — Home, Trips, World, Profile, and Import load the trip list with three SQLite queries (trips, destinations, traveler memberships) instead of one destination query and one traveler query per trip. Destination order and traveler memberships are preserved. Automated tests exist. An Android Pixel 8 pass opened Home, Trips, World, and Profile after a Metro reload; Import was not opened.
-- [ ] Expand automated coverage for the remaining repository relationships/cascades. Booking/stop unlink cascades for Bookings and Accommodations are covered, and deterministic upcoming/active/completed runtime plus exact-day selection now have fixed-clock coverage.
+- [ ] Expand automated coverage for the remaining repository relationships/cascades. Booking/stop unlink cascades for Bookings and Accommodations are covered, and deterministic upcoming/active/completed runtime plus exact-day selection now have fixed-clock coverage. TripRuntimeState same-trip and unlink cascades are covered.
 - [ ] Rehearse migration version 3 against Expo SQLite on an iOS development build.
-- [ ] Rehearse migrations 7–12 on an Expo SQLite development build. Historical Android rehearsals stopped at `user_version = 6`. Node tests cover versions 7–12. No device `PRAGMA user_version = 12` rehearsal is recorded.
+- [ ] Rehearse migrations 7–13 on an Expo SQLite development build. Historical Android rehearsals stopped at `user_version = 6`. Node tests cover versions 7–13. No device `PRAGMA user_version = 13` rehearsal is recorded.
 - [ ] Commit a non-interactive lint configuration and add baseline CI checks.
 
 Exit condition: existing native flows survive retries, partial data, navigation refocus, and supported migrations without corrupting or misrepresenting trip truth.
@@ -195,4 +195,4 @@ Exit condition: TravelOS can be built, tested, observed, restored, and released 
 - A phase is complete only when its behavior, failure states, tests, and documentation agree.
 - Update docs/CURRENT_STATE.md and this roadmap after each meaningful milestone.
 
-Unresolved work that remains in force across phases includes: secure timezone enrichment; FX strategy; Companion V2 lived-state decisions; Expo SQLite rehearsal of migrations 7–12; accessibility and design-system consolidation; iOS; CI/EAS; and sync/backup. Those items stay open. They do not replace the immediate Discover sequence in Phase 4.
+Unresolved work that remains in force across phases includes: secure timezone enrichment; FX strategy; Companion V2 lived-state decisions; Expo SQLite rehearsal of migrations 7–13; accessibility and design-system consolidation; iOS; CI/EAS; and sync/backup. Those items stay open. They do not replace the immediate Discover sequence in Phase 4.
