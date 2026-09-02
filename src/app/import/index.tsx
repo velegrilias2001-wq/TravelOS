@@ -19,6 +19,7 @@ import {
 
 import { Screen } from '@/components/ui/screen';
 import type { ImportBatch } from '@/domain/entities';
+import { pickImportCalendarFile } from '@/services/import-calendar-file-runtime';
 import { importReviewService } from '@/services/import-review-runtime';
 import {
   colors,
@@ -104,6 +105,33 @@ export default function ImportScreen() {
     }
   };
 
+  const pickFile = async () => {
+    setBusy(true);
+    setError(null);
+
+    try {
+      const picked = await pickImportCalendarFile();
+
+      if (!picked) {
+        return;
+      }
+
+      const batch = await importReviewService.ingestIcs(picked);
+
+      setText('');
+      await reload();
+      openBatch(batch.id);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'This calendar could not be imported.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Screen scroll>
       <View style={styles.header}>
@@ -132,13 +160,50 @@ export default function ImportScreen() {
         </Text>
 
         <Text style={styles.subtitle}>
-          Paste an .ics calendar. TravelOS keeps every event as a claim until you accept it onto a trip. Nothing becomes a booking on its own.
+          Choose an .ics file or paste calendar text. TravelOS keeps every event as a claim until you accept it onto a trip. Nothing becomes a booking on its own.
         </Text>
       </View>
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Choose an iCalendar file"
+        disabled={busy}
+        style={({ pressed }) => [
+          styles.fileButton,
+          styles.primaryButton,
+          busy && styles.primaryButtonDisabled,
+          pressed && styles.pressed,
+        ]}
+        onPress={() => {
+          void pickFile();
+        }}
+      >
+        <View>
+          <Text style={styles.primaryButtonEyebrow}>
+            CHOOSE FILE
+          </Text>
+
+          <Text style={styles.primaryButtonText}>
+            Review an .ics calendar
+          </Text>
+        </View>
+
+        <Ionicons
+          name="document-outline"
+          size={21}
+          color={colors.textInverse}
+        />
+      </Pressable>
+
+      {error ? (
+        <Text style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
+
       <View style={styles.editor}>
         <Text style={styles.editorLabel}>
-          iCalendar text
+          Or paste iCalendar text
         </Text>
 
         <TextInput
@@ -151,12 +216,6 @@ export default function ImportScreen() {
           placeholderTextColor={colors.textMuted}
           style={styles.input}
         />
-
-        {error ? (
-          <Text style={styles.error}>
-            {error}
-          </Text>
-        ) : null}
 
         <Pressable
           accessibilityRole="button"
@@ -280,6 +339,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
 
+  fileButton: {
+    marginBottom: spacing[5],
+  },
+
   editorLabel: {
     fontFamily: fontFamily.sansBold,
     fontSize: fontSize.micro,
@@ -299,6 +362,7 @@ const styles = StyleSheet.create({
   },
 
   error: {
+    marginBottom: spacing[4],
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,

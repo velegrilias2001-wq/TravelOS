@@ -129,10 +129,12 @@ These steps are ordered. Grounded destination data must exist before semantic re
 - [x] **Ready-made journeys V1** — curated journey ideas over grounded catalogue destinations. They remain distinct from confirmed trips until the traveler accepts them through `/new-trip`. Extra cities stay ideas because Create Trip still authors one destination. Automated tests exist. Android Pixel 8 opened the journey list on 2026-09-02; journey detail and Create Trip from a journey were not exercised.
 - [x] **Wishlist V1** — durable saved Discover candidates keyed by grounded identity, distinct from Trips and World history. Unknown identities fail closed. Create Trip still requires explicit confirmation. Automated tests exist. Android Pixel 8 opened the empty Saved ideas list on 2026-09-02; save/remove was not exercised.
 - [x] **Import Review Queue V1** — pasted iCalendar events become durable claims with provenance and confidence. Accepting writes a planned booking onto an existing trip; dismissing does not. Location text is not coordinates. Date-only events do not invent times. No AI extraction. Automated tests exist. Android Pixel 8 rehearsal on 2026-09-02 pasted an `.ics`, reviewed the claim, accepted a planned booking onto Coullons, then deleted that booking. Review is `/import/review/[batchId]` so `/import/index` is not captured as a batch id.
+- [x] **Import ICS file picker V1** — `expo-document-picker` chooses a local file and feeds the same review queue. Paste remains. Non-iCalendar content and files larger than 512 KiB fail closed. No PDF/ZIP/image extraction and no AI parsing. Automated tests exist. Android Pixel 8 development-build rebuild on 2026-09-02 opened the system picker and reviewed `e2e-ferry.ics` without writing a booking. iOS was not rebuilt.
 
 ### Remaining Phase 4 work
 
-- [ ] Add a native file picker and additional import formats after the review-queue contract is stable.
+- [ ] Rebuild the iOS development client so the ICS file picker can be rehearsed there.
+- [ ] Add additional import formats after the review-queue contract stays stable.
 - [ ] Keep AI-assisted extraction behind explicit review and confirmation gates if it is added later.
 - [ ] Never allow recommendations, imports, or AI suggestions to silently become canonical facts.
 - [ ] Define production provider, privacy, retention, cost, and fallback behavior before shipping intelligence beyond the local-dev AI foundation.
