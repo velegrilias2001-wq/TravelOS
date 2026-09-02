@@ -12,10 +12,11 @@ import {
 import {
   validateCalendarDateRange,
 } from './time-truth';
+import { MAX_TRIP_DESTINATIONS } from './trip-details';
 
 export interface NewTripInput {
   title: string;
-  destination: DestinationSelection;
+  destinations: DestinationSelection[];
   startDate: string;
   endDate: string;
   accountingCurrency: string;
@@ -96,18 +97,30 @@ export function buildNewTrip(
     );
   }
 
+  if (input.destinations.length === 0) {
+    throw new Error(
+      'Choose a destination from the map',
+    );
+  }
+
+  if (input.destinations.length > MAX_TRIP_DESTINATIONS) {
+    throw new Error(
+      `A trip can have at most ${MAX_TRIP_DESTINATIONS} destinations`,
+    );
+  }
+
   return {
     id: identities.tripId(),
     title,
     status: 'planned',
     intent: input.intent,
     pace: input.pace,
-    destinations: [
+    destinations: input.destinations.map((destination) =>
       applyDestinationSelection(
         identities.destinationId(),
-        input.destination,
+        destination,
       ),
-    ],
+    ),
     startDate: input.startDate,
     endDate: input.endDate,
     travelerIds: [],

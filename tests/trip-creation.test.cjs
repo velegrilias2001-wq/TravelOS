@@ -39,12 +39,14 @@ const IDENTITIES = {
 function makeInput(overrides = {}) {
   return {
     title: 'Athens escape',
-    destination: {
-      name: 'Athens, Greece',
-      countryCode: 'GR',
-      latitude: 37.9838,
-      longitude: 23.7275,
-    },
+    destinations: [
+      {
+        name: 'Athens, Greece',
+        countryCode: 'GR',
+        latitude: 37.9838,
+        longitude: 23.7275,
+      },
+    ],
     startDate: '2026-09-10',
     endDate: '2026-09-14',
     accountingCurrency: 'EUR',
@@ -157,5 +159,66 @@ test(
     } finally {
       database.close();
     }
+  },
+);
+
+test(
+  'new trip creation can persist more than one selected destination',
+  () => {
+    let nextDestination = 0;
+    const trip = buildNewTrip(
+      makeInput({
+        destinations: [
+          {
+            name: 'Lisbon, Portugal',
+            countryCode: 'PT',
+            latitude: 38.7223,
+            longitude: -9.1393,
+          },
+          {
+            name: 'Porto, Portugal',
+            countryCode: 'PT',
+            latitude: 41.1579,
+            longitude: -8.6291,
+          },
+        ],
+      }),
+      {
+        tripId: () => 'created-trip',
+        destinationId: () => `created-destination-${++nextDestination}`,
+      },
+      TIMESTAMP,
+    );
+
+    assert.deepEqual(
+      trip.destinations.map(({ id, name }) => ({ id, name })),
+      [
+        {
+          id: 'created-destination-1',
+          name: 'Lisbon, Portugal',
+        },
+        {
+          id: 'created-destination-2',
+          name: 'Porto, Portugal',
+        },
+      ],
+    );
+  },
+);
+
+test(
+  'new trip creation rejects an empty destination list',
+  () => {
+    assert.throws(
+      () =>
+        buildNewTrip(
+          makeInput({
+            destinations: [],
+          }),
+          IDENTITIES,
+          TIMESTAMP,
+        ),
+      /choose a destination/i,
+    );
   },
 );

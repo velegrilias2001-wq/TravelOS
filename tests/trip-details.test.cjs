@@ -191,28 +191,6 @@ test(
           makeInput({
             destinations: [
               {
-                id: 'destination-2',
-                name: 'Kyoto',
-              },
-              {
-                id: 'destination-1',
-                name: 'Tokyo',
-              },
-            ],
-          }),
-          false,
-          UPDATED_AT,
-        ),
-      /identity or order/i,
-    );
-
-    assert.throws(
-      () =>
-        buildUpdatedTrip(
-          trip,
-          makeInput({
-            destinations: [
-              {
                 id: 'destination-1',
                 name: 'Osaka',
               },
@@ -354,6 +332,147 @@ test(
     assert.deepEqual(updated.travelerIds, ['traveler-1']);
     assert.equal(updated.accountingCurrency, 'EUR');
     assert.equal(updated.createdAt, CREATED_AT);
+  },
+);
+
+test(
+  'trip detail updates can add, reorder and remove destinations without inventing places',
+  () => {
+    const trip = makeTrip();
+
+    const reordered = buildUpdatedTrip(
+      trip,
+      makeInput({
+        accountingCurrency: 'EUR',
+        destinations: [
+          {
+            id: 'destination-2',
+            name: 'Kyoto',
+          },
+          {
+            id: 'destination-1',
+            name: 'Tokyo',
+          },
+        ],
+      }),
+      false,
+      UPDATED_AT,
+    );
+
+    assert.deepEqual(
+      reordered.destinations.map(({ id, name, timezone }) => ({
+        id,
+        name,
+        timezone,
+      })),
+      [
+        {
+          id: 'destination-2',
+          name: 'Kyoto',
+          timezone: undefined,
+        },
+        {
+          id: 'destination-1',
+          name: 'Tokyo',
+          timezone: 'Asia/Tokyo',
+        },
+      ],
+    );
+
+    const added = buildUpdatedTrip(
+      trip,
+      makeInput({
+        accountingCurrency: 'EUR',
+        destinations: [
+          {
+            id: 'destination-1',
+            name: 'Tokyo',
+          },
+          {
+            id: 'destination-2',
+            name: 'Kyoto',
+          },
+          {
+            id: 'destination-3',
+            name: 'Osaka, Japan',
+            replacement: {
+              name: 'Osaka, Japan',
+              countryCode: 'JP',
+              latitude: 34.6937,
+              longitude: 135.5023,
+            },
+          },
+        ],
+      }),
+      false,
+      UPDATED_AT,
+    );
+
+    assert.equal(added.destinations.length, 3);
+    assert.equal(added.destinations[2].id, 'destination-3');
+    assert.equal(added.destinations[2].name, 'Osaka, Japan');
+    assert.equal(added.destinations[2].latitude, 34.6937);
+
+    const removed = buildUpdatedTrip(
+      trip,
+      makeInput({
+        accountingCurrency: 'EUR',
+        destinations: [
+          {
+            id: 'destination-1',
+            name: 'Tokyo',
+          },
+        ],
+      }),
+      false,
+      UPDATED_AT,
+    );
+
+    assert.deepEqual(
+      removed.destinations.map(({ id }) => id),
+      ['destination-1'],
+    );
+
+    assert.throws(
+      () =>
+        buildUpdatedTrip(
+          trip,
+          makeInput({
+            accountingCurrency: 'EUR',
+            destinations: [],
+          }),
+          false,
+          UPDATED_AT,
+        ),
+      /at least one destination/i,
+    );
+
+    assert.throws(
+      () =>
+        buildUpdatedTrip(
+          trip,
+          makeInput({
+            accountingCurrency: 'EUR',
+            destinations: [
+              {
+                id: 'destination-1',
+                name: 'Tokyo',
+              },
+              {
+                id: 'destination-2',
+                name: 'Kyoto',
+              },
+              {
+                id: 'new-destination',
+                name: 'Mystery city',
+              },
+            ],
+          }),
+          false,
+          UPDATED_AT,
+        ),
+      /needs a map location/i,
+    );
   },
 );
 

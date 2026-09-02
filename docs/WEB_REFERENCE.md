@@ -88,8 +88,8 @@ These are web-era solutions. Native accounts, sync, diagnostics, privacy, and re
 | --- | --- | --- |
 | Full lifecycle navigation | Preserve | Home, Trips, Discover, World, and Profile remain the native areas. Home is what matters now; Trips are owned trips; Discover is what could be next; World is the travel story |
 | Create / decide / import entry points | Preserve | Native Create Trip is `/new-trip`. Discover may prefill it. Import Review Queue V1 pastes, chooses, extracts iCalendar from an email, unpacks a zip of calendars, or extracts an iCalendar embedded in a PDF, Office document, or image into a claim queue; bookings are written only after explicit accept |
-| Rich trip-creation questions | Redesign | Native Create Trip persists destination, dates, accounting currency, and optional intent/pace; extra web fields stay hypotheses |
-| Destination advisor and season guidance | Redesign | Native Discover now includes Start with a place, Find me somewhere, Best time, and Ready-made journeys against the grounded catalogue. Journeys are ideas until Create Trip confirmation; extra cities are not written as destinations yet |
+| Rich trip-creation questions | Redesign | Native Create Trip persists one or more destinations, dates, accounting currency, and optional intent/pace; extra web fields stay hypotheses |
+| Destination advisor and season guidance | Redesign | Native Discover now includes Start with a place, Find me somewhere, Best time, and Ready-made journeys against the grounded catalogue. Journeys are ideas until Create Trip confirmation; extra catalogue cities can prefill additional destinations |
 | Import breadth | Redesign | Start with a supportable subset and a mandatory review queue |
 | Wishlist | Preserve | Native Wishlist V1 persists grounded Discover destination and journey identities in SQLite. They are not Trips and are not World visited history |
 | World and travel archive | Preserve / reinterpret | Native World V1 maps persisted trip destinations with real coordinates and durable trip-status filters. It does not yet model visited/lived/wishlist history |

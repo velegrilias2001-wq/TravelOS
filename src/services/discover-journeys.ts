@@ -31,6 +31,10 @@ import {
 } from './discover-semantic';
 
 import {
+  normalizeDestinationSelection,
+} from './destination-authoring';
+
+import {
   buildDiscoverTripPrefill,
   type DiscoverTripPrefill,
 } from './discover-trip-handoff';
@@ -244,8 +248,9 @@ export function findDiscoverJourney(
 
 /**
  * A journey idea is session state, not a Trip.
- * Only the primary grounded destination can prefill
- * Create Trip. Extra cities stay ideas. Dates stay empty.
+ * The primary grounded destination prefills Create Trip.
+ * Extra catalogue cities can prefill additional destinations.
+ * Dates stay empty.
  */
 export function buildDiscoverJourneyBrief(
   journey: DiscoverJourney,
@@ -278,8 +283,19 @@ export function buildDiscoverJourneyTripPrefill(
     );
   }
 
-  return buildDiscoverTripPrefill(
-    buildDiscoverJourneyBrief(journey),
-    primary,
-  );
+  const extraDestinations = journey.destinations
+    .slice(1)
+    .map((destination) =>
+      normalizeDestinationSelection(destination),
+    );
+
+  return {
+    ...buildDiscoverTripPrefill(
+      buildDiscoverJourneyBrief(journey),
+      primary,
+    ),
+    ...(extraDestinations.length > 0
+      ? { extraDestinations }
+      : {}),
+  };
 }

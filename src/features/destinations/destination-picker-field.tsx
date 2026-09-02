@@ -46,6 +46,7 @@ interface DestinationPickerFieldProps {
   destination?: DestinationDisplayValue | null;
   onSelect(selection: DestinationSelection): void;
   disabled?: boolean;
+  variant?: 'card' | 'add';
 }
 
 export function DestinationPickerField({
@@ -53,6 +54,7 @@ export function DestinationPickerField({
   destination,
   onSelect,
   disabled = false,
+  variant = 'card',
 }: DestinationPickerFieldProps) {
   const [isPicking, setIsPicking] = useState(false);
   const isMapped = Boolean(
@@ -64,14 +66,16 @@ export function DestinationPickerField({
     ? isMapped
       ? 'Replace map location'
       : 'Add map location'
-    : 'Choose destination';
+    : variant === 'add'
+      ? 'Add destination'
+      : 'Choose destination';
 
   const chooseDestination = async () => {
     try {
       setIsPicking(true);
 
       const result = await pickLocation({
-        title: 'Choose destination',
+        title: variant === 'add' ? 'Add destination' : 'Choose destination',
         doneButtonTitle: 'Use destination',
         cancelButtonTitle: 'Cancel',
         searchPlaceholder:
@@ -120,6 +124,32 @@ export function DestinationPickerField({
       setIsPicking(false);
     }
   };
+
+  if (variant === 'add') {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={actionLabel}
+        disabled={disabled || isPicking}
+        style={({ pressed }) => [
+          styles.action,
+          styles.addAction,
+          pressed && styles.pressed,
+          (disabled || isPicking) && styles.disabled,
+        ]}
+        onPress={() => void chooseDestination()}
+      >
+        <Ionicons
+          name="add"
+          size={18}
+          color={colors.textInverse}
+        />
+        <Text style={styles.actionText}>
+          {isPicking ? 'Opening map…' : actionLabel}
+        </Text>
+      </Pressable>
+    );
+  }
 
   return (
     <View style={styles.field}>
@@ -323,6 +353,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing[2],
     backgroundColor: colors.brand,
+  },
+  addAction: {
+    marginTop: 0,
   },
   actionText: {
     fontFamily: fontFamily.sansSemiBold,

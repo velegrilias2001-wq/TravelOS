@@ -381,12 +381,14 @@ test(
     const trip = buildNewTrip(
       {
         title: '  Native dates  ',
-        destination: {
-          name: '  Athens, Greece  ',
-          countryCode: 'gr',
-          latitude: 37.9838,
-          longitude: 23.7275,
-        },
+        destinations: [
+          {
+            name: '  Athens, Greece  ',
+            countryCode: 'gr',
+            latitude: 37.9838,
+            longitude: 23.7275,
+          },
+        ],
         startDate: '2028-02-29',
         endDate: '2028-03-02',
         accountingCurrency: 'eur',

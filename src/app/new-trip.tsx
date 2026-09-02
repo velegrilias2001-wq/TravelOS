@@ -49,6 +49,11 @@ import {
 } from '@/services/trip-creation';
 
 import {
+  MAX_TRIP_DESTINATIONS,
+  moveDestinationItems,
+} from '@/services/trip-details';
+
+import {
   useTripStore,
 } from '@/store/trip-store';
 
@@ -177,15 +182,20 @@ export default function NewTripScreen() {
   ] = useState('');
 
   const [
-    destination,
-    setDestination,
+    destinations,
+    setDestinations,
   ] =
-    useState<
-      DestinationSelection | null
-    >(
-      () =>
-        discoverPrefill
-          ?.destination ?? null,
+    useState<DestinationSelection[]>(
+      () => {
+        if (!discoverPrefill) {
+          return [];
+        }
+
+        return [
+          discoverPrefill.destination,
+          ...(discoverPrefill.extraDestinations ?? []),
+        ];
+      },
     );
 
   const [
@@ -250,15 +260,17 @@ export default function NewTripScreen() {
   ] = useState(false);
 
   const isReady = Boolean(
-    destination &&
+    destinations.length > 0 &&
       startDate &&
       endDate &&
       currency.length === 3,
   );
 
+  const primaryDestination = destinations[0];
+
   const tripNamePlaceholder =
-    destination?.name
-      ? `${destination.name} trip`
+    primaryDestination?.name
+      ? `${primaryDestination.name} trip`
       : 'Give this trip a name';
 
   const updateCurrency = (
@@ -297,9 +309,78 @@ export default function NewTripScreen() {
     );
   };
 
+  const addDestination = (
+    selection: DestinationSelection,
+  ) => {
+    setDestinations((current) => {
+      if (current.length >= MAX_TRIP_DESTINATIONS) {
+        Alert.alert(
+          'Destination limit',
+          `A trip can have at most ${MAX_TRIP_DESTINATIONS} destinations.`,
+        );
+        return current;
+      }
+
+      return [...current, selection];
+    });
+  };
+
+  const replaceDestination = (
+    index: number,
+    selection: DestinationSelection,
+  ) => {
+    setDestinations((current) =>
+      current.map((destination, currentIndex) =>
+        currentIndex === index ? selection : destination,
+      ),
+    );
+  };
+
+  const moveDestination = (index: number, delta: number) => {
+    setDestinations((current) =>
+      moveDestinationItems(current, index, delta),
+    );
+  };
+
+  const removeDestination = (index: number) => {
+    const destination = destinations[index];
+
+    if (!destination) {
+      return;
+    }
+
+    if (destinations.length <= 1) {
+      Alert.alert(
+        'Keep one destination',
+        'A trip needs at least one destination.',
+      );
+      return;
+    }
+
+    Alert.alert(
+      `Remove ${destination.name}?`,
+      'This only removes the place from the new trip. Nothing has been saved yet.',
+      [
+        {
+          text: 'Keep',
+          style: 'cancel',
+        },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            setDestinations((current) =>
+              current.filter((_, currentIndex) => currentIndex !== index),
+            );
+          },
+        },
+      ],
+    );
+  };
+
   const createTrip =
     async () => {
-      if (!destination) {
+      if (destinations.length === 0) {
         Alert.alert(
           'Choose a destination',
           'Choose a city, region or country before creating this trip.',
@@ -310,7 +391,7 @@ export default function NewTripScreen() {
 
       const resolvedTitle =
         title.trim() ||
-        destination.name?.trim() ||
+        primaryDestination?.name?.trim() ||
         'New trip';
 
       const now =
@@ -325,7 +406,7 @@ export default function NewTripScreen() {
               title:
                 resolvedTitle,
 
-              destination,
+              destinations,
 
               startDate,
 
@@ -487,7 +568,10 @@ export default function NewTripScreen() {
                   styles.discoverTitle
                 }
               >
-                Destination prefilled
+                {discoverPrefill.extraDestinations &&
+                discoverPrefill.extraDestinations.length > 0
+                  ? 'Destinations prefilled'
+                  : 'Destination prefilled'}
               </Text>
 
               <Text
@@ -502,15 +586,111 @@ export default function NewTripScreen() {
         ) : null}
 
         <View style={styles.form}>
-          <DestinationPickerField
-            destination={
-              destination
-            }
-            disabled={isSaving}
-            onSelect={
-              setDestination
-            }
-          />
+          {destinations.length === 0 ? (
+            <DestinationPickerField
+              disabled={isSaving}
+              onSelect={addDestination}
+            />
+          ) : (
+            destinations.map((destination, index) => (
+              <View
+                key={`${destination.name}-${index}`}
+                style={
+                  index > 0
+                    ? styles.destinationAfter
+                    : undefined
+                }
+              >
+                <DestinationPickerField
+                  label={
+                    destinations.length === 1
+                      ? 'DESTINATION'
+                      : `DESTINATION ${index + 1}`
+                  }
+                  destination={destination}
+                  disabled={isSaving}
+                  onSelect={(selection) =>
+                    replaceDestination(index, selection)
+                  }
+                />
+
+                {destinations.length > 1 ? (
+                  <View style={styles.destinationActions}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Move ${destination.name} earlier`}
+                      disabled={isSaving || index === 0}
+                      hitSlop={5}
+                      style={({ pressed }) => [
+                        styles.destinationAction,
+                        (isSaving || index === 0) &&
+                          styles.destinationActionDisabled,
+                        pressed && styles.pressed,
+                      ]}
+                      onPress={() => moveDestination(index, -1)}
+                    >
+                      <Ionicons
+                        name="chevron-up"
+                        size={18}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Move ${destination.name} later`}
+                      disabled={
+                        isSaving ||
+                        index === destinations.length - 1
+                      }
+                      hitSlop={5}
+                      style={({ pressed }) => [
+                        styles.destinationAction,
+                        (isSaving ||
+                          index === destinations.length - 1) &&
+                          styles.destinationActionDisabled,
+                        pressed && styles.pressed,
+                      ]}
+                      onPress={() => moveDestination(index, 1)}
+                    >
+                      <Ionicons
+                        name="chevron-down"
+                        size={18}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${destination.name}`}
+                      disabled={isSaving}
+                      hitSlop={5}
+                      style={({ pressed }) => [
+                        styles.destinationAction,
+                        pressed && styles.pressed,
+                      ]}
+                      onPress={() => removeDestination(index)}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color={colors.coral}
+                      />
+                    </Pressable>
+                  </View>
+                ) : null}
+              </View>
+            ))
+          )}
+
+          {destinations.length > 0 &&
+          destinations.length < MAX_TRIP_DESTINATIONS ? (
+            <View style={styles.destinationAddAfter}>
+              <DestinationPickerField
+                variant="add"
+                disabled={isSaving}
+                onSelect={addDestination}
+              />
+            </View>
+          ) : null}
 
           <View
             style={styles.section}
@@ -1136,6 +1316,37 @@ const styles =
 
     form: {
       gap: spacing[6],
+    },
+
+    destinationAfter: {
+      paddingTop: spacing[5],
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+
+    destinationAddAfter: {
+      paddingTop: spacing[1],
+    },
+
+    destinationActions: {
+      marginTop: spacing[3],
+      flexDirection: 'row',
+      gap: spacing[2],
+    },
+
+    destinationAction: {
+      minWidth: 44,
+      minHeight: 44,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface,
+    },
+
+    destinationActionDisabled: {
+      opacity: 0.4,
     },
 
     section: {

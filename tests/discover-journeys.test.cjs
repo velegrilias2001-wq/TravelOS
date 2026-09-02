@@ -6,6 +6,11 @@ const {
 } = require('../.test-build/src/data/discover/curated-journeys.js');
 
 const {
+  parseDiscoverTripRouteParams,
+  serializeDiscoverTripPrefill,
+} = require('../.test-build/src/services/discover-trip-handoff.js');
+
+const {
   buildDiscoverJourneyBrief,
   buildDiscoverJourneyTripPrefill,
   findDiscoverJourney,
@@ -46,7 +51,7 @@ test(
 );
 
 test(
-  'accepting a journey prefills only the primary destination and never invents dates',
+  'accepting a journey prefills extra catalogue cities and never invents dates',
   () => {
     const atlantic = findDiscoverJourney('curated:lisbon-porto');
     const brief = buildDiscoverJourneyBrief(atlantic);
@@ -56,10 +61,16 @@ test(
     assert.equal(brief.destination.name, 'Lisbon');
     assert.equal(brief.timing, undefined);
     assert.equal(prefill.destination.name, 'Lisbon');
+    assert.equal(prefill.extraDestinations[0].name, 'Porto');
     assert.equal(prefill.startDate, undefined);
     assert.equal(prefill.endDate, undefined);
     assert.equal(prefill.intent, 'explore');
     assert.equal(prefill.pace, 'balanced');
+
+    const parsed = parseDiscoverTripRouteParams(
+      serializeDiscoverTripPrefill(prefill),
+    );
+    assert.equal(parsed.extraDestinations[0].name, 'Porto');
   },
 );
 

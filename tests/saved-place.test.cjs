@@ -109,7 +109,7 @@ test(
 );
 
 test(
-  'saved journeys keep extra cities as ideas and prefill only the primary destination',
+  'saved journeys keep extra cities as additional Create Trip destinations',
   async () => {
     const service = createMemoryService();
 
@@ -126,6 +126,7 @@ test(
     const prefill = buildSavedPlaceTripPrefill(listing);
 
     assert.equal(prefill.destination.name, 'Lisbon');
+    assert.equal(prefill.extraDestinations[0].name, 'Porto');
     assert.equal(prefill.startDate, undefined);
     assert.equal(prefill.intent, 'explore');
   },

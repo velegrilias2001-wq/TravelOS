@@ -134,7 +134,7 @@ export default function DiscoverJourneysScreen() {
         </Text>
 
         <Text style={styles.subtitle}>
-          These are catalogue ideas, not trips. TravelOS will not invent an itinerary, extra destinations, or dates. Nothing is saved until you confirm Create Trip.
+          These are catalogue ideas, not trips. Extra cities can become destinations when you create the trip. TravelOS will not invent an itinerary or dates. Nothing is saved until you confirm Create Trip.
         </Text>
       </View>
 
@@ -282,7 +282,7 @@ function JourneyDetail({
             </Text>
 
             <Text style={styles.destinationMeta}>
-              Not added to Create Trip yet. Multi-destination trips are not authored here.
+              This city can be added as another destination when you create the trip.
             </Text>
           </View>
         </View>
@@ -338,7 +338,9 @@ function JourneyDetail({
           </Text>
 
           <Text style={styles.primaryButtonText}>
-            Open Create Trip with {primary?.name}
+            {extraDestinations.length > 0
+              ? `Open Create Trip with ${primary?.name} and ${extraDestinations.length === 1 ? extraDestinations[0]?.name : `${extraDestinations.length} more`}`
+              : `Open Create Trip with ${primary?.name}`}
           </Text>
         </View>
 

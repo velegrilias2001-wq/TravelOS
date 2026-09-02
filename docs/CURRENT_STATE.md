@@ -13,9 +13,10 @@ Evidence classes used throughout:
 
 ## Repository checkpoint
 
-- Current development branch: `feature/import-image-calendar-v1`
-- Branch point: `14e044c` — feat: add Import Office-embedded iCalendar V1
-- Import image-embedded iCalendar V1 is implemented on this branch: JPEG, PNG, GIF, and WEBP files yield a calendar only when metadata or file bytes contain a `BEGIN:VCALENDAR` block, including compressed PNG zTXt and text split across chunks. Ticket photos without a calendar fail closed. There is no OCR and no AI parsing of confirmation prose. Automated tests exist. No native device rehearsal was run for the image extractor.
+- Current development branch: `feature/multi-destination-authoring-v1`
+- Branch point: `c0429e7` — feat: add Import image-embedded iCalendar V1
+- Multi-destination authoring V1 is implemented on this branch: Create Trip and Trip Details can add, reorder, and remove up to eight real map destinations. A trip cannot drop to zero destinations once it has one. New destinations require a picker selection. Removing a destination does not delete stops, bookings, or stays. Journey extra catalogue cities can prefill Create Trip. Day → Destination and timezone guessing are still out. Automated tests exist. No native device rehearsal was run for this authoring flow.
+- Import image-embedded iCalendar V1 remains on the parent history: JPEG, PNG, GIF, and WEBP files yield a calendar only when metadata or file bytes contain a `BEGIN:VCALENDAR` block, including compressed PNG zTXt and text split across chunks. Ticket photos without a calendar fail closed. There is no OCR and no AI parsing of confirmation prose. Automated tests exist. No native device rehearsal was run for the image extractor.
 - Import Office-embedded iCalendar V1 remains on the parent history: Word/Excel/PowerPoint Open XML packages yield a calendar only when visible text contains a `BEGIN:VCALENDAR` block, including text split across Office runs. Automated tests exist. No native device rehearsal was run for the Office extractor.
 - Import PDF-embedded iCalendar V1 remains on the parent history: a chosen PDF can yield a calendar only when it actually contains a `BEGIN:VCALENDAR` block, including FlateDecode streams. Confirmation PDFs without a calendar fail closed. Automated tests exist. No native device rehearsal was run for the PDF extractor.
 - Import calendar ZIP V1 remains on the parent history: a chosen zip can contain `.ics` files, emails with a calendar part, or mixed non-calendar members. Nested zips are skipped. Extraction feeds the same review queue. Automated tests exist. No native device rehearsal was completed for the zip extractor.
@@ -210,12 +211,12 @@ Home, Trips (plus Import a calendar), Discover (Find me somewhere, Best time, Re
 Implemented behavior includes:
 
 - Persisted trip list.
-- Creating a trip with title, one real native-selected destination, native validated start/end calendar dates, accounting currency, and optional trip intent and pace. Free-form destination creation is no longer accepted.
+- Creating a trip with title, one or more real native-selected destinations, native validated start/end calendar dates, accounting currency, and optional trip intent and pace. Free-form destination creation is no longer accepted.
 - Opening a trip-specific workspace.
 - Automatic TripDay creation from the trip date range.
-- Editing the canonical trip title, dates, accounting currency, lifecycle status, intent, and pace from Trip Details, plus explicitly replacing or upgrading an existing destination through the same native real-location picker.
+- Editing the canonical trip title, dates, accounting currency, lifecycle status, intent, and pace from Trip Details, plus adding, reordering, removing, replacing, or upgrading destinations through the same native real-location picker.
 - Deleting a trip through a destructive native confirmation that names the related local data being removed.
-- Create Trip can be prefilled from Discover when the traveler accepts a curated destination. Prefill uses route params for grounded destination facts plus optional exact dates, intent, and pace. Flexible Discover timing is not converted into canonical trip dates.
+- Create Trip can be prefilled from Discover when the traveler accepts a curated destination or journey. Prefill uses route params for grounded destination facts, optional extra journey cities, and optional exact dates, intent, and pace. Flexible Discover timing is not converted into canonical trip dates.
 - Home, Trips, and Bookings can open `/import` to choose an `.ics` file, a zip of calendars, a PDF, Office, or image file that embeds a calendar, or paste iCalendar text. Extracted events enter a review queue and do not become bookings until accepted onto an existing trip.
 
 Create Trip and Trip Details use the shared native calendar field, validate real `YYYY-MM-DD` dates plus `start <= end`, and persist the selected calendar day without UTC or device-timezone shifting. Accounting currency uses a validated three-letter code rather than a complete currency selector.
@@ -245,21 +246,21 @@ Implemented behavior includes:
 - Accounting currency cannot be changed once a persisted Budget exists. No amount is relabelled, converted, or assigned an invented exchange rate.
 - Trip deletion uses a destructive native confirmation, routes safely back to Trips, refreshes the global list cache, and leaves the deleted workspace in not-found state rather than retaining stale data.
 
-Current limitations include the unfinished multi-destination workflow, no Day → Destination timezone mapping, no archive/recovery or backup for deletion, and no complete currency selector. Intent and pace editing exist in code; they were not re-verified on a device during this documentation pass.
+Current limitations include no Day → Destination timezone mapping, no archive/recovery or backup for deletion, and no complete currency selector. Intent and pace editing exist in code; they were not re-verified on a device during this documentation pass.
 
 ### Canonical Destination Authoring
 
 Implemented behavior includes:
 
 - One provider-neutral destination-authoring service validates real coordinates and optional country, timezone, and currency codes without inferring missing facts.
-- Create Trip requires the existing native picker and persists one real selected destination. Trip Details uses the same picker to replace a structured destination or upgrade a historical name-only destination while preserving its TravelOS ID and order.
+- Create Trip requires the existing native picker and persists one or more real selected destinations, up to eight. Trip Details uses the same picker to add another destination, replace a structured destination, or upgrade a historical name-only destination while preserving its TravelOS ID. Reorder and remove keep destination IDs; a trip that already has destinations cannot be saved with zero. Removing a destination does not delete itinerary stops, bookings, or stays.
 - Picker-returned locality/region/name/address and country context produce the saved display label. The current provider result does not expose a durable place ID, timezone, or currency, so none is invented or silently derived.
 - SQLite hydration and persistence round-trip the full existing destination record losslessly. No schema migration was required.
 - Map frames every mapped destination together with every mapped itinerary stop and renders distinct destination markers. Plan uses a destination coordinate as picker context only when exactly one mapped destination makes that context unambiguous.
 - Companion uses calm missing-timezone fallback copy and never shows exact NOW/NEXT timing without a saved reliable IANA timezone.
 - Trip-space headings use the full saved destination context instead of silently treating the first destination as authoritative.
 
-Current limitations include no destination add/remove/reorder UI, no stable provider place ID in the installed picker result, no secure timezone enrichment boundary, no destination-currency source, and no Day → Destination relationship. Provider enrichment, multi-destination authoring, and iOS verification remain future work.
+Current limitations include no stable provider place ID in the installed picker result, no secure timezone enrichment boundary, no destination-currency source, and no Day → Destination relationship. Provider enrichment and iOS verification remain future work.
 
 ### Budget & Expenses
 
@@ -454,7 +455,7 @@ Automated-test evidence: `tests/discover-architecture.test.cjs`, `tests/discover
 
 Android-verified on 2026-09-02: Discover tab, Find me somewhere, Travel DNA fallback copy, grounded ranking, Create Trip handoff, persist, and cascade delete of an isolated Barcelona trip. Best time and Ready-made journeys were not part of that rehearsal.
 
-Current limitations include no live place provider as a Discover source, no reranking, and no import of Discover results except through explicit Create Trip confirmation. Grounded records without editorial fit still cannot enter the deterministic ranking; they may appear only as semantic extras when retrieval is available. Opt-in grounded explanations are available when the AI server can paraphrase catalogue facts for one existing candidate. Best time only shows sourced months; destinations without a timing citation stay unknown. Ready-made journeys can name more than one catalogue city, but Create Trip still confirms only the primary destination. Saved ideas persist grounded identities only; they do not become trips or World history.
+Current limitations include no live place provider as a Discover source, no reranking, and no import of Discover results except through explicit Create Trip confirmation. Grounded records without editorial fit still cannot enter the deterministic ranking; they may appear only as semantic extras when retrieval is available. Opt-in grounded explanations are available when the AI server can paraphrase catalogue facts for one existing candidate. Best time only shows sourced months; destinations without a timing citation stay unknown. Ready-made journeys can prefill extra catalogue cities into Create Trip; they still do not invent an itinerary or dates. Saved ideas persist grounded identities only; they do not become trips or World history.
 
 ### Semantic Discover V1
 
@@ -520,13 +521,13 @@ Implemented in code:
 
 - Discover tab opens `/discover/journeys` for curated journey ideas. Each idea is identified by `(source, record id)` and may only name grounded catalogue destinations.
 - Current ideas: Slow days in Porto, Lisbon and Porto, and Bergen for the fjords. Intent and pace are allowed only when they already exist on the primary destination’s catalogue fit. Bergen has no fit tags, so it carries none.
-- The screen labels the idea as not a trip. Extra destinations stay visible as ideas and are not written into Create Trip. Prefill carries only the primary destination plus optional intent/pace. Dates stay empty.
+- The screen labels the idea as not a trip. Extra catalogue cities can prefill additional Create Trip destinations. Dates stay empty. Prefill carries optional intent/pace from the primary destination’s catalogue fit.
 - Session Brief uses `mode: 'journey_ideas'` in Zustand only. Nothing is written to SQLite until the traveler confirms Create Trip.
 - Journeys are not embedding documents. The committed semantic artifact hash is unchanged.
 
 Automated-test evidence: `tests/discover-journeys.test.cjs`. Android Pixel 8 opened the journey list on 2026-09-02 (Porto, Lisbon and Porto, Bergen). Journey detail and Create Trip from a journey were not exercised.
 
-Current limitations: there is no journey day-by-day itinerary or multi-destination Create Trip authoring. A two-city idea still confirms one destination. Journey ideas can be saved as wishlist candidates without becoming trips.
+Current limitations: there is no journey day-by-day itinerary. Extra catalogue cities can prefill Create Trip destinations, but days are still not assigned to a city. Journey ideas can be saved as wishlist candidates without becoming trips.
 
 ### Discover Wishlist V1
 
@@ -534,7 +535,7 @@ Implemented in code:
 
 - Migration version 10 adds `saved_places`. Each row stores a grounded identity (`curated:…`), kind (`destination` or `journey`), source, and timestamps. Coordinates, itineraries, and calendar dates are not copied.
 - Saving is explicit from Discover results, Best time, and Ready-made journeys. Duplicate identities are idempotent. Unknown identities fail closed.
-- `/discover/saved` lists saved ideas and can hand the primary destination to Create Trip. Extra journey cities stay ideas. Removing a saved idea does not delete trips.
+- `/discover/saved` lists saved ideas and can hand a destination or journey to Create Trip. Extra journey cities can prefill additional destinations. Removing a saved idea does not delete trips.
 - Profile links to the same Saved ideas list. World still maps only persisted Trip destinations and does not treat wishlist rows as visited or planned.
 
 Automated-test evidence: `tests/saved-place.test.cjs` and `tests/saved-place-migration.test.cjs`. Android Pixel 8 opened the empty Saved ideas list on 2026-09-02. Saving or removing an idea was not exercised.
@@ -732,6 +733,8 @@ Import Office-embedded iCalendar V1 verification on 2026-09-02 re-ran `npx tsc -
 
 Import image-embedded iCalendar V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (223 application tests passing, including the calendar-image suite). `git diff --check` was clean. No native rebuild was required. No device rehearsal was run for the image extractor. Ticket photos without an embedded iCalendar fail closed. OCR was not added.
 
+Multi-destination authoring V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (226 application tests passing, including destination add/reorder/remove and journey extra-city prefill). `git diff --check` was clean. No native rebuild was required. No device rehearsal was run for adding a second destination.
+
 Grounded Destination Sourcing V1 verification re-ran `npx tsc --noEmit` and `npm test` (138 application tests passing, including the new corpus/sourcing suite) plus the unchanged server suite. No native device run was performed for that service-layer milestone.
 
 Android Pixel 8 development-build rehearsal on 2026-09-02 (installed `com.travelos.app`, Metro, AI server `PORT=8789`, `adb reverse`, live Ollama `bge-m3` / `qwen3:4b`):
@@ -791,7 +794,7 @@ These pieces are promising foundations; they do not make the app production-read
 
 ### Prototype or incomplete implementation
 
-- Multi-destination add/remove/reorder, Day → Destination semantics, stable provider identity, and secure timezone/currency enrichment.
+- Day → Destination semantics, stable provider identity, and secure timezone/currency enrichment. Multi-destination add/remove/reorder is implemented in Create Trip and Trip Details.
 - Companion V2 timezone authoring, Day → Destination semantics, stop-boundary refresh decisions, lived progress, and external live-data layers.
 - Discover live provider catalogues and reranking. Best time V1, Ready-made journeys V1, and Wishlist V1 are implemented in code over grounded catalogue identities. Semantic retrieval and opt-in grounded explanations exist as local-dev lanes over those identities.
 - Broader import formats. Native import now extracts iCalendar from paste, a chosen file, UTF-16 calendar bytes, an email `text/calendar` part, a zip of those calendars, a PDF that embeds an iCalendar, an Office Open XML document whose visible text contains an iCalendar, or a JPEG/PNG/GIF/WEBP file whose metadata contains an iCalendar. Image OCR of confirmation photos and AI parsing of confirmation prose remain out. Android Pixel 8 rehearsed choosing a local `.ics` file and an `.eml` with a calendar part; zip, PDF, Office, and image extractors were not rehearsed on device in this pass. iOS was not rebuilt.
@@ -808,6 +811,6 @@ These pieces are promising foundations; they do not make the app production-read
 
 TravelOS is a broader native vertical prototype than the 2026-08-23 snapshot described, and still not a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths. Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. Budget & Expenses, Trip Details, Booking ↔ Stop, Accommodation, Travelers, Time & Runtime Truth, Companion V1, Canonical Destination Authoring, and UX Refinement V1 remain the earlier completed core. After that, Memories V1 and Travel Book V1 give completed trips an on-device record and story, shared readiness selection keeps Companion honest about preparation, Travel DNA plus trip intent/pace give Discover and Create Trip explicit preference language, Plan can show knowable free time and conflicts, AI Foundation V1 can advise on free time without writing trip truth, Discover Experience V1 can recommend grounded destinations that become canonical only after Create Trip confirmation, Grounded Destination Sourcing V1 loads those destinations from explicit provenance-backed packs, and Semantic Discover V1 can add extra grounded catalogue identities from local retrieval without replacing deterministic matching, with opt-in grounded explanations of those catalogue facts. World and Profile are no longer empty tabs, but they are still thin compared with the trip workspace.
 
-The latest local git milestones on `feature/import-image-calendar-v1` follow Import Office-embedded iCalendar V1 (`14e044c`). An image file yields a claim only when it contains an iCalendar. There is still no usable git remote for push.
+The latest local git milestones on `feature/multi-destination-authoring-v1` follow Import image-embedded iCalendar V1 (`c0429e7`). Create Trip and Trip Details can now keep more than one real destination. There is still no usable git remote for push.
 
-The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, Ready-made journeys V1, and Wishlist V1 are implemented. Import Review Queue V1 accepts iCalendar claims without writing bookings until review; choosing a local `.ics` file, an email that contains a calendar, a zip of calendars, a PDF that embeds a calendar, an Office file whose visible text contains a calendar, or an image whose metadata contains a calendar extracts into the same review queue. Pixel 8 opened Best time, the journeys list, empty Saved ideas, the Import paste accept/delete path, the ICS file picker, and an email-wrapped calendar; zip-file rehearsal, PDF-file rehearsal, Office-file rehearsal, image-file rehearsal, wishlist save, journey-to-Create-Trip, and iOS were not exercised. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–11, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, remaining import formats, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.
+The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, Ready-made journeys V1, Wishlist V1, and Import Review Queue V1 are implemented. Multi-destination authoring V1 lets a traveler add, reorder, and remove real destinations on Create Trip and Trip Details, including extra catalogue cities from a journey idea. Pixel 8 opened Best time, the journeys list, empty Saved ideas, the Import paste accept/delete path, the ICS file picker, and an email-wrapped calendar; zip/PDF/Office/image-file rehearsal, wishlist save, journey-to-Create-Trip, multi-destination device rehearsal, and iOS were not exercised. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–11, remaining visual/accessibility matrix, Phase 0 gaps, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, remaining import formats, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.

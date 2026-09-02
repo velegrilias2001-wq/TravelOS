@@ -19,6 +19,7 @@ import {
 
 export interface DiscoverTripPrefill {
   destination: DestinationSelection;
+  extraDestinations?: DestinationSelection[];
 
   /**
    * Only exact dates can prefill the canonical trip creator.
@@ -56,6 +57,7 @@ export interface DiscoverTripRouteParams
   destinationCountryCode?: string;
   destinationTimezone?: string;
   destinationCurrencyCode?: string;
+  extraDestinations?: string;
 
   startDate?: string;
   endDate?: string;
@@ -124,6 +126,8 @@ export function serializeDiscoverTripPrefill(
     normalizeDestinationSelection(
       prefill.destination,
     );
+  const extraDestinations = (prefill.extraDestinations ?? [])
+    .map((item) => normalizeDestinationSelection(item));
 
   return {
     source: 'discover',
@@ -149,6 +153,11 @@ export function serializeDiscoverTripPrefill(
 
     destinationCurrencyCode:
       destination.currencyCode,
+
+    extraDestinations:
+      extraDestinations.length > 0
+        ? JSON.stringify(extraDestinations)
+        : undefined,
 
     startDate:
       prefill.startDate,
@@ -234,6 +243,10 @@ export function parseDiscoverTripRouteParams(
         ),
     });
 
+  const extraDestinations = parseExtraDestinations(
+    firstParam(params.extraDestinations),
+  );
+
   const startDate =
     firstParam(
       params.startDate,
@@ -292,6 +305,9 @@ export function parseDiscoverTripRouteParams(
 
   return {
     destination,
+    ...(extraDestinations && extraDestinations.length > 0
+      ? { extraDestinations }
+      : {}),
 
     startDate:
       brief.timing?.kind ===
@@ -313,4 +329,79 @@ export function parseDiscoverTripRouteParams(
     pace:
       brief.pace,
   };
+}
+
+function parseExtraDestinations(
+  raw: string | undefined,
+): DestinationSelection[] | undefined {
+  if (!raw) {
+    return undefined;
+  }
+
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(
+      'Discover handoff extra destinations could not be read',
+    );
+  }
+
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    throw new Error(
+      'Discover handoff extra destinations could not be read',
+    );
+  }
+
+  return parsed.map((item) => {
+    if (
+      item === null ||
+      typeof item !== 'object' ||
+      !('name' in item) ||
+      !('latitude' in item) ||
+      !('longitude' in item)
+    ) {
+      throw new Error(
+        'Discover handoff extra destinations could not be read',
+      );
+    }
+
+    const record = item as {
+      name: unknown;
+      latitude: unknown;
+      longitude: unknown;
+      countryCode?: unknown;
+      timezone?: unknown;
+      currencyCode?: unknown;
+    };
+
+    if (
+      typeof record.name !== 'string' ||
+      typeof record.latitude !== 'number' ||
+      typeof record.longitude !== 'number'
+    ) {
+      throw new Error(
+        'Discover handoff extra destinations could not be read',
+      );
+    }
+
+    return normalizeDestinationSelection({
+      name: record.name,
+      latitude: record.latitude,
+      longitude: record.longitude,
+      countryCode:
+        typeof record.countryCode === 'string'
+          ? record.countryCode
+          : undefined,
+      timezone:
+        typeof record.timezone === 'string'
+          ? record.timezone
+          : undefined,
+      currencyCode:
+        typeof record.currencyCode === 'string'
+          ? record.currencyCode
+          : undefined,
+    });
+  });
 }
