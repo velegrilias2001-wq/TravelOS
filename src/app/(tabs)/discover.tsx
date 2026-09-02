@@ -114,10 +114,15 @@ export default function DiscoverScreen() {
           }
         />
 
-        <FutureOption
+        <DiscoverOption
           icon="compass-outline"
           title="Ready-made journeys"
           body="Explore curated trip ideas you can keep, adapt and make your own."
+          onPress={() =>
+            router.push(
+              '/discover/journeys',
+            )
+          }
         />
       </View>
 
@@ -192,44 +197,6 @@ function DiscoverOption({
         color={colors.brand}
       />
     </Pressable>
-  );
-}
-
-function FutureOption({
-  icon,
-  title,
-  body,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  body: string;
-}) {
-  return (
-    <View style={styles.futureCard}>
-      <View style={styles.futureIcon}>
-        <Ionicons
-          name={icon}
-          size={21}
-          color={colors.teal}
-        />
-      </View>
-
-      <View style={styles.futureCopy}>
-        <Text style={styles.futureTitle}>
-          {title}
-        </Text>
-
-        <Text style={styles.futureBody}>
-          {body}
-        </Text>
-      </View>
-
-      <View style={styles.soonPill}>
-        <Text style={styles.soonText}>
-          SOON
-        </Text>
-      </View>
-    </View>
   );
 }
 
@@ -401,22 +368,6 @@ const styles =
       lineHeight:
         lineHeight.caption,
       color: colors.textSecondary,
-    },
-
-    soonPill: {
-      marginTop: spacing[1],
-      paddingHorizontal: spacing[2],
-      paddingVertical: spacing[1],
-      borderRadius: radius.pill,
-      backgroundColor:
-        colors.brassSoft,
-    },
-
-    soonText: {
-      fontFamily: fontFamily.sansBold,
-      fontSize: fontSize.micro,
-      letterSpacing: 1,
-      color: colors.brass,
     },
 
     promiseCard: {

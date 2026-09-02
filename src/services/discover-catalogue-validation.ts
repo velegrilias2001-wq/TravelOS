@@ -159,6 +159,13 @@ function validateCoordinates(
   }
 }
 
+export function validateDiscoverCatalogueEvidence(
+  evidence: DiscoverCatalogueEvidence,
+  recordId: string,
+): void {
+  validateEvidence(evidence, recordId);
+}
+
 function validateTiming(
   record: DiscoverCatalogueRecord,
 ): void {
