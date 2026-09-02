@@ -9,6 +9,7 @@ import type {
 
 interface DestinationRow {
   id: string;
+  trip_id: string;
   name: string;
   country_code: string | null;
   latitude: number | null;
@@ -23,28 +24,19 @@ function optional<T>(
   return value ?? undefined;
 }
 
-export async function loadTripDestinations(
-  database: DatabaseConnection,
-  tripId: TripId,
-): Promise<TripDestination[]> {
-  const rows = await database.query<DestinationRow>(
-    `
-      SELECT
-        id,
-        name,
-        country_code,
-        latitude,
-        longitude,
-        timezone,
-        currency_code
-      FROM trip_destinations
-      WHERE trip_id = ?
-      ORDER BY position ASC;
-    `,
-    [tripId],
-  );
+function sqlPlaceholders(
+  count: number,
+): string {
+  return Array.from(
+    { length: count },
+    () => '?',
+  ).join(', ');
+}
 
-  return rows.map((destination) => ({
+function mapDestinationRow(
+  destination: DestinationRow,
+): TripDestination {
+  return {
     id: destination.id,
     name: destination.name,
     countryCode: optional(
@@ -56,7 +48,71 @@ export async function loadTripDestinations(
     currencyCode: optional(
       destination.currency_code,
     ),
-  }));
+  };
+}
+
+export async function loadTripDestinationsForTrips(
+  database: DatabaseConnection,
+  tripIds: readonly TripId[],
+): Promise<Map<TripId, TripDestination[]>> {
+  const destinationsByTrip = new Map<
+    TripId,
+    TripDestination[]
+  >();
+
+  if (tripIds.length === 0) {
+    return destinationsByTrip;
+  }
+
+  const rows = await database.query<DestinationRow>(
+    `
+      SELECT
+        id,
+        trip_id,
+        name,
+        country_code,
+        latitude,
+        longitude,
+        timezone,
+        currency_code
+      FROM trip_destinations
+      WHERE trip_id IN (${sqlPlaceholders(tripIds.length)})
+      ORDER BY
+        trip_id ASC,
+        position ASC;
+    `,
+    [...tripIds],
+  );
+
+  for (const row of rows) {
+    const destination = mapDestinationRow(row);
+    const current =
+      destinationsByTrip.get(row.trip_id);
+
+    if (current) {
+      current.push(destination);
+      continue;
+    }
+
+    destinationsByTrip.set(row.trip_id, [
+      destination,
+    ]);
+  }
+
+  return destinationsByTrip;
+}
+
+export async function loadTripDestinations(
+  database: DatabaseConnection,
+  tripId: TripId,
+): Promise<TripDestination[]> {
+  const destinationsByTrip =
+    await loadTripDestinationsForTrips(
+      database,
+      [tripId],
+    );
+
+  return destinationsByTrip.get(tripId) ?? [];
 }
 
 export async function saveTripDestinations(

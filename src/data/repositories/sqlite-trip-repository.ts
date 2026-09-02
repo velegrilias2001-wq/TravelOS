@@ -4,9 +4,6 @@ import { travelOSDatabase } from '../database/expo-sqlite-database';
 import type {
   Trip,
   TripId,
-  TripIntent,
-  TripPace,
-  TripStatus,
 } from '../../domain/entities/trip';
 
 import type { TripDay } from '../../domain/entities/trip-day';
@@ -27,25 +24,9 @@ import {
   saveCanonicalTrip,
 } from './trip-persistence-operations';
 import {
-  loadTripDestinations,
-} from './trip-destination-persistence';
-
-interface TripRow {
-  id: string;
-  title: string;
-  status: string;
-  intent: string | null;
-  pace: string | null;
-  start_date: string;
-  end_date: string;
-  accounting_currency: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface TravelerLinkRow {
-  traveler_id: string;
-}
+  loadTripById,
+  loadTripList,
+} from './trip-list-persistence';
 
 interface TripDayRow {
   id: string;
@@ -125,88 +106,16 @@ export class SQLiteTripRepository
   ) {}
 
   async getAll(): Promise<Trip[]> {
-    const rows =
-      await this.database.query<TripRow>(`
-        SELECT *
-        FROM trips
-        ORDER BY start_date ASC;
-      `);
-
-    return Promise.all(
-      rows.map((row) =>
-        this.hydrateTrip(row),
-      ),
-    );
+    return loadTripList(this.database);
   }
 
   async getById(
     id: TripId,
   ): Promise<Trip | null> {
-    const row =
-      await this.database.queryFirst<TripRow>(
-        `
-          SELECT *
-          FROM trips
-          WHERE id = ?;
-        `,
-        [id],
-      );
-
-    if (!row) {
-      return null;
-    }
-
-    return this.hydrateTrip(row);
-  }
-
-  private async hydrateTrip(
-    row: TripRow,
-  ): Promise<Trip> {
-    const destinations =
-      await loadTripDestinations(
-        this.database,
-        row.id,
-      );
-
-    const travelers =
-      await this.database.query<TravelerLinkRow>(
-        `
-          SELECT traveler_id
-          FROM trip_travelers
-          WHERE trip_id = ?;
-        `,
-        [row.id],
-      );
-
-    return {
-      id: row.id,
-      title: row.title,
-      status: row.status as TripStatus,
-
-      intent:
-        (row.intent as TripIntent | null) ??
-        undefined,
-
-      pace:
-        (row.pace as TripPace | null) ??
-        undefined,
-
-      destinations,
-
-      startDate: row.start_date,
-      endDate: row.end_date,
-
-      travelerIds: travelers.map(
-        (traveler) =>
-          traveler.traveler_id,
-      ),
-
-      accountingCurrency:
-        row.accounting_currency,
-
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    };
+    return loadTripById(
+      this.database,
+      id,
+    );
   }
 
   async save(

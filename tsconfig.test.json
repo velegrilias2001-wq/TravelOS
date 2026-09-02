@@ -24,6 +24,7 @@
     "src/data/repositories/budget-persistence-operations.ts",
     "src/data/repositories/trip-persistence-operations.ts",
     "src/data/repositories/trip-destination-persistence.ts",
+    "src/data/repositories/trip-list-persistence.ts",
 
     "src/domain/entities/**/*.ts",
 
