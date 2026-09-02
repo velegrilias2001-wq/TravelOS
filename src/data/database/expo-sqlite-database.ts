@@ -26,6 +26,26 @@ export class ExpoSQLiteDatabase implements Database {
     const db = await this.getDatabase();
 
     await migrateDatabase(db);
+
+    if (__DEV__) {
+      const versionRow =
+        await db.getFirstAsync<{ user_version: number }>(
+          'PRAGMA user_version',
+        );
+      const memoryKeys =
+        await db.getAllAsync<{ from: string }>(
+          'PRAGMA foreign_key_list(memories);',
+        );
+
+      console.log(
+        '[TravelOS] SQLite user_version',
+        versionRow?.user_version,
+        'memories FKs',
+        memoryKeys
+          .map((key) => key.from)
+          .join(','),
+      );
+    }
   }
 
   async execute(

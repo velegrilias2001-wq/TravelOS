@@ -329,6 +329,35 @@ export async function reconcileMemoryRelationships(
 }
 
 /**
+ * Cross-table Memory triggers survive DROP TABLE
+ * memories. Expo SQLite can fire the itinerary unlink
+ * triggers during that drop and fail with
+ * "no such table: main.memories". Drop them before a
+ * table rebuild; installMemoryRelationshipGuards puts
+ * them back afterwards.
+ */
+export async function dropMemoryRelationshipGuards(
+  db: SQLiteDatabase,
+): Promise<void> {
+  await db.execAsync(`
+    DROP TRIGGER IF EXISTS validate_memory_day_insert;
+    DROP TRIGGER IF EXISTS validate_memory_day_update;
+    DROP TRIGGER IF EXISTS validate_memory_stop_insert;
+    DROP TRIGGER IF EXISTS validate_memory_stop_update;
+    DROP TRIGGER IF EXISTS validate_memory_day_stop_insert;
+    DROP TRIGGER IF EXISTS validate_memory_day_stop_update;
+    DROP TRIGGER IF EXISTS unlink_memories_after_day_delete;
+    DROP TRIGGER IF EXISTS unlink_memories_after_stop_delete;
+    DROP TRIGGER IF EXISTS validate_travel_book_memory_insert;
+    DROP TRIGGER IF EXISTS validate_travel_book_memory_update;
+    DROP TRIGGER IF EXISTS
+      validate_memory_trip_update_for_travel_books;
+    DROP TRIGGER IF EXISTS
+      validate_travel_book_trip_update_for_memories;
+  `);
+}
+
+/**
  * Indexes and same-trip/unlink triggers for Memory and
  * Travel Book. Shared by migration v7 and by later
  * table rebuilds that drop those objects.

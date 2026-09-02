@@ -1,6 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import {
+  dropMemoryRelationshipGuards,
   installMemoryRelationshipGuards,
 } from './memory-integrity-migration';
 
@@ -90,6 +91,8 @@ async function rebuildMemoriesWithDayStopForeignKeys(
     await db.getAllAsync<TableInfoRow>(
       'PRAGMA table_info(travel_book_memories);',
     );
+
+  await dropMemoryRelationshipGuards(db);
 
   await db.execAsync(`
     CREATE TABLE memories_v15 (

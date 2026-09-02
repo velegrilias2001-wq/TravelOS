@@ -330,7 +330,7 @@ test(
 );
 
 test(
-  'migration v15 rebuilds historical memories, preserves memberships and clears dangling ids',
+  'migration v15 rebuilds historical memories with v7 unlink triggers present',
   async () => {
     const database = new NodeSQLiteDatabase();
 
@@ -420,6 +420,42 @@ test(
         );
 
         PRAGMA foreign_keys = ON;
+
+        CREATE TRIGGER unlink_memories_after_day_delete
+        AFTER DELETE ON trip_days
+        BEGIN
+          UPDATE memories
+          SET day_id = NULL
+          WHERE day_id = OLD.id;
+        END;
+
+        CREATE TRIGGER unlink_memories_after_stop_delete
+        AFTER DELETE ON trip_stops
+        BEGIN
+          UPDATE memories
+          SET stop_id = NULL
+          WHERE stop_id = OLD.id;
+        END;
+
+        CREATE TRIGGER
+          validate_travel_book_trip_update_for_memories
+        BEFORE UPDATE OF trip_id ON travel_books
+        WHEN EXISTS (
+          SELECT 1
+          FROM travel_book_memories tbm
+          JOIN memories m
+            ON m.id = tbm.memory_id
+          WHERE
+            tbm.travel_book_id = OLD.id AND
+            m.trip_id <> NEW.trip_id
+        )
+        BEGIN
+          SELECT RAISE(
+            ABORT,
+            'travel book must remain in linked memory trip'
+          );
+        END;
+
         PRAGMA user_version = 14;
       `);
 
@@ -537,6 +573,21 @@ test(
         );
       assert.equal(membership.memory_id, 'memory-keep');
       assert.equal(membership.position, 0);
+
+      const unlinkTrigger =
+        await database.queryFirst(
+          `
+            SELECT name
+            FROM sqlite_master
+            WHERE
+              type = 'trigger' AND
+              name = 'unlink_memories_after_day_delete';
+          `,
+        );
+      assert.equal(
+        unlinkTrigger.name,
+        'unlink_memories_after_day_delete',
+      );
 
       await database.execute(
         'DELETE FROM trip_days WHERE id = ?;',
