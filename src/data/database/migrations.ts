@@ -8,8 +8,11 @@ import {
 import {
   reconcileRuntimeStateRelationships,
 } from './runtime-state-integrity-migration';
+import {
+  reconcileStopDayRelationships,
+} from './stop-day-integrity-migration';
 
-export const DATABASE_VERSION = 13;
+export const DATABASE_VERSION = 14;
 
 interface UserVersionRow {
   user_version: number;
@@ -1314,6 +1317,28 @@ export async function migrateDatabase(
 
         await transaction.execAsync(`
           PRAGMA user_version = 13;
+        `);
+      },
+    );
+  }
+
+  /**
+   * Version 14
+   * A TripStop day must belong to the same trip as
+   * the stop. Invalid historical rows are archived
+   * and deleted so existing unlink cascades can run.
+   * Stop content is preserved in the archive, not
+   * moved onto another trip.
+   */
+  if (currentVersion < 14) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await reconcileStopDayRelationships(
+          transaction,
+        );
+
+        await transaction.execAsync(`
+          PRAGMA user_version = 14;
         `);
       },
     );

@@ -258,6 +258,24 @@ export class SQLiteTripRepository
   async saveStop(
     stop: TripStop,
   ): Promise<void> {
+    const day =
+      await this.database.queryFirst<{
+        trip_id: string;
+      }>(
+        `
+          SELECT trip_id
+          FROM trip_days
+          WHERE id = ?;
+        `,
+        [stop.dayId],
+      );
+
+    if (!day || day.trip_id !== stop.tripId) {
+      throw new Error(
+        'Trip stop day must belong to the same trip',
+      );
+    }
+
     await this.database.execute(
       `
         INSERT INTO trip_stops (
