@@ -114,7 +114,7 @@ No reference should be visually cloned. Each idea must be evaluated against Trav
 
 ## Near-term Discover intelligence
 
-The product contract for the next Discover work is: grounded destination sourcing first, then semantic retrieval, then reranking, then grounded explanations. AI is not a destination source. Model names used while benchmarking (including local Qwen/Ollama, BGE-M3, and a BGE reranker) are replaceable candidates. The ordered backlog lives in docs/ROADMAP.md.
+The product contract for Discover intelligence is: grounded destination sourcing first, then semantic retrieval, then reranking, then grounded explanations. Grounded sourcing, semantic retrieval, and grounded explanations are implemented in code. Reranking has been benchmarked and is not adopted yet. AI is not a destination source. Model names used while benchmarking (including local Qwen/Ollama, BGE-M3, and a BGE reranker) are replaceable candidates. The ordered backlog lives in docs/ROADMAP.md.
 
 ## Product boundaries
 

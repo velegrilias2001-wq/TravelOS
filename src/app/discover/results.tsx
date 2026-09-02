@@ -7,6 +7,8 @@ import {
 
 import {
   useCallback,
+  useEffect,
+  useMemo,
   useState,
 } from 'react';
 
@@ -24,6 +26,7 @@ import {
 import type {
   BudgetStyle,
   DailyRhythm,
+  DiscoverDestination,
   TravelDNA,
   TravelInterest,
   TravelStyle,
@@ -50,9 +53,24 @@ import {
 } from '@/services/discover-personalization';
 
 import {
+  prepareDiscoverSemanticQuery,
+  resolveSemanticDiscoverMatches,
+  type DiscoverSemanticMatch,
+} from '@/services/discover-semantic';
+
+import {
+  assertGroundedDiscoverExplanation,
+  prepareDiscoverExplanationRequest,
+} from '@/services/discover-explain';
+
+import {
   buildDiscoverTripPrefill,
   serializeDiscoverTripPrefill,
 } from '@/services/discover-trip-handoff';
+
+import {
+  aiAPIClient,
+} from '@/services/ai-api-runtime';
 
 import {
   formatCalendarDateForDisplay,
@@ -260,6 +278,43 @@ export default function DiscoverResultsScreen() {
   ] =
     useState(false);
 
+  const [
+    semanticMatches,
+    setSemanticMatches,
+  ] =
+    useState<
+      DiscoverSemanticMatch[]
+    >([]);
+
+  const [
+    semanticStatus,
+    setSemanticStatus,
+  ] = useState<
+    | 'idle'
+    | 'loading'
+    | 'ready'
+    | 'unavailable'
+  >('idle');
+
+  const [
+    explanations,
+    setExplanations,
+  ] = useState<
+    Record<
+      string,
+      | {
+          status: 'loading';
+        }
+      | {
+          status: 'ready';
+          sentences: string[];
+        }
+      | {
+          status: 'unavailable';
+        }
+    >
+  >({});
+
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -298,6 +353,103 @@ export default function DiscoverResultsScreen() {
       };
     }, []),
   );
+
+  const effectiveTravelDNA =
+    travelDNALoaded
+      ? travelDNA
+      : null;
+
+  const matches = useMemo(
+    () => {
+      if (!brief || !travelDNALoaded) {
+        return [];
+      }
+
+      return matchCuratedDiscoverDestinations(
+        brief,
+        effectiveTravelDNA,
+      );
+    },
+    [
+      brief,
+      effectiveTravelDNA,
+      travelDNALoaded,
+    ],
+  );
+
+  useEffect(() => {
+    if (!brief || !travelDNALoaded) {
+      setSemanticMatches([]);
+      setSemanticStatus('idle');
+      return;
+    }
+
+    const request =
+      prepareDiscoverSemanticQuery(
+        brief,
+        effectiveTravelDNA,
+      );
+
+    if (!request) {
+      setSemanticMatches([]);
+      setSemanticStatus('idle');
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    setSemanticStatus('loading');
+    setSemanticMatches([]);
+
+    const loadSemanticMatches =
+      async () => {
+        try {
+          const result =
+            await aiAPIClient.retrieveDiscoverMatches(
+              request,
+              controller.signal,
+            );
+
+          if (controller.signal.aborted) {
+            return;
+          }
+
+          setSemanticMatches(
+            resolveSemanticDiscoverMatches(
+              matches,
+              result.matches,
+            ),
+          );
+          setSemanticStatus('ready');
+        } catch (error) {
+          if (
+            controller.signal.aborted ||
+            (error instanceof Error &&
+              error.name ===
+                'AbortError')
+          ) {
+            return;
+          }
+
+          setSemanticMatches([]);
+          setSemanticStatus(
+            'unavailable',
+          );
+        }
+      };
+
+    void loadSemanticMatches();
+
+    return () => {
+      controller.abort();
+    };
+  }, [
+    brief,
+    effectiveTravelDNA,
+    matches,
+    travelDNALoaded,
+  ]);
 
   if (!brief) {
     return (
@@ -361,25 +513,11 @@ export default function DiscoverResultsScreen() {
     );
   }
 
-  const effectiveTravelDNA =
-    travelDNALoaded
-      ? travelDNA
-      : null;
-
   const personalization =
     resolveDiscoverPersonalization(
       brief,
       effectiveTravelDNA,
     );
-
-  const matches:
-    DiscoverMatch[] =
-      travelDNALoaded
-        ? matchCuratedDiscoverDestinations(
-            brief,
-            effectiveTravelDNA,
-          )
-        : [];
 
   const visibleMatches =
     matches.slice(0, 5);
@@ -432,12 +570,12 @@ export default function DiscoverResultsScreen() {
       : 'Open';
 
   const chooseDestination = (
-    match: DiscoverMatch,
+    destination: DiscoverDestination,
   ) => {
     const prefill =
       buildDiscoverTripPrefill(
         brief,
-        match.candidate.destination,
+        destination,
       );
 
     const params =
@@ -449,6 +587,78 @@ export default function DiscoverResultsScreen() {
       pathname: '/new-trip',
       params,
     });
+  };
+
+  const askExplanation = (
+    identity: string,
+  ) => {
+    const request =
+      prepareDiscoverExplanationRequest(
+        brief,
+        effectiveTravelDNA,
+        identity,
+      );
+
+    if (!request) {
+      setExplanations(
+        (current) => ({
+          ...current,
+          [identity]: {
+            status: 'unavailable',
+          },
+        }),
+      );
+      return;
+    }
+
+    setExplanations((current) => ({
+      ...current,
+      [identity]: {
+        status: 'loading',
+      },
+    }));
+
+    const loadExplanation =
+      async () => {
+        try {
+          const result =
+            await aiAPIClient.explainDiscoverMatch(
+              request,
+            );
+
+          const sentences =
+            assertGroundedDiscoverExplanation(
+              {
+                identity:
+                  result.identity,
+                sentences:
+                  result.sentences,
+              },
+              request,
+            );
+
+          setExplanations(
+            (current) => ({
+              ...current,
+              [identity]: {
+                status: 'ready',
+                sentences,
+              },
+            }),
+          );
+        } catch {
+          setExplanations(
+            (current) => ({
+              ...current,
+              [identity]: {
+                status: 'unavailable',
+              },
+            }),
+          );
+        }
+      };
+
+    void loadExplanation();
   };
 
   return (
@@ -513,7 +723,7 @@ export default function DiscoverResultsScreen() {
               styles.readyBody
             }
           >
-            These destinations come from the curated TravelOS catalogue. The ranking uses explicit matching rules, not invented AI destinations.
+            These destinations come from the curated TravelOS catalogue. Explicit preference matching stays first. Semantic matches, when available, can only add other grounded catalogue places.
           </Text>
         </View>
       </View>
@@ -555,9 +765,20 @@ export default function DiscoverResultsScreen() {
                 }
                 rank={index + 1}
                 match={match}
+                explanation={
+                  explanations[
+                    match.candidate.id
+                  ]
+                }
+                onAskExplanation={() =>
+                  askExplanation(
+                    match.candidate.id,
+                  )
+                }
                 onChoose={() =>
                   chooseDestination(
-                    match,
+                    match.candidate
+                      .destination,
                   )
                 }
               />
@@ -565,6 +786,74 @@ export default function DiscoverResultsScreen() {
           )
         )}
       </View>
+
+      {semanticStatus ===
+        'loading' ||
+      semanticMatches.length >
+        0 ? (
+        <View
+          style={
+            styles.resultsSection
+          }
+        >
+          <SectionHeading
+            eyebrow="ALSO CLOSE"
+            title="Semantic matches"
+            description="Grounded catalogue destinations that are close to this trip brief in meaning. TravelOS did not invent these places."
+          />
+
+          {semanticStatus ===
+          'loading' ? (
+            <View
+              style={
+                styles.loadingCard
+              }
+            >
+              <Text
+                style={
+                  styles.loadingText
+                }
+              >
+                Looking for close catalogue matches…
+              </Text>
+            </View>
+          ) : (
+            semanticMatches.map(
+              (match) => (
+                <DestinationMatchCard
+                  key={
+                    match.candidate.id
+                  }
+                  kind="semantic"
+                  match={{
+                    candidate:
+                      match.candidate,
+                    score:
+                      match.score,
+                    reasons: [],
+                  }}
+                  explanation={
+                    explanations[
+                      match.candidate.id
+                    ]
+                  }
+                  onAskExplanation={() =>
+                    askExplanation(
+                      match.candidate.id,
+                    )
+                  }
+                  onChoose={() =>
+                    chooseDestination(
+                      match.candidate
+                        .destination,
+                    )
+                  }
+                />
+              ),
+            )
+          )}
+        </View>
+      ) : null}
 
       <View style={styles.section}>
         <SectionHeading
@@ -770,15 +1059,34 @@ export default function DiscoverResultsScreen() {
 
 function DestinationMatchCard({
   rank,
+  kind = 'deterministic',
   match,
+  explanation,
+  onAskExplanation,
   onChoose,
 }: {
-  rank: number;
+  rank?: number;
+  kind?: 'deterministic' | 'semantic';
   match: DiscoverMatch;
+  explanation?:
+    | {
+        status: 'loading';
+      }
+    | {
+        status: 'ready';
+        sentences: string[];
+      }
+    | {
+        status: 'unavailable';
+      };
+  onAskExplanation(): void;
   onChoose(): void;
 }) {
   const destination =
     match.candidate.destination;
+
+  const isSemantic =
+    kind === 'semantic';
 
   return (
     <Pressable
@@ -802,7 +1110,9 @@ function DestinationMatchCard({
               styles.rankLabel
             }
           >
-            MATCH #{rank}
+            {isSemantic
+              ? 'SEMANTIC MATCH'
+              : `MATCH #${rank}`}
           </Text>
 
           <Text
@@ -832,12 +1142,24 @@ function DestinationMatchCard({
           <Ionicons
             name="location-outline"
             size={21}
-            color={colors.teal}
+            color={
+              isSemantic
+                ? colors.brass
+                : colors.teal
+            }
           />
         </View>
       </View>
 
-      {match.reasons.length > 0 ? (
+      {isSemantic ? (
+        <Text
+          style={
+            styles.noReasonText
+          }
+        >
+          Close to this trip brief. This is a grounded catalogue destination, not an AI-invented place.
+        </Text>
+      ) : match.reasons.length > 0 ? (
         <View
           style={
             styles.reasonsBlock
@@ -906,6 +1228,71 @@ function DestinationMatchCard({
           No explicit preference overlap yet. Add more trip preferences to refine the ranking.
         </Text>
       )}
+
+      {explanation?.status ===
+      'ready' ? (
+        <View
+          style={
+            styles.explanationBlock
+          }
+        >
+          <Text
+            style={
+              styles.reasonsEyebrow
+            }
+          >
+            FROM THE CATALOGUE
+          </Text>
+
+          {explanation.sentences.map(
+            (sentence) => (
+              <Text
+                key={sentence}
+                style={
+                  styles.explanationText
+                }
+              >
+                {sentence}
+              </Text>
+            ),
+          )}
+        </View>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Ask TravelOS why ${destination.name} fits`}
+          disabled={
+            explanation?.status ===
+            'loading'
+          }
+          onPress={onAskExplanation}
+          style={
+            styles.explainButton
+          }
+        >
+          <Text
+            style={
+              styles.explainButtonText
+            }
+          >
+            {explanation?.status ===
+            'loading'
+              ? 'Asking TravelOS…'
+              : 'Ask TravelOS why it fits'}
+          </Text>
+        </Pressable>
+      )}
+
+      {explanation?.status ===
+      'unavailable' ? (
+        <Text
+          style={
+            styles.explanationError
+          }
+        >
+          TravelOS could not explain this from the catalogue. Nothing was saved.
+        </Text>
+      ) : null}
 
       <View
         style={
@@ -1304,6 +1691,49 @@ const styles =
       fontSize:
         fontSize.bodySmall,
       color: colors.brand,
+    },
+
+    explainButton: {
+      minHeight: 44,
+      marginTop: spacing[3],
+      alignItems: 'flex-start',
+      justifyContent: 'center',
+    },
+
+    explainButtonText: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize: fontSize.caption,
+      color: colors.teal,
+    },
+
+    explanationBlock: {
+      marginTop: spacing[4],
+      paddingTop: spacing[4],
+      borderTopWidth: 1,
+      borderTopColor:
+        colors.border,
+      gap: spacing[2],
+    },
+
+    explanationText: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      lineHeight:
+        lineHeight.caption,
+      color:
+        colors.textSecondary,
+    },
+
+    explanationError: {
+      marginTop: spacing[2],
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      lineHeight:
+        lineHeight.caption,
+      color: colors.textMuted,
     },
 
     loadingCard: {

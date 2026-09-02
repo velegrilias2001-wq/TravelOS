@@ -425,3 +425,262 @@ test(
     }
   },
 );
+
+test(
+  'AIAPIClient accepts a valid Discover retrieve response',
+  async () => {
+    const originalFetch =
+      global.fetch;
+
+    global.fetch =
+      async (url, options) => {
+        assert.match(
+          String(url),
+          /\/ai\/discover-retrieve$/,
+        );
+        assert.equal(
+          options.method,
+          'POST',
+        );
+
+        return jsonResponse({
+          ok: true,
+          provider: 'ollama',
+          model: 'bge-m3',
+          matches: [
+            {
+              identity:
+                'curated:no-bergen',
+              score: 0.81,
+            },
+            {
+              identity:
+                'curated:gr-athens',
+              score: 0.64,
+            },
+          ],
+        });
+      };
+
+    try {
+      const client =
+        new AIAPIClient(
+          'http://localhost:8789/',
+        );
+
+      const result =
+        await client.retrieveDiscoverMatches(
+          {
+            query:
+              'Trip intents: nature',
+            contentHash: 'hash-1',
+            limit: 8,
+          },
+        );
+
+      assert.equal(
+        result.provider,
+        'ollama',
+      );
+      assert.equal(
+        result.model,
+        'bge-m3',
+      );
+      assert.deepEqual(
+        result.matches.map(
+          (match) => match.identity,
+        ),
+        [
+          'curated:no-bergen',
+          'curated:gr-athens',
+        ],
+      );
+    } finally {
+      global.fetch =
+        originalFetch;
+    }
+  },
+);
+
+test(
+  'AIAPIClient rejects Discover matches without a grounded identity',
+  async () => {
+    const originalFetch =
+      global.fetch;
+
+    global.fetch =
+      async () =>
+        jsonResponse({
+          ok: true,
+          provider: 'ollama',
+          model: 'bge-m3',
+          matches: [
+            {
+              identity: 'bergen',
+              score: 0.9,
+            },
+          ],
+        });
+
+    try {
+      const client =
+        new AIAPIClient(
+          'http://localhost:8789',
+        );
+
+      await assert.rejects(
+        () =>
+          client.retrieveDiscoverMatches(
+            {
+              query: 'Fjords',
+              contentHash: 'hash-1',
+            },
+          ),
+        /invalid Discover match/,
+      );
+    } finally {
+      global.fetch =
+        originalFetch;
+    }
+  },
+);
+
+test(
+  'AIAPIClient surfaces stale Discover embedding errors',
+  async () => {
+    const originalFetch =
+      global.fetch;
+
+    global.fetch =
+      async () =>
+        jsonResponse(
+          {
+            ok: false,
+            error:
+              'stale_embeddings',
+          },
+          409,
+        );
+
+    try {
+      const client =
+        new AIAPIClient(
+          'http://localhost:8789',
+        );
+
+      await assert.rejects(
+        () =>
+          client.retrieveDiscoverMatches(
+            {
+              query:
+                'Trip intents: romantic',
+              contentHash: 'old-hash',
+            },
+          ),
+        /stale_embeddings/,
+      );
+    } finally {
+      global.fetch =
+        originalFetch;
+    }
+  },
+);
+
+test(
+  'AIAPIClient accepts a valid Discover explanation',
+  async () => {
+    const originalFetch =
+      global.fetch;
+
+    global.fetch =
+      async (url, options) => {
+        assert.match(
+          String(url),
+          /\/ai\/discover-explain$/,
+        );
+        assert.equal(
+          options.method,
+          'POST',
+        );
+
+        return jsonResponse({
+          ok: true,
+          provider: 'ollama',
+          model: 'qwen3:4b',
+          identity: 'curated:pt-porto',
+          sentences: [
+            'Porto fits a slow romantic brief from its catalogue tags.',
+          ],
+        });
+      };
+
+    try {
+      const client =
+        new AIAPIClient(
+          'http://localhost:8789/',
+        );
+
+      const result =
+        await client.explainDiscoverMatch({
+          identity: 'curated:pt-porto',
+          brief: {
+            intent: 'romantic',
+            interests: [],
+          },
+          record: {
+            name: 'Porto',
+            evidenceLabels: [],
+          },
+          forbiddenNames: ['Lisbon'],
+        });
+
+      assert.equal(result.identity, 'curated:pt-porto');
+      assert.equal(result.sentences.length, 1);
+    } finally {
+      global.fetch =
+        originalFetch;
+    }
+  },
+);
+
+test(
+  'AIAPIClient rejects an explanation without a grounded identity',
+  async () => {
+    const originalFetch =
+      global.fetch;
+
+    global.fetch =
+      async () =>
+        jsonResponse({
+          ok: true,
+          provider: 'ollama',
+          model: 'qwen3:4b',
+          identity: 'porto',
+          sentences: ['Porto is calm.'],
+        });
+
+    try {
+      const client =
+        new AIAPIClient(
+          'http://localhost:8789',
+        );
+
+      await assert.rejects(
+        () =>
+          client.explainDiscoverMatch({
+            identity: 'curated:pt-porto',
+            brief: { interests: [] },
+            record: {
+              name: 'Porto',
+              evidenceLabels: [],
+            },
+            forbiddenNames: [],
+          }),
+        /invalid Discover explanation/,
+      );
+    } finally {
+      global.fetch =
+        originalFetch;
+    }
+  },
+);

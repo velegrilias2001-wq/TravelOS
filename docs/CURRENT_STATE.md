@@ -15,7 +15,7 @@ Evidence classes used throughout:
 
 - Current development branch: `feature/semantic-discover-v1`
 - Branch point: `bad9d68` — feat: add grounded destination sourcing V1
-- Semantic Discover V1 is in progress on this branch: the embedding benchmark is complete; no retrieval is wired into the app yet.
+- Semantic Discover V1 is in progress on this branch: retrieval integration, a rerank benchmark that was not adopted, and opt-in grounded explanations are implemented in code. Native Discover UI and live Ollama round-trips were not re-verified on device during this pass.
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
 - Budget & Expenses checkpoint: 65b7f33 — Add native trip budget and expenses
@@ -414,15 +414,15 @@ Not re-verified on device during this documentation pass.
 Implemented in code:
 
 - Deterministic, provider-agnostic `AIContextSnapshot` built from canonical workspace data, Travel DNA, runtime truth, Companion selection, and derived free-time/conflicts. The snapshot is read-only.
-- Native `AIAPIClient` that validates free-time advice payloads (provider/model, verified gap, known activity types, unique suggestions).
-- Local `server/` Express app with `/health`, `/ai/health`, and `/ai/free-time`, using an Ollama provider module and a structured free-time advisor parser. The server default model is `qwen3:4b` via `OLLAMA_MODEL` (otherwise that default). That default is a local foundation, not a production architecture commitment.
-- Plan is the only native caller of free-time advice found in this tree. Discover ranking does not call the AI backend.
+- Native `AIAPIClient` that validates free-time advice payloads (provider/model, verified gap, known activity types, unique suggestions) and Discover retrieve payloads (provider/model plus grounded `source:id` identities).
+- Local `server/` Express app with `/health`, `/ai/health`, `/ai/free-time`, `/ai/discover-retrieve`, and `/ai/discover-explain`, using an Ollama provider module, a structured free-time advisor parser, precomputed Discover corpus embeddings, and a grounded Discover explanation parser. The server default chat model is `qwen3:4b` via `OLLAMA_MODEL`. The Discover embedding candidate is `bge-m3` via `OLLAMA_EMBED_MODEL`. Those defaults are a local foundation, not a production architecture commitment.
+- Plan remains the only native caller of free-time advice. Discover results may call `/ai/discover-retrieve` for extra grounded identities and `/ai/discover-explain` for an opt-in catalogue explanation of one existing candidate. Those paths cannot invent destinations or write SQLite.
 
-Automated-test evidence: `tests/ai-context.test.cjs`, `tests/ai-context-service.test.cjs`, `tests/ai-api-client.test.cjs`, and `server/tests/free-time-advisor.test.js`. Cursor handoff verification ran those suites (see Testing and release readiness). No live Ollama or device round-trip was run.
+Automated-test evidence: `tests/ai-context.test.cjs`, `tests/ai-context-service.test.cjs`, `tests/ai-api-client.test.cjs`, `server/tests/free-time-advisor.test.js`, and `server/tests/discover-retrieve.test.js`. Cursor handoff verification ran the earlier suites. This pass adds retrieve-client and server ranking tests. No live Ollama or device round-trip was run.
 
-Not re-verified on device: reaching Ollama, Android `adb reverse`, or a successful Plan advice round-trip.
+Not re-verified on device: reaching Ollama, Android `adb reverse`, a successful Plan advice round-trip, or a successful Discover retrieve round-trip.
 
-Current limitations include no production AI provider contract, no on-device model, no Discover AI ranking, and no silent conversion of advice into canonical stops.
+Current limitations include no production AI provider contract, no on-device model, no Discover reranking, and no silent conversion of advice into canonical stops.
 
 ### Discover Architecture V1 and Discover Experience V1
 
@@ -437,22 +437,55 @@ Implemented in code:
 - Results can hand a grounded destination to Create Trip through route params. Flexible timing is not turned into invented calendar dates.
 - Domain types also include `best_time` and `journey_ideas`. Those modes are **not** shipped as working Discover screens; the Discover tab marks them as future.
 
-Automated-test evidence: `tests/discover-architecture.test.cjs`, `tests/discover-matcher.test.cjs`, and `tests/discover-sourcing.test.cjs`.
+Automated-test evidence: `tests/discover-architecture.test.cjs`, `tests/discover-matcher.test.cjs`, `tests/discover-sourcing.test.cjs`, and `tests/discover-semantic.test.cjs`.
 
 Not re-verified on device during this documentation pass.
 
-Current limitations include no live place provider as a Discover source, no Best time flow, no ready-made journeys, no wishlist persistence, no semantic retrieval, and no import of Discover results except through explicit Create Trip confirmation. Grounded records without editorial fit are held for later retrieval and are not shown as ranked matches.
+Current limitations include no live place provider as a Discover source, no Best time flow, no ready-made journeys, no wishlist persistence, no reranking, and no import of Discover results except through explicit Create Trip confirmation. Grounded records without editorial fit still cannot enter the deterministic ranking; they may appear only as semantic extras when retrieval is available. Opt-in grounded explanations are available when the AI server can paraphrase catalogue facts for one existing candidate.
 
 ### Semantic Discover V1 (in progress)
 
 Implemented in code:
 
 - A local embedding benchmark harness (`scripts/benchmark-discover-embeddings.cjs`, run through `npm run benchmark:discover-embeddings`) that embeds the grounded Discover corpus plus paired English/Greek brief-style queries through local Ollama embeddings, scores retrieval against gold sets derived only from the corpus's explicit fit tags, and writes a JSON report to `docs/benchmarks/`.
-- No retrieval, embedding storage, or semantic ranking is wired into the native app or the AI server. The deterministic matcher remains the only shipped Discover ranking.
+- A generate script (`npm run generate:discover-embeddings`) that writes a committed server-side artifact at `server/data/discover-corpus-embeddings.json`, keyed by grounded identity `(source, record id)` and a content hash of the current corpus document texts plus embedding-model candidate. The current artifact has 12 `bge-m3` 1024-d vectors. The native app does not bundle or load these vectors. A Node test fails if the artifact hash drifts from the live corpus.
+- `POST /ai/discover-retrieve` on the local AI server. The app never talks to Ollama directly. The server embeds the query, ranks the precomputed corpus, and returns only grounded identities plus scores. A content-hash mismatch fails closed as `stale_embeddings`. A missing artifact or unreachable Ollama fails closed as unavailable.
+- Hybrid Discover results: deterministic fit matches remain the primary ranked list. Semantic hits may add extra grounded catalogue destinations, including no-fit records such as Bergen, with explicit `SEMANTIC MATCH` provenance. If the AI server is unreachable, Discover degrades to the previous deterministic-only results.
+
+Automated-test evidence: `tests/discover-semantic.test.cjs`, the Discover retrieve cases in `tests/ai-api-client.test.cjs`, and `server/tests/discover-retrieve.test.js`. Those tests do not call Ollama.
 
 Measured on 2026-09-01 with `bge-m3` through local Ollama (1.1 GB disk, ~633 MB loaded, CPU): English recall@3 0.58 / recall@5 0.79 / MRR 0.75; Greek recall@3 0.58 / recall@5 0.92 / MRR 0.67; ~79 ms average query embedding; ~774 ms per document one-time batch; dimension 1024. English and Greek produced nearly identical per-query rankings. Both fjords probe queries ranked Bergen — a grounded record with no fit tags whose document text is only "Bergen, NO" — first in both languages, which is the retrieval value tag matching cannot provide.
 
-Honest read: absolute precision is limited by tag-only document text (documents are near-duplicate tag lists, so cosine scores cluster tightly), not by cross-language quality. The planned response is hybrid scoring with the existing deterministic fit matcher and later reranking, not a larger embedding model by default. BGE-M3 remains a replaceable candidate; the harness accepts `--models=` for comparators. The benchmark is a manual local harness requiring a running Ollama and is not part of `npm test`.
+Honest read: absolute precision is limited by tag-only document text (documents are near-duplicate tag lists, so cosine scores cluster tightly), not by cross-language quality. V1 therefore keeps deterministic matching primary and treats semantic retrieval as an extra grounded lane, not a replacement ranker. Later reranking is still open. BGE-M3 remains a replaceable candidate; the harness accepts `--models=` for comparators. The benchmark and embedding generation are manual local harnesses requiring a running Ollama and are not part of `npm test`.
+
+Not re-verified on device: Discover results hybrid UI, `adb reverse`, or a live retrieve round-trip. The committed embedding artifact must be regenerated after corpus or document-text changes; stale hashes fail closed rather than serving old vectors.
+
+### Discover reranking (benchmarked, not adopted)
+
+Implemented in code:
+
+- A local retrieve-then-rerank harness (`scripts/benchmark-discover-rerank.cjs`, run through `npm run benchmark:discover-rerank`) that ranks the committed grounded embedding artifact, then asks a chat model to reorder only those retrieved identities.
+- Fail-closed identity application in `src/services/discover-rerank.ts`: invented identities are rejected; omitted identities keep their original tail order. Server prompt/parser coverage lives in `server/discover-rerank.js`.
+- No Discover UI, AI-server route, or SQLite write uses reranking. A BGE reranker was not installed.
+
+Measured on 2026-09-02 against local Ollama 0.33.2: `/api/rerank` returns 404. `qwen3:4b` listwise-reranked the embedding top-8 with 0 parser failures. English recall@3 moved from 0.58 to 0.71 (one query, beach-nightlife-en, pulled Lisbon into the top three); Greek recall@3 and both-language MRR were unchanged. Average chat rerank latency was 3284 ms. Both fjords probes still ranked Bergen first after rerank.
+
+Honest read: Qwen is not a production Discover reranker. The quality lift is narrow and English-only, and more than three seconds per brief is too slow for this surface. A BGE reranker remains the named candidate, but this Ollama build cannot serve one. TravelOS will not pull extra models until a real rerank endpoint can be measured. Discover therefore keeps deterministic matching primary and semantic extras unreordered.
+
+Automated-test evidence: `tests/discover-rerank.test.cjs` and `server/tests/discover-rerank.test.js`. The live Ollama benchmark is not part of `npm test`.
+
+### Grounded AI explanations V1
+
+Implemented in code:
+
+- Opt-in “Ask TravelOS why it fits” on Discover result cards. The request goes to `POST /ai/discover-explain` on the local AI server. The app never talks to Ollama. Nothing is written to SQLite.
+- The payload is one grounded identity plus catalogue name/country/fit tags/evidence labels and the explicit Brief/DNA values. Coordinates, prices, and other destination facts are not sent.
+- Parser fail-closed rules: identity must match, 1–2 short sentences, no URLs/prices/coordinates, no other catalogue destination names, and no fit-tag words that are not on the grounded record. Unfitted records such as Bergen may only be described as a catalogue place known by name and country.
+- If the AI server is unreachable or the model invents facts, Discover shows that the explanation is unavailable and leaves ranking unchanged.
+
+Automated-test evidence: `tests/discover-explain.test.cjs`, Discover explanation cases in `tests/ai-api-client.test.cjs`, and `server/tests/discover-explain.test.js`. Those tests do not call Ollama.
+
+Not re-verified on device: the Discover explanation button, live Qwen output, or `adb reverse`.
 
 ### Bookings
 
@@ -589,7 +622,8 @@ Automated tests added after UX Refinement V1 (files exist in `tests/` and `serve
 - Stop time validation and itinerary free-time/conflict derivation
 - AI context snapshot/service and AI API client parsing
 - Server free-time advisor parsing
-- Discover architecture, catalogue validation, matcher, sourcing/corpus identity, and Create Trip handoff
+- Discover architecture, catalogue validation, matcher, sourcing/corpus identity, Create Trip handoff, hybrid semantic merge/hash, fail-closed rerank identity application, and grounded explanation guards
+- Server Discover retrieve ranking, request validation, rerank prompt parsing, and explanation prompt parsing
 
 Cursor handoff verification on 2026-09-01 (documentation/rule changes only; no native device testing):
 
@@ -656,8 +690,8 @@ These pieces are promising foundations; they do not make the app production-read
 
 - Multi-destination add/remove/reorder, Day → Destination semantics, stable provider identity, and secure timezone/currency enrichment.
 - Companion V2 timezone authoring, Day → Destination semantics, stop-boundary refresh decisions, lived progress, and external live-data layers.
-- Discover Best time, ready-made journeys, live provider catalogues, and any AI ranking of destinations.
-- Production AI provider, privacy, and cost contract; Plan free-time advice remains a local-dev backend.
+- Discover Best time, ready-made journeys, live provider catalogues, and reranking. Semantic retrieval and opt-in grounded explanations exist as local-dev lanes over grounded catalogue identities.
+- Production AI provider, privacy, and cost contract; Plan free-time advice and Discover retrieve remain a local-dev backend.
 - Advanced accommodation capabilities and the remaining booking actions/provider integrations.
 - Map intelligence, routes, and offline behavior.
 - Traveler owner/role/invitation/permission workflows and runtime-state UI.
@@ -668,8 +702,8 @@ These pieces are promising foundations; they do not make the app production-read
 
 ## Overall assessment
 
-TravelOS is a broader native vertical prototype than the 2026-08-23 snapshot described, and still not a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths. Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. Budget & Expenses, Trip Details, Booking ↔ Stop, Accommodation, Travelers, Time & Runtime Truth, Companion V1, Canonical Destination Authoring, and UX Refinement V1 remain the earlier completed core. After that, Memories V1 and Travel Book V1 give completed trips an on-device record and story, shared readiness selection keeps Companion honest about preparation, Travel DNA plus trip intent/pace give Discover and Create Trip explicit preference language, Plan can show knowable free time and conflicts, AI Foundation V1 can advise on free time without writing trip truth, Discover Experience V1 can recommend grounded destinations that become canonical only after Create Trip confirmation, and Grounded Destination Sourcing V1 loads those destinations from explicit provenance-backed packs rather than a single hardcoded list. World and Profile are no longer empty tabs, but they are still thin compared with the trip workspace.
+TravelOS is a broader native vertical prototype than the 2026-08-23 snapshot described, and still not a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths. Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. Budget & Expenses, Trip Details, Booking ↔ Stop, Accommodation, Travelers, Time & Runtime Truth, Companion V1, Canonical Destination Authoring, and UX Refinement V1 remain the earlier completed core. After that, Memories V1 and Travel Book V1 give completed trips an on-device record and story, shared readiness selection keeps Companion honest about preparation, Travel DNA plus trip intent/pace give Discover and Create Trip explicit preference language, Plan can show knowable free time and conflicts, AI Foundation V1 can advise on free time without writing trip truth, Discover Experience V1 can recommend grounded destinations that become canonical only after Create Trip confirmation, Grounded Destination Sourcing V1 loads those destinations from explicit provenance-backed packs, and Semantic Discover V1 can add extra grounded catalogue identities from local retrieval without replacing deterministic matching, with opt-in grounded explanations of those catalogue facts. World and Profile are no longer empty tabs, but they are still thin compared with the trip workspace.
 
-The latest shipped git milestones are Cursor handoff (`735c964`) on top of Discover Experience V1 (`f714127`), followed by Grounded Destination Sourcing V1 on `feature/grounded-destination-sourcing-v1`.
+The latest shipped git milestones are Cursor handoff (`735c964`) on top of Discover Experience V1 (`f714127`), followed by Grounded Destination Sourcing V1. Semantic Discover V1 retrieval is implemented on `feature/semantic-discover-v1` and is not a shipped commit until asked.
 
-The immediate planned product-development sequence is now: (1) Semantic Discover V1 using local/open multilingual embeddings, with BGE-M3 as the current candidate to evaluate; (2) Discover reranking, with a BGE reranker as the current candidate to evaluate; (3) Grounded AI explanations using the existing local Qwen foundation. Grounded destination data must come before semantic retrieval and reranking. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–9, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, Discover Best time, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.
+The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Grounded AI explanations are implemented in code on this branch. Semantic Discover V1 retrieval is implemented in code on this branch. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–9, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, Discover Best time, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.

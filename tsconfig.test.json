@@ -61,6 +61,9 @@
     "src/services/discover-corpus.ts",
     "src/services/discover-catalogue-validation.ts",
     "src/services/discover-catalogue-candidates.ts",
-    "src/services/discover-matcher.ts"
+    "src/services/discover-matcher.ts",
+    "src/services/discover-semantic.ts",
+    "src/services/discover-rerank.ts",
+    "src/services/discover-explain.ts"
   ]
 }

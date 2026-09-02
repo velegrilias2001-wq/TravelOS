@@ -115,16 +115,16 @@ Destination truth must come from grounded sources. AI is not a destination sourc
 - [x] Discover Architecture V1: session Discover Brief (Zustand only), curated catalogue with provenance, matcher, personalization fallback from Travel DNA, and Create Trip route-param handoff. Candidates are not written into SQLite as trips.
 - [x] Discover Experience V1: native Discover tab supporting **Start with a place** (Create Trip) and **Find me somewhere** (explicit Brief → deterministic matching against grounded curated destinations → optional Create Trip confirmation). Trip-specific Brief values outrank Travel DNA. Flexible timing is not converted into invented calendar dates.
 
-Current Discover V1 includes Start with a place, Find me somewhere, and a multi-pack grounded destination corpus. It does **not** include Best time, Ready-made journeys, wishlist persistence, live provider catalogues, semantic retrieval, reranking, or AI explanations.
+Current Discover V1 includes Start with a place, Find me somewhere, a multi-pack grounded destination corpus, hybrid semantic extras from local retrieval when the AI server is available, and opt-in grounded explanations of existing catalogue candidates. It does **not** include Best time, Ready-made journeys, wishlist persistence, live provider catalogues, or reranking.
 
 ### Immediate planned Discover sequence
 
 These steps are ordered. Grounded destination data must exist before semantic retrieval or reranking.
 
 - [x] **Grounded Destination Sourcing V1** — explicit multi-pack grounded corpus with provenance, optional editorial fit, identity by `(source, record id)`, and matcher ranking only fitted records. AI is not a destination source.
-- [ ] **Semantic Discover V1** — in progress. The embedding benchmark harness is committed and BGE-M3 is measured: strong Greek/English parity, ~79 ms query embedding on CPU, and grounded no-fit records (Bergen) retrieved first for fjord-style briefs in both languages; precision is limited on tag-only document text. Remaining: hybrid retrieval design with the deterministic matcher, precomputed corpus embeddings, an explicit serving boundary, and app integration. BGE-M3 stays a replaceable candidate, not a locked choice.
-- [ ] **Discover reranking** — rerank grounded retrieval results. A BGE reranker is the current candidate to benchmark, not a locked architecture choice.
-- [ ] **Grounded AI explanations** — explain why a grounded candidate fits the Brief, using the existing local Qwen foundation. Explanations must not introduce destinations, coordinates, prices, or other facts that were not already in the grounded record.
+- [x] **Semantic Discover V1** — implemented in code: measured BGE-M3 benchmark, precomputed corpus embeddings keyed by grounded identity plus content hash, `/ai/discover-retrieve` on the local AI server, and hybrid Discover results that keep deterministic fit reasons primary. Semantic extras carry explicit provenance. Unreachable AI or a stale hash degrades to deterministic-only results. Native UI and a live Ollama retrieve round-trip were not re-verified on device. BGE-M3 stays a replaceable candidate, not a locked choice.
+- [ ] **Discover reranking** — benchmarked, not adopted. Ollama 0.33.2 has no `/api/rerank`. A constrained `qwen3:4b` listwise reorder of the embedding top-8 improved English recall@3 from 0.58 to 0.71, left Greek and MRR unchanged, kept Bergen first on fjord probes, and averaged 3284 ms. That is too slow and too uneven to wire into Discover. A BGE reranker remains the candidate; do not install one until a real rerank serving path can be measured.
+- [x] **Grounded AI explanations** — implemented in code: opt-in Qwen explanation of one grounded Discover candidate from catalogue facts and the explicit Brief. Invented destinations, coordinates, prices, other catalogue names, and extra fit tags fail closed. Unreachable AI leaves ranking unchanged. Native UI and a live Ollama round-trip were not re-verified on device.
 
 ### Remaining Phase 4 work
 

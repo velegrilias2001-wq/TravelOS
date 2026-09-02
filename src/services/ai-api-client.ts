@@ -59,6 +59,77 @@ interface FreeTimeAdviceResponse {
   error?: unknown;
 }
 
+export interface DiscoverRetrieveHit {
+  identity: string;
+  score: number;
+}
+
+export interface DiscoverRetrieveRequest {
+  query: string;
+  contentHash: string;
+  limit?: number;
+}
+
+export interface DiscoverRetrieveResult {
+  provider: string;
+  model: string;
+  matches: DiscoverRetrieveHit[];
+}
+
+export interface DiscoverExplainRequest {
+  identity: string;
+  brief: {
+    intent?: string;
+    pace?: string;
+    interests: string[];
+    party?: string;
+    travelStyle?: string;
+    dailyRhythm?: string;
+  };
+  record: {
+    name: string;
+    countryCode?: string;
+    fit?: {
+      intents: string[];
+      interests: string[];
+      paces: string[];
+      travelStyles: string[];
+      dailyRhythms: string[];
+      parties: string[];
+    };
+    evidenceLabels: string[];
+  };
+  forbiddenNames: string[];
+}
+
+export interface DiscoverExplainResult {
+  provider: string;
+  model: string;
+  identity: string;
+  sentences: string[];
+}
+
+interface DiscoverRetrieveResponse {
+  ok: boolean;
+
+  provider?: unknown;
+  model?: unknown;
+  matches?: unknown;
+
+  error?: unknown;
+}
+
+interface DiscoverExplainResponse {
+  ok: boolean;
+
+  provider?: unknown;
+  model?: unknown;
+  identity?: unknown;
+  sentences?: unknown;
+
+  error?: unknown;
+}
+
 function isActivityType(
   value: unknown,
 ): value is FreeTimeActivityType {
@@ -196,6 +267,123 @@ function parseSuggestions(
   return suggestions;
 }
 
+function parseDiscoverHits(
+  value: unknown,
+): DiscoverRetrieveHit[] {
+  if (!Array.isArray(value)) {
+    throw new Error(
+      'AI backend returned invalid Discover matches',
+    );
+  }
+
+  if (value.length > 20) {
+    throw new Error(
+      'AI backend returned too many Discover matches',
+    );
+  }
+
+  const matches = value.map(
+    (item): DiscoverRetrieveHit => {
+      if (
+        !item ||
+        typeof item !== 'object'
+      ) {
+        throw new Error(
+          'AI backend returned an invalid Discover match',
+        );
+      }
+
+      const candidate =
+        item as Record<
+          string,
+          unknown
+        >;
+
+      if (
+        typeof candidate.identity !==
+          'string' ||
+        !candidate.identity.includes(
+          ':',
+        ) ||
+        typeof candidate.score !==
+          'number' ||
+        !Number.isFinite(
+          candidate.score,
+        )
+      ) {
+        throw new Error(
+          'AI backend returned an invalid Discover match',
+        );
+      }
+
+      return {
+        identity: candidate.identity,
+        score: candidate.score,
+      };
+    },
+  );
+
+  const uniqueIdentities = new Set(
+    matches.map((match) => match.identity),
+  );
+
+  if (uniqueIdentities.size !== matches.length) {
+    throw new Error(
+      'AI backend returned duplicate Discover matches',
+    );
+  }
+
+  return matches;
+}
+
+function parseExplainSentences(
+  identity: unknown,
+  sentences: unknown,
+): {
+  identity: string;
+  sentences: string[];
+} {
+  if (
+    typeof identity !== 'string' ||
+    !identity.includes(':')
+  ) {
+    throw new Error(
+      'AI backend returned an invalid Discover explanation',
+    );
+  }
+
+  if (
+    !Array.isArray(sentences) ||
+    sentences.length < 1 ||
+    sentences.length > 2
+  ) {
+    throw new Error(
+      'AI backend returned an invalid Discover explanation',
+    );
+  }
+
+  const parsed = sentences.map(
+    (sentence) => {
+      if (
+        typeof sentence !== 'string' ||
+        !sentence.trim() ||
+        sentence.trim().length > 180
+      ) {
+        throw new Error(
+          'AI backend returned an invalid Discover explanation',
+        );
+      }
+
+      return sentence.trim();
+    },
+  );
+
+  return {
+    identity,
+    sentences: parsed,
+  };
+}
+
 function normalizeBaseUrl(
   value: string,
 ): string {
@@ -293,6 +481,153 @@ export class AIAPIClient {
       verifiedGap,
 
       suggestions,
+    };
+  }
+
+  async retrieveDiscoverMatches(
+    request: DiscoverRetrieveRequest,
+    signal?: AbortSignal,
+  ): Promise<DiscoverRetrieveResult> {
+    const response = await fetch(
+      `${normalizeBaseUrl(
+        this.baseUrl,
+      )}/ai/discover-retrieve`,
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+
+        body: JSON.stringify(
+          request,
+        ),
+
+        signal,
+      },
+    );
+
+    let payload:
+      DiscoverRetrieveResponse;
+
+    try {
+      payload =
+        await response.json();
+    } catch {
+      throw new Error(
+        'AI backend returned an unreadable response',
+      );
+    }
+
+    if (
+      !response.ok ||
+      payload.ok !== true
+    ) {
+      const errorCode =
+        typeof payload.error ===
+        'string'
+          ? payload.error
+          : 'ai_request_failed';
+
+      throw new Error(
+        errorCode,
+      );
+    }
+
+    if (
+      typeof payload.provider !==
+        'string' ||
+      typeof payload.model !==
+        'string'
+    ) {
+      throw new Error(
+        'AI backend returned invalid provider metadata',
+      );
+    }
+
+    return {
+      provider: payload.provider,
+      model: payload.model,
+      matches: parseDiscoverHits(
+        payload.matches,
+      ),
+    };
+  }
+
+  async explainDiscoverMatch(
+    request: DiscoverExplainRequest,
+    signal?: AbortSignal,
+  ): Promise<DiscoverExplainResult> {
+    const response = await fetch(
+      `${normalizeBaseUrl(
+        this.baseUrl,
+      )}/ai/discover-explain`,
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+
+        body: JSON.stringify(
+          request,
+        ),
+
+        signal,
+      },
+    );
+
+    let payload:
+      DiscoverExplainResponse;
+
+    try {
+      payload =
+        await response.json();
+    } catch {
+      throw new Error(
+        'AI backend returned an unreadable response',
+      );
+    }
+
+    if (
+      !response.ok ||
+      payload.ok !== true
+    ) {
+      const errorCode =
+        typeof payload.error ===
+        'string'
+          ? payload.error
+          : 'ai_request_failed';
+
+      throw new Error(
+        errorCode,
+      );
+    }
+
+    if (
+      typeof payload.provider !==
+        'string' ||
+      typeof payload.model !==
+        'string'
+    ) {
+      throw new Error(
+        'AI backend returned invalid provider metadata',
+      );
+    }
+
+    const explanation =
+      parseExplainSentences(
+        payload.identity,
+        payload.sentences,
+      );
+
+    return {
+      provider: payload.provider,
+      model: payload.model,
+      identity: explanation.identity,
+      sentences: explanation.sentences,
     };
   }
 }

@@ -51,7 +51,9 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "tsc --project tsconfig.test.json && node --test tests/*.test.cjs",
-    "benchmark:discover-embeddings": "tsc --project tsconfig.test.json && node scripts/benchmark-discover-embeddings.cjs"
+    "benchmark:discover-embeddings": "tsc --project tsconfig.test.json && node scripts/benchmark-discover-embeddings.cjs",
+    "generate:discover-embeddings": "tsc --project tsconfig.test.json && node scripts/generate-discover-embeddings.cjs",
+    "benchmark:discover-rerank": "tsc --project tsconfig.test.json && node scripts/benchmark-discover-rerank.cjs"
   },
   "private": true
 }
