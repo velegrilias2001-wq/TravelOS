@@ -1,6 +1,6 @@
 # TravelOS Current State
 
-Snapshot date: 2026-09-01
+Snapshot date: 2026-09-02
 
 This file describes verified implementation, not intended behavior. Unknown or unverified capabilities are called out explicitly.
 
@@ -15,7 +15,7 @@ Evidence classes used throughout:
 
 - Current development branch: `feature/semantic-discover-v1`
 - Branch point: `bad9d68` — feat: add grounded destination sourcing V1
-- Semantic Discover V1 is in progress on this branch: retrieval integration, a rerank benchmark that was not adopted, and opt-in grounded explanations are implemented in code. Native Discover UI and live Ollama round-trips were not re-verified on device during this pass.
+- Semantic Discover V1 is implemented on this branch: retrieval integration, a rerank benchmark that was not adopted, and opt-in grounded explanations. An Android Pixel 8 development-build rehearsal on 2026-09-02 verified Home, Discover hybrid results, a live Porto explanation, Create Trip persist/delete, Companion/Plan/Map/Bookings/More, Memories, Travel Book, World, Profile/Travel DNA, and Plan free-time advice through `adb reverse` to the local AI server on port 8789.
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
 - Budget & Expenses checkpoint: 65b7f33 — Add native trip budget and expenses
@@ -306,7 +306,7 @@ Implemented in code:
 
 Automated-test evidence: migration version 7 archives invalid historical Memory links, preserves valid memories, and rejects new cross-trip or mismatched day/stop links. A dedicated Memories product-flow test file is not present.
 
-Not re-verified on device during this documentation pass: camera/library permissions, media copy durability across relaunch, and More-count refresh after Memory writes.
+Android-verified on 2026-09-02: Memories list on the Nagawa trip showed 2 memories, 1 photo, 1 note, with a Day 1 note linked to the tokyo stop. Camera/library capture, media copy durability across relaunch, and More-count refresh after a new write were not exercised.
 
 Current limitations include no video authoring, no cloud backup of media, Memory writes outside TripWorkspace actions, and no iOS rehearsal.
 
@@ -322,7 +322,7 @@ Implemented in code:
 
 Automated-test evidence: migration version 7 covers invalid Travel Book membership cleanup. A dedicated Travel Book screen test is not present.
 
-Not re-verified on device during this documentation pass.
+Android-verified on 2026-09-02: Travel Book opened as a local draft for Nagawa with honest V1 copy that it uses only saved Memories. Cover selection and publish were not exercised.
 
 Current limitations include no export, no print/PDF, no shared publishing, and no iOS rehearsal.
 
@@ -349,7 +349,7 @@ Implemented in code:
 
 Automated-test evidence: `tests/travel-dna-service.test.cjs` and `tests/travel-dna-migration.test.cjs`.
 
-Not re-verified on device during this documentation pass.
+Android-verified on 2026-09-02: Travel DNA opened from Profile; Discover showed “Travel DNA is helping” and used DNA fallbacks (Food/Culture, Couple, Mix, Flexible) while trip-specific Romantic/Slow outranked them. The DNA form was not saved during this rehearsal.
 
 Current limitations include no inferred traits, no scores, no AI-generated profile, no account identity, and no sync of the profile across devices.
 
@@ -397,9 +397,9 @@ Implemented behavior includes:
 - Derived free-time gaps between consecutive knowable timed stops, shown on the day.
 - Derived overlapping time conflicts, shown as explicit warnings rather than silently rewritten times.
 - Optional “ask TravelOS” free-time advice that calls `AIContextService` plus `AIAPIClient.suggestForFreeTime`. The client posts to `{baseUrl}/ai/free-time`. Suggestions render in Plan and do not mutate the itinerary. If the gap changes before the response returns, the client rejects the advice. On failure, Plan reports that AI is unavailable and that the plan has not changed.
-- The AI client uses `EXPO_PUBLIC_TRAVELOS_AI_URL` when set, otherwise `http://127.0.0.1:8789`. The local `server/` package defaults `PORT` to `8787` unless configured. That default mismatch exists in code; this pass did not run the backend or Plan advice on a device.
+- The AI client uses `EXPO_PUBLIC_TRAVELOS_AI_URL` when set, otherwise `http://127.0.0.1:8789`. The local `server/` package defaults `PORT` to `8787` unless configured. The 2026-09-02 Android rehearsal started the server with `PORT=8789` and `adb reverse tcp:8789 tcp:8789`. The default mismatch remains in code.
 
-Current limitations include limited stop-type UI, no route or transit model, no place-provider ID persisted from the picker, no automatic insertion of AI suggestions as stops, and large screen-level implementations with duplicated presentation patterns. Plan shows a restrained booking count and a contextual action for relationships resolved by exact stop ID. Free-time/conflict derivation and AI client parsing have automated tests; native Plan UI and live Ollama advice were not re-verified on device during this documentation pass.
+Current limitations include limited stop-type UI, no route or transit model, no place-provider ID persisted from the picker, no automatic insertion of AI suggestions as stops, and large screen-level implementations with duplicated presentation patterns. Plan shows a restrained booking count and a contextual action for relationships resolved by exact stop ID. The 2026-09-02 Android rehearsal opened Plan on the existing Nagawa trip, derived a 13:00–14:30 free-time gap, received two TRAVELOS IDEAS from live Qwen, and left the itinerary unchanged.
 
 ### Flexible Itinerary / Free Time V1
 
@@ -407,7 +407,7 @@ Implemented in code as the Plan capabilities above plus `src/services/itinerary-
 
 Automated-test evidence: `tests/itinerary-flexibility.test.cjs` and `tests/stop-time.test.cjs`.
 
-Not re-verified on device during this documentation pass.
+Android-verified on 2026-09-02 for the Nagawa itinerary free-time gap and live advice rendering. iOS was not exercised.
 
 ### AI Foundation V1
 
@@ -418,9 +418,9 @@ Implemented in code:
 - Local `server/` Express app with `/health`, `/ai/health`, `/ai/free-time`, `/ai/discover-retrieve`, and `/ai/discover-explain`, using an Ollama provider module, a structured free-time advisor parser, precomputed Discover corpus embeddings, and a grounded Discover explanation parser. The server default chat model is `qwen3:4b` via `OLLAMA_MODEL`. The Discover embedding candidate is `bge-m3` via `OLLAMA_EMBED_MODEL`. Those defaults are a local foundation, not a production architecture commitment.
 - Plan remains the only native caller of free-time advice. Discover results may call `/ai/discover-retrieve` for extra grounded identities and `/ai/discover-explain` for an opt-in catalogue explanation of one existing candidate. Those paths cannot invent destinations or write SQLite.
 
-Automated-test evidence: `tests/ai-context.test.cjs`, `tests/ai-context-service.test.cjs`, `tests/ai-api-client.test.cjs`, `server/tests/free-time-advisor.test.js`, and `server/tests/discover-retrieve.test.js`. Cursor handoff verification ran the earlier suites. This pass adds retrieve-client and server ranking tests. No live Ollama or device round-trip was run.
+Automated-test evidence: `tests/ai-context.test.cjs`, `tests/ai-context-service.test.cjs`, `tests/ai-api-client.test.cjs`, `server/tests/free-time-advisor.test.js`, `server/tests/discover-retrieve.test.js`, and `server/tests/discover-explain.test.js`.
 
-Not re-verified on device: reaching Ollama, Android `adb reverse`, a successful Plan advice round-trip, or a successful Discover retrieve round-trip.
+Android-verified on 2026-09-02: `adb reverse` to `127.0.0.1:8789`, live `bge-m3` Discover retrieve on device, live Qwen Discover explanation for Porto, live Qwen Plan free-time advice. The Rome explanation fail-closed on device when Qwen used a fit tag the catalogue record does not carry. iOS was not exercised.
 
 Current limitations include no production AI provider contract, no on-device model, no Discover reranking, and no silent conversion of advice into canonical stops.
 
@@ -439,11 +439,11 @@ Implemented in code:
 
 Automated-test evidence: `tests/discover-architecture.test.cjs`, `tests/discover-matcher.test.cjs`, `tests/discover-sourcing.test.cjs`, and `tests/discover-semantic.test.cjs`.
 
-Not re-verified on device during this documentation pass.
+Android-verified on 2026-09-02: Discover tab, Find me somewhere, Travel DNA fallback copy, grounded ranking, Create Trip handoff, persist, and cascade delete of an isolated Barcelona trip. Best time and Ready-made journeys remain labelled future.
 
 Current limitations include no live place provider as a Discover source, no Best time flow, no ready-made journeys, no wishlist persistence, no reranking, and no import of Discover results except through explicit Create Trip confirmation. Grounded records without editorial fit still cannot enter the deterministic ranking; they may appear only as semantic extras when retrieval is available. Opt-in grounded explanations are available when the AI server can paraphrase catalogue facts for one existing candidate.
 
-### Semantic Discover V1 (in progress)
+### Semantic Discover V1
 
 Implemented in code:
 
@@ -458,7 +458,7 @@ Measured on 2026-09-01 with `bge-m3` through local Ollama (1.1 GB disk, ~633 MB 
 
 Honest read: absolute precision is limited by tag-only document text (documents are near-duplicate tag lists, so cosine scores cluster tightly), not by cross-language quality. V1 therefore keeps deterministic matching primary and treats semantic retrieval as an extra grounded lane, not a replacement ranker. Later reranking is still open. BGE-M3 remains a replaceable candidate; the harness accepts `--models=` for comparators. The benchmark and embedding generation are manual local harnesses requiring a running Ollama and are not part of `npm test`.
 
-Not re-verified on device: Discover results hybrid UI, `adb reverse`, or a live retrieve round-trip. The committed embedding artifact must be regenerated after corpus or document-text changes; stale hashes fail closed rather than serving old vectors.
+Android-verified on 2026-09-02: hybrid Discover results kept deterministic Porto as MATCH #1 and added grounded SEMANTIC MATCH extras (Rome, Krakow, Copenhagen) from live retrieve. The committed embedding artifact must be regenerated after corpus or document-text changes; stale hashes fail closed rather than serving old vectors.
 
 ### Discover reranking (benchmarked, not adopted)
 
@@ -485,7 +485,7 @@ Implemented in code:
 
 Automated-test evidence: `tests/discover-explain.test.cjs`, Discover explanation cases in `tests/ai-api-client.test.cjs`, and `server/tests/discover-explain.test.js`. Those tests do not call Ollama.
 
-Not re-verified on device: the Discover explanation button, live Qwen output, or `adb reverse`.
+Android-verified on 2026-09-02: Porto accepted a two-sentence FROM THE CATALOGUE explanation from live Qwen. Rome fail-closed with “TravelOS could not explain this from the catalogue. Nothing was saved.” Ranking did not change.
 
 ### Bookings
 
@@ -515,6 +515,8 @@ Platform state:
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
 - The API key is injected from GOOGLE_MAPS_API_KEY through app.config.js.
+
+Android-verified on 2026-09-02: Trip Map for Nagawa rendered Google Maps with destination and stop markers and an “1 place” overlay. World showed 3 mapped destinations from saved trip facts.
 - Cloud API enablement and key restrictions were not verified because secret configuration was intentionally not inspected.
 - iOS currently uses platform-default map behavior rather than a completed Google Maps setup.
 - No iOS bundle identifier is configured.
@@ -531,7 +533,7 @@ Implemented in code:
 - Filters for all / planning / completed.
 - Planning vs completed vs archived on World is derived from durable `Trip.status`, not from the runtime phase resolver. An upcoming trip with status `planned` appears under planning even if runtime would also call it upcoming. World does not infer visited history from a destination title.
 
-Not re-verified on device during this documentation pass.
+Android-verified on 2026-09-02: World opened with Google Maps, 3 trips / 0 completed / 3 mapped, and destination cards for Nagawa and Strathpeffer. Filters were not clicked through.
 
 Current limitations include no wishlist layer, no lived-vs-planned place distinction, no country statistics independent of saved destinations, and no use of Memories as World evidence.
 
@@ -544,7 +546,7 @@ Implemented in code:
 - Honest copy that trip data is currently on-device.
 - Notifications and account/sync rows are labelled future.
 
-Not re-verified on device during this documentation pass.
+Android-verified on 2026-09-02: Profile showed 3 trips / 0 completed / 3 mapped and opened Travel DNA without saving changes.
 
 ## Persisted modules without product UI
 
@@ -632,11 +634,16 @@ Cursor handoff verification on 2026-09-01 (documentation/rule changes only; no n
 - `cd server && npm test` passed: 12 tests, 0 failed.
 - `git diff --check` is part of the handoff staging checks.
 
-A current passing Node count from that handoff run is 132 application tests plus 12 server tests. That is not a device rehearsal and does not replace historical Android evidence through UX Refinement V1.
+A current passing Node count from the 2026-09-02 rehearsal is 160 application tests plus 27 server tests. That does not replace historical Android evidence through UX Refinement V1.
 
-Grounded Destination Sourcing V1 verification re-ran `npx tsc --noEmit` and `npm test` (138 application tests passing, including the new corpus/sourcing suite) plus the unchanged server suite. No native device run was performed for this service-layer milestone; Discover results UI behavior is unchanged apart from ranking a larger grounded corpus behind the same top-five presentation.
+Grounded Destination Sourcing V1 verification re-ran `npx tsc --noEmit` and `npm test` (138 application tests passing, including the new corpus/sourcing suite) plus the unchanged server suite. No native device run was performed for that service-layer milestone.
 
-No Android or iOS runtime verification is recorded in git for Memories V1, Travel Book V1, Travel DNA V1, Trip Intent + Pace V1, Flexible Itinerary / Free Time V1, AI Foundation V1, Discover Architecture V1, or Discover Experience V1.
+Android Pixel 8 development-build rehearsal on 2026-09-02 (installed `com.travelos.app`, Metro, AI server `PORT=8789`, `adb reverse`, live Ollama `bge-m3` / `qwen3:4b`):
+
+- Home featured the active Nagawa trip as HAPPENING NOW (1–10 Sept 2026) with 3 trips / 0 completed. Companion showed ON THE JOURNEY, Day 2 of 10, without inventing live timing.
+- Discover Find me somewhere ranked Porto first from explicit Romantic/Slow plus Travel DNA fallbacks. Hybrid retrieve added grounded SEMANTIC MATCH extras. Porto accepted a FROM THE CATALOGUE explanation. Rome fail-closed. Choosing a destination opened Create Trip with FROM DISCOVER and did not write SQLite until confirm.
+- An isolated Barcelona trip (5–8 Dec 2026) was created from Discover, opened as BEFORE THE JOURNEY with a 94-day countdown, then deleted through Trip Details. Trips returned to the original three: Nagawa, Strathpeffer, Coullons.
+- Plan showed derived FREE TIME and live TRAVELOS IDEAS without inserting stops. Map, Bookings, More, Memories list, Travel Book draft, World, Profile, and Travel DNA opened. iOS was not exercised. Camera capture, Travel Book cover/publish, and migration `PRAGMA user_version = 9` were not claimed.
 
 Missing release foundations:
 
@@ -704,6 +711,6 @@ These pieces are promising foundations; they do not make the app production-read
 
 TravelOS is a broader native vertical prototype than the 2026-08-23 snapshot described, and still not a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths. Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. Budget & Expenses, Trip Details, Booking ↔ Stop, Accommodation, Travelers, Time & Runtime Truth, Companion V1, Canonical Destination Authoring, and UX Refinement V1 remain the earlier completed core. After that, Memories V1 and Travel Book V1 give completed trips an on-device record and story, shared readiness selection keeps Companion honest about preparation, Travel DNA plus trip intent/pace give Discover and Create Trip explicit preference language, Plan can show knowable free time and conflicts, AI Foundation V1 can advise on free time without writing trip truth, Discover Experience V1 can recommend grounded destinations that become canonical only after Create Trip confirmation, Grounded Destination Sourcing V1 loads those destinations from explicit provenance-backed packs, and Semantic Discover V1 can add extra grounded catalogue identities from local retrieval without replacing deterministic matching, with opt-in grounded explanations of those catalogue facts. World and Profile are no longer empty tabs, but they are still thin compared with the trip workspace.
 
-The latest shipped git milestones are Cursor handoff (`735c964`) on top of Discover Experience V1 (`f714127`), followed by Grounded Destination Sourcing V1. Semantic Discover V1 retrieval is implemented on `feature/semantic-discover-v1` and is not a shipped commit until asked.
+The latest local git milestones on `feature/semantic-discover-v1` are Grounded Destination Sourcing V1 (`bad9d68`), Semantic Discover retrieval (`92affc9`), the rerank benchmark (`3c268cc`), and grounded explanations (`9b254ed`). An Android Pixel 8 rehearsal on 2026-09-02 verified those Discover/AI paths plus the existing trip workspace. There is still no git remote.
 
-The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Grounded AI explanations are implemented in code on this branch. Semantic Discover V1 retrieval is implemented in code on this branch. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–9, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, Discover Best time, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.
+The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval and grounded explanations are implemented and Android-rehearsed. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–9, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, Discover Best time, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.
