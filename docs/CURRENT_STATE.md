@@ -13,9 +13,10 @@ Evidence classes used throughout:
 
 ## Repository checkpoint
 
-- Current development branch: `feature/archive-coverage-v1`
-- Branch point: `4174450` — feat: declare Memory day and stop foreign keys
-- Archive coverage V1 is implemented on this branch: Node tests cover remaining recovery-archive paths that previously only existed as code. Migration v3 retargets Memory and TripRuntimeState from an archived duplicate day. Migration v5 archives a booking whose stop is missing. Migration v6 archives missing Accommodation booking/stop IDs. Migration v7 archives a Memory whose day and stop IDs are missing. Automated tests exist. No native device rehearsal.
+- Current development branch: `feature/lint-ci-v1`
+- Branch point: `7d36134` — test: cover remaining migration recovery archives
+- Lint / baseline CI V1 is implemented on this branch: committed Expo SDK 57 `eslint-config-expo` flat config, a non-interactive `eslint .` lint script, and a GitHub Actions workflow that runs `npx tsc --noEmit`, `npm test`, lint, and the AI server tests on Node 22. Existing React Compiler lint findings stay warnings so the gate does not require rewriting screens. There is still no usable git remote, so the workflow has not run on GitHub.
+- Archive coverage V1 remains on the parent history: Node tests cover remaining recovery-archive paths that previously only existed as code. Migration v3 retargets Memory and TripRuntimeState from an archived duplicate day. Migration v5 archives a booking whose stop is missing. Migration v6 archives missing Accommodation booking/stop IDs. Migration v7 archives a Memory whose day and stop IDs are missing. Automated tests exist. No native device rehearsal.
 - Memories day/stop FK V1 remains on the parent history: `memories.day_id` and `memories.stop_id` have declared foreign keys (`ON DELETE SET NULL`). Dangling historical IDs are cleared; the Memory is kept. Travel Book memberships survive the table rebuild. Same-trip ownership remains in the existing v7 triggers. Migration version 15. Automated tests exist. No native device rehearsal.
 - Stop-day same-trip V1 remains on the parent history: a TripStop day must belong to the same trip. Invalid historical mismatches are archived and the stop is deleted so Booking unlinks can run; stop content is kept in the archive, not moved onto another trip. Migration version 14. Automated tests exist. No native device rehearsal.
 - TripRuntimeState integrity V1 remains on the parent history: optional `current_day_id` / `current_stop_id` must belong to the same trip, and a stop must belong to the assigned day when both are set. Invalid historical links are archived and cleared. Deleting a day or stop unlinks the reference instead of deleting the runtime row. Migration version 13. Runtime state is still unused as lived Companion progress. Automated tests exist. No native device rehearsal.
@@ -78,7 +79,7 @@ Recent native milestones include the repository/service foundation, native navig
 | Optional local AI backend | `server/` Express package (`travelos-ai-server`) with a client `AIAPIClient` |
 | Styling | Local design tokens and React Native StyleSheet-based screen styling |
 
-The package currently has start, Android, iOS, web, reset-project, lint, and automated test scripts. There is no CI workflow, EAS configuration, or non-interactive lint configuration.
+The package currently has start, Android, iOS, web, reset-project, lint, and automated test scripts. Lint uses a committed Expo SDK 57 `eslint.config.js` and `eslint .` (non-interactive). A GitHub Actions workflow exists for typecheck, tests, lint, and AI-server tests. There is still no git remote, so CI has not run on GitHub. There is no EAS configuration.
 
 ## Architecture
 
@@ -761,6 +762,8 @@ Memories day/stop FK V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and
 
 Recovery-archive coverage V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (253 application tests passing, including v3 Memory/runtime retarget from an archived duplicate day, v5 missing-stop booking archive, v6 missing Accommodation link archive, and v7 missing Memory day/stop archive). `git diff --check` was clean. No native rebuild was required. No device rehearsal was run. There is still no user-facing archive inspection tool.
 
+Lint / baseline CI V1 verification on 2026-09-02 re-ran `npx tsc --noEmit`, `npm test` (253 application tests passing), and `npx eslint .` (0 errors, existing React Compiler and style findings as warnings). `git diff --check` was clean. The GitHub Actions workflow was not executed on GitHub because there is no remote. No native rebuild was required.
+
 Grounded Destination Sourcing V1 verification re-ran `npx tsc --noEmit` and `npm test` (138 application tests passing, including the new corpus/sourcing suite) plus the unchanged server suite. No native device run was performed for that service-layer milestone.
 
 Android Pixel 8 development-build rehearsal on 2026-09-02 (installed `com.travelos.app`, Metro, AI server `PORT=8789`, `adb reverse`, live Ollama `bge-m3` / `qwen3:4b`):
@@ -772,9 +775,9 @@ Android Pixel 8 development-build rehearsal on 2026-09-02 (installed `com.travel
 
 Missing release foundations:
 
-- No CI pipeline.
+- A GitHub Actions workflow is committed, but there is still no git remote, so CI has not run on GitHub.
 - Test coverage is intentionally narrow and does not yet cover every repository, cascade, trip-state rule, an iOS database upgrade, or a broad sample of real historical databases.
-- No committed lint configuration; the current lint command may attempt interactive setup.
+- Lint is committed and non-interactive. Existing React Compiler findings remain warnings rather than CI failures.
 - No EAS build or submit configuration.
 - No iOS release configuration.
 - No production observability or crash reporting.
@@ -837,6 +840,6 @@ These pieces are promising foundations; they do not make the app production-read
 
 TravelOS is a broader native vertical prototype than the 2026-08-23 snapshot described, and still not a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths. Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. Budget & Expenses, Trip Details, Booking ↔ Stop, Accommodation, Travelers, Time & Runtime Truth, Companion V1, Canonical Destination Authoring, and UX Refinement V1 remain the earlier completed core. After that, Memories V1 and Travel Book V1 give completed trips an on-device record and story, shared readiness selection keeps Companion honest about preparation, Travel DNA plus trip intent/pace give Discover and Create Trip explicit preference language, Plan can show knowable free time and conflicts, AI Foundation V1 can advise on free time without writing trip truth, Discover Experience V1 can recommend grounded destinations that become canonical only after Create Trip confirmation, Grounded Destination Sourcing V1 loads those destinations from explicit provenance-backed packs, and Semantic Discover V1 can add extra grounded catalogue identities from local retrieval without replacing deterministic matching, with opt-in grounded explanations of those catalogue facts. World and Profile are no longer empty tabs, but they are still thin compared with the trip workspace.
 
-The latest local git milestones on `feature/archive-coverage-v1` follow Memories day/stop FK V1 (`4174450`). Recovery archives for duplicate days and invalid historical links now have Node coverage for missing-ID and Memory/runtime retarget paths. There is still no usable git remote for push.
+The latest local git milestones on `feature/lint-ci-v1` follow Recovery-archive coverage V1 (`7d36134`). A non-interactive Expo ESLint config and a GitHub Actions workflow are committed. There is still no usable git remote for push.
 
 The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, Ready-made journeys V1, Wishlist V1, and Import Review Queue V1 are implemented. Multi-destination authoring V1 lets a traveler add, reorder, and remove real destinations on Create Trip and Trip Details, including extra catalogue cities from a journey idea. Day → Destination V1 lets Plan assign a day to one of those cities without guessing timezone. Memory and Travel Book writes now refresh the shared trip workspace. The trip list loads destinations and traveler memberships in batched queries. Optional TripRuntimeState day/stop IDs are same-trip protected and still unused as lived progress. A TripStop day must belong to the same trip. Memory day and stop IDs now have declared `ON DELETE SET NULL` foreign keys. A later Pixel 8 pass after the trip-list change reopened Home, Trips, World, and Profile with the existing three trips. Pixel 8 opened Best time, the journeys list, empty Saved ideas, the Import paste accept/delete path, the ICS file picker, and an email-wrapped calendar; zip/PDF/Office/image-file rehearsal, wishlist save, journey-to-Create-Trip, multi-destination device rehearsal, Day → Destination device rehearsal, and iOS were not exercised. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Expo SQLite rehearsal of migrations 7–15, remaining visual/accessibility matrix, remaining Phase 0 gaps, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, remaining import formats, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.

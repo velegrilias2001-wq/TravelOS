@@ -35,9 +35,9 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 - [x] **Memory / Travel Book workspace invalidation V1** — Memories create/edit/delete and Travel Book save/delete go through TripWorkspace actions. Those writes invalidate and reload the shared aggregate, so More counts and other Trip Space tabs cannot stay stale. Update/delete fail closed when the record is missing or belongs to another trip. Automated lifecycle tests exist. No device rehearsal.
 - [x] **Trip list batch read V1** — Home, Trips, World, Profile, and Import load the trip list with three SQLite queries (trips, destinations, traveler memberships) instead of one destination query and one traveler query per trip. Destination order and traveler memberships are preserved. Automated tests exist. An Android Pixel 8 pass opened Home, Trips, World, and Profile after a Metro reload; Import was not opened.
 - [x] **Recovery-archive coverage V1** — Node tests cover remaining migration archive paths: v3 retargets Memory and TripRuntimeState from an archived duplicate day; v5 archives a booking whose stop is missing; v6 archives missing Accommodation booking/stop IDs; v7 archives a Memory whose day and stop IDs are missing. Booking/stop, Accommodation, TripRuntimeState, Stop-day same-trip, and Memories day/stop unlink cascades already had Node coverage. No user-facing archive inspection tool.
+- [x] **Lint / baseline CI V1** — committed Expo SDK 57 `eslint-config-expo` flat config, non-interactive `eslint .`, and a GitHub Actions workflow for `npx tsc --noEmit`, `npm test`, lint, and AI-server tests on Node 22. Existing React Compiler findings are warnings. No git remote, so the workflow has not run on GitHub.
 - [ ] Rehearse migration version 3 against Expo SQLite on an iOS development build.
 - [ ] Rehearse migrations 7–15 on an Expo SQLite development build. Historical Android rehearsals stopped at `user_version = 6`. Node tests cover versions 7–15. No device `PRAGMA user_version = 15` rehearsal is recorded.
-- [ ] Commit a non-interactive lint configuration and add baseline CI checks.
 
 Exit condition: existing native flows survive retries, partial data, navigation refocus, and supported migrations without corrupting or misrepresenting trip truth.
 
@@ -197,4 +197,4 @@ Exit condition: TravelOS can be built, tested, observed, restored, and released 
 - A phase is complete only when its behavior, failure states, tests, and documentation agree.
 - Update docs/CURRENT_STATE.md and this roadmap after each meaningful milestone.
 
-Unresolved work that remains in force across phases includes: secure timezone enrichment; FX strategy; Companion V2 lived-state decisions; Expo SQLite rehearsal of migrations 7–15; accessibility and design-system consolidation; iOS; CI/EAS; and sync/backup. Those items stay open. They do not replace the immediate Discover sequence in Phase 4.
+Unresolved work that remains in force across phases includes: secure timezone enrichment; FX strategy; Companion V2 lived-state decisions; Expo SQLite rehearsal of migrations 7–15; accessibility and design-system consolidation; iOS; EAS; and sync/backup. A GitHub Actions workflow is committed but has not run on GitHub because there is no remote. Those items stay open. They do not replace the immediate Discover sequence in Phase 4.
