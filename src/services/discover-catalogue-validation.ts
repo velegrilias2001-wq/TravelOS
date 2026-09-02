@@ -166,6 +166,15 @@ function validateTiming(
     return;
   }
 
+  if (
+    record.timing.supportedMonths
+      .length === 0
+  ) {
+    throw new Error(
+      `Discover catalogue: ${record.id} timing must name at least one supported month.`,
+    );
+  }
+
   const uniqueMonths =
     new Set(
       record.timing.supportedMonths,
@@ -194,6 +203,24 @@ function validateTiming(
         `Discover catalogue: ${record.id} has invalid supported month ${month}.`,
       );
     }
+  }
+
+  if (
+    record.timing.evidence.length === 0
+  ) {
+    throw new Error(
+      `Discover catalogue: ${record.id} timing must cite at least one source.`,
+    );
+  }
+
+  for (
+    const evidence
+    of record.timing.evidence
+  ) {
+    validateEvidence(
+      evidence,
+      record.id,
+    );
   }
 }
 

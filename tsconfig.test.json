@@ -64,6 +64,7 @@
     "src/services/discover-matcher.ts",
     "src/services/discover-semantic.ts",
     "src/services/discover-rerank.ts",
-    "src/services/discover-explain.ts"
+    "src/services/discover-explain.ts",
+    "src/services/discover-best-time.ts"
   ]
 }

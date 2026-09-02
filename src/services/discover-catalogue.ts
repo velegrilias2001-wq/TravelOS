@@ -53,6 +53,9 @@ export interface DiscoverCatalogueFitProfile {
 
 /**
  * Optional source-backed timing information.
+ *
+ * Months and citations must come from the named source.
+ * Missing season data stays missing; do not infer months.
  */
 export interface DiscoverCatalogueTimingProfile {
   /**
@@ -60,6 +63,12 @@ export interface DiscoverCatalogueTimingProfile {
    * 1 = January, 12 = December.
    */
   supportedMonths: number[];
+
+  /**
+   * The tourism-board or official sources that support
+   * these months. Distinct from destination identity evidence.
+   */
+  evidence: DiscoverCatalogueEvidence[];
 }
 
 /**

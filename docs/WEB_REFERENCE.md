@@ -89,7 +89,7 @@ These are web-era solutions. Native accounts, sync, diagnostics, privacy, and re
 | Full lifecycle navigation | Preserve | Home, Trips, Discover, World, and Profile remain the native areas. Home is what matters now; Trips are owned trips; Discover is what could be next; World is the travel story |
 | Create / decide / import entry points | Preserve | Native Create Trip is `/new-trip`. Discover may prefill it. Import remains unshipped |
 | Rich trip-creation questions | Redesign | Native Create Trip persists destination, dates, accounting currency, and optional intent/pace; extra web fields stay hypotheses |
-| Destination advisor and season guidance | Redesign | Native Discover V1 is Start with a place plus Find me somewhere against a grounded curated catalogue. Best time and Ready-made journeys remain future |
+| Destination advisor and season guidance | Redesign | Native Discover now includes Start with a place, Find me somewhere, and Best time against the grounded catalogue. Best time cites sourced months and freshness; it does not invent trip dates. Ready-made journeys remain future |
 | Import breadth | Redesign | Start with a supportable subset and a mandatory review queue |
 | Wishlist | Preserve | Model an explicit candidate state separate from planned, visited, and lived |
 | World and travel archive | Preserve / reinterpret | Native World V1 maps persisted trip destinations with real coordinates and durable trip-status filters. It does not yet model visited/lived/wishlist history |
@@ -111,7 +111,7 @@ The public PWA expresses more of the before-travel product:
 - World and travel archive.
 - Cross-device vault concept.
 
-Native Discover, World, and Profile are no longer empty placeholders. The PWA still expresses a broader before-travel ambition (Best time, wishlist, import, vault, richer empty-state marketing) than native V1.
+Native Discover, World, and Profile are no longer empty placeholders. Native Discover now includes Best time for catalogue destinations with sourced months. The PWA still expresses a broader before-travel ambition (wishlist, import, vault, richer empty-state marketing) than native V1.
 
 ## Where native is already stronger
 

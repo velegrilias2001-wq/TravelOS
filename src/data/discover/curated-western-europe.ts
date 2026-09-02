@@ -71,6 +71,21 @@ export const CURATED_WESTERN_EUROPE_PACK:
         budgetStyles: [],
       },
 
+      timing: {
+        supportedMonths: [
+          1, 2, 3, 4, 5, 6,
+          7, 8, 9, 10, 11, 12,
+        ],
+        evidence: [
+          {
+            label:
+              'Visit Lisboa — Traveller information',
+            url: 'https://www.visitlisboa.com/en/traveller-information',
+            checkedAt: '2026-09-02',
+          },
+        ],
+      },
+
       evidence: [
         {
           label: 'Visit Lisboa — Discover Lisbon',

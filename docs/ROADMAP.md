@@ -115,7 +115,7 @@ Destination truth must come from grounded sources. AI is not a destination sourc
 - [x] Discover Architecture V1: session Discover Brief (Zustand only), curated catalogue with provenance, matcher, personalization fallback from Travel DNA, and Create Trip route-param handoff. Candidates are not written into SQLite as trips.
 - [x] Discover Experience V1: native Discover tab supporting **Start with a place** (Create Trip) and **Find me somewhere** (explicit Brief → deterministic matching against grounded curated destinations → optional Create Trip confirmation). Trip-specific Brief values outrank Travel DNA. Flexible timing is not converted into invented calendar dates. Android Pixel 8 rehearsal on 2026-09-02 created and then deleted an isolated Discover-prefilled trip.
 
-Current Discover V1 includes Start with a place, Find me somewhere, a multi-pack grounded destination corpus, hybrid semantic extras from local retrieval when the AI server is available, and opt-in grounded explanations of existing catalogue candidates. It does **not** include Best time, Ready-made journeys, wishlist persistence, live provider catalogues, or reranking.
+Current Discover V1 includes Start with a place, Find me somewhere, Best time for a known catalogue destination, a multi-pack grounded destination corpus, hybrid semantic extras from local retrieval when the AI server is available, and opt-in grounded explanations of existing catalogue candidates. It does **not** include Ready-made journeys, wishlist persistence, live provider catalogues, or reranking.
 
 ### Immediate planned Discover sequence
 
@@ -125,10 +125,10 @@ These steps are ordered. Grounded destination data must exist before semantic re
 - [x] **Semantic Discover V1** — measured BGE-M3 benchmark, precomputed corpus embeddings keyed by grounded identity plus content hash, `/ai/discover-retrieve` on the local AI server, and hybrid Discover results that keep deterministic fit reasons primary. Semantic extras carry explicit provenance. Unreachable AI or a stale hash degrades to deterministic-only results. Android Pixel 8 rehearsal on 2026-09-02 showed live retrieve extras on device via `adb reverse`. BGE-M3 stays a replaceable candidate, not a locked choice.
 - [ ] **Discover reranking** — benchmarked, not adopted. Ollama 0.33.2 has no `/api/rerank`. A constrained `qwen3:4b` listwise reorder of the embedding top-8 improved English recall@3 from 0.58 to 0.71, left Greek and MRR unchanged, kept Bergen first on fjord probes, and averaged 3284 ms. That is too slow and too uneven to wire into Discover. A BGE reranker remains the candidate; do not install one until a real rerank serving path can be measured.
 - [x] **Grounded AI explanations** — opt-in Qwen explanation of one grounded Discover candidate from catalogue facts and the explicit Brief. Invented destinations, coordinates, prices, other catalogue names, and extra fit tags fail closed. Unreachable AI leaves ranking unchanged. Android Pixel 8 rehearsal on 2026-09-02 accepted a Porto explanation and fail-closed a Rome explanation that invented a missing fit tag.
+- [x] **Best time V1** — sourced months for a known grounded catalogue destination, with cited source and `checkedAt` freshness. Destinations without timing evidence stay unknown. Months are not converted into Create Trip dates. Automated tests exist. No device rehearsal was run for this screen.
 
 ### Remaining Phase 4 work
 
-- [ ] Add Best time guidance for a known destination, with cited source and freshness.
 - [ ] Add Ready-made journeys that remain distinct from confirmed trips until the traveler accepts them.
 - [ ] Add wishlist and candidate-place persistence distinct from visited and planned data.
 - [ ] Import supported booking and itinerary materials into a review queue.

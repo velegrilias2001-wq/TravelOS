@@ -201,6 +201,21 @@ export const CURATED_SOUTH_CENTRAL_EUROPE_PACK:
         longitude: 5.3221,
       },
 
+      timing: {
+        supportedMonths: [
+          1, 2, 3, 4, 5, 6,
+          7, 8, 9, 10, 11, 12,
+        ],
+        evidence: [
+          {
+            label:
+              'Visit Norway — Facts about the fjords',
+            url: 'https://www.visitnorway.com/things-to-do/nature-attractions/fjords/facts-about-the-fjords/',
+            checkedAt: '2026-09-02',
+          },
+        ],
+      },
+
       evidence: [
         {
           label: 'Visit Bergen — Official Guide',

@@ -13,9 +13,10 @@ Evidence classes used throughout:
 
 ## Repository checkpoint
 
-- Current development branch: `feature/semantic-discover-v1`
-- Branch point: `bad9d68` — feat: add grounded destination sourcing V1
-- Semantic Discover V1 is implemented on this branch: retrieval integration, a rerank benchmark that was not adopted, and opt-in grounded explanations. An Android Pixel 8 development-build rehearsal on 2026-09-02 verified Home, Discover hybrid results, a live Porto explanation, Create Trip persist/delete, Companion/Plan/Map/Bookings/More, Memories, Travel Book, World, Profile/Travel DNA, and Plan free-time advice through `adb reverse` to the local AI server on port 8789.
+- Current development branch: `feature/discover-best-time-v1`
+- Branch point: `32e0656` — docs: record Android rehearsal of Discover and Plan AI
+- Best time V1 is implemented on this branch: catalogue destinations with optional sourced months, explicit unknown states, and Create Trip handoff without invented dates. It has automated tests. No native device rehearsal was run for this screen.
+- Semantic Discover V1 remains on the parent history: retrieval integration, a rerank benchmark that was not adopted, and opt-in grounded explanations. An Android Pixel 8 development-build rehearsal on 2026-09-02 verified Home, Discover hybrid results, a live Porto explanation, Create Trip persist/delete, Companion/Plan/Map/Bookings/More, Memories, Travel Book, World, Profile/Travel DNA, and Plan free-time advice through `adb reverse` to the local AI server on port 8789.
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
 - Budget & Expenses checkpoint: 65b7f33 — Add native trip budget and expenses
@@ -191,7 +192,7 @@ The primary tab structure is:
 - World
 - Profile
 
-Home, Trips, Discover (Find me somewhere plus Create Trip entry), World, and Profile (Travel DNA plus local stats) are functional product surfaces. Discover still labels Best time and Ready-made journeys as future. Profile still labels notifications and account/sync as future.
+Home, Trips, Discover (Find me somewhere, Best time, plus Create Trip entry), World, and Profile (Travel DNA plus local stats) are functional product surfaces. Discover still labels Ready-made journeys as future. Profile still labels notifications and account/sync as future.
 
 ### Trips and trip creation
 
@@ -428,20 +429,20 @@ Current limitations include no production AI provider contract, no on-device mod
 
 Implemented in code:
 
-- Discover tab with “Start with a place” (Create Trip) and “Find me somewhere”.
+- Discover tab with “Start with a place” (Create Trip), “Find me somewhere”, and “Best time to go”.
 - Find-destination flow collects an explicit Discover Brief: timing (unsure, exact dates, or flexible constraints), optional budget ceiling and currency, intent, pace, interests, and party. Missing values stay unknown.
 - Session Brief lives in Zustand only.
 - Matching uses a grounded Discover corpus assembled from explicit curated packs with provenance. The matcher ranks only records that include editorial fit. Records without fit remain in the corpus and are not ranked. AI does not invent destinations.
 - The default corpus currently contains twelve grounded records across two packs (eleven with fit, one without). Results still show at most five matches.
 - Match reasons expose which dimensions matched. Trip-specific Brief values outrank Travel DNA for the same preference. AI does not invent destinations.
 - Results can hand a grounded destination to Create Trip through route params. Flexible timing is not turned into invented calendar dates.
-- Domain types also include `best_time` and `journey_ideas`. Those modes are **not** shipped as working Discover screens; the Discover tab marks them as future.
+- Domain types also include `best_time` and `journey_ideas`. Best time is a working Discover screen over the grounded catalogue. Ready-made journeys remain labelled future.
 
-Automated-test evidence: `tests/discover-architecture.test.cjs`, `tests/discover-matcher.test.cjs`, `tests/discover-sourcing.test.cjs`, and `tests/discover-semantic.test.cjs`.
+Automated-test evidence: `tests/discover-architecture.test.cjs`, `tests/discover-matcher.test.cjs`, `tests/discover-sourcing.test.cjs`, `tests/discover-semantic.test.cjs`, and `tests/discover-best-time.test.cjs`.
 
-Android-verified on 2026-09-02: Discover tab, Find me somewhere, Travel DNA fallback copy, grounded ranking, Create Trip handoff, persist, and cascade delete of an isolated Barcelona trip. Best time and Ready-made journeys remain labelled future.
+Android-verified on 2026-09-02: Discover tab, Find me somewhere, Travel DNA fallback copy, grounded ranking, Create Trip handoff, persist, and cascade delete of an isolated Barcelona trip. Best time was not part of that rehearsal.
 
-Current limitations include no live place provider as a Discover source, no Best time flow, no ready-made journeys, no wishlist persistence, no reranking, and no import of Discover results except through explicit Create Trip confirmation. Grounded records without editorial fit still cannot enter the deterministic ranking; they may appear only as semantic extras when retrieval is available. Opt-in grounded explanations are available when the AI server can paraphrase catalogue facts for one existing candidate.
+Current limitations include no live place provider as a Discover source, no ready-made journeys, no wishlist persistence, no reranking, and no import of Discover results except through explicit Create Trip confirmation. Grounded records without editorial fit still cannot enter the deterministic ranking; they may appear only as semantic extras when retrieval is available. Opt-in grounded explanations are available when the AI server can paraphrase catalogue facts for one existing candidate. Best time only shows sourced months; destinations without a timing citation stay unknown.
 
 ### Semantic Discover V1
 
@@ -486,6 +487,20 @@ Implemented in code:
 Automated-test evidence: `tests/discover-explain.test.cjs`, Discover explanation cases in `tests/ai-api-client.test.cjs`, and `server/tests/discover-explain.test.js`. Those tests do not call Ollama.
 
 Android-verified on 2026-09-02: Porto accepted a two-sentence FROM THE CATALOGUE explanation from live Qwen. Rome fail-closed with “TravelOS could not explain this from the catalogue. Nothing was saved.” Ranking did not change.
+
+### Discover Best Time V1
+
+Implemented in code:
+
+- Discover tab opens `/discover/best-time` for a known catalogue destination. The picker is the grounded corpus, not a live place provider, because season facts are catalogue citations rather than map results.
+- Optional `timing.supportedMonths` plus distinct timing evidence on a catalogue record. Lisbon uses Visit Lisboa traveller-information climate copy covering all four quarters. Bergen uses Visit Norway’s year-round fjord accessibility, including named season months. Other current records have no timing and fail closed as unknown.
+- The screen cites the source label and `checkedAt` freshness. Months are never converted into Create Trip start/end dates. Make it a trip still prefills only the grounded destination through `/new-trip`.
+- Session Brief uses `mode: 'best_time'` in Zustand only. Nothing is written to SQLite until the traveler confirms Create Trip.
+- Adding timing does not change embedding document text, so the committed semantic artifact hash is unchanged.
+
+Automated-test evidence: `tests/discover-best-time.test.cjs`. No native device rehearsal was run for this screen.
+
+Current limitations: only two of twelve corpus destinations have sourced months; remaining destinations show an explicit unknown state. Best time does not rank “best weeks,” invent weather, or compare destinations against each other.
 
 ### Bookings
 
@@ -624,7 +639,7 @@ Automated tests added after UX Refinement V1 (files exist in `tests/` and `serve
 - Stop time validation and itinerary free-time/conflict derivation
 - AI context snapshot/service and AI API client parsing
 - Server free-time advisor parsing
-- Discover architecture, catalogue validation, matcher, sourcing/corpus identity, Create Trip handoff, hybrid semantic merge/hash, fail-closed rerank identity application, and grounded explanation guards
+- Discover architecture, catalogue validation, matcher, sourcing/corpus identity, Create Trip handoff, hybrid semantic merge/hash, fail-closed rerank identity application, grounded explanation guards, and Best time sourced-month guidance
 - Server Discover retrieve ranking, request validation, rerank prompt parsing, and explanation prompt parsing
 
 Cursor handoff verification on 2026-09-01 (documentation/rule changes only; no native device testing):
@@ -635,6 +650,8 @@ Cursor handoff verification on 2026-09-01 (documentation/rule changes only; no n
 - `git diff --check` is part of the handoff staging checks.
 
 A current passing Node count from the 2026-09-02 rehearsal is 160 application tests plus 27 server tests. That does not replace historical Android evidence through UX Refinement V1.
+
+Best time V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (168 application tests passing, including the new Best time suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. No native device run was performed for this screen.
 
 Grounded Destination Sourcing V1 verification re-ran `npx tsc --noEmit` and `npm test` (138 application tests passing, including the new corpus/sourcing suite) plus the unchanged server suite. No native device run was performed for that service-layer milestone.
 
@@ -697,7 +714,7 @@ These pieces are promising foundations; they do not make the app production-read
 
 - Multi-destination add/remove/reorder, Day → Destination semantics, stable provider identity, and secure timezone/currency enrichment.
 - Companion V2 timezone authoring, Day → Destination semantics, stop-boundary refresh decisions, lived progress, and external live-data layers.
-- Discover Best time, ready-made journeys, live provider catalogues, and reranking. Semantic retrieval and opt-in grounded explanations exist as local-dev lanes over grounded catalogue identities.
+- Discover ready-made journeys, live provider catalogues, and reranking. Best time V1 is implemented in code for sourced catalogue months. Semantic retrieval and opt-in grounded explanations exist as local-dev lanes over grounded catalogue identities.
 - Production AI provider, privacy, and cost contract; Plan free-time advice and Discover retrieve remain a local-dev backend.
 - Advanced accommodation capabilities and the remaining booking actions/provider integrations.
 - Map intelligence, routes, and offline behavior.
@@ -711,6 +728,6 @@ These pieces are promising foundations; they do not make the app production-read
 
 TravelOS is a broader native vertical prototype than the 2026-08-23 snapshot described, and still not a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths. Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. Budget & Expenses, Trip Details, Booking ↔ Stop, Accommodation, Travelers, Time & Runtime Truth, Companion V1, Canonical Destination Authoring, and UX Refinement V1 remain the earlier completed core. After that, Memories V1 and Travel Book V1 give completed trips an on-device record and story, shared readiness selection keeps Companion honest about preparation, Travel DNA plus trip intent/pace give Discover and Create Trip explicit preference language, Plan can show knowable free time and conflicts, AI Foundation V1 can advise on free time without writing trip truth, Discover Experience V1 can recommend grounded destinations that become canonical only after Create Trip confirmation, Grounded Destination Sourcing V1 loads those destinations from explicit provenance-backed packs, and Semantic Discover V1 can add extra grounded catalogue identities from local retrieval without replacing deterministic matching, with opt-in grounded explanations of those catalogue facts. World and Profile are no longer empty tabs, but they are still thin compared with the trip workspace.
 
-The latest local git milestones on `feature/semantic-discover-v1` are Grounded Destination Sourcing V1 (`bad9d68`), Semantic Discover retrieval (`92affc9`), the rerank benchmark (`3c268cc`), and grounded explanations (`9b254ed`). An Android Pixel 8 rehearsal on 2026-09-02 verified those Discover/AI paths plus the existing trip workspace. There is still no git remote.
+The latest local git milestones on `feature/discover-best-time-v1` follow Semantic Discover V1 (`92affc9`), the rerank benchmark (`3c268cc`), grounded explanations (`9b254ed`), and the Android rehearsal notes (`32e0656`). Best time V1 is implemented in code on this branch. There is still no usable git remote for push.
 
-The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval and grounded explanations are implemented and Android-rehearsed. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–9, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, Discover Best time, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.
+The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, and Best time V1 are implemented. Best time has automated tests and has not been rehearsed on device. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–9, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, Ready-made journeys, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.

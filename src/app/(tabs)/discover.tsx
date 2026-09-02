@@ -103,10 +103,15 @@ export default function DiscoverScreen() {
           }
         />
 
-        <FutureOption
+        <DiscoverOption
           icon="calendar-outline"
           title="Best time to go"
-          body="Already know the place? Compare the strongest dates for that destination."
+          body="Already know the place? See sourced months for that destination."
+          onPress={() =>
+            router.push(
+              '/discover/best-time',
+            )
+          }
         />
 
         <FutureOption
