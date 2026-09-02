@@ -87,7 +87,7 @@ These are web-era solutions. Native accounts, sync, diagnostics, privacy, and re
 | Reference idea | Disposition | Native direction |
 | --- | --- | --- |
 | Full lifecycle navigation | Preserve | Home, Trips, Discover, World, and Profile remain the native areas. Home is what matters now; Trips are owned trips; Discover is what could be next; World is the travel story |
-| Create / decide / import entry points | Preserve | Native Create Trip is `/new-trip`. Discover may prefill it. Import Review Queue V1 pastes, chooses, or extracts iCalendar from an email into a claim queue; bookings are written only after explicit accept |
+| Create / decide / import entry points | Preserve | Native Create Trip is `/new-trip`. Discover may prefill it. Import Review Queue V1 pastes, chooses, extracts iCalendar from an email, or unpacks a zip of calendars into a claim queue; bookings are written only after explicit accept |
 | Rich trip-creation questions | Redesign | Native Create Trip persists destination, dates, accounting currency, and optional intent/pace; extra web fields stay hypotheses |
 | Destination advisor and season guidance | Redesign | Native Discover now includes Start with a place, Find me somewhere, Best time, and Ready-made journeys against the grounded catalogue. Journeys are ideas until Create Trip confirmation; extra cities are not written as destinations yet |
 | Import breadth | Redesign | Start with a supportable subset and a mandatory review queue |
@@ -111,7 +111,7 @@ The public PWA expresses more of the before-travel product:
 - World and travel archive.
 - Cross-device vault concept.
 
-Native Discover, World, and Profile are no longer empty placeholders. Native Discover now includes Best time, Ready-made journeys, and Saved ideas over grounded catalogue destinations. Native import now has an iCalendar review queue with paste, a local file picker, and email-wrapped calendar extraction; the PWA still advertises a broader file-format set and Gemini extraction that native V1 does not copy.
+Native Discover, World, and Profile are no longer empty placeholders. Native Discover now includes Best time, Ready-made journeys, and Saved ideas over grounded catalogue destinations. Native import now has an iCalendar review queue with paste, a local file picker, email-wrapped calendar extraction, and zip-of-calendars extraction; the PWA still advertises a broader file-format set and Gemini extraction that native V1 does not copy.
 
 ## Where native is already stronger
 

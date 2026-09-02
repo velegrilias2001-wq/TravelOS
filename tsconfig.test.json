@@ -74,6 +74,7 @@
     "src/services/import-ics.ts",
     "src/services/import-calendar-file.ts",
     "src/services/import-calendar-extract.ts",
+    "src/services/import-calendar-zip.ts",
     "src/services/import-review-service.ts"
   ]
 }

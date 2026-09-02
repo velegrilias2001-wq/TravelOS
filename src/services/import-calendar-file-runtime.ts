@@ -5,10 +5,8 @@ import {
   assertImportCalendarFileSize,
   prepareImportCalendarFile,
 } from './import-calendar-file';
-import {
-  bytesFromBase64,
-  decodeImportCalendarBytes,
-} from './import-calendar-extract';
+import { bytesFromBase64 } from './import-calendar-extract';
+import { decodePickedImportCalendarBytes } from './import-calendar-zip';
 
 export async function pickImportCalendarFile(): Promise<{
   text: string;
@@ -42,7 +40,7 @@ export async function pickImportCalendarFile(): Promise<{
         encoding: FileSystem.EncodingType.Base64,
       },
     );
-    const text = decodeImportCalendarBytes(
+    const text = decodePickedImportCalendarBytes(
       bytesFromBase64(base64),
     );
 
@@ -52,11 +50,7 @@ export async function pickImportCalendarFile(): Promise<{
       text,
     });
   } catch (caught) {
-    if (
-      caught instanceof Error &&
-      caught.message ===
-        'This calendar file is too large to import.'
-    ) {
+    if (caught instanceof Error && isImportPickerError(caught)) {
       throw caught;
     }
 
@@ -64,4 +58,11 @@ export async function pickImportCalendarFile(): Promise<{
       'This calendar file could not be read.',
     );
   }
+}
+
+function isImportPickerError(error: Error): boolean {
+  return (
+    error.message === 'This calendar file is too large to import.' ||
+    /iCalendar|This zip|No calendar events/i.test(error.message)
+  );
 }

@@ -160,13 +160,13 @@ export default function ImportScreen() {
         </Text>
 
         <Text style={styles.subtitle}>
-          Choose or paste an .ics calendar. If an email contains one, TravelOS extracts it. Nothing becomes a booking on its own.
+          Choose or paste an .ics calendar, an email that contains one, or a zip of calendars. Nothing becomes a booking on its own.
         </Text>
       </View>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Choose an iCalendar file"
+        accessibilityLabel="Choose a calendar file"
         disabled={busy}
         style={({ pressed }) => [
           styles.fileButton,
@@ -184,7 +184,7 @@ export default function ImportScreen() {
           </Text>
 
           <Text style={styles.primaryButtonText}>
-            Review an .ics calendar
+            Review an .ics calendar or zip
           </Text>
         </View>
 
