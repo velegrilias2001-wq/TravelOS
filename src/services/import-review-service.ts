@@ -14,6 +14,7 @@ import {
   validateNewBookingTimes,
   type BookingTemporalValue,
 } from './booking-time';
+import { extractImportCalendarText } from './import-calendar-extract';
 import { parseImportCalendar } from './import-ics';
 
 export interface ImportReviewRepositories {
@@ -52,7 +53,8 @@ export class ImportReviewService {
     text: string;
     sourceLabel?: string;
   }): Promise<ImportBatch> {
-    const parsed = parseImportCalendar(input.text);
+    const extracted = extractImportCalendarText(input.text);
+    const parsed = parseImportCalendar(extracted.text);
     const existing =
       await this.repos.imports.getBatchByContentHash(
         parsed.contentHash,
@@ -66,7 +68,11 @@ export class ImportReviewService {
     const batch: ImportBatch = {
       id: this.createId(),
       sourceKind: 'ics',
-      sourceLabel: input.sourceLabel?.trim() || 'Pasted calendar',
+      sourceLabel:
+        input.sourceLabel?.trim() ||
+        (extracted.wrapper === 'email'
+          ? 'Pasted email'
+          : 'Pasted calendar'),
       contentHash: parsed.contentHash,
       skippedCount: parsed.skippedCount,
       createdAt,

@@ -73,6 +73,7 @@
     "src/services/saved-place-service.ts",
     "src/services/import-ics.ts",
     "src/services/import-calendar-file.ts",
+    "src/services/import-calendar-extract.ts",
     "src/services/import-review-service.ts"
   ]
 }

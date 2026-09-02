@@ -130,11 +130,12 @@ These steps are ordered. Grounded destination data must exist before semantic re
 - [x] **Wishlist V1** — durable saved Discover candidates keyed by grounded identity, distinct from Trips and World history. Unknown identities fail closed. Create Trip still requires explicit confirmation. Automated tests exist. Android Pixel 8 opened the empty Saved ideas list on 2026-09-02; save/remove was not exercised.
 - [x] **Import Review Queue V1** — pasted iCalendar events become durable claims with provenance and confidence. Accepting writes a planned booking onto an existing trip; dismissing does not. Location text is not coordinates. Date-only events do not invent times. No AI extraction. Automated tests exist. Android Pixel 8 rehearsal on 2026-09-02 pasted an `.ics`, reviewed the claim, accepted a planned booking onto Coullons, then deleted that booking. Review is `/import/review/[batchId]` so `/import/index` is not captured as a batch id.
 - [x] **Import ICS file picker V1** — `expo-document-picker` chooses a local file and feeds the same review queue. Paste remains. Non-iCalendar content and files larger than 512 KiB fail closed. No PDF/ZIP/image extraction and no AI parsing. Automated tests exist. Android Pixel 8 development-build rebuild on 2026-09-02 opened the system picker and reviewed `e2e-ferry.ics` without writing a booking. iOS was not rebuilt.
+- [x] **Import email-wrapped iCalendar V1** — paste or a chosen file may be a raw calendar, UTF-16 calendar bytes, or an email that contains a `text/calendar` part. Extraction feeds the same review queue. The hash is of the extracted calendar, so the same events stay one batch. No PDF/HTML scraping and no AI. Automated tests exist. Android Pixel 8 chose `e2e-email.eml` from Downloads on 2026-09-02 and reviewed `E2E Email Catamaran` without writing a booking. iOS was not rebuilt.
 
 ### Remaining Phase 4 work
 
 - [ ] Rebuild the iOS development client so the ICS file picker can be rehearsed there.
-- [ ] Add additional import formats after the review-queue contract stays stable.
+- [ ] Add remaining import formats (PDF/Office/images) only with an explicit extractor contract that still cannot write bookings.
 - [ ] Keep AI-assisted extraction behind explicit review and confirmation gates if it is added later.
 - [ ] Never allow recommendations, imports, or AI suggestions to silently become canonical facts.
 - [ ] Define production provider, privacy, retention, cost, and fallback behavior before shipping intelligence beyond the local-dev AI foundation.

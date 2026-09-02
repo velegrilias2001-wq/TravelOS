@@ -5,6 +5,10 @@ import {
   assertImportCalendarFileSize,
   prepareImportCalendarFile,
 } from './import-calendar-file';
+import {
+  bytesFromBase64,
+  decodeImportCalendarBytes,
+} from './import-calendar-extract';
 
 export async function pickImportCalendarFile(): Promise<{
   text: string;
@@ -32,11 +36,14 @@ export async function pickImportCalendarFile(): Promise<{
   try {
     assertImportCalendarFileSize(asset.size);
 
-    const text = await FileSystem.readAsStringAsync(
+    const base64 = await FileSystem.readAsStringAsync(
       asset.uri,
       {
-        encoding: FileSystem.EncodingType.UTF8,
+        encoding: FileSystem.EncodingType.Base64,
       },
+    );
+    const text = decodeImportCalendarBytes(
+      bytesFromBase64(base64),
     );
 
     return prepareImportCalendarFile({

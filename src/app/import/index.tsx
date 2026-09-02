@@ -160,7 +160,7 @@ export default function ImportScreen() {
         </Text>
 
         <Text style={styles.subtitle}>
-          Choose an .ics file or paste calendar text. TravelOS keeps every event as a claim until you accept it onto a trip. Nothing becomes a booking on its own.
+          Choose or paste an .ics calendar. If an email contains one, TravelOS extracts it. Nothing becomes a booking on its own.
         </Text>
       </View>
 
@@ -203,7 +203,7 @@ export default function ImportScreen() {
 
       <View style={styles.editor}>
         <Text style={styles.editorLabel}>
-          Or paste iCalendar text
+          Or paste calendar text
         </Text>
 
         <TextInput
