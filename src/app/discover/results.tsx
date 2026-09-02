@@ -81,6 +81,10 @@ import {
 } from '@/services/travel-dna-runtime';
 
 import {
+  savedPlaceService,
+} from '@/services/saved-place-runtime';
+
+import {
   useDiscoverStore,
 } from '@/store/discover-store';
 
@@ -315,6 +319,11 @@ export default function DiscoverResultsScreen() {
     >
   >({});
 
+  const [
+    savedIdentities,
+    setSavedIdentities,
+  ] = useState<string[]>([]);
+
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -346,7 +355,27 @@ export default function DiscoverResultsScreen() {
           }
         };
 
+      const loadSavedIdeas =
+        async () => {
+          try {
+            const identities =
+              await savedPlaceService.savedIdentities();
+
+            if (active) {
+              setSavedIdentities(
+                identities,
+              );
+            }
+          } catch (error) {
+            console.error(
+              '[DiscoverResults] Saved ideas load failed:',
+              error,
+            );
+          }
+        };
+
       void loadTravelDNA();
+      void loadSavedIdeas();
 
       return () => {
         active = false;
@@ -569,6 +598,30 @@ export default function DiscoverResultsScreen() {
       ? `${brief.budget.maximumAmount} ${brief.budget.currency}`
       : 'Open';
 
+  const toggleSaved = (
+    identity: string,
+  ) => {
+    void (async () => {
+      const next =
+        await savedPlaceService.toggle({
+          kind: 'destination',
+          groundedIdentity: identity,
+        });
+
+      setSavedIdentities(
+        (current) =>
+          next
+            ? current.includes(identity)
+              ? current
+              : [...current, identity]
+            : current.filter(
+                (value) =>
+                  value !== identity,
+              ),
+      );
+    })();
+  };
+
   const chooseDestination = (
     destination: DiscoverDestination,
   ) => {
@@ -775,6 +828,14 @@ export default function DiscoverResultsScreen() {
                     match.candidate.id,
                   )
                 }
+                saved={savedIdentities.includes(
+                  match.candidate.id,
+                )}
+                onToggleSaved={() =>
+                  toggleSaved(
+                    match.candidate.id,
+                  )
+                }
                 onChoose={() =>
                   chooseDestination(
                     match.candidate
@@ -839,6 +900,14 @@ export default function DiscoverResultsScreen() {
                   }
                   onAskExplanation={() =>
                     askExplanation(
+                      match.candidate.id,
+                    )
+                  }
+                  saved={savedIdentities.includes(
+                    match.candidate.id,
+                  )}
+                  onToggleSaved={() =>
+                    toggleSaved(
                       match.candidate.id,
                     )
                   }
@@ -1062,7 +1131,9 @@ function DestinationMatchCard({
   kind = 'deterministic',
   match,
   explanation,
+  saved,
   onAskExplanation,
+  onToggleSaved,
   onChoose,
 }: {
   rank?: number;
@@ -1079,7 +1150,9 @@ function DestinationMatchCard({
     | {
         status: 'unavailable';
       };
+  saved: boolean;
   onAskExplanation(): void;
+  onToggleSaved(): void;
   onChoose(): void;
 }) {
   const destination =
@@ -1293,6 +1366,27 @@ function DestinationMatchCard({
           TravelOS could not explain this from the catalogue. Nothing was saved.
         </Text>
       ) : null}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          saved
+            ? `Remove ${destination.name} from saved ideas`
+            : `Save ${destination.name} as an idea`
+        }
+        onPress={onToggleSaved}
+        style={styles.explainButton}
+      >
+        <Text
+          style={
+            styles.explainButtonText
+          }
+        >
+          {saved
+            ? 'Remove from saved ideas'
+            : 'Save this idea'}
+        </Text>
+      </Pressable>
 
       <View
         style={

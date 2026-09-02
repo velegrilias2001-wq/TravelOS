@@ -91,7 +91,7 @@ These are web-era solutions. Native accounts, sync, diagnostics, privacy, and re
 | Rich trip-creation questions | Redesign | Native Create Trip persists destination, dates, accounting currency, and optional intent/pace; extra web fields stay hypotheses |
 | Destination advisor and season guidance | Redesign | Native Discover now includes Start with a place, Find me somewhere, Best time, and Ready-made journeys against the grounded catalogue. Journeys are ideas until Create Trip confirmation; extra cities are not written as destinations yet |
 | Import breadth | Redesign | Start with a supportable subset and a mandatory review queue |
-| Wishlist | Preserve | Model an explicit candidate state separate from planned, visited, and lived |
+| Wishlist | Preserve | Native Wishlist V1 persists grounded Discover destination and journey identities in SQLite. They are not Trips and are not World visited history |
 | World and travel archive | Preserve / reinterpret | Native World V1 maps persisted trip destinations with real coordinates and durable trip-status filters. It does not yet model visited/lived/wishlist history |
 | Editorial visual tone | Preserve | Translate to native typography, imagery, motion, gestures, and platform conventions |
 | Desktop grids and browser forms | Do not copy | Design phone-first flows, sheets, pickers, gestures, and focused steps |
@@ -111,7 +111,7 @@ The public PWA expresses more of the before-travel product:
 - World and travel archive.
 - Cross-device vault concept.
 
-Native Discover, World, and Profile are no longer empty placeholders. Native Discover now includes Best time and Ready-made journeys over grounded catalogue destinations. The PWA still expresses a broader before-travel ambition (wishlist, import, vault, richer empty-state marketing) than native V1.
+Native Discover, World, and Profile are no longer empty placeholders. Native Discover now includes Best time, Ready-made journeys, and Saved ideas over grounded catalogue destinations. The PWA still expresses a broader before-travel ambition (import, vault, richer empty-state marketing) than native V1.
 
 ## Where native is already stronger
 

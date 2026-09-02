@@ -134,6 +134,15 @@ export default function ProfileScreen() {
 
         <View style={styles.rowDivider} />
 
+        <ActiveRow
+          icon="bookmark-outline"
+          title="Saved ideas"
+          body="Catalogue destinations and journey ideas you kept. These are not trips or visited places."
+          onPress={() => router.push('/discover/saved')}
+        />
+
+        <View style={styles.rowDivider} />
+
         <FutureRow
           icon="notifications-outline"
           title="Trip notifications"

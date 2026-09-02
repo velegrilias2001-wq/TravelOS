@@ -13,9 +13,9 @@ Evidence classes used throughout:
 
 ## Repository checkpoint
 
-- Current development branch: `feature/discover-journeys-v1`
-- Branch point: `6874319` — feat: add Discover Best time V1
-- Ready-made journeys V1 is implemented on this branch: curated journey ideas over grounded catalogue destinations, explicit idea-not-a-trip presentation, and Create Trip handoff of the primary destination only. Extra cities stay ideas. Dates are not invented. Automated tests exist. No native device rehearsal was run for this screen.
+- Current development branch: `feature/discover-wishlist-v1`
+- Branch point: `3590f68` — feat: add Discover Ready-made journeys V1
+- Wishlist V1 is implemented on this branch: durable `saved_places` rows for grounded Discover destination and journey identities, distinct from Trips and World history. Automated tests exist. No native device rehearsal was run for this flow.
 - Best time V1 remains on the parent history. An Android Pixel 8 development-build rehearsal on 2026-09-02 verified Home, Discover hybrid results, a live Porto explanation, Create Trip persist/delete, Companion/Plan/Map/Bookings/More, Memories, Travel Book, World, Profile/Travel DNA, and Plan free-time advice. Best time and Ready-made journeys were not part of that rehearsal.
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
@@ -135,8 +135,8 @@ Discover types distinguish a session Brief, curated or provider-sourced candidat
 The database is the current durable source of truth. Verified characteristics include:
 
 - SQLite WAL mode and foreign-key enforcement are enabled.
-- The current database version is **9** (`DATABASE_VERSION` in `src/data/database/migrations.ts`).
-- The core schema contains 15 tables: trips, trip_destinations, trip_days, trip_stops, travelers, trip_travelers, travel_dna, bookings, accommodations, budgets, budget_items, trip_runtime_states, memories, travel_books, and travel_book_memories. Migrations also add recovery archives for reconciled duplicate TripDays, invalid historical Booking ↔ Stop links, invalid historical Accommodation links, and invalid historical Memory / Travel Book links.
+- The current database version is **10** (`DATABASE_VERSION` in `src/data/database/migrations.ts`).
+- The core schema contains 16 tables: trips, trip_destinations, trip_days, trip_stops, travelers, trip_travelers, travel_dna, bookings, accommodations, budgets, budget_items, trip_runtime_states, memories, travel_books, travel_book_memories, and saved_places. Migrations also add recovery archives for reconciled duplicate TripDays, invalid historical Booking ↔ Stop links, invalid historical Accommodation links, and invalid historical Memory / Travel Book links.
 - Repository queries use bound parameters.
 - Historical version 1 and version 2 migration behavior remains unchanged.
 - Migration version 3 converges the accommodation stop relationship and index even when a version-2 database reflects the earlier baseline drift.
@@ -165,6 +165,7 @@ The database is the current durable source of truth. Verified characteristics in
 - Migration version 7 archives invalid Memory → TripDay / TripStop links and invalid Travel Book → Memory memberships, then unlinks only those invalid relationships. Memory and Travel Book content survives. Triggers reject cross-trip or day/stop-mismatched Memory links and cross-trip Travel Book memberships. Deleting a linked day or stop unlinks the Memory rather than deleting it.
 - Migration version 8 creates the singleton `travel_dna` table (`singleton_key = 1`).
 - Migration version 9 adds nullable `intent` and `pace` columns to existing `trips` rows. Existing trips keep both fields unset. Fresh schema already includes the columns; the migration checks before altering.
+- Migration version 10 creates `saved_places` for grounded Discover candidate identities. Rows are not Trips and do not copy destination coordinates. Existing trip rows are unchanged.
 
 Important remaining gaps:
 
@@ -176,7 +177,7 @@ Important remaining gaps:
 - TripDay records outside an edited trip date range are preserved and placed after the canonical range; no product flow exists yet for resolving them.
 - Multi-destination Trips still lack a Day → Destination relationship. Runtime calculations use a destination timezone only when every relevant saved destination has the same valid IANA timezone; otherwise the resolver reports an explicit device-calendar fallback. The current native picker does not provide timezone data, so securely enriching a selection requires Google Time Zone API enablement and a separately restricted service/server boundary (or a picker/provider that returns a reliable IANA timezone); the Android Maps key is not reused for a client-side web-service call.
 - Archived migration-v3 duplicate-day metadata and migration-v7 invalid-link archives are retained for recovery but have no user-facing inspection tool.
-- Historical Android Expo SQLite rehearsals verified upgrades through `user_version = 6`. This documentation pass did not re-open a device database, so live `PRAGMA user_version = 9` on an installed development build is **not** claimed. Node tests exist for versions 7–9. Equivalent iOS rehearsals are still outstanding.
+- Historical Android Expo SQLite rehearsals verified upgrades through `user_version = 6`. This documentation pass did not re-open a device database, so live `PRAGMA user_version = 10` on an installed development build is **not** claimed. Node tests exist for versions 7–10. Equivalent iOS rehearsals are still outstanding.
 
 Historical migrations must not be edited to repair remaining issues. Corrections require new migrations.
 
@@ -192,7 +193,7 @@ The primary tab structure is:
 - World
 - Profile
 
-Home, Trips, Discover (Find me somewhere, Best time, Ready-made journeys, plus Create Trip entry), World, and Profile (Travel DNA plus local stats) are functional product surfaces. Profile still labels notifications and account/sync as future.
+Home, Trips, Discover (Find me somewhere, Best time, Ready-made journeys, Saved ideas, plus Create Trip entry), World, and Profile (Travel DNA, Saved ideas, plus local stats) are functional product surfaces. Profile still labels notifications and account/sync as future.
 
 ### Trips and trip creation
 
@@ -429,7 +430,7 @@ Current limitations include no production AI provider contract, no on-device mod
 
 Implemented in code:
 
-- Discover tab with “Start with a place” (Create Trip), “Find me somewhere”, “Best time to go”, and “Ready-made journeys”.
+- Discover tab with “Start with a place” (Create Trip), “Find me somewhere”, “Best time to go”, “Ready-made journeys”, and “Saved ideas”.
 - Find-destination flow collects an explicit Discover Brief: timing (unsure, exact dates, or flexible constraints), optional budget ceiling and currency, intent, pace, interests, and party. Missing values stay unknown.
 - Session Brief lives in Zustand only.
 - Matching uses a grounded Discover corpus assembled from explicit curated packs with provenance. The matcher ranks only records that include editorial fit. Records without fit remain in the corpus and are not ranked. AI does not invent destinations.
@@ -442,7 +443,7 @@ Automated-test evidence: `tests/discover-architecture.test.cjs`, `tests/discover
 
 Android-verified on 2026-09-02: Discover tab, Find me somewhere, Travel DNA fallback copy, grounded ranking, Create Trip handoff, persist, and cascade delete of an isolated Barcelona trip. Best time and Ready-made journeys were not part of that rehearsal.
 
-Current limitations include no live place provider as a Discover source, no wishlist persistence, no reranking, and no import of Discover results except through explicit Create Trip confirmation. Grounded records without editorial fit still cannot enter the deterministic ranking; they may appear only as semantic extras when retrieval is available. Opt-in grounded explanations are available when the AI server can paraphrase catalogue facts for one existing candidate. Best time only shows sourced months; destinations without a timing citation stay unknown. Ready-made journeys can name more than one catalogue city, but Create Trip still confirms only the primary destination.
+Current limitations include no live place provider as a Discover source, no reranking, and no import of Discover results except through explicit Create Trip confirmation. Grounded records without editorial fit still cannot enter the deterministic ranking; they may appear only as semantic extras when retrieval is available. Opt-in grounded explanations are available when the AI server can paraphrase catalogue facts for one existing candidate. Best time only shows sourced months; destinations without a timing citation stay unknown. Ready-made journeys can name more than one catalogue city, but Create Trip still confirms only the primary destination. Saved ideas persist grounded identities only; they do not become trips or World history.
 
 ### Semantic Discover V1
 
@@ -514,7 +515,20 @@ Implemented in code:
 
 Automated-test evidence: `tests/discover-journeys.test.cjs`. No native device rehearsal was run for this screen.
 
-Current limitations: there is no journey persistence, wishlist, day-by-day itinerary, or multi-destination Create Trip authoring. A two-city idea still confirms one destination.
+Current limitations: there is no journey day-by-day itinerary or multi-destination Create Trip authoring. A two-city idea still confirms one destination. Journey ideas can be saved as wishlist candidates without becoming trips.
+
+### Discover Wishlist V1
+
+Implemented in code:
+
+- Migration version 10 adds `saved_places`. Each row stores a grounded identity (`curated:…`), kind (`destination` or `journey`), source, and timestamps. Coordinates, itineraries, and calendar dates are not copied.
+- Saving is explicit from Discover results, Best time, and Ready-made journeys. Duplicate identities are idempotent. Unknown identities fail closed.
+- `/discover/saved` lists saved ideas and can hand the primary destination to Create Trip. Extra journey cities stay ideas. Removing a saved idea does not delete trips.
+- Profile links to the same Saved ideas list. World still maps only persisted Trip destinations and does not treat wishlist rows as visited or planned.
+
+Automated-test evidence: `tests/saved-place.test.cjs` and `tests/saved-place-migration.test.cjs`. No native device rehearsal was run for this flow.
+
+Current limitations: there is no World wishlist layer, no live provider save path, and no conversion of a saved idea into a Trip without `/new-trip`.
 
 ### Bookings
 
@@ -564,7 +578,7 @@ Implemented in code:
 
 Android-verified on 2026-09-02: World opened with Google Maps, 3 trips / 0 completed / 3 mapped, and destination cards for Nagawa and Strathpeffer. Filters were not clicked through.
 
-Current limitations include no wishlist layer, no lived-vs-planned place distinction, no country statistics independent of saved destinations, and no use of Memories as World evidence.
+Current limitations include no wishlist layer on World, no lived-vs-planned place distinction, no country statistics independent of saved destinations, and no use of Memories as World evidence. Saved Discover ideas live on their own list and are not World markers.
 
 ### Profile
 
@@ -653,7 +667,7 @@ Automated tests added after UX Refinement V1 (files exist in `tests/` and `serve
 - Stop time validation and itinerary free-time/conflict derivation
 - AI context snapshot/service and AI API client parsing
 - Server free-time advisor parsing
-- Discover architecture, catalogue validation, matcher, sourcing/corpus identity, Create Trip handoff, hybrid semantic merge/hash, fail-closed rerank identity application, grounded explanation guards, Best time sourced-month guidance, and Ready-made journey identity/handoff guards
+- Discover architecture, catalogue validation, matcher, sourcing/corpus identity, Create Trip handoff, hybrid semantic merge/hash, fail-closed rerank identity application, grounded explanation guards, Best time sourced-month guidance, Ready-made journey identity/handoff guards, and saved-place persistence/identity guards
 - Server Discover retrieve ranking, request validation, rerank prompt parsing, and explanation prompt parsing
 
 Cursor handoff verification on 2026-09-01 (documentation/rule changes only; no native device testing):
@@ -668,6 +682,8 @@ A current passing Node count from the 2026-09-02 rehearsal is 160 application te
 Best time V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (168 application tests passing, including the new Best time suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. No native device run was performed for this screen.
 
 Ready-made journeys V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (173 application tests passing, including the new journeys suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. No native device run was performed for this screen.
+
+Wishlist V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (180 application tests passing, including the new saved-place suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. No native device run was performed for this flow.
 
 Grounded Destination Sourcing V1 verification re-ran `npx tsc --noEmit` and `npm test` (138 application tests passing, including the new corpus/sourcing suite) plus the unchanged server suite. No native device run was performed for that service-layer milestone.
 
@@ -703,7 +719,7 @@ Missing release foundations:
 - Persisted itinerary and booking CRUD.
 - Atomic, idempotent, self-healing canonical TripDay generation.
 - Atomic stop reorder that preserves stop identity and content.
-- Forward-only migrations through version 9, including duplicate-day archival, Booking/Accommodation/Memory relationship cleanup, Travel DNA, and trip intent/pace.
+- Forward-only migrations through version 10, including duplicate-day archival, Booking/Accommodation/Memory relationship cleanup, Travel DNA, trip intent/pace, and saved Discover candidates.
 - A dependency-free automated persistence test baseline, later extended with DNA, Discover, AI-context, and itinerary-flexibility tests. Cursor handoff verification re-ran the current Node suites (see Testing and release readiness).
 - A route-scoped, revision-aware TripWorkspace lifecycle that keeps SQLite authoritative and shares current data across Trip Space tabs.
 - Explicit trip loading, refresh, not-found, recoverable error, and fatal bootstrap states.
@@ -730,7 +746,7 @@ These pieces are promising foundations; they do not make the app production-read
 
 - Multi-destination add/remove/reorder, Day → Destination semantics, stable provider identity, and secure timezone/currency enrichment.
 - Companion V2 timezone authoring, Day → Destination semantics, stop-boundary refresh decisions, lived progress, and external live-data layers.
-- Discover live provider catalogues and reranking. Best time V1 and Ready-made journeys V1 are implemented in code over grounded catalogue identities. Semantic retrieval and opt-in grounded explanations exist as local-dev lanes over those identities.
+- Discover live provider catalogues and reranking. Best time V1, Ready-made journeys V1, and Wishlist V1 are implemented in code over grounded catalogue identities. Semantic retrieval and opt-in grounded explanations exist as local-dev lanes over those identities.
 - Production AI provider, privacy, and cost contract; Plan free-time advice and Discover retrieve remain a local-dev backend.
 - Advanced accommodation capabilities and the remaining booking actions/provider integrations.
 - Map intelligence, routes, and offline behavior.
@@ -744,6 +760,6 @@ These pieces are promising foundations; they do not make the app production-read
 
 TravelOS is a broader native vertical prototype than the 2026-08-23 snapshot described, and still not a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths. Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. Budget & Expenses, Trip Details, Booking ↔ Stop, Accommodation, Travelers, Time & Runtime Truth, Companion V1, Canonical Destination Authoring, and UX Refinement V1 remain the earlier completed core. After that, Memories V1 and Travel Book V1 give completed trips an on-device record and story, shared readiness selection keeps Companion honest about preparation, Travel DNA plus trip intent/pace give Discover and Create Trip explicit preference language, Plan can show knowable free time and conflicts, AI Foundation V1 can advise on free time without writing trip truth, Discover Experience V1 can recommend grounded destinations that become canonical only after Create Trip confirmation, Grounded Destination Sourcing V1 loads those destinations from explicit provenance-backed packs, and Semantic Discover V1 can add extra grounded catalogue identities from local retrieval without replacing deterministic matching, with opt-in grounded explanations of those catalogue facts. World and Profile are no longer empty tabs, but they are still thin compared with the trip workspace.
 
-The latest local git milestones on `feature/discover-journeys-v1` follow Best time V1 (`6874319`) and the Semantic Discover work beneath it. Ready-made journeys V1 is implemented in code on this branch. There is still no usable git remote for push.
+The latest local git milestones on `feature/discover-wishlist-v1` follow Ready-made journeys V1 (`3590f68`). Wishlist V1 is implemented in code on this branch. There is still no usable git remote for push.
 
-The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, and Ready-made journeys V1 are implemented. Best time and journeys have automated tests and have not been rehearsed on device. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–9, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, wishlist, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.
+The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, Ready-made journeys V1, and Wishlist V1 are implemented. Those later Discover screens have automated tests and have not been rehearsed on device. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–10, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, import, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.

@@ -5,6 +5,7 @@ import {
   memoryRepository,
   travelBookRepository,
   travelDNARepository,
+  savedPlaceRepository,
   travelerRepository,
   tripRepository,
   tripRuntimeStateRepository,
@@ -19,6 +20,7 @@ export const repositories = {
   memory: memoryRepository,
   travelBook: travelBookRepository,
   travelDNA: travelDNARepository,
+  savedPlaces: savedPlaceRepository,
   runtimeState: tripRuntimeStateRepository,
 } as const;
 

@@ -1,6 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import {
+  useFocusEffect,
+  useRouter,
+} from 'expo-router';
+import {
+  useCallback,
+  useMemo,
+  useState,
+} from 'react';
 
 import {
   Linking,
@@ -23,6 +30,10 @@ import {
 import {
   serializeDiscoverTripPrefill,
 } from '@/services/discover-trip-handoff';
+
+import {
+  savedPlaceService,
+} from '@/services/saved-place-runtime';
 
 import {
   useDiscoverStore,
@@ -49,6 +60,30 @@ export default function DiscoverJourneysScreen() {
   const journeys = useMemo(
     () => listDiscoverJourneys(),
     [],
+  );
+  const [saved, setSaved] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!selectedIdentity) {
+        setSaved(false);
+        return;
+      }
+
+      let active = true;
+
+      void savedPlaceService
+        .isSaved(selectedIdentity)
+        .then((value) => {
+          if (active) {
+            setSaved(value);
+          }
+        });
+
+      return () => {
+        active = false;
+      };
+    }, [selectedIdentity]),
   );
 
   const journey = selectedIdentity
@@ -106,6 +141,14 @@ export default function DiscoverJourneysScreen() {
       {journey ? (
         <JourneyDetail
           journey={journey}
+          saved={saved}
+          onToggleSave={async () => {
+            const next = await savedPlaceService.toggle({
+              kind: 'journey',
+              groundedIdentity: journey.identity,
+            });
+            setSaved(next);
+          }}
           onChooseAnother={() =>
             setSelectedIdentity(null)
           }
@@ -176,10 +219,14 @@ function JourneyRow({
 
 function JourneyDetail({
   journey,
+  saved,
+  onToggleSave,
   onChooseAnother,
   onMakeTrip,
 }: {
   journey: DiscoverJourney;
+  saved: boolean;
+  onToggleSave(): Promise<void>;
   onChooseAnother: () => void;
   onMakeTrip: () => void;
 }) {
@@ -300,6 +347,28 @@ function JourneyDetail({
           size={21}
           color={colors.textInverse}
         />
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          saved
+            ? 'Remove this journey from saved ideas'
+            : 'Save this journey idea'
+        }
+        style={({ pressed }) => [
+          styles.secondaryButton,
+          pressed && styles.pressed,
+        ]}
+        onPress={() => {
+          void onToggleSave();
+        }}
+      >
+        <Text style={styles.secondaryButtonText}>
+          {saved
+            ? 'Remove from saved ideas'
+            : 'Save this idea'}
+        </Text>
       </Pressable>
 
       <Pressable

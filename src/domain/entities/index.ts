@@ -12,6 +12,8 @@ export * from './travel-book';
 
 export * from './travel-dna';
 
+export * from './saved-place';
+
 export * from './traveler';
 
 export * from './trip';

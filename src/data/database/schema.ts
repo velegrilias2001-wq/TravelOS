@@ -566,6 +566,34 @@ CREATE TABLE IF NOT EXISTS travel_book_memories (
 
 );
 
+CREATE TABLE IF NOT EXISTS saved_places (
+
+  id TEXT PRIMARY KEY NOT NULL,
+
+  kind TEXT NOT NULL
+
+    CHECK (
+
+      kind IN ('destination', 'journey')
+
+    ),
+
+  grounded_identity TEXT NOT NULL UNIQUE,
+
+  source TEXT NOT NULL
+
+    CHECK (
+
+      source IN ('curated', 'provider')
+
+    ),
+
+  created_at TEXT NOT NULL,
+
+  updated_at TEXT NOT NULL
+
+);
+
 CREATE INDEX IF NOT EXISTS idx_trip_days_trip_id
 
 ON trip_days(trip_id);
@@ -589,5 +617,9 @@ ON budget_items(trip_id);
 CREATE INDEX IF NOT EXISTS idx_memories_trip_id
 
 ON memories(trip_id);
+
+CREATE INDEX IF NOT EXISTS idx_saved_places_created_at
+
+ON saved_places(created_at);
 
 `;

@@ -6,7 +6,7 @@ import {
   reconcileMemoryRelationships,
 } from './memory-integrity-migration';
 
-export const DATABASE_VERSION = 9;
+export const DATABASE_VERSION = 10;
 
 interface UserVersionRow {
   user_version: number;
@@ -1067,6 +1067,50 @@ export async function migrateDatabase(
         await transaction.execAsync(
           'PRAGMA user_version = 9;',
         );
+      },
+    );
+  }
+
+  /**
+   * Version 10
+   * Persist saved Discover candidates as a wishlist
+   * distinct from Trips and World history.
+   *
+   * Rows store grounded identities only. Destination
+   * coordinates and journey copy are resolved live
+   * from the catalogue, never invented here.
+   */
+  if (currentVersion < 10) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await transaction.execAsync(`
+          CREATE TABLE IF NOT EXISTS saved_places (
+            id TEXT PRIMARY KEY NOT NULL,
+            kind TEXT NOT NULL
+              CHECK (
+                kind IN (
+                  'destination',
+                  'journey'
+                )
+              ),
+            grounded_identity TEXT NOT NULL UNIQUE,
+            source TEXT NOT NULL
+              CHECK (
+                source IN (
+                  'curated',
+                  'provider'
+                )
+              ),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          );
+
+          CREATE INDEX IF NOT EXISTS
+            idx_saved_places_created_at
+            ON saved_places(created_at);
+
+          PRAGMA user_version = 10;
+        `);
       },
     );
   }

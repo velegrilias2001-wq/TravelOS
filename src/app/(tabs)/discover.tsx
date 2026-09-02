@@ -124,6 +124,17 @@ export default function DiscoverScreen() {
             )
           }
         />
+
+        <DiscoverOption
+          icon="bookmark-outline"
+          title="Saved ideas"
+          body="Keep catalogue destinations and journey ideas without turning them into trips."
+          onPress={() =>
+            router.push(
+              '/discover/saved',
+            )
+          }
+        />
       </View>
 
       <View style={styles.promiseCard}>

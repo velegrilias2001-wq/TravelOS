@@ -67,6 +67,8 @@
     "src/services/discover-explain.ts",
     "src/services/discover-best-time.ts",
     "src/data/discover/curated-journeys.ts",
-    "src/services/discover-journeys.ts"
+    "src/services/discover-journeys.ts",
+    "src/data/repositories/saved-place-persistence-operations.ts",
+    "src/services/saved-place-service.ts"
   ]
 }

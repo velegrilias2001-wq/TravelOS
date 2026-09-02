@@ -34,7 +34,7 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 - [ ] Remove N+1 loading patterns from the trip list and other obvious aggregate reads.
 - [ ] Expand automated coverage for the remaining repository relationships/cascades. Booking/stop unlink cascades for Bookings and Accommodations are covered, and deterministic upcoming/active/completed runtime plus exact-day selection now have fixed-clock coverage.
 - [ ] Rehearse migration version 3 against Expo SQLite on an iOS development build.
-- [ ] Rehearse migrations 7–9 on an Expo SQLite development build. Historical Android rehearsals stopped at `user_version = 6`. Node tests cover versions 7–9. No device `PRAGMA user_version = 9` rehearsal is recorded.
+- [ ] Rehearse migrations 7–10 on an Expo SQLite development build. Historical Android rehearsals stopped at `user_version = 6`. Node tests cover versions 7–10. No device `PRAGMA user_version = 10` rehearsal is recorded.
 - [ ] Commit a non-interactive lint configuration and add baseline CI checks.
 
 Exit condition: existing native flows survive retries, partial data, navigation refocus, and supported migrations without corrupting or misrepresenting trip truth.
@@ -115,7 +115,7 @@ Destination truth must come from grounded sources. AI is not a destination sourc
 - [x] Discover Architecture V1: session Discover Brief (Zustand only), curated catalogue with provenance, matcher, personalization fallback from Travel DNA, and Create Trip route-param handoff. Candidates are not written into SQLite as trips.
 - [x] Discover Experience V1: native Discover tab supporting **Start with a place** (Create Trip) and **Find me somewhere** (explicit Brief → deterministic matching against grounded curated destinations → optional Create Trip confirmation). Trip-specific Brief values outrank Travel DNA. Flexible timing is not converted into invented calendar dates. Android Pixel 8 rehearsal on 2026-09-02 created and then deleted an isolated Discover-prefilled trip.
 
-Current Discover V1 includes Start with a place, Find me somewhere, Best time for a known catalogue destination, Ready-made journeys as catalogue ideas, a multi-pack grounded destination corpus, hybrid semantic extras from local retrieval when the AI server is available, and opt-in grounded explanations of existing catalogue candidates. It does **not** include wishlist persistence, live provider catalogues, or reranking.
+Current Discover V1 includes Start with a place, Find me somewhere, Best time for a known catalogue destination, Ready-made journeys as catalogue ideas, Saved ideas persistence, a multi-pack grounded destination corpus, hybrid semantic extras from local retrieval when the AI server is available, and opt-in grounded explanations of existing catalogue candidates. It does **not** include live provider catalogues or reranking.
 
 ### Immediate planned Discover sequence
 
@@ -127,10 +127,10 @@ These steps are ordered. Grounded destination data must exist before semantic re
 - [x] **Grounded AI explanations** — opt-in Qwen explanation of one grounded Discover candidate from catalogue facts and the explicit Brief. Invented destinations, coordinates, prices, other catalogue names, and extra fit tags fail closed. Unreachable AI leaves ranking unchanged. Android Pixel 8 rehearsal on 2026-09-02 accepted a Porto explanation and fail-closed a Rome explanation that invented a missing fit tag.
 - [x] **Best time V1** — sourced months for a known grounded catalogue destination, with cited source and `checkedAt` freshness. Destinations without timing evidence stay unknown. Months are not converted into Create Trip dates. Automated tests exist. No device rehearsal was run for this screen.
 - [x] **Ready-made journeys V1** — curated journey ideas over grounded catalogue destinations. They remain distinct from confirmed trips until the traveler accepts them through `/new-trip`. Extra cities stay ideas because Create Trip still authors one destination. Automated tests exist. No device rehearsal was run for this screen.
+- [x] **Wishlist V1** — durable saved Discover candidates keyed by grounded identity, distinct from Trips and World history. Unknown identities fail closed. Create Trip still requires explicit confirmation. Automated tests exist. No device rehearsal was run for this flow.
 
 ### Remaining Phase 4 work
 
-- [ ] Add wishlist and candidate-place persistence distinct from visited and planned data.
 - [ ] Import supported booking and itinerary materials into a review queue.
 - [ ] Record provenance, extraction confidence, and conflicts for every imported claim.
 - [ ] Keep AI assistance behind explicit review and confirmation gates.

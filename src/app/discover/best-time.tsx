@@ -1,6 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import {
+  useFocusEffect,
+  useRouter,
+} from 'expo-router';
+import {
+  useCallback,
+  useMemo,
+  useState,
+} from 'react';
 
 import {
   Linking,
@@ -32,6 +39,10 @@ import {
 } from '@/services/discover-trip-handoff';
 
 import {
+  savedPlaceService,
+} from '@/services/saved-place-runtime';
+
+import {
   useDiscoverStore,
 } from '@/store/discover-store';
 
@@ -56,6 +67,30 @@ export default function DiscoverBestTimeScreen() {
   const destinations = useMemo(
     () => listDiscoverBestTimeDestinations(),
     [],
+  );
+  const [saved, setSaved] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!selectedIdentity) {
+        setSaved(false);
+        return;
+      }
+
+      let active = true;
+
+      void savedPlaceService
+        .isSaved(selectedIdentity)
+        .then((value) => {
+          if (active) {
+            setSaved(value);
+          }
+        });
+
+      return () => {
+        active = false;
+      };
+    }, [selectedIdentity]),
   );
 
   const advice = selectedIdentity
@@ -121,6 +156,14 @@ export default function DiscoverBestTimeScreen() {
       {advice ? (
         <BestTimeGuidance
           advice={advice}
+          saved={saved}
+          onToggleSave={async () => {
+            const next = await savedPlaceService.toggle({
+              kind: 'destination',
+              groundedIdentity: advice.identity,
+            });
+            setSaved(next);
+          }}
           onChooseAnother={() =>
             setSelectedIdentity(null)
           }
@@ -197,10 +240,14 @@ function DestinationRow({
 
 function BestTimeGuidance({
   advice,
+  saved,
+  onToggleSave,
   onChooseAnother,
   onMakeTrip,
 }: {
   advice: DiscoverBestTimeAdvice;
+  saved: boolean;
+  onToggleSave(): Promise<void>;
   onChooseAnother: () => void;
   onMakeTrip: () => void;
 }) {
@@ -304,6 +351,28 @@ function BestTimeGuidance({
           size={21}
           color={colors.textInverse}
         />
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          saved
+            ? 'Remove this destination from saved ideas'
+            : 'Save this destination idea'
+        }
+        style={({ pressed }) => [
+          styles.secondaryButton,
+          pressed && styles.pressed,
+        ]}
+        onPress={() => {
+          void onToggleSave();
+        }}
+      >
+        <Text style={styles.secondaryButtonText}>
+          {saved
+            ? 'Remove from saved ideas'
+            : 'Save this idea'}
+        </Text>
       </Pressable>
 
       <Pressable
