@@ -176,6 +176,18 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="import/index"
+            options={{
+              presentation: 'card',
+            }}
+          />
+          <Stack.Screen
+            name="import/[batchId]"
+            options={{
+              presentation: 'card',
+            }}
+          />
+          <Stack.Screen
             name="new-trip"
             options={{
               presentation: 'card',

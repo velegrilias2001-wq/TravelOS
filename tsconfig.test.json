@@ -69,6 +69,9 @@
     "src/data/discover/curated-journeys.ts",
     "src/services/discover-journeys.ts",
     "src/data/repositories/saved-place-persistence-operations.ts",
-    "src/services/saved-place-service.ts"
+    "src/data/repositories/import-persistence-operations.ts",
+    "src/services/saved-place-service.ts",
+    "src/services/import-ics.ts",
+    "src/services/import-review-service.ts"
   ]
 }

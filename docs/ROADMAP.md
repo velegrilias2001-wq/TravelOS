@@ -34,7 +34,7 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 - [ ] Remove N+1 loading patterns from the trip list and other obvious aggregate reads.
 - [ ] Expand automated coverage for the remaining repository relationships/cascades. Booking/stop unlink cascades for Bookings and Accommodations are covered, and deterministic upcoming/active/completed runtime plus exact-day selection now have fixed-clock coverage.
 - [ ] Rehearse migration version 3 against Expo SQLite on an iOS development build.
-- [ ] Rehearse migrations 7–10 on an Expo SQLite development build. Historical Android rehearsals stopped at `user_version = 6`. Node tests cover versions 7–10. No device `PRAGMA user_version = 10` rehearsal is recorded.
+- [ ] Rehearse migrations 7–11 on an Expo SQLite development build. Historical Android rehearsals stopped at `user_version = 6`. Node tests cover versions 7–11. No device `PRAGMA user_version = 11` rehearsal is recorded.
 - [ ] Commit a non-interactive lint configuration and add baseline CI checks.
 
 Exit condition: existing native flows survive retries, partial data, navigation refocus, and supported migrations without corrupting or misrepresenting trip truth.
@@ -128,12 +128,12 @@ These steps are ordered. Grounded destination data must exist before semantic re
 - [x] **Best time V1** — sourced months for a known grounded catalogue destination, with cited source and `checkedAt` freshness. Destinations without timing evidence stay unknown. Months are not converted into Create Trip dates. Automated tests exist. No device rehearsal was run for this screen.
 - [x] **Ready-made journeys V1** — curated journey ideas over grounded catalogue destinations. They remain distinct from confirmed trips until the traveler accepts them through `/new-trip`. Extra cities stay ideas because Create Trip still authors one destination. Automated tests exist. No device rehearsal was run for this screen.
 - [x] **Wishlist V1** — durable saved Discover candidates keyed by grounded identity, distinct from Trips and World history. Unknown identities fail closed. Create Trip still requires explicit confirmation. Automated tests exist. No device rehearsal was run for this flow.
+- [x] **Import Review Queue V1** — pasted iCalendar events become durable claims with provenance and confidence. Accepting writes a planned booking onto an existing trip; dismissing does not. Location text is not coordinates. Date-only events do not invent times. No AI extraction. Automated tests exist. No device rehearsal was run for this flow.
 
 ### Remaining Phase 4 work
 
-- [ ] Import supported booking and itinerary materials into a review queue.
-- [ ] Record provenance, extraction confidence, and conflicts for every imported claim.
-- [ ] Keep AI assistance behind explicit review and confirmation gates.
+- [ ] Add a native file picker and additional import formats after the review-queue contract is stable.
+- [ ] Keep AI-assisted extraction behind explicit review and confirmation gates if it is added later.
 - [ ] Never allow recommendations, imports, or AI suggestions to silently become canonical facts.
 - [ ] Define production provider, privacy, retention, cost, and fallback behavior before shipping intelligence beyond the local-dev AI foundation.
 

@@ -4,6 +4,7 @@ export * from './sqlite-budget-repository';
 export * from './sqlite-memory-repository';
 export * from './sqlite-travel-book-repository';
 export * from './sqlite-travel-dna-repository';
+export * from './sqlite-import-repository';
 export * from './sqlite-saved-place-repository';
 export * from './sqlite-traveler-repository';
 export * from './sqlite-trip-repository';

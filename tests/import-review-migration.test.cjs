@@ -15,16 +15,18 @@ const {
 } = require('./support/node-sqlite-database.cjs');
 
 test(
-  'migration v10 creates an empty saved_places store without inventing candidates',
+  'migration v11 creates an empty import review queue without inventing bookings',
   async () => {
     const database = new NodeSQLiteDatabase();
 
     try {
       await database.execAsync(DATABASE_SCHEMA);
       await database.execAsync(`
-        DROP TABLE saved_places;
-        DROP INDEX IF EXISTS idx_saved_places_created_at;
-        PRAGMA user_version = 9;
+        DROP TABLE IF EXISTS import_claims;
+        DROP TABLE IF EXISTS import_batches;
+        DROP INDEX IF EXISTS idx_import_claims_batch_id;
+        DROP INDEX IF EXISTS idx_import_batches_created_at;
+        PRAGMA user_version = 10;
       `);
 
       await database.execute(
@@ -55,21 +57,37 @@ test(
       assert.equal(version.user_version, 11);
       assert.equal(DATABASE_VERSION, 11);
 
-      const table = await database.queryFirst(
+      const batches = await database.queryFirst(
         `
           SELECT name
           FROM sqlite_master
-          WHERE type = 'table' AND name = 'saved_places';
+          WHERE type = 'table' AND name = 'import_batches';
+        `,
+      );
+      const claims = await database.queryFirst(
+        `
+          SELECT name
+          FROM sqlite_master
+          WHERE type = 'table' AND name = 'import_claims';
         `,
       );
 
-      assert.ok(table);
+      assert.ok(batches);
+      assert.ok(claims);
 
-      const count = await database.queryFirst(
-        'SELECT COUNT(*) AS count FROM saved_places;',
+      const batchCount = await database.queryFirst(
+        'SELECT COUNT(*) AS count FROM import_batches;',
+      );
+      const claimCount = await database.queryFirst(
+        'SELECT COUNT(*) AS count FROM import_claims;',
+      );
+      const bookingCount = await database.queryFirst(
+        'SELECT COUNT(*) AS count FROM bookings;',
       );
 
-      assert.equal(count.count, 0);
+      assert.equal(batchCount.count, 0);
+      assert.equal(claimCount.count, 0);
+      assert.equal(bookingCount.count, 0);
 
       const trip = await database.queryFirst(
         'SELECT id FROM trips WHERE id = ?;',

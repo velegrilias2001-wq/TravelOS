@@ -381,6 +381,50 @@ export default function HomeScreen() {
         </View>
       </Pressable>
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Import a calendar"
+        style={({ pressed }) => [
+          styles.importCard,
+          pressed && styles.pressed,
+        ]}
+        onPress={() =>
+          router.push({
+            pathname: '/import/index',
+          })
+        }
+      >
+        <View style={styles.importIcon}>
+          <Ionicons
+            name="download-outline"
+            size={22}
+            color={colors.brand}
+          />
+        </View>
+
+        <View style={styles.newTripCopy}>
+          <Text style={styles.importEyebrow}>
+            ALREADY BOOKED
+          </Text>
+
+          <Text style={styles.importTitle}>
+            Import a calendar
+          </Text>
+
+          <Text style={styles.importDescription}>
+            Review .ics events before they become bookings.
+          </Text>
+        </View>
+
+        <View style={styles.importArrow}>
+          <Ionicons
+            name="arrow-forward"
+            size={18}
+            color={colors.brand}
+          />
+        </View>
+      </Pressable>
+
       <View style={styles.actionGrid}>
         <Pressable
           style={({ pressed }) => [
@@ -750,6 +794,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
+  },
+
+  importCard: {
+    minHeight: 96,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[4],
+    marginBottom: spacing[3],
+    padding: spacing[5],
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.subtle,
+  },
+
+  importIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.backgroundSoft,
+  },
+
+  importEyebrow: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.4,
+    color: colors.brass,
+  },
+
+  importTitle: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleSmall,
+    lineHeight: lineHeight.titleSmall,
+    color: colors.textPrimary,
+  },
+
+  importDescription: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: colors.textSecondary,
+  },
+
+  importArrow: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.backgroundSoft,
   },
 
   actionGrid: {

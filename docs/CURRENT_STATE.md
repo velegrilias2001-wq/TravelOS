@@ -13,9 +13,10 @@ Evidence classes used throughout:
 
 ## Repository checkpoint
 
-- Current development branch: `feature/discover-wishlist-v1`
-- Branch point: `3590f68` — feat: add Discover Ready-made journeys V1
-- Wishlist V1 is implemented on this branch: durable `saved_places` rows for grounded Discover destination and journey identities, distinct from Trips and World history. Automated tests exist. No native device rehearsal was run for this flow.
+- Current development branch: `feature/import-review-queue-v1`
+- Branch point: `0b9702b` — feat: add Discover Wishlist V1
+- Import Review Queue V1 is implemented on this branch: local iCalendar paste becomes durable `import_batches` / `import_claims` rows. Claims are not Bookings until the traveler accepts one onto an existing trip. Automated tests exist. No native device rehearsal was run for this flow.
+- Wishlist V1 remains on the parent history: durable `saved_places` rows for grounded Discover destination and journey identities, distinct from Trips and World history.
 - Best time V1 remains on the parent history. An Android Pixel 8 development-build rehearsal on 2026-09-02 verified Home, Discover hybrid results, a live Porto explanation, Create Trip persist/delete, Companion/Plan/Map/Bookings/More, Memories, Travel Book, World, Profile/Travel DNA, and Plan free-time advice. Best time and Ready-made journeys were not part of that rehearsal.
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
@@ -104,6 +105,8 @@ Verified domain entities include:
 - TripRuntimeState
 - Memory
 - TravelBook
+- SavedPlace (wishlist identity, not a Trip)
+- ImportBatch / ImportClaim (review-queue calendar claims, not Bookings)
 
 Entities use explicit IDs. The model distinguishes the trip's accounting currency from destination currency concepts. `Booking.stopId` is the canonical optional relationship to an itinerary stop: each booking has zero or one stop, while each stop can have zero, one, or many bookings. Each Trip has zero or many Accommodations; an Accommodation belongs to exactly one Trip and may link to zero or one Booking and zero or one TripStop. A Booking or TripStop may be referenced by multiple Accommodation records, and every relationship must remain within one Trip. Links are never inferred from names, addresses, or other text.
 
@@ -135,8 +138,8 @@ Discover types distinguish a session Brief, curated or provider-sourced candidat
 The database is the current durable source of truth. Verified characteristics include:
 
 - SQLite WAL mode and foreign-key enforcement are enabled.
-- The current database version is **10** (`DATABASE_VERSION` in `src/data/database/migrations.ts`).
-- The core schema contains 16 tables: trips, trip_destinations, trip_days, trip_stops, travelers, trip_travelers, travel_dna, bookings, accommodations, budgets, budget_items, trip_runtime_states, memories, travel_books, travel_book_memories, and saved_places. Migrations also add recovery archives for reconciled duplicate TripDays, invalid historical Booking ↔ Stop links, invalid historical Accommodation links, and invalid historical Memory / Travel Book links.
+- The current database version is **11** (`DATABASE_VERSION` in `src/data/database/migrations.ts`).
+- The core schema contains 18 tables: trips, trip_destinations, trip_days, trip_stops, travelers, trip_travelers, travel_dna, bookings, accommodations, budgets, budget_items, trip_runtime_states, memories, travel_books, travel_book_memories, saved_places, import_batches, and import_claims. Migrations also add recovery archives for reconciled duplicate TripDays, invalid historical Booking ↔ Stop links, invalid historical Accommodation links, and invalid historical Memory / Travel Book links.
 - Repository queries use bound parameters.
 - Historical version 1 and version 2 migration behavior remains unchanged.
 - Migration version 3 converges the accommodation stop relationship and index even when a version-2 database reflects the earlier baseline drift.
@@ -177,7 +180,7 @@ Important remaining gaps:
 - TripDay records outside an edited trip date range are preserved and placed after the canonical range; no product flow exists yet for resolving them.
 - Multi-destination Trips still lack a Day → Destination relationship. Runtime calculations use a destination timezone only when every relevant saved destination has the same valid IANA timezone; otherwise the resolver reports an explicit device-calendar fallback. The current native picker does not provide timezone data, so securely enriching a selection requires Google Time Zone API enablement and a separately restricted service/server boundary (or a picker/provider that returns a reliable IANA timezone); the Android Maps key is not reused for a client-side web-service call.
 - Archived migration-v3 duplicate-day metadata and migration-v7 invalid-link archives are retained for recovery but have no user-facing inspection tool.
-- Historical Android Expo SQLite rehearsals verified upgrades through `user_version = 6`. This documentation pass did not re-open a device database, so live `PRAGMA user_version = 10` on an installed development build is **not** claimed. Node tests exist for versions 7–10. Equivalent iOS rehearsals are still outstanding.
+- Historical Android Expo SQLite rehearsals verified upgrades through `user_version = 6`. This documentation pass did not re-open a device database, so live `PRAGMA user_version = 11` on an installed development build is **not** claimed. Node tests exist for versions 7–11. Equivalent iOS rehearsals are still outstanding.
 
 Historical migrations must not be edited to repair remaining issues. Corrections require new migrations.
 
@@ -193,7 +196,7 @@ The primary tab structure is:
 - World
 - Profile
 
-Home, Trips, Discover (Find me somewhere, Best time, Ready-made journeys, Saved ideas, plus Create Trip entry), World, and Profile (Travel DNA, Saved ideas, plus local stats) are functional product surfaces. Profile still labels notifications and account/sync as future.
+Home, Trips (plus Import a calendar), Discover (Find me somewhere, Best time, Ready-made journeys, Saved ideas, plus Create Trip entry), World, and Profile (Travel DNA, Saved ideas, plus local stats) are functional product surfaces. Profile still labels notifications and account/sync as future.
 
 ### Trips and trip creation
 
@@ -206,6 +209,7 @@ Implemented behavior includes:
 - Editing the canonical trip title, dates, accounting currency, lifecycle status, intent, and pace from Trip Details, plus explicitly replacing or upgrading an existing destination through the same native real-location picker.
 - Deleting a trip through a destructive native confirmation that names the related local data being removed.
 - Create Trip can be prefilled from Discover when the traveler accepts a curated destination. Prefill uses route params for grounded destination facts plus optional exact dates, intent, and pace. Flexible Discover timing is not converted into canonical trip dates.
+- Home, Trips, and Bookings can open `/import` to paste an iCalendar. Extracted events enter a review queue and do not become bookings until accepted onto an existing trip.
 
 Create Trip and Trip Details use the shared native calendar field, validate real `YYYY-MM-DD` dates plus `start <= end`, and persist the selected calendar day without UTC or device-timezone shifting. Accounting currency uses a validated three-letter code rather than a complete currency selector.
 
@@ -530,6 +534,20 @@ Automated-test evidence: `tests/saved-place.test.cjs` and `tests/saved-place-mig
 
 Current limitations: there is no World wishlist layer, no live provider save path, and no conversion of a saved idea into a Trip without `/new-trip`.
 
+### Import Review Queue V1
+
+Implemented in code:
+
+- Migration version 11 adds `import_batches` and `import_claims`. V1 accepts pasted iCalendar (`.ics`) text only. There is no PDF/ZIP/image extraction and no AI parsing. A native document picker was not added because it would require a new Expo module and a development-build rebuild.
+- Each claim stores extracted title, optional start/end, optional location text, optional UID, confidence, and JSON evidence (fields present, TZID, date-only calendar date). Location is never treated as coordinates. Date-only events do not invent midnight.
+- Home, Trips, and Bookings open `/import`. Review is `/import/[batchId]`. Accepting writes one planned Booking of type `other` onto a chosen existing trip through the canonical booking write path. Dismissing leaves no booking. Import never creates a Trip or destination.
+- Conflicts are evaluated at review time against the selected trip: missing time, overlapping bookings, duplicate UID already accepted, and incomparable local/absolute times. They are shown; they do not silently merge or overwrite bookings.
+- Re-pasting the same calendar is idempotent by content hash.
+
+Automated-test evidence: `tests/import-ics.test.cjs`, `tests/import-review.test.cjs`, and `tests/import-review-migration.test.cjs`. No native device rehearsal was run for this flow.
+
+Current limitations: file picking, additional formats, itinerary-stop claims, and AI-assisted extraction are out of V1. Accepted bookings still require the traveler to confirm reservation details in Bookings.
+
 ### Bookings
 
 Implemented behavior includes persistent create, edit, delete, status, payment status, amount, currency, reference, location, and date/time fields. New local provider times use native calendar/time controls, canonical local date-time persistence, and comparable `start <= end` validation without implicit timezone conversion. Historical values with `Z` or an explicit offset remain absolute instants and are preserved byte-for-byte until intentionally replaced or cleared; invalid legacy values remain visible and do not crash editing. Add/Edit Booking also includes an optional native itinerary-stop selector with real day, date, title, type, and time context. Users can link, relink, or explicitly return a booking to the valid unlinked state. Booking cards show their linked stop and can open its exact Plan context. Accommodation-type Booking cards also show exact linked stays and can open the relevant Accommodation.
@@ -685,6 +703,8 @@ Ready-made journeys V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and 
 
 Wishlist V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (180 application tests passing, including the new saved-place suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. No native device run was performed for this flow.
 
+Import Review Queue V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (191 application tests passing, including the new import-review suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. No native device run was performed for this flow.
+
 Grounded Destination Sourcing V1 verification re-ran `npx tsc --noEmit` and `npm test` (138 application tests passing, including the new corpus/sourcing suite) plus the unchanged server suite. No native device run was performed for that service-layer milestone.
 
 Android Pixel 8 development-build rehearsal on 2026-09-02 (installed `com.travelos.app`, Metro, AI server `PORT=8789`, `adb reverse`, live Ollama `bge-m3` / `qwen3:4b`):
@@ -704,7 +724,7 @@ Missing release foundations:
 - No production observability or crash reporting.
 - No backup, export, account, or sync mechanism.
 - No verified accessibility, offline, performance, upgrade, or destructive-migration test plan.
-- No device rehearsal of migration versions 7–9 on Expo SQLite.
+- No device rehearsal of migration versions 7–11 on Expo SQLite.
 
 ## Production-quality versus prototype
 
@@ -747,6 +767,7 @@ These pieces are promising foundations; they do not make the app production-read
 - Multi-destination add/remove/reorder, Day → Destination semantics, stable provider identity, and secure timezone/currency enrichment.
 - Companion V2 timezone authoring, Day → Destination semantics, stop-boundary refresh decisions, lived progress, and external live-data layers.
 - Discover live provider catalogues and reranking. Best time V1, Ready-made journeys V1, and Wishlist V1 are implemented in code over grounded catalogue identities. Semantic retrieval and opt-in grounded explanations exist as local-dev lanes over those identities.
+- Broader import formats and a native file picker. Import Review Queue V1 accepts pasted iCalendar into a review queue; it does not extract PDFs or invent bookings.
 - Production AI provider, privacy, and cost contract; Plan free-time advice and Discover retrieve remain a local-dev backend.
 - Advanced accommodation capabilities and the remaining booking actions/provider integrations.
 - Map intelligence, routes, and offline behavior.
@@ -760,6 +781,6 @@ These pieces are promising foundations; they do not make the app production-read
 
 TravelOS is a broader native vertical prototype than the 2026-08-23 snapshot described, and still not a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths. Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. Budget & Expenses, Trip Details, Booking ↔ Stop, Accommodation, Travelers, Time & Runtime Truth, Companion V1, Canonical Destination Authoring, and UX Refinement V1 remain the earlier completed core. After that, Memories V1 and Travel Book V1 give completed trips an on-device record and story, shared readiness selection keeps Companion honest about preparation, Travel DNA plus trip intent/pace give Discover and Create Trip explicit preference language, Plan can show knowable free time and conflicts, AI Foundation V1 can advise on free time without writing trip truth, Discover Experience V1 can recommend grounded destinations that become canonical only after Create Trip confirmation, Grounded Destination Sourcing V1 loads those destinations from explicit provenance-backed packs, and Semantic Discover V1 can add extra grounded catalogue identities from local retrieval without replacing deterministic matching, with opt-in grounded explanations of those catalogue facts. World and Profile are no longer empty tabs, but they are still thin compared with the trip workspace.
 
-The latest local git milestones on `feature/discover-wishlist-v1` follow Ready-made journeys V1 (`3590f68`). Wishlist V1 is implemented in code on this branch. There is still no usable git remote for push.
+The latest local git milestones on `feature/import-review-queue-v1` follow Wishlist V1 (`0b9702b`). Import Review Queue V1 is implemented in code on this branch. There is still no usable git remote for push.
 
-The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, Ready-made journeys V1, and Wishlist V1 are implemented. Those later Discover screens have automated tests and have not been rehearsed on device. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–10, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, import, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.
+The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, Ready-made journeys V1, and Wishlist V1 are implemented. Import Review Queue V1 accepts pasted iCalendar claims without writing bookings until review. Those later screens have automated tests and have not been rehearsed on device. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–11, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, broader import formats, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.

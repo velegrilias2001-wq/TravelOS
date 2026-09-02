@@ -805,6 +805,33 @@ export default function BookingsScreen() {
           ]}
         />
 
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Import a calendar"
+          style={({ pressed }) => [
+            styles.importLink,
+            pressed && styles.pressed,
+          ]}
+          onPress={() =>
+            router.push({
+              pathname: '/import/index',
+              params: {
+                tripId: workspace.trip.id,
+              },
+            })
+          }
+        >
+          <Ionicons
+            name="download-outline"
+            size={18}
+            color={colors.brand}
+          />
+
+          <Text style={styles.importLinkText}>
+            Import a calendar to review
+          </Text>
+        </Pressable>
+
         {workspace.bookings
           .length === 0 ? (
           <View
@@ -1954,6 +1981,21 @@ const styles =
         'center',
 
       ...shadows.subtle,
+    },
+
+    importLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+      alignSelf: 'flex-start',
+      marginTop: spacing[4],
+      marginBottom: spacing[4],
+    },
+
+    importLinkText: {
+      fontFamily: fontFamily.sansSemiBold,
+      fontSize: fontSize.bodySmall,
+      color: colors.brand,
     },
 
     emptyCard: {

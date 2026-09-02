@@ -618,8 +618,108 @@ CREATE INDEX IF NOT EXISTS idx_memories_trip_id
 
 ON memories(trip_id);
 
+CREATE TABLE IF NOT EXISTS import_batches (
+
+  id TEXT PRIMARY KEY NOT NULL,
+
+  source_kind TEXT NOT NULL
+
+    CHECK (
+
+      source_kind IN ('ics')
+
+    ),
+
+  source_label TEXT NOT NULL,
+
+  content_hash TEXT NOT NULL UNIQUE,
+
+  skipped_count INTEGER NOT NULL,
+
+  created_at TEXT NOT NULL
+
+);
+
+CREATE TABLE IF NOT EXISTS import_claims (
+
+  id TEXT PRIMARY KEY NOT NULL,
+
+  batch_id TEXT NOT NULL,
+
+  kind TEXT NOT NULL
+
+    CHECK (
+
+      kind IN ('booking')
+
+    ),
+
+  status TEXT NOT NULL
+
+    CHECK (
+
+      status IN ('pending', 'accepted', 'dismissed')
+
+    ),
+
+  title TEXT NOT NULL,
+
+  start_at TEXT,
+
+  end_at TEXT,
+
+  location_text TEXT,
+
+  ics_uid TEXT,
+
+  confidence TEXT NOT NULL
+
+    CHECK (
+
+      confidence IN ('high', 'medium', 'low')
+
+    ),
+
+  evidence_json TEXT NOT NULL,
+
+  accepted_trip_id TEXT,
+
+  accepted_booking_id TEXT,
+
+  created_at TEXT NOT NULL,
+
+  updated_at TEXT NOT NULL,
+
+  FOREIGN KEY (batch_id)
+
+    REFERENCES import_batches(id)
+
+    ON DELETE CASCADE,
+
+  FOREIGN KEY (accepted_trip_id)
+
+    REFERENCES trips(id)
+
+    ON DELETE SET NULL,
+
+  FOREIGN KEY (accepted_booking_id)
+
+    REFERENCES bookings(id)
+
+    ON DELETE SET NULL
+
+);
+
 CREATE INDEX IF NOT EXISTS idx_saved_places_created_at
 
 ON saved_places(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_import_claims_batch_id
+
+ON import_claims(batch_id);
+
+CREATE INDEX IF NOT EXISTS idx_import_batches_created_at
+
+ON import_batches(created_at);
 
 `;

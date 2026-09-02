@@ -185,6 +185,30 @@ export default function TripsScreen() {
         </Pressable>
       </View>
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Import a calendar"
+        style={({ pressed }) => [
+          styles.importLink,
+          pressed && styles.pressed,
+        ]}
+        onPress={() =>
+          router.push({
+            pathname: '/import/index',
+          })
+        }
+      >
+        <Ionicons
+          name="download-outline"
+          size={18}
+          color={colors.brand}
+        />
+
+        <Text style={styles.importLinkText}>
+          Import a calendar to review
+        </Text>
+      </Pressable>
+
       {trips.length === 0 ? (
         <View style={styles.emptyCard}>
           <View style={styles.emptyTop}>
@@ -388,12 +412,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingTop: spacing[5],
-    marginBottom: spacing[7],
+    marginBottom: spacing[4],
   },
 
   headerCopy: {
     flex: 1,
     paddingRight: spacing[6],
+  },
+
+  importLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    alignSelf: 'flex-start',
+    marginBottom: spacing[6],
+  },
+
+  importLinkText: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.brand,
   },
 
   eyebrow: {

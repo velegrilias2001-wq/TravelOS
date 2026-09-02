@@ -6,7 +6,7 @@ import {
   reconcileMemoryRelationships,
 } from './memory-integrity-migration';
 
-export const DATABASE_VERSION = 10;
+export const DATABASE_VERSION = 11;
 
 interface UserVersionRow {
   user_version: number;
@@ -1110,6 +1110,90 @@ export async function migrateDatabase(
             ON saved_places(created_at);
 
           PRAGMA user_version = 10;
+        `);
+      },
+    );
+  }
+
+  /**
+   * Version 11
+   * Persist imported calendar claims in a review queue
+   * distinct from Bookings and Trips until the traveler
+   * explicitly accepts a claim onto an existing trip.
+   *
+   * V1 stores iCalendar events only. Location text is
+   * never treated as coordinates. Dates without times
+   * stay unknown instead of inventing midnight.
+   */
+  if (currentVersion < 11) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await transaction.execAsync(`
+          CREATE TABLE IF NOT EXISTS import_batches (
+            id TEXT PRIMARY KEY NOT NULL,
+            source_kind TEXT NOT NULL
+              CHECK (
+                source_kind IN ('ics')
+              ),
+            source_label TEXT NOT NULL,
+            content_hash TEXT NOT NULL UNIQUE,
+            skipped_count INTEGER NOT NULL,
+            created_at TEXT NOT NULL
+          );
+
+          CREATE TABLE IF NOT EXISTS import_claims (
+            id TEXT PRIMARY KEY NOT NULL,
+            batch_id TEXT NOT NULL,
+            kind TEXT NOT NULL
+              CHECK (
+                kind IN ('booking')
+              ),
+            status TEXT NOT NULL
+              CHECK (
+                status IN (
+                  'pending',
+                  'accepted',
+                  'dismissed'
+                )
+              ),
+            title TEXT NOT NULL,
+            start_at TEXT,
+            end_at TEXT,
+            location_text TEXT,
+            ics_uid TEXT,
+            confidence TEXT NOT NULL
+              CHECK (
+                confidence IN (
+                  'high',
+                  'medium',
+                  'low'
+                )
+              ),
+            evidence_json TEXT NOT NULL,
+            accepted_trip_id TEXT,
+            accepted_booking_id TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (batch_id)
+              REFERENCES import_batches(id)
+              ON DELETE CASCADE,
+            FOREIGN KEY (accepted_trip_id)
+              REFERENCES trips(id)
+              ON DELETE SET NULL,
+            FOREIGN KEY (accepted_booking_id)
+              REFERENCES bookings(id)
+              ON DELETE SET NULL
+          );
+
+          CREATE INDEX IF NOT EXISTS
+            idx_import_claims_batch_id
+            ON import_claims(batch_id);
+
+          CREATE INDEX IF NOT EXISTS
+            idx_import_batches_created_at
+            ON import_batches(created_at);
+
+          PRAGMA user_version = 11;
         `);
       },
     );
