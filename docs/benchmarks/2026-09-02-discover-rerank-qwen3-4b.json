@@ -1,0 +1,814 @@
+{
+  "embedModel": "bge-m3",
+  "rerankModel": "qwen3:4b",
+  "topK": 8,
+  "ollamaBaseUrl": "http://127.0.0.1:11434",
+  "generatedAt": "2026-09-02T05:01:19.044Z",
+  "corpusSize": 12,
+  "ollamaRerankApi": {
+    "available": false,
+    "status": 404,
+    "elapsedMs": 38.9459,
+    "identities": null
+  },
+  "embedding": {
+    "byLanguage": [
+      {
+        "language": "en",
+        "queries": 4,
+        "averageRecallAt3": 0.5833333333333334,
+        "averageRecallAt5": 0.7916666666666666,
+        "averageReciprocalRank": 0.75
+      },
+      {
+        "language": "el",
+        "queries": 4,
+        "averageRecallAt3": 0.5833333333333334,
+        "averageRecallAt5": 0.9166666666666666,
+        "averageReciprocalRank": 0.6666666666666666
+      }
+    ]
+  },
+  "chatRerank": {
+    "byLanguage": [
+      {
+        "language": "en",
+        "queries": 4,
+        "averageRecallAt3": 0.7083333333333334,
+        "averageRecallAt5": 0.9166666666666666,
+        "averageReciprocalRank": 0.75
+      },
+      {
+        "language": "el",
+        "queries": 4,
+        "averageRecallAt3": 0.5833333333333334,
+        "averageRecallAt5": 0.9166666666666666,
+        "averageReciprocalRank": 0.6666666666666666
+      }
+    ],
+    "failures": 0,
+    "averageRerankMs": 3284.25
+  },
+  "queries": [
+    {
+      "id": "romantic-slow-en",
+      "language": "en",
+      "kind": "scored",
+      "text": "A romantic escape at a slow, unhurried pace",
+      "gold": [
+        "curated:pt-porto",
+        "curated:at-vienna",
+        "curated:es-seville"
+      ],
+      "retrieveMs": 6270,
+      "rerankMs": 10547,
+      "rerankError": null,
+      "embedding": {
+        "recallAt3": 1,
+        "recallAt5": 1,
+        "reciprocalRank": 1,
+        "top5": [
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:es-seville",
+            "recordId": "es-seville",
+            "name": "Seville"
+          },
+          {
+            "identity": "curated:at-vienna",
+            "recordId": "at-vienna",
+            "name": "Vienna"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          }
+        ]
+      },
+      "chatRerank": {
+        "recallAt3": 1,
+        "recallAt5": 1,
+        "reciprocalRank": 1,
+        "top5": [
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:es-seville",
+            "recordId": "es-seville",
+            "name": "Seville"
+          },
+          {
+            "identity": "curated:at-vienna",
+            "recordId": "at-vienna",
+            "name": "Vienna"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          }
+        ]
+      }
+    },
+    {
+      "id": "romantic-slow-el",
+      "language": "el",
+      "kind": "scored",
+      "text": "Ρομαντική απόδραση με αργούς, χαλαρούς ρυθμούς",
+      "gold": [
+        "curated:pt-porto",
+        "curated:at-vienna",
+        "curated:es-seville"
+      ],
+      "retrieveMs": 74,
+      "rerankMs": 2342,
+      "rerankError": null,
+      "embedding": {
+        "recallAt3": 1,
+        "recallAt5": 1,
+        "reciprocalRank": 1,
+        "top5": [
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:es-seville",
+            "recordId": "es-seville",
+            "name": "Seville"
+          },
+          {
+            "identity": "curated:at-vienna",
+            "recordId": "at-vienna",
+            "name": "Vienna"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          }
+        ]
+      },
+      "chatRerank": {
+        "recallAt3": 1,
+        "recallAt5": 1,
+        "reciprocalRank": 1,
+        "top5": [
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:es-seville",
+            "recordId": "es-seville",
+            "name": "Seville"
+          },
+          {
+            "identity": "curated:at-vienna",
+            "recordId": "at-vienna",
+            "name": "Vienna"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          }
+        ]
+      }
+    },
+    {
+      "id": "beach-nightlife-en",
+      "language": "en",
+      "kind": "scored",
+      "text": "A city with beaches and lively nightlife for a group of friends",
+      "gold": [
+        "curated:pt-lisbon",
+        "curated:es-barcelona"
+      ],
+      "retrieveMs": 75,
+      "rerankMs": 1897,
+      "rerankError": null,
+      "embedding": {
+        "recallAt3": 0.5,
+        "recallAt5": 0.5,
+        "reciprocalRank": 0.5,
+        "top5": [
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:es-barcelona",
+            "recordId": "es-barcelona",
+            "name": "Barcelona"
+          },
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:es-seville",
+            "recordId": "es-seville",
+            "name": "Seville"
+          },
+          {
+            "identity": "curated:nl-amsterdam",
+            "recordId": "nl-amsterdam",
+            "name": "Amsterdam"
+          }
+        ]
+      },
+      "chatRerank": {
+        "recallAt3": 1,
+        "recallAt5": 1,
+        "reciprocalRank": 0.5,
+        "top5": [
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:es-barcelona",
+            "recordId": "es-barcelona",
+            "name": "Barcelona"
+          },
+          {
+            "identity": "curated:pt-lisbon",
+            "recordId": "pt-lisbon",
+            "name": "Lisbon"
+          },
+          {
+            "identity": "curated:nl-amsterdam",
+            "recordId": "nl-amsterdam",
+            "name": "Amsterdam"
+          },
+          {
+            "identity": "curated:cz-prague",
+            "recordId": "cz-prague",
+            "name": "Prague"
+          }
+        ]
+      }
+    },
+    {
+      "id": "beach-nightlife-el",
+      "language": "el",
+      "kind": "scored",
+      "text": "Πόλη με παραλίες και έντονη νυχτερινή ζωή για παρέα φίλων",
+      "gold": [
+        "curated:pt-lisbon",
+        "curated:es-barcelona"
+      ],
+      "retrieveMs": 83,
+      "rerankMs": 2338,
+      "rerankError": null,
+      "embedding": {
+        "recallAt3": 0.5,
+        "recallAt5": 1,
+        "reciprocalRank": 0.3333333333333333,
+        "top5": [
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:cz-prague",
+            "recordId": "cz-prague",
+            "name": "Prague"
+          },
+          {
+            "identity": "curated:es-barcelona",
+            "recordId": "es-barcelona",
+            "name": "Barcelona"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:pt-lisbon",
+            "recordId": "pt-lisbon",
+            "name": "Lisbon"
+          }
+        ]
+      },
+      "chatRerank": {
+        "recallAt3": 0.5,
+        "recallAt5": 1,
+        "reciprocalRank": 0.3333333333333333,
+        "top5": [
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:cz-prague",
+            "recordId": "cz-prague",
+            "name": "Prague"
+          },
+          {
+            "identity": "curated:es-barcelona",
+            "recordId": "es-barcelona",
+            "name": "Barcelona"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:pt-lisbon",
+            "recordId": "pt-lisbon",
+            "name": "Lisbon"
+          }
+        ]
+      }
+    },
+    {
+      "id": "slow-local-nature-en",
+      "language": "en",
+      "kind": "scored",
+      "text": "A calm, local-feeling city close to nature",
+      "gold": [
+        "curated:pt-porto",
+        "curated:dk-copenhagen"
+      ],
+      "retrieveMs": 73,
+      "rerankMs": 2245,
+      "rerankError": null,
+      "embedding": {
+        "recallAt3": 0.5,
+        "recallAt5": 1,
+        "reciprocalRank": 0.5,
+        "top5": [
+          {
+            "identity": "curated:es-seville",
+            "recordId": "es-seville",
+            "name": "Seville"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          },
+          {
+            "identity": "curated:at-vienna",
+            "recordId": "at-vienna",
+            "name": "Vienna"
+          },
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          }
+        ]
+      },
+      "chatRerank": {
+        "recallAt3": 0.5,
+        "recallAt5": 1,
+        "reciprocalRank": 0.5,
+        "top5": [
+          {
+            "identity": "curated:es-seville",
+            "recordId": "es-seville",
+            "name": "Seville"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          },
+          {
+            "identity": "curated:at-vienna",
+            "recordId": "at-vienna",
+            "name": "Vienna"
+          },
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          }
+        ]
+      }
+    },
+    {
+      "id": "slow-local-nature-el",
+      "language": "el",
+      "kind": "scored",
+      "text": "Ήρεμη πόλη με τοπικό χαρακτήρα κοντά στη φύση",
+      "gold": [
+        "curated:pt-porto",
+        "curated:dk-copenhagen"
+      ],
+      "retrieveMs": 75,
+      "rerankMs": 2319,
+      "rerankError": null,
+      "embedding": {
+        "recallAt3": 0.5,
+        "recallAt5": 1,
+        "reciprocalRank": 0.3333333333333333,
+        "top5": [
+          {
+            "identity": "curated:es-seville",
+            "recordId": "es-seville",
+            "name": "Seville"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:at-vienna",
+            "recordId": "at-vienna",
+            "name": "Vienna"
+          }
+        ]
+      },
+      "chatRerank": {
+        "recallAt3": 0.5,
+        "recallAt5": 1,
+        "reciprocalRank": 0.3333333333333333,
+        "top5": [
+          {
+            "identity": "curated:es-seville",
+            "recordId": "es-seville",
+            "name": "Seville"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:at-vienna",
+            "recordId": "at-vienna",
+            "name": "Vienna"
+          }
+        ]
+      }
+    },
+    {
+      "id": "family-nature-en",
+      "language": "en",
+      "kind": "scored",
+      "text": "A family trip to a city with easy time in nature",
+      "gold": [
+        "curated:pt-lisbon",
+        "curated:nl-amsterdam",
+        "curated:dk-copenhagen"
+      ],
+      "retrieveMs": 64,
+      "rerankMs": 2259,
+      "rerankError": null,
+      "embedding": {
+        "recallAt3": 0.3333333333333333,
+        "recallAt5": 0.6666666666666666,
+        "reciprocalRank": 1,
+        "top5": [
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:at-vienna",
+            "recordId": "at-vienna",
+            "name": "Vienna"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          },
+          {
+            "identity": "curated:nl-amsterdam",
+            "recordId": "nl-amsterdam",
+            "name": "Amsterdam"
+          },
+          {
+            "identity": "curated:gr-athens",
+            "recordId": "gr-athens",
+            "name": "Athens"
+          }
+        ]
+      },
+      "chatRerank": {
+        "recallAt3": 0.3333333333333333,
+        "recallAt5": 0.6666666666666666,
+        "reciprocalRank": 1,
+        "top5": [
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:at-vienna",
+            "recordId": "at-vienna",
+            "name": "Vienna"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          },
+          {
+            "identity": "curated:nl-amsterdam",
+            "recordId": "nl-amsterdam",
+            "name": "Amsterdam"
+          },
+          {
+            "identity": "curated:gr-athens",
+            "recordId": "gr-athens",
+            "name": "Athens"
+          }
+        ]
+      }
+    },
+    {
+      "id": "family-nature-el",
+      "language": "el",
+      "kind": "scored",
+      "text": "Οικογενειακό ταξίδι σε πόλη κοντά στη φύση",
+      "gold": [
+        "curated:pt-lisbon",
+        "curated:nl-amsterdam",
+        "curated:dk-copenhagen"
+      ],
+      "retrieveMs": 75,
+      "rerankMs": 2327,
+      "rerankError": null,
+      "embedding": {
+        "recallAt3": 0.3333333333333333,
+        "recallAt5": 0.6666666666666666,
+        "reciprocalRank": 1,
+        "top5": [
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:at-vienna",
+            "recordId": "at-vienna",
+            "name": "Vienna"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          },
+          {
+            "identity": "curated:nl-amsterdam",
+            "recordId": "nl-amsterdam",
+            "name": "Amsterdam"
+          },
+          {
+            "identity": "curated:gr-athens",
+            "recordId": "gr-athens",
+            "name": "Athens"
+          }
+        ]
+      },
+      "chatRerank": {
+        "recallAt3": 0.3333333333333333,
+        "recallAt5": 0.6666666666666666,
+        "reciprocalRank": 1,
+        "top5": [
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:at-vienna",
+            "recordId": "at-vienna",
+            "name": "Vienna"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          },
+          {
+            "identity": "curated:nl-amsterdam",
+            "recordId": "nl-amsterdam",
+            "name": "Amsterdam"
+          },
+          {
+            "identity": "curated:gr-athens",
+            "recordId": "gr-athens",
+            "name": "Athens"
+          }
+        ]
+      }
+    },
+    {
+      "id": "fjords-en",
+      "language": "en",
+      "kind": "probe",
+      "text": "Fjords, mountains and dramatic nature in Norway",
+      "watchRecordId": "no-bergen",
+      "retrieveMs": 72,
+      "rerankMs": 1268,
+      "rerankError": null,
+      "embedding": {
+        "watchedRank": 1,
+        "top5": [
+          {
+            "identity": "curated:no-bergen",
+            "recordId": "no-bergen",
+            "name": "Bergen"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:nl-amsterdam",
+            "recordId": "nl-amsterdam",
+            "name": "Amsterdam"
+          },
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          }
+        ]
+      },
+      "chatRerank": {
+        "watchedRank": 1,
+        "top5": [
+          {
+            "identity": "curated:no-bergen",
+            "recordId": "no-bergen",
+            "name": "Bergen"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:nl-amsterdam",
+            "recordId": "nl-amsterdam",
+            "name": "Amsterdam"
+          },
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:pl-krakow",
+            "recordId": "pl-krakow",
+            "name": "Krakow"
+          }
+        ]
+      }
+    },
+    {
+      "id": "fjords-el",
+      "language": "el",
+      "kind": "probe",
+      "text": "Φιόρδ και άγρια φύση στη Νορβηγία",
+      "watchRecordId": "no-bergen",
+      "retrieveMs": 77,
+      "rerankMs": 2159,
+      "rerankError": null,
+      "embedding": {
+        "watchedRank": 1,
+        "top5": [
+          {
+            "identity": "curated:no-bergen",
+            "recordId": "no-bergen",
+            "name": "Bergen"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:nl-amsterdam",
+            "recordId": "nl-amsterdam",
+            "name": "Amsterdam"
+          },
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:pt-lisbon",
+            "recordId": "pt-lisbon",
+            "name": "Lisbon"
+          }
+        ]
+      },
+      "chatRerank": {
+        "watchedRank": 1,
+        "top5": [
+          {
+            "identity": "curated:no-bergen",
+            "recordId": "no-bergen",
+            "name": "Bergen"
+          },
+          {
+            "identity": "curated:dk-copenhagen",
+            "recordId": "dk-copenhagen",
+            "name": "Copenhagen"
+          },
+          {
+            "identity": "curated:nl-amsterdam",
+            "recordId": "nl-amsterdam",
+            "name": "Amsterdam"
+          },
+          {
+            "identity": "curated:pt-porto",
+            "recordId": "pt-porto",
+            "name": "Porto"
+          },
+          {
+            "identity": "curated:pt-lisbon",
+            "recordId": "pt-lisbon",
+            "name": "Lisbon"
+          }
+        ]
+      }
+    }
+  ]
+}
