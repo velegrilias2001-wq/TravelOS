@@ -182,7 +182,7 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
-            name="import/[batchId]"
+            name="import/review/[batchId]"
             options={{
               presentation: 'card',
             }}

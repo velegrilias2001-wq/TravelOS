@@ -15,9 +15,9 @@ Evidence classes used throughout:
 
 - Current development branch: `feature/import-review-queue-v1`
 - Branch point: `0b9702b` — feat: add Discover Wishlist V1
-- Import Review Queue V1 is implemented on this branch: local iCalendar paste becomes durable `import_batches` / `import_claims` rows. Claims are not Bookings until the traveler accepts one onto an existing trip. Automated tests exist. No native device rehearsal was run for this flow.
+- Import Review Queue V1 is implemented on this branch: local iCalendar paste becomes durable `import_batches` / `import_claims` rows. Claims are not Bookings until the traveler accepts one onto an existing trip. Review lives at `/import/review/[batchId]` so Expo does not treat `/import/index` as a batch id. Automated tests exist. An Android Pixel 8 development-build rehearsal on 2026-09-02 ran the paste → review → accept → delete path.
 - Wishlist V1 remains on the parent history: durable `saved_places` rows for grounded Discover destination and journey identities, distinct from Trips and World history.
-- Best time V1 remains on the parent history. An Android Pixel 8 development-build rehearsal on 2026-09-02 verified Home, Discover hybrid results, a live Porto explanation, Create Trip persist/delete, Companion/Plan/Map/Bookings/More, Memories, Travel Book, World, Profile/Travel DNA, and Plan free-time advice. Best time and Ready-made journeys were not part of that rehearsal.
+- Best time V1 remains on the parent history. An Android Pixel 8 development-build rehearsal on 2026-09-02 verified Home, Discover hybrid results, a live Porto explanation, Create Trip persist/delete, Companion/Plan/Map/Bookings/More, Memories, Travel Book, World, Profile/Travel DNA, and Plan free-time advice. A later same-day Pixel 8 pass also opened Best time, Ready-made journeys, and the empty Saved ideas list without creating or saving anything.
 - Phase 0A checkpoint: e5ffbb1 — Harden TravelOS persistence and migrations
 - Phase 0B checkpoint: 7135262 — Add reactive TripWorkspace lifecycle
 - Budget & Expenses checkpoint: 65b7f33 — Add native trip budget and expenses
@@ -503,7 +503,7 @@ Implemented in code:
 - Session Brief uses `mode: 'best_time'` in Zustand only. Nothing is written to SQLite until the traveler confirms Create Trip.
 - Adding timing does not change embedding document text, so the committed semantic artifact hash is unchanged.
 
-Automated-test evidence: `tests/discover-best-time.test.cjs`. No native device rehearsal was run for this screen.
+Automated-test evidence: `tests/discover-best-time.test.cjs`. Android Pixel 8 opened the destination list and Bergen sourced months on 2026-09-02; Create Trip from that screen was not exercised.
 
 Current limitations: only two of twelve corpus destinations have sourced months; remaining destinations show an explicit unknown state. Best time does not rank “best weeks,” invent weather, or compare destinations against each other.
 
@@ -517,7 +517,7 @@ Implemented in code:
 - Session Brief uses `mode: 'journey_ideas'` in Zustand only. Nothing is written to SQLite until the traveler confirms Create Trip.
 - Journeys are not embedding documents. The committed semantic artifact hash is unchanged.
 
-Automated-test evidence: `tests/discover-journeys.test.cjs`. No native device rehearsal was run for this screen.
+Automated-test evidence: `tests/discover-journeys.test.cjs`. Android Pixel 8 opened the journey list on 2026-09-02 (Porto, Lisbon and Porto, Bergen). Journey detail and Create Trip from a journey were not exercised.
 
 Current limitations: there is no journey day-by-day itinerary or multi-destination Create Trip authoring. A two-city idea still confirms one destination. Journey ideas can be saved as wishlist candidates without becoming trips.
 
@@ -530,7 +530,7 @@ Implemented in code:
 - `/discover/saved` lists saved ideas and can hand the primary destination to Create Trip. Extra journey cities stay ideas. Removing a saved idea does not delete trips.
 - Profile links to the same Saved ideas list. World still maps only persisted Trip destinations and does not treat wishlist rows as visited or planned.
 
-Automated-test evidence: `tests/saved-place.test.cjs` and `tests/saved-place-migration.test.cjs`. No native device rehearsal was run for this flow.
+Automated-test evidence: `tests/saved-place.test.cjs` and `tests/saved-place-migration.test.cjs`. Android Pixel 8 opened the empty Saved ideas list on 2026-09-02. Saving or removing an idea was not exercised.
 
 Current limitations: there is no World wishlist layer, no live provider save path, and no conversion of a saved idea into a Trip without `/new-trip`.
 
@@ -540,11 +540,11 @@ Implemented in code:
 
 - Migration version 11 adds `import_batches` and `import_claims`. V1 accepts pasted iCalendar (`.ics`) text only. There is no PDF/ZIP/image extraction and no AI parsing. A native document picker was not added because it would require a new Expo module and a development-build rebuild.
 - Each claim stores extracted title, optional start/end, optional location text, optional UID, confidence, and JSON evidence (fields present, TZID, date-only calendar date). Location is never treated as coordinates. Date-only events do not invent midnight.
-- Home, Trips, and Bookings open `/import`. Review is `/import/[batchId]`. Accepting writes one planned Booking of type `other` onto a chosen existing trip through the canonical booking write path. Dismissing leaves no booking. Import never creates a Trip or destination.
+- Home, Trips, and Bookings open `/import`. Review is `/import/review/[batchId]`. Accepting writes one planned Booking of type `other` onto a chosen existing trip through the canonical booking write path. Dismissing leaves no booking. Import never creates a Trip or destination.
 - Conflicts are evaluated at review time against the selected trip: missing time, overlapping bookings, duplicate UID already accepted, and incomparable local/absolute times. They are shown; they do not silently merge or overwrite bookings.
 - Re-pasting the same calendar is idempotent by content hash.
 
-Automated-test evidence: `tests/import-ics.test.cjs`, `tests/import-review.test.cjs`, and `tests/import-review-migration.test.cjs`. No native device rehearsal was run for this flow.
+Automated-test evidence: `tests/import-ics.test.cjs`, `tests/import-review.test.cjs`, and `tests/import-review-migration.test.cjs`. Android Pixel 8 development-build evidence on 2026-09-02 is recorded under Testing and release readiness.
 
 Current limitations: file picking, additional formats, itinerary-stop claims, and AI-assisted extraction are out of V1. Accepted bookings still require the traveler to confirm reservation details in Bookings.
 
@@ -697,13 +697,21 @@ Cursor handoff verification on 2026-09-01 (documentation/rule changes only; no n
 
 A current passing Node count from the 2026-09-02 rehearsal is 160 application tests plus 27 server tests. That does not replace historical Android evidence through UX Refinement V1.
 
-Best time V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (168 application tests passing, including the new Best time suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. No native device run was performed for this screen.
+Best time V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (168 application tests passing, including the new Best time suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. A later same-day Pixel 8 pass opened this screen; see the Import follow-up below.
 
-Ready-made journeys V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (173 application tests passing, including the new journeys suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. No native device run was performed for this screen.
+Ready-made journeys V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (173 application tests passing, including the new journeys suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. A later same-day Pixel 8 pass opened the journey list; see the Import follow-up below.
 
-Wishlist V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (180 application tests passing, including the new saved-place suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. No native device run was performed for this flow.
+Wishlist V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (180 application tests passing, including the new saved-place suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. A later same-day Pixel 8 pass opened the empty Saved ideas list; see the Import follow-up below.
 
-Import Review Queue V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (191 application tests passing, including the new import-review suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files. No native device run was performed for this flow.
+Import Review Queue V1 verification on 2026-09-02 re-ran `npx tsc --noEmit` and `npm test` (191 application tests passing, including the new import-review suite) plus `cd server && npm test` (27 tests). `git diff --check` was clean for the changed files.
+
+A follow-up Android Pixel 8 development-build pass on 2026-09-02 (same installed `com.travelos.app`, Metro, `adb reverse`) found that `pathname: '/import/index'` was captured as the review `[batchId]`. Review was moved to `/import/review/[batchId]`. This route-fix pass re-ran `npx tsc --noEmit` and `npm test` (191 passing). `git diff --check` was clean. After that fix:
+
+- Home still featured Nagawa as HAPPENING NOW with 3 trips / 0 completed.
+- `/import` opened REVIEW FIRST. Garbage clipboard text fail-closed with `Import only accepts an iCalendar (.ics) calendar.`
+- A typed VEVENT (`E2E TAP to Lisbon`, 15 Sept 2026 08:00–10:30 local, location text Porto Airport) opened review as HIGH CONFIDENCE · PENDING. Accept stayed disabled until a trip was chosen.
+- Accepting onto Coullons wrote a planned unpaid booking. Coullons Companion showed EARLY BOOKING CONTEXT for that title. Bookings showed `1 booking`, `0 confirmed`, `0 paid`. The booking was then deleted; Bookings returned to empty and Companion no longer listed it. Nagawa, Strathpeffer, and Coullons remained the only trips.
+- Discover opened Best time (Bergen sourced months plus Visit Norway citation, no trip created), the Ready-made journeys list, and empty Saved ideas. World still showed 3 planning places. Profile still showed Travel DNA and Saved ideas. iOS, file picking, `PRAGMA user_version = 11`, saving a wishlist idea, and Create Trip from Best time or a journey were not exercised.
 
 Grounded Destination Sourcing V1 verification re-ran `npx tsc --noEmit` and `npm test` (138 application tests passing, including the new corpus/sourcing suite) plus the unchanged server suite. No native device run was performed for that service-layer milestone.
 
@@ -781,6 +789,6 @@ These pieces are promising foundations; they do not make the app production-read
 
 TravelOS is a broader native vertical prototype than the 2026-08-23 snapshot described, and still not a production application. Phase 0A protects the highest-risk day-generation, ordering, and migration paths. Phase 0B establishes one reliable reactive lifecycle for the current Trip Space. Budget & Expenses, Trip Details, Booking ↔ Stop, Accommodation, Travelers, Time & Runtime Truth, Companion V1, Canonical Destination Authoring, and UX Refinement V1 remain the earlier completed core. After that, Memories V1 and Travel Book V1 give completed trips an on-device record and story, shared readiness selection keeps Companion honest about preparation, Travel DNA plus trip intent/pace give Discover and Create Trip explicit preference language, Plan can show knowable free time and conflicts, AI Foundation V1 can advise on free time without writing trip truth, Discover Experience V1 can recommend grounded destinations that become canonical only after Create Trip confirmation, Grounded Destination Sourcing V1 loads those destinations from explicit provenance-backed packs, and Semantic Discover V1 can add extra grounded catalogue identities from local retrieval without replacing deterministic matching, with opt-in grounded explanations of those catalogue facts. World and Profile are no longer empty tabs, but they are still thin compared with the trip workspace.
 
-The latest local git milestones on `feature/import-review-queue-v1` follow Wishlist V1 (`0b9702b`). Import Review Queue V1 is implemented in code on this branch. There is still no usable git remote for push.
+The latest local git milestones on `feature/import-review-queue-v1` follow Wishlist V1 (`0b9702b`). Import Review Queue V1 is implemented and was rehearsed on an Android Pixel 8 development build, including the `/import/review/[batchId]` route fix. There is still no usable git remote for push.
 
-The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, Ready-made journeys V1, and Wishlist V1 are implemented. Import Review Queue V1 accepts pasted iCalendar claims without writing bookings until review. Those later screens have automated tests and have not been rehearsed on device. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–11, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, broader import formats, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.
+The immediate planned product-development sequence is now: Discover reranking remains open until a real rerank serving path can be measured. A BGE reranker is still the candidate and was not installed. Semantic Discover V1 retrieval, grounded explanations, Best time V1, Ready-made journeys V1, and Wishlist V1 are implemented. Import Review Queue V1 accepts pasted iCalendar claims without writing bookings until review. Pixel 8 opened Best time, the journeys list, empty Saved ideas, and the Import accept/delete path; wishlist save and journey-to-Create-Trip were not exercised. AI must not become a destination source. BGE-M3, a BGE reranker, and Qwen are candidates to benchmark, not permanent architecture commitments. Important open engineering and release work remains—Memory/Travel Book workspace invalidation, Expo SQLite rehearsal of migrations 7–11, remaining visual/accessibility matrix, Phase 0 gaps, destination add/remove/reorder, Day → Destination semantics, a secure timezone source, traveler ownership, Companion V2 lived state, FX before foreign-currency accounting totals, broader import formats, iOS, CI/EAS, and backup/sync—but that work does not replace the Discover sequence above.

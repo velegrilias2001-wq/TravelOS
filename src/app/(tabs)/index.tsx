@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   useFocusEffect,
   useRouter,
+  type Href,
 } from 'expo-router';
 import {
   useCallback,
@@ -388,11 +389,7 @@ export default function HomeScreen() {
           styles.importCard,
           pressed && styles.pressed,
         ]}
-        onPress={() =>
-          router.push({
-            pathname: '/import/index',
-          })
-        }
+        onPress={() => router.push('/import' as Href)}
       >
         <View style={styles.importIcon}>
           <Ionicons

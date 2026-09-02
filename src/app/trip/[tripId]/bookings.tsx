@@ -10,6 +10,7 @@ import {
 import {
   useLocalSearchParams,
   useRouter,
+  type Href,
 } from 'expo-router';
 
 import {
@@ -814,11 +815,11 @@ export default function BookingsScreen() {
           ]}
           onPress={() =>
             router.push({
-              pathname: '/import/index',
+              pathname: '/import',
               params: {
                 tripId: workspace.trip.id,
               },
-            })
+            } as unknown as Href)
           }
         >
           <Ionicons

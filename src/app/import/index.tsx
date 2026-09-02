@@ -3,6 +3,7 @@ import {
   useFocusEffect,
   useLocalSearchParams,
   useRouter,
+  type Href,
 } from 'expo-router';
 import {
   useCallback,
@@ -72,12 +73,12 @@ export default function ImportScreen() {
 
   const openBatch = (batchId: string) => {
     router.push({
-      pathname: '/import/[batchId]',
+      pathname: '/import/review/[batchId]',
       params: {
         batchId,
         ...(tripId ? { tripId } : {}),
       },
-    });
+    } as Href);
   };
 
   const submit = async () => {

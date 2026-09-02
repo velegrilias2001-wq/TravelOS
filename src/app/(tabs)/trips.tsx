@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import {
   Pressable,
   StyleSheet,
@@ -192,11 +192,7 @@ export default function TripsScreen() {
           styles.importLink,
           pressed && styles.pressed,
         ]}
-        onPress={() =>
-          router.push({
-            pathname: '/import/index',
-          })
-        }
+        onPress={() => router.push('/import' as Href)}
       >
         <Ionicons
           name="download-outline"
