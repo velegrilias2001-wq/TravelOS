@@ -29,6 +29,7 @@ interface TripRow {
 interface TravelerLinkRow {
   trip_id: string;
   traveler_id: string;
+  role: string | null;
 }
 
 function sqlPlaceholders(
@@ -44,6 +45,7 @@ function mapTripRow(
   row: TripRow,
   destinations: TripDestination[],
   travelerIds: string[],
+  ownerTravelerId?: string,
 ): Trip {
   return {
     id: row.id,
@@ -59,6 +61,7 @@ function mapTripRow(
     startDate: row.start_date,
     endDate: row.end_date,
     travelerIds,
+    ownerTravelerId,
     accountingCurrency:
       row.accounting_currency,
     createdAt: row.created_at,
@@ -69,14 +72,18 @@ function mapTripRow(
 async function loadTripTravelerIdsForTrips(
   database: DatabaseConnection,
   tripIds: readonly TripId[],
-): Promise<Map<TripId, string[]>> {
+): Promise<{
+  travelersByTrip: Map<TripId, string[]>;
+  ownersByTrip: Map<TripId, string>;
+}> {
   const travelersByTrip = new Map<
     TripId,
     string[]
   >();
+  const ownersByTrip = new Map<TripId, string>();
 
   if (tripIds.length === 0) {
-    return travelersByTrip;
+    return { travelersByTrip, ownersByTrip };
   }
 
   const rows =
@@ -84,7 +91,8 @@ async function loadTripTravelerIdsForTrips(
       `
         SELECT
           trip_id,
-          traveler_id
+          traveler_id,
+          role
         FROM trip_travelers
         WHERE trip_id IN (${sqlPlaceholders(tripIds.length)})
         ORDER BY
@@ -100,16 +108,19 @@ async function loadTripTravelerIdsForTrips(
 
     if (current) {
       current.push(row.traveler_id);
-      continue;
+    } else {
+      travelersByTrip.set(
+        row.trip_id,
+        [row.traveler_id],
+      );
     }
 
-    travelersByTrip.set(
-      row.trip_id,
-      [row.traveler_id],
-    );
+    if (row.role === 'owner') {
+      ownersByTrip.set(row.trip_id, row.traveler_id);
+    }
   }
 
-  return travelersByTrip;
+  return { travelersByTrip, ownersByTrip };
 }
 
 async function hydrateTripRows(
@@ -124,7 +135,7 @@ async function hydrateTripRows(
 
   const [
     destinationsByTrip,
-    travelersByTrip,
+    memberships,
   ] = await Promise.all([
     loadTripDestinationsForTrips(
       database,
@@ -140,7 +151,8 @@ async function hydrateTripRows(
     mapTripRow(
       row,
       destinationsByTrip.get(row.id) ?? [],
-      travelersByTrip.get(row.id) ?? [],
+      memberships.travelersByTrip.get(row.id) ?? [],
+      memberships.ownersByTrip.get(row.id),
     ),
   );
 }

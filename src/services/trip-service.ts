@@ -11,6 +11,7 @@ import type {
   Trip,
   TripDay,
   TripDayId,
+  TripFxRate,
   TripId,
   TripRuntimeState,
   TripStop,
@@ -34,6 +35,9 @@ import {
   validateNewBookingTimes,
 } from './booking-time';
 import {
+  validateBookingFinance,
+} from './booking-finance';
+import {
   validateNewStopTimes,
   validateStopTimeUpdate,
 } from './stop-time';
@@ -51,6 +55,7 @@ export interface TripWorkspace {
   travelers: Traveler[];
 
   budget: Budget | null;
+  fxRates: TripFxRate[];
 
   runtimeState: TripRuntimeState | null;
 
@@ -94,6 +99,7 @@ export class TripService {
       accommodations,
       travelers,
       budget,
+      fxRates,
       runtimeState,
       memories,
       travelBook,
@@ -104,6 +110,7 @@ export class TripService {
       this.repo.accommodation.getByTripId(id),
       this.repo.traveler.getByTripId(id),
       this.repo.budget.getByTripId(id),
+      this.repo.fxRates.getByTripId(id),
       this.repo.runtimeState.getByTripId(id),
       this.repo.memory.getByTripId(id),
       this.repo.travelBook.getByTripId(id),
@@ -117,6 +124,7 @@ export class TripService {
       accommodations,
       travelers,
       budget,
+      fxRates,
       runtimeState,
       memories,
       travelBook,
@@ -196,6 +204,7 @@ export class TripService {
     booking: Booking,
   ): Promise<void> {
     validateNewBookingTimes(booking);
+    validateBookingFinance(booking);
     await this.validateBookingStop(booking);
 
     await this.repo.booking.save(
@@ -214,6 +223,7 @@ export class TripService {
     }
 
     validateBookingTimeUpdate(existing, booking);
+    validateBookingFinance(booking);
     await this.validateBookingStop(booking);
 
     await this.repo.booking.save({

@@ -58,7 +58,9 @@ test(
       latitude: 35.6762,
       longitude: 139.6503,
       timezone: undefined,
+      timezoneSource: undefined,
       currencyCode: undefined,
+      placeId: undefined,
     });
 
     const destination = applyDestinationSelection(
@@ -115,7 +117,9 @@ test(
       currencyCode: 'jpy',
     });
     assert.equal(enriched.timezone, 'Asia/Tokyo');
+    assert.equal(enriched.timezoneSource, 'provider');
     assert.equal(enriched.currencyCode, 'JPY');
+    assert.equal(enriched.placeId, undefined);
     assert.deepEqual(
       resolveTripTimeZone(
         [applyDestinationSelection('tokyo', enriched)],
@@ -196,7 +200,9 @@ test(
             latitude: 35.6762,
             longitude: 139.6503,
             timezone: 'Asia/Tokyo',
+            timezoneSource: 'catalogue',
             currencyCode: 'JPY',
+            placeId: 'ChIJN1t_tDeuEmsRUsoyG83frY4',
           },
           {
             id: 'destination-2',
@@ -224,7 +230,9 @@ test(
           latitude: 35.6762,
           longitude: 139.6503,
           timezone: 'Asia/Tokyo',
+          timezoneSource: 'catalogue',
           currencyCode: 'JPY',
+          placeId: 'ChIJN1t_tDeuEmsRUsoyG83frY4',
         },
         {
           id: 'destination-2',
@@ -233,7 +241,9 @@ test(
           latitude: undefined,
           longitude: undefined,
           timezone: undefined,
+          timezoneSource: undefined,
           currencyCode: undefined,
+          placeId: undefined,
         },
       ]);
     } finally {

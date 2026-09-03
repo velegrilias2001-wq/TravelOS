@@ -127,6 +127,9 @@ interface TripWorkspaceActions {
   removeTraveler(
     travelerId: TravelerId,
   ): Promise<void>;
+  setTripOwner(
+    travelerId: TravelerId | null,
+  ): Promise<void>;
 
   setPlannedBudget(plannedAmount: number): Promise<void>;
   addExpense(input: BudgetExpenseInput): Promise<void>;
@@ -135,6 +138,12 @@ interface TripWorkspaceActions {
     input: BudgetExpenseInput,
   ): Promise<void>;
   deleteExpense(expenseId: BudgetItemId): Promise<void>;
+  saveFxRate(input: {
+    fromCurrency: string;
+    rate: number;
+    asOf: string;
+  }): Promise<void>;
+  deleteFxRate(rateId: string): Promise<void>;
 
   createMemory(
     input: Omit<CreateMemoryInput, 'tripId'>,
@@ -369,6 +378,14 @@ export function TripWorkspaceProvider({
           ),
         ),
 
+      setTripOwner: (travelerId) =>
+        lifecycle.runMutation(() =>
+          travelerService.setTripOwner(
+            requireWorkspaceTripId(tripId),
+            travelerId,
+          ),
+        ),
+
       setPlannedBudget: (plannedAmount) =>
         lifecycle.runMutation(() =>
           budgetService.setPlannedBudget(
@@ -399,6 +416,22 @@ export function TripWorkspaceProvider({
           budgetService.deleteExpense(
             requireWorkspaceTripId(tripId),
             expenseId,
+          ),
+        ),
+
+      saveFxRate: (input) =>
+        lifecycle.runMutation(() =>
+          budgetService.saveFxRate(
+            requireWorkspaceTripId(tripId),
+            input,
+          ),
+        ),
+
+      deleteFxRate: (rateId) =>
+        lifecycle.runMutation(() =>
+          budgetService.deleteFxRate(
+            requireWorkspaceTripId(tripId),
+            rateId,
           ),
         ),
 

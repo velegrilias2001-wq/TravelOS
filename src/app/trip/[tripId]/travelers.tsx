@@ -248,6 +248,23 @@ export default function TravelersScreen() {
     }
   };
 
+  const setOwner = async (traveler: Traveler | null) => {
+    try {
+      await actions.setTripOwner(
+        traveler?.id ?? null,
+      );
+    } catch (error) {
+      console.error(
+        '[Travelers] Owner update failed:',
+        error,
+      );
+      Alert.alert(
+        'Could not update trip owner',
+        'Nothing changed. Please try again.',
+      );
+    }
+  };
+
   const removeTraveler = (
     traveler: Traveler,
   ) => {
@@ -333,7 +350,7 @@ export default function TravelersScreen() {
               Who is taking this trip?
             </Text>
             <Text style={styles.emptyBody}>
-              Add someone new or choose a traveler you have saved before.
+              Add someone new or choose a traveler you have saved before. A trip can stay without travelers while you plan, and it can have an optional owner.
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -352,6 +369,9 @@ export default function TravelersScreen() {
                 const details =
                   TYPE_DETAILS[traveler.type] ??
                   TYPE_DETAILS.adult;
+                const isOwner =
+                  workspace.trip.ownerTravelerId ===
+                  traveler.id;
 
                 return (
                   <View
@@ -379,7 +399,7 @@ export default function TravelersScreen() {
                           color={colors.teal}
                         />
                         <Text style={styles.memberBadgeText}>
-                          IN TRIP
+                          {isOwner ? 'OWNER' : 'IN TRIP'}
                         </Text>
                       </View>
                     </View>
@@ -419,6 +439,31 @@ export default function TravelersScreen() {
                       </Pressable>
                       <Pressable
                         accessibilityRole="button"
+                        accessibilityLabel={
+                          isOwner
+                            ? `Remove owner role from ${travelerDisplayName(traveler)}`
+                            : `Make ${travelerDisplayName(traveler)} the trip owner`
+                        }
+                        style={styles.editAction}
+                        onPress={() =>
+                          void setOwner(
+                            isOwner ? null : traveler,
+                          )
+                        }
+                      >
+                        <Ionicons
+                          name="ribbon-outline"
+                          size={17}
+                          color={colors.brand}
+                        />
+                        <Text style={styles.editActionText}>
+                          {isOwner
+                            ? 'Remove owner'
+                            : 'Make owner'}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
                         accessibilityLabel={`Remove ${travelerDisplayName(traveler)} from this trip`}
                         style={styles.removeAction}
                         onPress={() =>
@@ -449,7 +494,7 @@ export default function TravelersScreen() {
             color={colors.textMuted}
           />
           <Text style={styles.privacyNoteText}>
-            Keep passport and health information out of traveler profiles.
+            Keep passport and health information out of traveler profiles. Invitations, roles beyond owner, and expense splitting are not available yet.
           </Text>
         </View>
         <View style={styles.bottomSpace} />

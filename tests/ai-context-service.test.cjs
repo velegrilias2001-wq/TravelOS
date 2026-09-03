@@ -76,6 +76,7 @@ function makeWorkspace() {
       },
     ],
     budget: null,
+    fxRates: [],
     runtimeState: null,
     memories: [],
     travelBook: null,

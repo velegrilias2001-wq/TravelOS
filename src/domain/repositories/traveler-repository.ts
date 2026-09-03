@@ -38,5 +38,10 @@ export interface TravelerRepository {
     travelerId: TravelerId,
   ): Promise<void>;
 
+  setTripOwner(
+    tripId: TripId,
+    travelerId: TravelerId | null,
+  ): Promise<void>;
+
   delete(id: TravelerId): Promise<void>;
 }

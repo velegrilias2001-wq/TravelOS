@@ -342,9 +342,9 @@ export default function TripDetailsScreen() {
   };
 
   const deleteTrip = () => {
-    Alert.alert(
-      `Delete “${trip.title}”?`,
-      'This permanently removes this trip and its related local plan, moments, bookings, stays, budget, expenses, memories and Travel Book content from this device. This cannot be undone.',
+      Alert.alert(
+        `Delete “${trip.title}”?`,
+        'This permanently removes this trip and its related local plan, moments, bookings, stays, budget, expenses, memories and Travel Book content from this device. There is no backup or export yet, so deletion cannot be undone. To keep the trip hidden instead, choose Archived in Status and save.',
       [
         {
           text: 'Cancel',
@@ -660,9 +660,24 @@ export default function TripDetailsScreen() {
                   trip.destinations.find(
                     (item) => item.id === destination.id,
                   );
-                const displayDestination =
+                const baseDestination =
                   destination.replacement ??
                   savedDestination;
+                const displayDestination = baseDestination
+                  ? {
+                      ...baseDestination,
+                      ...(destination.timezone !== undefined
+                        ? {
+                            timezone:
+                              destination.timezone ??
+                              undefined,
+                            timezoneSource: destination.timezone
+                              ? ('traveler' as const)
+                              : undefined,
+                          }
+                        : {}),
+                    }
+                  : undefined;
 
                 return (
                   <View
@@ -687,6 +702,19 @@ export default function TripDetailsScreen() {
                           selection,
                         )
                       }
+                      onTimeZoneChange={(timezone) => {
+                        setShowSavedNotice(false);
+                        setDestinations((current) =>
+                          current.map((item) =>
+                            item.id === destination.id
+                              ? {
+                                  ...item,
+                                  timezone,
+                                }
+                              : item,
+                          ),
+                        );
+                      }}
                     />
 
                     {destinations.length > 1 ? (
@@ -784,7 +812,7 @@ export default function TripDetailsScreen() {
 
           {destinations.length > 1 ? (
             <Text style={styles.destinationFootnote}>
-              Exact local timing still needs one shared timezone. Days are not assigned to a city yet, so TravelOS will not guess which destination is current.
+              Each city can keep its own timezone when a catalogue, map provider, or you supply one. TravelOS will not guess a timezone from coordinates or destination order. Companion uses a shared trip timezone only when every city agrees.
             </Text>
           ) : null}
         </View>
@@ -912,7 +940,7 @@ export default function TripDetailsScreen() {
                 Delete trip
               </Text>
               <Text style={styles.dangerBody}>
-                Permanently remove this trip from this device.
+                Permanently remove this trip from this device. Archive it in Status if you might still need it. There is no backup yet.
               </Text>
             </View>
             <Pressable

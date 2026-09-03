@@ -2,7 +2,12 @@ import type {
   Budget,
   BudgetCategory,
   BudgetItem,
+  TripFxRate,
 } from '@/domain/entities';
+import {
+  convertWithTripFxRate,
+  findTripFxRate,
+} from './fx-rates';
 
 export const BUDGET_CATEGORIES: BudgetCategory[] = [
   'accommodation',
@@ -25,6 +30,16 @@ export interface ForeignCurrencyTotal {
   itemCount: number;
 }
 
+export interface ConvertedExpenseTotal {
+  currencyCode: string;
+  originalAmount: number;
+  convertedAmount: number;
+  rate: number;
+  asOf: string;
+  source: TripFxRate['source'];
+  itemCount: number;
+}
+
 export interface BudgetSummary {
   accountingCurrency: string;
   plannedAmount: number | null;
@@ -35,6 +50,7 @@ export interface BudgetSummary {
   includedExpenses: BudgetItem[];
   foreignCurrencyExpenses: BudgetItem[];
   foreignCurrencyTotals: ForeignCurrencyTotal[];
+  convertedCurrencyTotals: ConvertedExpenseTotal[];
   notPaidItems: BudgetItem[];
   hasBudgetCurrencyConflict: boolean;
 }
@@ -48,6 +64,7 @@ export function normalizeCurrencyCode(
 export function calculateBudgetSummary(
   budget: Budget | null,
   accountingCurrency: string,
+  fxRates: readonly TripFxRate[] = [],
 ): BudgetSummary {
   const normalizedAccountingCurrency =
     normalizeCurrencyCode(accountingCurrency);
@@ -73,10 +90,45 @@ export function calculateBudgetSummary(
         ) !== normalizedAccountingCurrency,
     );
 
-  const spentAmount = includedExpenses.reduce(
-    (total, item) => total + item.amount,
+  const convertedExpenses: Array<{
+    item: BudgetItem;
+    convertedAmount: number;
+    rate: TripFxRate;
+  }> = [];
+  const unconvertedForeign: BudgetItem[] = [];
+
+  for (const item of foreignCurrencyExpenses) {
+    const rate = findTripFxRate(
+      fxRates,
+      item.currencyCode,
+      normalizedAccountingCurrency,
+    );
+
+    if (!rate) {
+      unconvertedForeign.push(item);
+      continue;
+    }
+
+    convertedExpenses.push({
+      item,
+      convertedAmount: convertWithTripFxRate(
+        item.amount,
+        rate,
+      ),
+      rate,
+    });
+  }
+
+  const convertedSpend = convertedExpenses.reduce(
+    (total, entry) => total + entry.convertedAmount,
     0,
   );
+
+  const spentAmount =
+    includedExpenses.reduce(
+      (total, item) => total + item.amount,
+      0,
+    ) + convertedSpend;
 
   const plannedAmount =
     budget?.plannedAmount ?? null;
@@ -95,16 +147,27 @@ export function calculateBudgetSummary(
   const categoryTotals = BUDGET_CATEGORIES
     .map((category) => ({
       category,
-      amount: includedExpenses
-        .filter(
-          (item) =>
-            item.category === category,
-        )
-        .reduce(
-          (total, item) =>
-            total + item.amount,
-          0,
-        ),
+      amount:
+        includedExpenses
+          .filter(
+            (item) =>
+              item.category === category,
+          )
+          .reduce(
+            (total, item) =>
+              total + item.amount,
+            0,
+          ) +
+        convertedExpenses
+          .filter(
+            (entry) =>
+              entry.item.category === category,
+          )
+          .reduce(
+            (total, entry) =>
+              total + entry.convertedAmount,
+            0,
+          ),
     }))
     .filter((entry) => entry.amount > 0);
 
@@ -113,7 +176,7 @@ export function calculateBudgetSummary(
     ForeignCurrencyTotal
   >();
 
-  for (const item of foreignCurrencyExpenses) {
+  for (const item of unconvertedForeign) {
     const currencyCode = normalizeCurrencyCode(
       item.currencyCode,
     );
@@ -131,6 +194,34 @@ export function calculateBudgetSummary(
     });
   }
 
+  const convertedByCurrency = new Map<
+    string,
+    ConvertedExpenseTotal
+  >();
+
+  for (const entry of convertedExpenses) {
+    const currencyCode = normalizeCurrencyCode(
+      entry.item.currencyCode,
+    );
+    const current = convertedByCurrency.get(
+      currencyCode,
+    );
+
+    convertedByCurrency.set(currencyCode, {
+      currencyCode,
+      originalAmount:
+        (current?.originalAmount ?? 0) +
+        entry.item.amount,
+      convertedAmount:
+        (current?.convertedAmount ?? 0) +
+        entry.convertedAmount,
+      rate: entry.rate.rate,
+      asOf: entry.rate.asOf,
+      source: entry.rate.source,
+      itemCount: (current?.itemCount ?? 0) + 1,
+    });
+  }
+
   return {
     accountingCurrency:
       normalizedAccountingCurrency,
@@ -140,9 +231,16 @@ export function calculateBudgetSummary(
     progress,
     categoryTotals,
     includedExpenses,
-    foreignCurrencyExpenses,
+    foreignCurrencyExpenses: unconvertedForeign,
     foreignCurrencyTotals: [
       ...foreignByCurrency.values(),
+    ].sort((a, b) =>
+      a.currencyCode.localeCompare(
+        b.currencyCode,
+      ),
+    ),
+    convertedCurrencyTotals: [
+      ...convertedByCurrency.values(),
     ].sort((a, b) =>
       a.currencyCode.localeCompare(
         b.currencyCode,

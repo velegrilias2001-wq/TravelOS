@@ -170,10 +170,12 @@ export default function BudgetScreen() {
       calculateBudgetSummary(
         workspace.budget,
         accountingCurrency,
+        workspace.fxRates,
       ),
     [
       accountingCurrency,
       workspace.budget,
+      workspace.fxRates,
     ],
   );
 
@@ -214,6 +216,10 @@ export default function BudgetScreen() {
     useState(false);
   const [isSaving, setIsSaving] =
     useState(false);
+  const [fxFromCurrency, setFxFromCurrency] =
+    useState('');
+  const [fxRate, setFxRate] = useState('');
+  const [fxAsOf, setFxAsOf] = useState('');
 
   const openPlan = () => {
     setPlannedAmount(
@@ -625,6 +631,140 @@ export default function BudgetScreen() {
                 </View>
               </View>
             )}
+
+            {summary.convertedCurrencyTotals.length > 0 && (
+              <View style={styles.currencyNotice}>
+                <Ionicons
+                  name="calculator-outline"
+                  size={24}
+                  color={colors.teal}
+                />
+                <View style={styles.currencyNoticeCopy}>
+                  <Text style={styles.currencyNoticeTitle}>
+                    Converted into {accountingCurrency}
+                  </Text>
+                  <Text style={styles.currencyNoticeBody}>
+                    These totals use an explicit traveler rate with an as-of date. They are not live market prices.
+                  </Text>
+                  <View style={styles.currencyPills}>
+                    {summary.convertedCurrencyTotals.map(
+                      (total) => (
+                        <View
+                          key={total.currencyCode}
+                          style={styles.currencyPill}
+                        >
+                          <Text style={styles.currencyPillText}>
+                            {formatMoney(
+                              total.originalAmount,
+                              total.currencyCode,
+                            )}{' '}
+                            → {formatMoney(
+                              total.convertedAmount,
+                              accountingCurrency,
+                            )}{' '}
+                            at {total.rate} on {total.asOf}
+                          </Text>
+                        </View>
+                      ),
+                    )}
+                  </View>
+                </View>
+              </View>
+            )}
+
+            <View style={styles.currencyNotice}>
+              <Ionicons
+                name="swap-horizontal-outline"
+                size={24}
+                color={colors.brass}
+              />
+              <View style={styles.currencyNoticeCopy}>
+                <Text style={styles.currencyNoticeTitle}>
+                  Traveler FX rates
+                </Text>
+                <Text style={styles.currencyNoticeBody}>
+                  Foreign paid expenses enter the {accountingCurrency} total only when you save a rate. There is no live FX feed.
+                </Text>
+                {workspace.fxRates.map((rate) => (
+                  <View
+                    key={rate.id}
+                    style={styles.fxRateRow}
+                  >
+                    <Text style={styles.fxRateText}>
+                      1 {rate.fromCurrency} = {rate.rate} {rate.toCurrency} · {rate.asOf}
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${rate.fromCurrency} rate`}
+                      onPress={() =>
+                        void actions.deleteFxRate(rate.id)
+                      }
+                    >
+                      <Text style={styles.fxRateRemove}>
+                        Remove
+                      </Text>
+                    </Pressable>
+                  </View>
+                ))}
+                <View style={styles.fxRateForm}>
+                  <TextInput
+                    value={fxFromCurrency}
+                    onChangeText={setFxFromCurrency}
+                    placeholder="JPY"
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    style={styles.fxInput}
+                  />
+                  <TextInput
+                    value={fxRate}
+                    onChangeText={setFxRate}
+                    placeholder="0.0062"
+                    keyboardType="decimal-pad"
+                    style={styles.fxInput}
+                  />
+                  <TextInput
+                    value={fxAsOf}
+                    onChangeText={setFxAsOf}
+                    placeholder="2026-09-03"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    style={styles.fxInput}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Save FX rate"
+                    style={styles.fxSave}
+                    onPress={() => {
+                      void (async () => {
+                        try {
+                          await actions.saveFxRate({
+                            fromCurrency: fxFromCurrency,
+                            rate: Number(
+                              fxRate.replace(',', '.'),
+                            ),
+                            asOf: fxAsOf,
+                          });
+                          setFxFromCurrency('');
+                          setFxRate('');
+                          setFxAsOf('');
+                        } catch (error) {
+                          Alert.alert(
+                            'Could not save FX rate',
+                            error instanceof Error
+                              ? error.message
+                              : 'Check the currencies, rate, and as-of date.',
+                          );
+                        }
+                      })();
+                    }}
+                  >
+                    <Text style={styles.fxSaveText}>
+                      Save rate
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
 
             {summary.notPaidItems.length > 0 && (
               <View style={styles.legacyNotice}>
@@ -1490,6 +1630,52 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.sansSemiBold,
     fontSize: fontSize.caption,
     color: colors.textPrimary,
+  },
+  fxRateRow: {
+    marginTop: spacing[3],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[3],
+  },
+  fxRateText: {
+    flex: 1,
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.textPrimary,
+  },
+  fxRateRemove: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.coral,
+  },
+  fxRateForm: {
+    marginTop: spacing[3],
+    gap: spacing[2],
+  },
+  fxInput: {
+    minHeight: 44,
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+    backgroundColor: colors.surface,
+  },
+  fxSave: {
+    minHeight: 44,
+    marginTop: spacing[1],
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brand,
+  },
+  fxSaveText: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.textInverse,
   },
   legacyNotice: {
     marginTop: spacing[3],

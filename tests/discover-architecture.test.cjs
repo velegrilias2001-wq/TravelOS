@@ -361,8 +361,11 @@ test(
     assert.deepEqual(
       prefill,
       {
-        destination:
-          makeDestination(),
+        destination: {
+          ...makeDestination(),
+          timezoneSource: 'catalogue',
+          placeId: undefined,
+        },
         startDate: '2026-10-12',
         endDate: '2026-10-16',
         intent: 'food',

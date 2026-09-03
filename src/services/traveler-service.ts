@@ -92,6 +92,16 @@ export class TravelerService {
       travelerId,
     );
   }
+
+  async setTripOwner(
+    tripId: TripId,
+    travelerId: TravelerId | null,
+  ): Promise<void> {
+    await this.repo.traveler.setTripOwner(
+      tripId,
+      travelerId,
+    );
+  }
 }
 
 export const travelerService =

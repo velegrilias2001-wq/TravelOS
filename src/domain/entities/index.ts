@@ -12,6 +12,8 @@ export * from './travel-book';
 
 export * from './travel-dna';
 
+export * from './fx-rate';
+
 export * from './import-claim';
 
 export * from './saved-place';

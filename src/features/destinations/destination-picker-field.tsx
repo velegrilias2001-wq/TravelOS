@@ -7,9 +7,11 @@ import {
 } from 'react';
 import {
   Alert,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -21,6 +23,9 @@ import {
   mapDestinationProviderResult,
   type DestinationSelection,
 } from '@/services/destination-authoring';
+import {
+  isValidIanaTimeZone,
+} from '@/services/time-truth';
 import {
   colors,
   fontFamily,
@@ -38,25 +43,68 @@ type DestinationDisplayValue = Pick<
   | 'latitude'
   | 'longitude'
   | 'timezone'
+  | 'timezoneSource'
   | 'currencyCode'
+  | 'placeId'
 >;
 
 interface DestinationPickerFieldProps {
   label?: string;
   destination?: DestinationDisplayValue | null;
   onSelect(selection: DestinationSelection): void;
+  onTimeZoneChange?(timezone: string | null): void;
   disabled?: boolean;
   variant?: 'card' | 'add';
+}
+
+const COMMON_TIME_ZONES = [
+  'Europe/Athens',
+  'Europe/Lisbon',
+  'Europe/London',
+  'Europe/Paris',
+  'America/New_York',
+  'Asia/Tokyo',
+];
+
+function optionalProviderString(
+  result: object,
+  key: string,
+): string | undefined {
+  const value = (result as Record<string, unknown>)[key];
+  return typeof value === 'string' && value.trim()
+    ? value
+    : undefined;
+}
+
+function timezoneSourceLabel(
+  source: DestinationDisplayValue['timezoneSource'],
+): string {
+  if (source === 'provider') {
+    return 'From the map provider';
+  }
+
+  if (source === 'catalogue') {
+    return 'From the catalogue';
+  }
+
+  if (source === 'traveler') {
+    return 'Set by you';
+  }
+
+  return 'Saved timezone';
 }
 
 export function DestinationPickerField({
   label = 'DESTINATION',
   destination,
   onSelect,
+  onTimeZoneChange,
   disabled = false,
   variant = 'card',
 }: DestinationPickerFieldProps) {
   const [isPicking, setIsPicking] = useState(false);
+  const [timezoneOpen, setTimezoneOpen] = useState(false);
+  const [customTimeZone, setCustomTimeZone] = useState('');
   const isMapped = Boolean(
     destination &&
       hasRealDestinationCoordinates(destination),
@@ -113,6 +161,14 @@ export function DestinationPickerField({
             result.formattedAddress,
           country: result.country,
           countryCode: result.countryCode,
+          timezone: optionalProviderString(
+            result,
+            'timezone',
+          ),
+          placeId: optionalProviderString(
+            result,
+            'placeId',
+          ),
         }),
       );
     } catch {
@@ -232,6 +288,48 @@ export function DestinationPickerField({
           </View>
         )}
 
+        {destination ? (
+          <View style={styles.timezoneRow}>
+            <View style={styles.timezoneCopy}>
+              <Text style={styles.timezoneLabel}>
+                TIMEZONE
+              </Text>
+              <Text style={styles.timezoneValue}>
+                {destination.timezone ?? 'Unknown'}
+              </Text>
+              <Text style={styles.timezoneSource}>
+                {destination.timezone
+                  ? timezoneSourceLabel(
+                      destination.timezoneSource,
+                    )
+                  : 'Not guessed from the map pin'}
+              </Text>
+            </View>
+            {onTimeZoneChange ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Set timezone"
+                disabled={disabled}
+                style={({ pressed }) => [
+                  styles.timezoneAction,
+                  pressed && styles.pressed,
+                  disabled && styles.disabled,
+                ]}
+                onPress={() => {
+                  setCustomTimeZone(
+                    destination.timezone ?? '',
+                  );
+                  setTimezoneOpen(true);
+                }}
+              >
+                <Text style={styles.timezoneActionText}>
+                  {destination.timezone ? 'Change' : 'Set'}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={actionLabel}
@@ -262,6 +360,94 @@ export function DestinationPickerField({
           Add a real location to place this destination on your trip map.
         </Text>
       ) : null}
+
+      <Modal
+        visible={timezoneOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTimezoneOpen(false)}
+      >
+        <Pressable
+          style={styles.timezoneOverlay}
+          onPress={() => setTimezoneOpen(false)}
+        >
+          <Pressable
+            style={styles.timezoneSheet}
+            onPress={() => undefined}
+          >
+            <Text style={styles.timezoneSheetTitle}>
+              City timezone
+            </Text>
+            <Text style={styles.timezoneSheetBody}>
+              Use a real IANA timezone. TravelOS will not guess one from coordinates.
+            </Text>
+            {COMMON_TIME_ZONES.map((zone) => (
+              <Pressable
+                key={zone}
+                accessibilityRole="button"
+                accessibilityLabel={zone}
+                style={styles.timezoneOption}
+                onPress={() => {
+                  onTimeZoneChange?.(zone);
+                  setTimezoneOpen(false);
+                }}
+              >
+                <Text style={styles.timezoneOptionText}>
+                  {zone}
+                </Text>
+              </Pressable>
+            ))}
+            <TextInput
+              value={customTimeZone}
+              onChangeText={setCustomTimeZone}
+              placeholder="Europe/Lisbon"
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={styles.timezoneInput}
+            />
+            <View style={styles.timezoneSheetActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Clear timezone"
+                onPress={() => {
+                  onTimeZoneChange?.(null);
+                  setTimezoneOpen(false);
+                }}
+              >
+                <Text style={styles.timezoneClearText}>
+                  Clear
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Save timezone"
+                style={styles.timezoneSave}
+                onPress={() => {
+                  const value = customTimeZone.trim();
+
+                  if (
+                    value &&
+                    !isValidIanaTimeZone(value)
+                  ) {
+                    Alert.alert(
+                      'Timezone not recognized',
+                      'Enter a valid IANA timezone such as Europe/Lisbon.',
+                    );
+                    return;
+                  }
+
+                  onTimeZoneChange?.(value || null);
+                  setTimezoneOpen(false);
+                }}
+              >
+                <Text style={styles.timezoneSaveText}>
+                  Save
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -367,6 +553,115 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
     color: colors.textMuted,
+  },
+  timezoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    marginTop: spacing[4],
+    paddingTop: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  timezoneCopy: {
+    flex: 1,
+  },
+  timezoneLabel: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.1,
+    color: colors.brass,
+  },
+  timezoneValue: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+  },
+  timezoneSource: {
+    marginTop: 2,
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
+  },
+  timezoneAction: {
+    minHeight: 40,
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    backgroundColor: colors.tealSoft,
+  },
+  timezoneActionText: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.teal,
+  },
+  timezoneOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(20, 16, 12, 0.46)',
+    justifyContent: 'flex-end',
+  },
+  timezoneSheet: {
+    padding: spacing[5],
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    backgroundColor: colors.surface,
+    gap: spacing[2],
+  },
+  timezoneSheetTitle: {
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleSmall,
+    color: colors.textPrimary,
+  },
+  timezoneSheetBody: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textMuted,
+    marginBottom: spacing[2],
+  },
+  timezoneOption: {
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  timezoneOptionText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+  },
+  timezoneInput: {
+    minHeight: 48,
+    marginTop: spacing[2],
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+  },
+  timezoneSheetActions: {
+    marginTop: spacing[3],
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  timezoneClearText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.bodySmall,
+    color: colors.textMuted,
+  },
+  timezoneSave: {
+    minHeight: 44,
+    paddingHorizontal: spacing[4],
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    backgroundColor: colors.brand,
+  },
+  timezoneSaveText: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.textInverse,
   },
   pressed: {
     opacity: 0.84,

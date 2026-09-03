@@ -6,6 +6,9 @@ import {
   installMemoryDayStopForeignKeys,
 } from './memory-day-stop-fk-migration';
 import {
+  installPhase1TripCore,
+} from './phase1-trip-core-migration';
+import {
   reconcileMemoryRelationships,
 } from './memory-integrity-migration';
 import {
@@ -15,7 +18,7 @@ import {
   reconcileStopDayRelationships,
 } from './stop-day-integrity-migration';
 
-export const DATABASE_VERSION = 15;
+export const DATABASE_VERSION = 16;
 
 interface UserVersionRow {
   user_version: number;
@@ -1365,6 +1368,28 @@ export async function migrateDatabase(
 
         await transaction.execAsync(`
           PRAGMA user_version = 15;
+        `);
+      },
+    );
+  }
+
+  /**
+   * Version 16
+   * Persist optional destination provider identity and
+   * timezone provenance, explicit traveler FX rates, and
+   * optional trip-owner membership. Timezones and rates
+   * are never guessed from coordinates, currency, or
+   * destination order.
+   */
+  if (currentVersion < 16) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await installPhase1TripCore(
+          transaction,
+        );
+
+        await transaction.execAsync(`
+          PRAGMA user_version = 16;
         `);
       },
     );

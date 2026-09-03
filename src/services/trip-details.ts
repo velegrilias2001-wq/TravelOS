@@ -8,7 +8,9 @@ import type {
 
 import {
   applyDestinationSelection,
+  assignTravelerTimeZone,
   destinationAuthoringKind,
+  mergeDestinationReplacement,
   type DestinationSelection,
 } from './destination-authoring';
 import {
@@ -24,6 +26,7 @@ export interface TripDestinationEditInput {
   id: string;
   name: string;
   replacement?: DestinationSelection;
+  timezone?: string | null;
 }
 
 export function moveDestinationItems<Item>(
@@ -262,16 +265,22 @@ function applyDestinationEdits(
         );
       }
 
-      return applyDestinationSelection(
-        edit.id,
-        edit.replacement,
+      return applyTimezoneEdit(
+        applyDestinationSelection(
+          edit.id,
+          edit.replacement,
+        ),
+        edit.timezone,
       );
     }
 
     if (edit.replacement) {
-      return applyDestinationSelection(
-        existing.id,
-        edit.replacement,
+      return applyTimezoneEdit(
+        mergeDestinationReplacement(
+          existing,
+          edit.replacement,
+        ),
+        edit.timezone,
       );
     }
 
@@ -292,9 +301,26 @@ function applyDestinationEdits(
       );
     }
 
-    return {
-      ...existing,
-      name,
-    };
+    return applyTimezoneEdit(
+      {
+        ...existing,
+        name,
+      },
+      edit.timezone,
+    );
   });
+}
+
+function applyTimezoneEdit(
+  destination: TripDestination,
+  timezone: string | null | undefined,
+): TripDestination {
+  if (timezone === undefined) {
+    return destination;
+  }
+
+  return assignTravelerTimeZone(
+    destination,
+    timezone,
+  );
 }

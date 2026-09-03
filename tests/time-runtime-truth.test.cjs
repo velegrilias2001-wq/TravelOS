@@ -412,7 +412,9 @@ test(
         latitude: 37.9838,
         longitude: 23.7275,
         timezone: undefined,
+        timezoneSource: undefined,
         currencyCode: undefined,
+        placeId: undefined,
       },
     ]);
 

@@ -1,6 +1,7 @@
 export * from './accommodation-repository';
 export * from './booking-repository';
 export * from './budget-repository';
+export * from './fx-rate-repository';
 export * from './memory-repository';
 export * from './travel-book-repository';
 export * from './travel-dna-repository';

@@ -84,7 +84,27 @@ CREATE TABLE IF NOT EXISTS trip_destinations (
 
   timezone TEXT,
 
+  timezone_source TEXT
+
+    CHECK (
+
+      timezone_source IS NULL OR
+
+      timezone_source IN (
+
+        'provider',
+
+        'catalogue',
+
+        'traveler'
+
+      )
+
+    ),
+
   currency_code TEXT,
+
+  place_id TEXT,
 
   position INTEGER NOT NULL DEFAULT 0,
 
@@ -206,6 +226,14 @@ CREATE TABLE IF NOT EXISTS trip_travelers (
 
   traveler_id TEXT NOT NULL,
 
+  role TEXT NOT NULL DEFAULT 'member'
+
+    CHECK (
+
+      role IN ('owner', 'member')
+
+    ),
+
   PRIMARY KEY (trip_id, traveler_id),
 
   FOREIGN KEY (trip_id)
@@ -221,6 +249,12 @@ CREATE TABLE IF NOT EXISTS trip_travelers (
     ON DELETE CASCADE
 
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS trip_travelers_one_owner
+
+  ON trip_travelers(trip_id)
+
+  WHERE role = 'owner';
 
 CREATE TABLE IF NOT EXISTS travel_dna (
 
@@ -411,6 +445,40 @@ CREATE TABLE IF NOT EXISTS budgets (
     REFERENCES trips(id)
 
     ON DELETE CASCADE
+
+);
+
+CREATE TABLE IF NOT EXISTS trip_fx_rates (
+
+  id TEXT PRIMARY KEY NOT NULL,
+
+  trip_id TEXT NOT NULL,
+
+  from_currency TEXT NOT NULL,
+
+  to_currency TEXT NOT NULL,
+
+  rate REAL NOT NULL
+
+    CHECK (rate > 0),
+
+  as_of TEXT NOT NULL,
+
+  source TEXT NOT NULL
+
+    CHECK (source IN ('traveler')),
+
+  created_at TEXT NOT NULL,
+
+  updated_at TEXT NOT NULL,
+
+  FOREIGN KEY (trip_id)
+
+    REFERENCES trips(id)
+
+    ON DELETE CASCADE,
+
+  UNIQUE (trip_id, from_currency, to_currency)
 
 );
 

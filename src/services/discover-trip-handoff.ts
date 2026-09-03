@@ -102,8 +102,12 @@ export function buildDiscoverTripPrefill(
       : undefined;
 
   return {
-    destination:
-      normalizedDestination,
+    destination: {
+      ...normalizedDestination,
+      timezoneSource: normalizedDestination.timezone
+        ? 'catalogue'
+        : undefined,
+    },
 
     startDate:
       exactTiming?.startDate,
@@ -236,6 +240,11 @@ export function parseDiscoverTripRouteParams(
         firstParam(
           params.destinationTimezone,
         ),
+      timezoneSource: firstParam(
+        params.destinationTimezone,
+      )
+        ? 'catalogue'
+        : undefined,
 
       currencyCode:
         firstParam(
@@ -373,6 +382,7 @@ function parseExtraDestinations(
       longitude: unknown;
       countryCode?: unknown;
       timezone?: unknown;
+      timezoneSource?: unknown;
       currencyCode?: unknown;
     };
 
@@ -386,6 +396,11 @@ function parseExtraDestinations(
       );
     }
 
+    const timezone =
+      typeof record.timezone === 'string'
+        ? record.timezone
+        : undefined;
+
     return normalizeDestinationSelection({
       name: record.name,
       latitude: record.latitude,
@@ -394,9 +409,14 @@ function parseExtraDestinations(
         typeof record.countryCode === 'string'
           ? record.countryCode
           : undefined,
-      timezone:
-        typeof record.timezone === 'string'
-          ? record.timezone
+      timezone,
+      timezoneSource:
+        timezone
+          ? record.timezoneSource === 'provider' ||
+            record.timezoneSource === 'catalogue' ||
+            record.timezoneSource === 'traveler'
+            ? record.timezoneSource
+            : 'catalogue'
           : undefined,
       currencyCode:
         typeof record.currencyCode === 'string'

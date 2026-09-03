@@ -68,6 +68,7 @@ export default function MoreScreen() {
   const summary = calculateBudgetSummary(
     workspace.budget,
     trip.accountingCurrency,
+    workspace.fxRates,
   );
   const destinationLabel = tripDestinationLabel(trip.destinations);
   const budgetSummary = summary.hasBudgetCurrencyConflict

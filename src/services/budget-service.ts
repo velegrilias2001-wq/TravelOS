@@ -7,6 +7,7 @@ import type {
   BudgetItem,
   BudgetItemId,
   Trip,
+  TripFxRate,
   TripId,
   TripStopId,
 } from '@/domain/entities';
@@ -15,6 +16,7 @@ import {
   repositories,
   type RepositoryRegistry,
 } from './repository-registry';
+import { validateTripFxRate } from './fx-rates';
 import {
   BUDGET_CATEGORIES,
   normalizeCurrencyCode,
@@ -281,6 +283,66 @@ export class BudgetService {
     await this.repo.budget.deleteItem(
       expenseId,
     );
+  }
+
+  async saveFxRate(
+    tripId: TripId,
+    input: {
+      fromCurrency: string;
+      rate: number;
+      asOf: string;
+    },
+  ): Promise<void> {
+    const trip = await this.requireTrip(tripId);
+    const validated = validateTripFxRate({
+      fromCurrency: input.fromCurrency,
+      toCurrency: trip.accountingCurrency,
+      rate: input.rate,
+      asOf: input.asOf,
+      source: 'traveler',
+    });
+    const timestamp = this.now();
+    const existing =
+      (await this.repo.fxRates.getByTripId(tripId)).find(
+        (rate) =>
+          normalizeCurrencyCode(rate.fromCurrency) ===
+            validated.fromCurrency &&
+          normalizeCurrencyCode(rate.toCurrency) ===
+            validated.toCurrency,
+      );
+
+    const rate: TripFxRate = existing
+      ? {
+          ...existing,
+          ...validated,
+          updatedAt: timestamp,
+        }
+      : {
+          id: this.createId(),
+          tripId,
+          ...validated,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        };
+
+    await this.repo.fxRates.save(rate);
+  }
+
+  async deleteFxRate(
+    tripId: TripId,
+    rateId: string,
+  ): Promise<void> {
+    const rates = await this.repo.fxRates.getByTripId(
+      tripId,
+    );
+
+    if (!rates.some((rate) => rate.id === rateId)) {
+      throw new Error(
+        'FX rate was not found in this trip',
+      );
+    }
+
+    await this.repo.fxRates.delete(rateId);
   }
 
   private async requireTrip(

@@ -24,6 +24,11 @@ export type TripPace =
   | 'balanced'
   | 'full';
 
+export type DestinationTimezoneSource =
+  | 'provider'
+  | 'catalogue'
+  | 'traveler';
+
 export interface TripDestination {
   id: string;
   name: string;
@@ -31,6 +36,19 @@ export interface TripDestination {
   latitude?: number;
   longitude?: number;
   timezone?: string;
+
+  /**
+   * How the destination timezone was obtained.
+   * Unknown stays unknown. Never inferred from
+   * coordinates, currency, or destination order.
+   */
+  timezoneSource?: DestinationTimezoneSource;
+
+  /**
+   * Stable identifier from the location provider
+   * when that provider actually returns one.
+   */
+  placeId?: string;
 
   /**
    * Local currency of the destination.
@@ -83,6 +101,14 @@ export interface Trip {
    * across Trips and is never copied into the Trip.
    */
   travelerIds: string[];
+
+  /**
+   * Optional canonical Traveler who owns this trip
+   * locally. Planning trips may have no owner.
+   * Invitations and cloud permissions are not
+   * represented here.
+   */
+  ownerTravelerId?: string;
 
   /**
    * Currency used for the trip's financial accounting.

@@ -42,6 +42,7 @@ function makeWorkspace() {
     accommodations: [],
     travelers: [],
     budget: null,
+    fxRates: [],
     runtimeState: null,
     memories: [],
     travelBook: null,

@@ -15,7 +15,9 @@ interface DestinationRow {
   latitude: number | null;
   longitude: number | null;
   timezone: string | null;
+  timezone_source: string | null;
   currency_code: string | null;
+  place_id: string | null;
 }
 
 function optional<T>(
@@ -45,9 +47,16 @@ function mapDestinationRow(
     latitude: optional(destination.latitude),
     longitude: optional(destination.longitude),
     timezone: optional(destination.timezone),
+    timezoneSource:
+      destination.timezone_source === 'provider' ||
+      destination.timezone_source === 'catalogue' ||
+      destination.timezone_source === 'traveler'
+        ? destination.timezone_source
+        : undefined,
     currencyCode: optional(
       destination.currency_code,
     ),
+    placeId: optional(destination.place_id),
   };
 }
 
@@ -74,7 +83,9 @@ export async function loadTripDestinationsForTrips(
         latitude,
         longitude,
         timezone,
-        currency_code
+        timezone_source,
+        currency_code,
+        place_id
       FROM trip_destinations
       WHERE trip_id IN (${sqlPlaceholders(tripIds.length)})
       ORDER BY
@@ -181,17 +192,21 @@ export async function saveTripDestinations(
           latitude,
           longitude,
           timezone,
+          timezone_source,
           currency_code,
+          place_id,
           position
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           name = excluded.name,
           country_code = excluded.country_code,
           latitude = excluded.latitude,
           longitude = excluded.longitude,
           timezone = excluded.timezone,
+          timezone_source = excluded.timezone_source,
           currency_code = excluded.currency_code,
+          place_id = excluded.place_id,
           position = excluded.position
         WHERE
           trip_destinations.trip_id =
@@ -205,7 +220,9 @@ export async function saveTripDestinations(
         destination.latitude ?? null,
         destination.longitude ?? null,
         destination.timezone ?? null,
+        destination.timezoneSource ?? null,
         destination.currencyCode ?? null,
+        destination.placeId ?? null,
         position,
       ],
     );

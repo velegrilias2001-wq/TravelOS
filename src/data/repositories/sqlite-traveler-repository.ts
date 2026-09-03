@@ -18,6 +18,7 @@ import {
   getTravelersByTripId,
   removeTravelerFromTrip,
   saveCanonicalTraveler,
+  setTripOwner,
   updateTravelerForTrip,
 } from './traveler-persistence-operations';
 
@@ -91,6 +92,17 @@ export class SQLiteTravelerRepository
     travelerId: TravelerId,
   ): Promise<void> {
     await removeTravelerFromTrip(
+      this.database,
+      tripId,
+      travelerId,
+    );
+  }
+
+  async setTripOwner(
+    tripId: TripId,
+    travelerId: TravelerId | null,
+  ): Promise<void> {
+    await setTripOwner(
       this.database,
       tripId,
       travelerId,

@@ -285,9 +285,18 @@ export function buildDiscoverJourneyTripPrefill(
 
   const extraDestinations = journey.destinations
     .slice(1)
-    .map((destination) =>
-      normalizeDestinationSelection(destination),
-    );
+    .map((destination) => {
+      const selection = normalizeDestinationSelection(
+        destination,
+      );
+
+      return {
+        ...selection,
+        timezoneSource: selection.timezone
+          ? ('catalogue' as const)
+          : undefined,
+      };
+    });
 
   return {
     ...buildDiscoverTripPrefill(

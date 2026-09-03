@@ -350,6 +350,64 @@ export async function removeTravelerFromTrip(
   );
 }
 
+export async function setTripOwner(
+  database: Database,
+  tripId: TripId,
+  travelerId: TravelerId | null,
+): Promise<void> {
+  await database.transaction(
+    async (transaction) => {
+      await requireTrip(transaction, tripId);
+
+      await transaction.execute(
+        `
+          UPDATE trip_travelers
+          SET role = 'member'
+          WHERE
+            trip_id = ? AND
+            role = 'owner';
+        `,
+        [tripId],
+      );
+
+      if (!travelerId) {
+        return;
+      }
+
+      const membership =
+        await transaction.queryFirst<{
+          traveler_id: string;
+        }>(
+          `
+            SELECT traveler_id
+            FROM trip_travelers
+            WHERE
+              trip_id = ? AND
+              traveler_id = ?;
+          `,
+          [tripId, travelerId],
+        );
+
+      if (!membership) {
+        throw new Error(
+          'Traveler is not part of this trip',
+        );
+      }
+
+      await transaction.execute(
+        `
+          UPDATE trip_travelers
+          SET role = 'owner'
+          WHERE
+            trip_id = ? AND
+            traveler_id = ?;
+        `,
+        [tripId, travelerId],
+      );
+    },
+  );
+}
+
 export async function deleteCanonicalTraveler(
   database: DatabaseConnection,
   id: TravelerId,

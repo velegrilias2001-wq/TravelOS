@@ -1,4 +1,5 @@
 import type {
+  DestinationTimezoneSource,
   TripDestination,
 } from '@/domain/entities';
 
@@ -16,7 +17,9 @@ export interface DestinationProviderResult {
   country?: string;
   countryCode?: string;
   timezone?: string;
+  timezoneSource?: DestinationTimezoneSource;
   currencyCode?: string;
+  placeId?: string;
 }
 
 export interface DestinationSelection {
@@ -25,7 +28,9 @@ export interface DestinationSelection {
   latitude: number;
   longitude: number;
   timezone?: string;
+  timezoneSource?: DestinationTimezoneSource;
   currencyCode?: string;
+  placeId?: string;
 }
 
 export type DestinationAuthoringKind =
@@ -94,6 +99,34 @@ function normalizeCurrencyCode(
   return clean;
 }
 
+function normalizePlaceId(
+  value: string | undefined,
+): string | undefined {
+  return cleanOptional(value);
+}
+
+function normalizeTimeZoneSource(
+  timezone: string | undefined,
+  source: DestinationTimezoneSource | undefined,
+): DestinationTimezoneSource | undefined {
+  if (!timezone) {
+    return undefined;
+  }
+
+  if (
+    source &&
+    source !== 'provider' &&
+    source !== 'catalogue' &&
+    source !== 'traveler'
+  ) {
+    throw new Error(
+      'Destination timezone source is not supported',
+    );
+  }
+
+  return source;
+}
+
 function normalizeTimeZone(
   value: string | undefined,
 ): string | undefined {
@@ -148,6 +181,8 @@ export function mapDestinationProviderResult(
     result.longitude,
   );
 
+  const timezone = normalizeTimeZone(result.timezone);
+
   return {
     name: destinationDisplayName(result),
     countryCode: normalizeCountryCode(
@@ -155,10 +190,16 @@ export function mapDestinationProviderResult(
     ),
     latitude: result.latitude,
     longitude: result.longitude,
-    timezone: normalizeTimeZone(result.timezone),
+    timezone,
+    timezoneSource: normalizeTimeZoneSource(
+      timezone,
+      result.timezoneSource ??
+        (timezone ? 'provider' : undefined),
+    ),
     currencyCode: normalizeCurrencyCode(
       result.currencyCode,
     ),
+    placeId: normalizePlaceId(result.placeId),
   };
 }
 
@@ -178,6 +219,8 @@ export function normalizeDestinationSelection(
     selection.longitude,
   );
 
+  const timezone = normalizeTimeZone(selection.timezone);
+
   return {
     name,
     countryCode: normalizeCountryCode(
@@ -185,10 +228,15 @@ export function normalizeDestinationSelection(
     ),
     latitude: selection.latitude,
     longitude: selection.longitude,
-    timezone: normalizeTimeZone(selection.timezone),
+    timezone,
+    timezoneSource: normalizeTimeZoneSource(
+      timezone,
+      selection.timezoneSource,
+    ),
     currencyCode: normalizeCurrencyCode(
       selection.currencyCode,
     ),
+    placeId: normalizePlaceId(selection.placeId),
   };
 }
 
@@ -199,6 +247,51 @@ export function applyDestinationSelection(
   return {
     id: destinationId,
     ...normalizeDestinationSelection(selection),
+  };
+}
+
+export function mergeDestinationReplacement(
+  existing: TripDestination,
+  replacement: DestinationSelection,
+): TripDestination {
+  const next = applyDestinationSelection(
+    existing.id,
+    replacement,
+  );
+
+  return {
+    ...next,
+    timezone: next.timezone ?? existing.timezone,
+    timezoneSource: next.timezone
+      ? next.timezoneSource ??
+        (next.timezone === existing.timezone
+          ? existing.timezoneSource
+          : undefined)
+      : existing.timezoneSource,
+    currencyCode:
+      next.currencyCode ?? existing.currencyCode,
+    placeId: next.placeId,
+  };
+}
+
+export function assignTravelerTimeZone(
+  destination: TripDestination,
+  timezone: string | null,
+): TripDestination {
+  if (timezone === null || timezone.trim() === '') {
+    return {
+      ...destination,
+      timezone: undefined,
+      timezoneSource: undefined,
+    };
+  }
+
+  const next = normalizeTimeZone(timezone);
+
+  return {
+    ...destination,
+    timezone: next,
+    timezoneSource: next ? 'traveler' : undefined,
   };
 }
 

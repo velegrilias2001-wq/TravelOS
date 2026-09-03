@@ -619,11 +619,11 @@ export default function BookingsScreen() {
                 parsedAmount,
 
               currencyCode:
-                currency
-                  .trim()
-                  .toUpperCase() ||
-                workspace.trip
-                  .accountingCurrency,
+                parsedAmount === undefined
+                  ? currency.trim().toUpperCase() ||
+                    undefined
+                  : currency.trim().toUpperCase() ||
+                    workspace.trip.accountingCurrency,
 
               isPaid,
 
@@ -665,11 +665,11 @@ export default function BookingsScreen() {
                 parsedAmount,
 
               currencyCode:
-                currency
-                  .trim()
-                  .toUpperCase() ||
-                workspace.trip
-                  .accountingCurrency,
+                parsedAmount === undefined
+                  ? currency.trim().toUpperCase() ||
+                    undefined
+                  : currency.trim().toUpperCase() ||
+                    workspace.trip.accountingCurrency,
 
               isPaid,
 
@@ -718,7 +718,7 @@ export default function BookingsScreen() {
   ) => {
     Alert.alert(
       'Delete booking?',
-      `Remove "${booking.title}" from this trip?`,
+      `Remove "${booking.title}" from this trip? Linked stays keep their facts. This booking cannot be recovered after deletion.`,
       [
         {
           text: 'Cancel',
@@ -1386,11 +1386,12 @@ export default function BookingsScreen() {
                           selected &&
                             styles.statusOptionSelected,
                         ]}
-                        onPress={() =>
-                          setStatus(
-                            item.value,
-                          )
-                        }
+                        onPress={() => {
+                          setStatus(item.value);
+                          if (item.value === 'cancelled') {
+                            setIsPaid(false);
+                          }
+                        }}
                       >
                         <Text
                           style={[
@@ -1690,6 +1691,7 @@ export default function BookingsScreen() {
 
                 <Switch
                   value={isPaid}
+                  disabled={status === 'cancelled'}
                   onValueChange={
                     setIsPaid
                   }

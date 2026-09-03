@@ -76,6 +76,25 @@ export async function saveCanonicalTrip(
         trip,
       );
 
+      const existingRoles = await transaction.query<{
+        traveler_id: string;
+        role: string;
+      }>(
+        `
+          SELECT traveler_id, role
+          FROM trip_travelers
+          WHERE trip_id = ?;
+        `,
+        [trip.id],
+      );
+
+      const roleByTraveler = new Map(
+        existingRoles.map((row) => [
+          row.traveler_id,
+          row.role,
+        ]),
+      );
+
       await transaction.execute(
         `
           DELETE FROM trip_travelers
@@ -98,15 +117,26 @@ export async function saveCanonicalTrip(
           );
 
         if (travelerExists) {
+          const role =
+            trip.ownerTravelerId === travelerId
+              ? 'owner'
+              : trip.ownerTravelerId
+                ? 'member'
+                : roleByTraveler.get(travelerId) ===
+                    'owner'
+                  ? 'owner'
+                  : 'member';
+
           await transaction.execute(
             `
               INSERT INTO trip_travelers (
                 trip_id,
-                traveler_id
+                traveler_id,
+                role
               )
-              VALUES (?, ?);
+              VALUES (?, ?, ?);
             `,
-            [trip.id, travelerId],
+            [trip.id, travelerId, role],
           );
         }
       }

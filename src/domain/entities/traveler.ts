@@ -5,6 +5,10 @@ export type TravelerType =
   | 'child'
   | 'infant';
 
+export type TripTravelerRole =
+  | 'owner'
+  | 'member';
+
 export interface Traveler {
   id: TravelerId;
 

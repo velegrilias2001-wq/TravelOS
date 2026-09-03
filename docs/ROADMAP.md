@@ -41,7 +41,7 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 
 Exit condition: existing native flows survive retries, partial data, navigation refocus, and supported migrations without corrupting or misrepresenting trip truth.
 
-## Phase 1 — Complete Trip Core in progress
+## Phase 1 — Complete Trip Core implemented
 
 Goal: turn the current vertical prototype into a coherent pre-trip workspace.
 
@@ -50,20 +50,20 @@ Goal: turn the current vertical prototype into a coherent pre-trip workspace.
 - [x] Add service-backed Trip Details editing for title, valid existing destination names, native dates, accounting currency, and lifecycle status.
 - [x] Reject invalid/reversed detail dates, prevent manual assignment of active truth, preserve structured destination metadata, and block accounting-currency changes once a Budget exists.
 - [x] Add confirmed cascade deletion for trip-owned local data, workspace not-found transition, trip-list refresh, automated coverage, and Android runtime verification with isolated data.
-- [ ] Define a real FX-rate source, rate timestamp, conversion policy, user override, and provenance model before foreign currencies can enter accounting-currency totals.
+- [x] **FX rates V1** — traveler-supplied rate, as-of calendar date, and `traveler` provenance. Foreign paid expenses enter accounting-currency totals only through a matching pair. No live market feed. Automated tests exist. No device rehearsal.
 - [x] Replace free-form Create Trip destinations with native real-location selection; add explicit ID-preserving destination replacement/legacy upgrade in Trip Details; persist only provider-returned place facts; and render all mapped destinations without a hidden first-destination assumption.
 - [x] **Multi-destination authoring V1** — Create Trip and Trip Details can add, reorder, and remove up to eight real map destinations. New destinations require a picker selection. A trip cannot drop to zero destinations once it has one. Removing a destination does not delete stops, bookings, or stays. Ready-made journeys can prefill extra catalogue cities. Automated tests exist. Android Pixel 8 rehearsal on 2026-09-03 prefilled Lisbon and Porto from a journey and added Coimbra through the native location picker.
 - [x] **Day → Destination V1** — optional `TripDay.destinationId` assigned from Plan against existing trip destinations. Unassigned is valid. Destination order is never treated as the day’s city. Removing a destination clears the day’s assignment (`ON DELETE SET NULL`) instead of deleting the day. Trip destination saves upsert by ID so assignments survive Trip Details. Companion’s active hero shows today’s assigned city or “City not set for today”. Timezone is not inferred from the assignment and is not used to decide which calendar date is today. Automated tests exist. Android Pixel 8 rehearsal on 2026-09-03 assigned Lisbon to Day 1 of an isolated trip.
-- [ ] Adopt a stable provider identity when the chosen provider exposes one.
+- [x] **Provider identity V1** — persist `placeId` when a location provider result includes one. The installed `expo-location-picker` 1.0.2 still does not expose a stable place ID, so unknown stays unknown.
 - [x] Replace free-form Create Trip dates, Booking start/end, and optional Stop time with native inputs and centralized calendar/local-time validation while preserving compatible historical Booking and Stop values.
 - [x] Implement Booking ↔ Stop linking by exact ID, including optional native link/relink/unlink UX, Plan/Companion/Map context, zero-to-many reverse cardinality, same-trip validation, safe stop deletion, migration version 5, automated tests, and isolated Android verification.
 - [x] Implement native Accommodation management with multiple sorted stays, validated local date/time input, optional same-trip Booking and TripStop links by exact ID, lossless unlink/delete behavior, migration version 6, automated tests, and isolated Android verification.
 - [x] Implement native Traveler management with reusable canonical identities, exact-ID many-to-many Trip membership, atomic create-and-add, duplicate prevention, shared edits, membership-only removal, Trip-deletion preservation, TripWorkspace refresh, automated tests, and isolated Android verification.
-- [ ] Define Traveler owner identity, roles, invitations, permissions, reservation ownership, expense splitting, and when a Trip should transition from the current planning-time zero-or-many membership to a one-or-more party rule.
+- [x] **Traveler owner V1** — optional local `owner` / `member` role with at most one owner. Planning trips may still have zero travelers and no owner. Invitations, permissions, reservation ownership, expense splitting, and a one-or-more party rule remain later work (accounts / Phase 6).
 - [x] Define centralized date/time/runtime truth: canonical date-only Trip/TripDay values, local wall-clock Stop/Accommodation/new Booking values, preserved absolute historical Booking instants, injectable-clock runtime phase, exact active TripDay selection, explicit canonical-destination/device-fallback timezone provenance, and a separate future progress role for TripRuntimeState.
-- [ ] Add timezone only through a reliable provider or separately restricted service boundary—never by geographic or currency guesswork—before claiming fully timezone-aware multi-destination runtime behavior. Never substitute destination order as temporal truth.
-- Improve booking actions, validation, payment state, and destructive-flow UX.
-- Define archive and user-data recovery expectations before deletion is considered release-ready.
+- [x] **Timezone enrichment V1** — IANA timezone only from a provider result, a catalogue handoff, or an explicit traveler choice, with `timezoneSource` provenance. Never guessed from coordinates, currency, or destination order. Companion still uses a shared trip timezone only when every city agrees. Day assignment is not a clock. Fully timezone-aware multi-destination NOW/NEXT remains Phase 2.
+- [x] Booking amount and currency must be saved together. Cancelled bookings cannot be marked paid. Delete copy states that linked stays keep their facts and the booking cannot be recovered.
+- [x] Archive is reversible organizational status. Delete remains irreversible on this device. There is no backup or export yet. Migration recovery archives are not a user restore tool.
 
 Exit condition: a traveler can create, edit, organize, budget, and validate the essential facts of a trip in one durable workspace.
 
@@ -78,7 +78,7 @@ Goal: make TravelOS useful and correct while the traveler is moving.
 - [x] Add premium phase-aware native presentation, restrained motion with reduced-motion support, working module actions, and calm imperfect-data states.
 - [x] Refresh runtime truth on focus, foreground return, and the next resolved local calendar boundary without polling.
 - [x] Add deterministic Companion selector/boundary tests and Android rehearsal for upcoming, incomplete, active fallback, linked Booking, mapped stop, cold relaunch, tab lifecycle, and completed non-live behavior.
-- [ ] Add secure reliable destination-timezone enrichment before claiming exact NOW/NEXT across multi-destination trips. Day → Destination assignment is presentation-only until a real timezone source exists. The current native selection flow truthfully leaves timezone unknown because its picker does not return one.
+- [ ] Add secure reliable destination-timezone enrichment before claiming exact NOW/NEXT across multi-destination trips. Destinations may now store an IANA timezone from a provider result, catalogue, or traveler; the installed picker still does not return one. Day → Destination assignment remains presentation-only and is not used as a clock.
 - [ ] Decide whether timed stop-boundary refresh is needed while Companion remains continuously open; V1 refreshes at focus, foreground, and local date boundaries.
 - [ ] Model delayed, completed, and skipped lived-stop phases without rewriting the original plan, then activate `TripRuntimeState` only for concrete durable progress.
 - [ ] Add smarter map framing, real route and travel-time providers, and navigation handoff without invented data.
@@ -197,4 +197,4 @@ Exit condition: TravelOS can be built, tested, observed, restored, and released 
 - A phase is complete only when its behavior, failure states, tests, and documentation agree.
 - Update docs/CURRENT_STATE.md and this roadmap after each meaningful milestone.
 
-Unresolved work that remains in force across phases includes: secure timezone enrichment; FX strategy; Companion V2 lived-state decisions; iOS Expo SQLite rehearsal (migration 3 and later upgrades); accessibility and design-system consolidation; EAS; and sync/backup. A GitHub Actions workflow is committed but has not run on GitHub because there is no remote. Those items stay open. They do not replace the immediate Discover sequence in Phase 4.
+Unresolved work that remains in force across phases includes: using a day’s assigned city as a clock for multi-destination NOW/NEXT; a live FX market feed; Companion V2 lived-state decisions; traveler invitations/permissions; iOS Expo SQLite rehearsal (migration 3 and later upgrades); accessibility and design-system consolidation; EAS; and sync/backup. A GitHub Actions workflow is committed but has not run on GitHub because there is no remote. Those items stay open. They do not replace the immediate Discover sequence in Phase 4.
