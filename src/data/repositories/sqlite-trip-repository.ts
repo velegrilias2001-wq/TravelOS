@@ -25,20 +25,9 @@ import {
 } from './trip-persistence-operations';
 import {
   loadTripById,
+  loadTripDaysForTrips,
   loadTripList,
 } from './trip-list-persistence';
-
-interface TripDayRow {
-  id: string;
-  trip_id: string;
-  date: string;
-  day_number: number;
-  title: string | null;
-  notes: string | null;
-  destination_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 interface TripStopRow {
   id: string;
@@ -139,31 +128,13 @@ export class SQLiteTripRepository
   async getDays(
     tripId: TripId,
   ): Promise<TripDay[]> {
-    const rows =
-      await this.database.query<TripDayRow>(
-        `
-          SELECT *
-          FROM trip_days
-          WHERE trip_id = ?
-          ORDER BY day_number ASC;
-        `,
-        [tripId],
-      );
+    return loadTripDaysForTrips(this.database, [tripId]);
+  }
 
-    return rows.map((row) => ({
-      id: row.id,
-      tripId: row.trip_id,
-
-      date: row.date,
-      dayNumber: row.day_number,
-
-      title: optional(row.title),
-      notes: optional(row.notes),
-      destinationId: optional(row.destination_id),
-
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    }));
+  async getDaysForTrips(
+    tripIds: readonly TripId[],
+  ): Promise<TripDay[]> {
+    return loadTripDaysForTrips(this.database, tripIds);
   }
 
   async saveDay(

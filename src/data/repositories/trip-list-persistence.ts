@@ -1,5 +1,6 @@
 import type {
   Trip,
+  TripDay,
   TripDestination,
   TripId,
   TripIntent,
@@ -30,6 +31,18 @@ interface TravelerLinkRow {
   trip_id: string;
   traveler_id: string;
   role: string | null;
+}
+
+interface TripDayRow {
+  id: string;
+  trip_id: string;
+  date: string;
+  day_number: number;
+  title: string | null;
+  notes: string | null;
+  destination_id: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 function sqlPlaceholders(
@@ -193,4 +206,52 @@ export async function loadTripById(
   );
 
   return trip ?? null;
+}
+
+function mapTripDay(row: TripDayRow): TripDay {
+  return {
+    id: row.id,
+    tripId: row.trip_id,
+    date: row.date,
+    dayNumber: row.day_number,
+    title: row.title ?? undefined,
+    notes: row.notes ?? undefined,
+    destinationId: row.destination_id ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function loadTripDaysForTrips(
+  database: DatabaseConnection,
+  tripIds: readonly TripId[],
+): Promise<TripDay[]> {
+  if (tripIds.length === 0) {
+    return [];
+  }
+
+  const rows = await database.query<TripDayRow>(
+    `
+      SELECT
+        id,
+        trip_id,
+        date,
+        day_number,
+        title,
+        notes,
+        destination_id,
+        created_at,
+        updated_at
+      FROM trip_days
+      WHERE trip_id IN (${sqlPlaceholders(tripIds.length)})
+      ORDER BY
+        trip_id ASC,
+        day_number ASC,
+        date ASC,
+        id ASC;
+    `,
+    [...tripIds],
+  );
+
+  return rows.map(mapTripDay);
 }

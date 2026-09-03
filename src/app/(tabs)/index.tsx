@@ -17,13 +17,14 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
-import type { Trip } from '@/domain/entities';
+import type { Trip, TripDay } from '@/domain/entities';
 import {
-  tripDestinationLabel,
-} from '@/services/destination-authoring';
+  homeFeaturedPlaceLabel,
+  selectHomeRuntimeSummary,
+} from '@/services/home-runtime';
+import { tripService } from '@/services/trip-service';
 import {
   formatCalendarDateForDisplay,
-  resolveTripRuntime,
   systemRuntimeClock,
 } from '@/services/time-truth';
 import { useTripStore } from '@/store/trip-store';
@@ -72,11 +73,41 @@ export default function HomeScreen() {
 
   const [runtimeRevision, setRuntimeRevision] =
     useState(0);
+  const [days, setDays] = useState<TripDay[]>(
+    [],
+  );
+
+  const tripIds = useMemo(
+    () => trips.map((trip) => trip.id).join('\0'),
+    [trips],
+  );
 
   useFocusEffect(
     useCallback(() => {
+      let cancelled = false;
       setRuntimeRevision((current) => current + 1);
-    }, []),
+
+      void (async () => {
+        try {
+          const loaded =
+            await tripService.listDaysForTrips(
+              trips.map((trip) => trip.id),
+            );
+
+          if (!cancelled) {
+            setDays(loaded);
+          }
+        } catch {
+          if (!cancelled) {
+            setDays([]);
+          }
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [tripIds, trips]),
   );
 
   const runtimeSummary = useMemo(() => {
@@ -87,40 +118,17 @@ export default function HomeScreen() {
       now: () => instant,
       deviceTimeZone: () => deviceZone,
     };
-    const records = trips
-      .filter((trip) => trip.status !== 'archived')
-      .map((trip) => ({
-        trip,
-        runtime: resolveTripRuntime(trip, [], clock),
-      }));
 
-    const featured =
-      records.find(
-        ({ runtime }) => runtime.phase === 'active',
-      ) ??
-      records
-        .filter(
-          ({ runtime }) =>
-            runtime.phase === 'upcoming',
-        )
-        .sort((a, b) =>
-          a.trip.startDate.localeCompare(
-            b.trip.startDate,
-          ),
-        )[0];
+    return selectHomeRuntimeSummary(
+      trips,
+      days,
+      clock,
+    );
+  }, [runtimeRevision, trips, days]);
 
-    return {
-      featured,
-      completedCount: trips.filter(
-        (trip) => trip.status === 'completed',
-      ).length,
-    };
-  }, [runtimeRevision, trips]);
-
-  const featuredTrip =
-    runtimeSummary.featured?.trip;
-  const featuredPhase =
-    runtimeSummary.featured?.runtime.phase;
+  const featured = runtimeSummary.featured;
+  const featuredTrip = featured?.trip;
+  const featuredPhase = featured?.runtime.phase;
   const completedTrips =
     runtimeSummary.completedCount;
 
@@ -188,11 +196,12 @@ export default function HomeScreen() {
 
           <View style={styles.heroContent}>
             <Text style={styles.heroDestination}>
-              {featuredTrip.destinations.length === 0
-                ? 'Destination not set'
-                : tripDestinationLabel(
-                    featuredTrip.destinations,
-                  )}
+              {featured
+                ? homeFeaturedPlaceLabel(
+                    featured.trip,
+                    featured.runtime,
+                  )
+                : 'Destination not set'}
             </Text>
 
             <Text

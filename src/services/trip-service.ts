@@ -74,6 +74,12 @@ export class TripService {
     return this.repo.trip.getAll();
   }
 
+  async listDaysForTrips(
+    tripIds: readonly TripId[],
+  ): Promise<TripDay[]> {
+    return this.repo.trip.getDaysForTrips(tripIds);
+  }
+
   async getTrip(
     id: TripId,
   ): Promise<Trip | null> {

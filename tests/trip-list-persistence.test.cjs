@@ -9,6 +9,7 @@ const {
 );
 const {
   loadTripById,
+  loadTripDaysForTrips,
   loadTripList,
 } = require(
   '../.test-build/src/data/repositories/trip-list-persistence.js',
@@ -233,6 +234,105 @@ test(
           'missing-trip',
         ),
         null,
+      );
+    } finally {
+      database.close();
+    }
+  },
+);
+
+test(
+  'trip days for many trips load in one query and keep destination assignments',
+  async () => {
+    const database = new NodeSQLiteDatabase();
+
+    try {
+      await migrateDatabase(database);
+      await insertTraveler(
+        database,
+        'traveler-1',
+        'Ari',
+      );
+      await saveCanonicalTrip(
+        database,
+        makeTrip(),
+      );
+      await saveCanonicalTrip(
+        database,
+        makeTrip({
+          id: 'trip-tokyo',
+          title: 'Tokyo',
+          destinations: [
+            {
+              id: 'destination-tokyo',
+              name: 'Tokyo',
+              countryCode: 'JP',
+              latitude: 35.6762,
+              longitude: 139.6503,
+            },
+          ],
+          startDate: '2026-10-01',
+          endDate: '2026-10-01',
+          travelerIds: ['traveler-1'],
+        }),
+      );
+
+      await database.execute(
+        `
+          INSERT INTO trip_days (
+            id, trip_id, date, day_number,
+            destination_id, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?);
+        `,
+        [
+          'day-lisbon-1',
+          'trip-lisbon',
+          '2026-09-10',
+          1,
+          'destination-lisbon',
+          TIMESTAMP,
+          TIMESTAMP,
+        ],
+      );
+      await database.execute(
+        `
+          INSERT INTO trip_days (
+            id, trip_id, date, day_number,
+            created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?);
+        `,
+        [
+          'day-tokyo-1',
+          'trip-tokyo',
+          '2026-10-01',
+          1,
+          TIMESTAMP,
+          TIMESTAMP,
+        ],
+      );
+
+      const counter = wrapQueryCounter(database);
+      const days = await loadTripDaysForTrips(
+        database,
+        ['trip-lisbon', 'trip-tokyo'],
+      );
+
+      assert.equal(counter.queryCount, 1);
+      assert.deepEqual(
+        days.map((day) => day.id),
+        ['day-lisbon-1', 'day-tokyo-1'],
+      );
+      assert.equal(
+        days[0].destinationId,
+        'destination-lisbon',
+      );
+      assert.equal(days[1].destinationId, undefined);
+
+      assert.deepEqual(
+        await loadTripDaysForTrips(database, []),
+        [],
       );
     } finally {
       database.close();

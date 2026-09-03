@@ -16,6 +16,10 @@ export interface TripRepository {
 
   getDays(tripId: TripId): Promise<TripDay[]>;
 
+  getDaysForTrips(
+    tripIds: readonly TripId[],
+  ): Promise<TripDay[]>;
+
   saveDay(day: TripDay): Promise<void>;
 
   ensureDays(
