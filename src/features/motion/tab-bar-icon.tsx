@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { ColorValue } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { playSelectionHaptic } from '@/features/motion/haptic';
 import { useReduceMotion } from '@/features/motion/reduce-motion';
 
 type TabBarIconProps = {
@@ -29,18 +30,23 @@ export function TabBarIcon({
 }: TabBarIconProps) {
   const reduceMotion = useReduceMotion();
   const scale = useSharedValue(1);
+  const wasFocused = useRef(focused);
 
   useEffect(() => {
+    const becameFocused = focused && !wasFocused.current;
+    wasFocused.current = focused;
+
     if (!focused) {
       scale.value = 1;
       return;
     }
 
-    if (reduceMotion) {
+    if (!becameFocused || reduceMotion) {
       scale.value = 1;
       return;
     }
 
+    playSelectionHaptic();
     scale.value = withSequence(
       withTiming(1.08, { duration: 90 }),
       withTiming(1, { duration: 90 }),

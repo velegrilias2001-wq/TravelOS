@@ -29,6 +29,7 @@ import {
   useTripWorkspace,
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
+import { playLightImpact } from '@/features/motion/haptic';
 import { useNetworkReachability } from '@/features/offline/use-network-reachability';
 import { SlideNotice } from '@/features/motion/slide-notice';
 import {
@@ -1326,7 +1327,10 @@ function PillAction({
       accessibilityRole="button"
       accessibilityLabel={label}
       style={({ pressed }) => [styles.pillAction, pressed && styles.pressed]}
-      onPress={onPress}
+      onPress={() => {
+        playLightImpact();
+        onPress();
+      }}
     >
       <Ionicons name={icon} size={16} color={colors.brand} />
       <Text style={styles.pillText}>{label}</Text>

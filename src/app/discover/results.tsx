@@ -23,6 +23,7 @@ import {
   Screen,
 } from '@/components/ui/screen';
 import { BookmarkPulse } from '@/features/motion/bookmark-pulse';
+import { playSelectionHaptic } from '@/features/motion/haptic';
 import { StaggerEnter } from '@/features/motion/stagger-enter';
 
 import type {
@@ -603,6 +604,7 @@ export default function DiscoverResultsScreen() {
   const toggleSaved = (
     identity: string,
   ) => {
+    playSelectionHaptic();
     void (async () => {
       const next =
         await savedPlaceService.toggle({

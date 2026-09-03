@@ -11,6 +11,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { playLightImpact } from '@/features/motion/haptic';
 import { useReduceMotion } from '@/features/motion/reduce-motion';
 
 type PressableScaleProps = Omit<
@@ -43,11 +44,12 @@ export function PressableScale({
   }));
 
   return (
-    <Animated.View style={animatedStyle}>
+    <Animated.View style={[{ alignSelf: 'stretch' }, animatedStyle]}>
       <Pressable
         disabled={disabled}
         onPressIn={(event) => {
           if (!disabled && !reduceMotion) {
+            playLightImpact();
             scale.value = withTiming(0.98, {
               duration: 90,
             });

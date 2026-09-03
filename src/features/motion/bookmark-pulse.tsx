@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -15,7 +15,7 @@ type BookmarkPulseProps = PropsWithChildren<{
 
 /**
  * One short scale pulse when a wishlist bookmark becomes active.
- * No particles. Inactive state stays quiet.
+ * Already-saved items stay still on first paint.
  */
 export function BookmarkPulse({
   children,
@@ -23,9 +23,13 @@ export function BookmarkPulse({
 }: BookmarkPulseProps) {
   const reduceMotion = useReduceMotion();
   const scale = useSharedValue(1);
+  const wasActive = useRef(active);
 
   useEffect(() => {
-    if (!active || reduceMotion) {
+    const becameActive = active && !wasActive.current;
+    wasActive.current = active;
+
+    if (!becameActive || reduceMotion) {
       scale.value = 1;
       return;
     }
