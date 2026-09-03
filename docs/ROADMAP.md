@@ -203,7 +203,7 @@ These stay later. They were not implemented in this pass. iOS rebuild is last.
 - Notifications, only after timezone truth is stable on device.
 - Discover reranking. Do not install a BGE reranker until a real `/api/rerank` path can be measured.
 - Confirmation-photo OCR, only with an extractor that cannot write bookings.
-- Phase 5 visual/function matrix remainder: closed on Pixel 8 on 2026-09-03 (booking save/delete, stop delete, trip delete confirm cancelled). Pass 1 motion shipped (tabs, CTA scale, Plan lived FadeIn, Reduce Motion). Pass 2 motion stays later.
+- Phase 5 visual/function matrix remainder: closed on Pixel 8 on 2026-09-03 (booking save/delete, stop delete, trip delete confirm cancelled). Pass 1 and Pass 2 motion shipped.
 - iOS development-client rebuild and Expo SQLite rehearsal.
 
 ## Cross-cutting rules

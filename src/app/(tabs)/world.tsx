@@ -27,6 +27,7 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 
+import { FadeIn } from '@/features/motion/fade-in';
 import type {
   Trip,
 } from '@/domain/entities';
@@ -450,31 +451,33 @@ export default function WorldScreen() {
               ) : null}
             </View>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={
-                false
-              }
-              contentContainerStyle={
-                styles.destinationList
-              }
-            >
-              {filteredDestinations.map(
-                (item) => (
-                  <DestinationCard
-                    key={item.id}
-                    item={item}
-                    selected={
-                      item.id ===
-                      selectedDestinationId
-                    }
-                    onPress={() =>
-                      focusDestination(item)
-                    }
-                  />
-                ),
-              )}
-            </ScrollView>
+            <FadeIn factKey={`world-filter:${filter}`}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={
+                  false
+                }
+                contentContainerStyle={
+                  styles.destinationList
+                }
+              >
+                {filteredDestinations.map(
+                  (item) => (
+                    <DestinationCard
+                      key={item.id}
+                      item={item}
+                      selected={
+                        item.id ===
+                        selectedDestinationId
+                      }
+                      onPress={() =>
+                        focusDestination(item)
+                      }
+                    />
+                  ),
+                )}
+              </ScrollView>
+            </FadeIn>
           </>
         )}
       </View>

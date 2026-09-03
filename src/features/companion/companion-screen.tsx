@@ -30,6 +30,7 @@ import {
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
 import { useNetworkReachability } from '@/features/offline/use-network-reachability';
+import { SlideNotice } from '@/features/motion/slide-notice';
 import {
   splitAccommodationDateTime,
   type AccommodationDayContext,
@@ -267,10 +268,14 @@ export function CompanionScreen() {
           />
         ) : null}
         {offlineNotice ? (
-          <TruthNotice
-            icon="cloud-offline-outline"
-            body={offlineNotice.body}
-          />
+          <SlideNotice
+            noticeKey={offlineNotice.body}
+          >
+            <TruthNotice
+              icon="cloud-offline-outline"
+              body={offlineNotice.body}
+            />
+          </SlideNotice>
         ) : null}
       </View>
 

@@ -22,6 +22,8 @@ import {
 import {
   Screen,
 } from '@/components/ui/screen';
+import { BookmarkPulse } from '@/features/motion/bookmark-pulse';
+import { StaggerEnter } from '@/features/motion/stagger-enter';
 
 import type {
   BudgetStyle,
@@ -812,37 +814,41 @@ export default function DiscoverResultsScreen() {
               match,
               index,
             ) => (
-              <DestinationMatchCard
+              <StaggerEnter
                 key={
                   match.candidate.id
                 }
-                rank={index + 1}
-                match={match}
-                explanation={
-                  explanations[
-                    match.candidate.id
-                  ]
-                }
-                onAskExplanation={() =>
-                  askExplanation(
+                index={index}
+              >
+                <DestinationMatchCard
+                  rank={index + 1}
+                  match={match}
+                  explanation={
+                    explanations[
+                      match.candidate.id
+                    ]
+                  }
+                  onAskExplanation={() =>
+                    askExplanation(
+                      match.candidate.id,
+                    )
+                  }
+                  saved={savedIdentities.includes(
                     match.candidate.id,
-                  )
-                }
-                saved={savedIdentities.includes(
-                  match.candidate.id,
-                )}
-                onToggleSaved={() =>
-                  toggleSaved(
-                    match.candidate.id,
-                  )
-                }
-                onChoose={() =>
-                  chooseDestination(
-                    match.candidate
-                      .destination,
-                  )
-                }
-              />
+                  )}
+                  onToggleSaved={() =>
+                    toggleSaved(
+                      match.candidate.id,
+                    )
+                  }
+                  onChoose={() =>
+                    chooseDestination(
+                      match.candidate
+                        .destination,
+                    )
+                  }
+                />
+              </StaggerEnter>
             ),
           )
         )}
@@ -880,44 +886,48 @@ export default function DiscoverResultsScreen() {
             </View>
           ) : (
             semanticMatches.map(
-              (match) => (
-                <DestinationMatchCard
+              (match, index) => (
+                <StaggerEnter
                   key={
                     match.candidate.id
                   }
-                  kind="semantic"
-                  match={{
-                    candidate:
-                      match.candidate,
-                    score:
-                      match.score,
-                    reasons: [],
-                  }}
-                  explanation={
-                    explanations[
-                      match.candidate.id
-                    ]
-                  }
-                  onAskExplanation={() =>
-                    askExplanation(
+                  index={index}
+                >
+                  <DestinationMatchCard
+                    kind="semantic"
+                    match={{
+                      candidate:
+                        match.candidate,
+                      score:
+                        match.score,
+                      reasons: [],
+                    }}
+                    explanation={
+                      explanations[
+                        match.candidate.id
+                      ]
+                    }
+                    onAskExplanation={() =>
+                      askExplanation(
+                        match.candidate.id,
+                      )
+                    }
+                    saved={savedIdentities.includes(
                       match.candidate.id,
-                    )
-                  }
-                  saved={savedIdentities.includes(
-                    match.candidate.id,
-                  )}
-                  onToggleSaved={() =>
-                    toggleSaved(
-                      match.candidate.id,
-                    )
-                  }
-                  onChoose={() =>
-                    chooseDestination(
-                      match.candidate
-                        .destination,
-                    )
-                  }
-                />
+                    )}
+                    onToggleSaved={() =>
+                      toggleSaved(
+                        match.candidate.id,
+                      )
+                    }
+                    onChoose={() =>
+                      chooseDestination(
+                        match.candidate
+                          .destination,
+                      )
+                    }
+                  />
+                </StaggerEnter>
               ),
             )
           )}
@@ -1377,15 +1387,32 @@ function DestinationMatchCard({
         onPress={onToggleSaved}
         style={styles.explainButton}
       >
-        <Text
-          style={
-            styles.explainButtonText
-          }
-        >
-          {saved
-            ? 'Remove from saved ideas'
-            : 'Save this idea'}
-        </Text>
+        <BookmarkPulse active={saved}>
+          <View
+            style={
+              styles.saveIdeaRow
+            }
+          >
+            <Ionicons
+              name={
+                saved
+                  ? 'bookmark'
+                  : 'bookmark-outline'
+              }
+              size={17}
+              color={colors.teal}
+            />
+            <Text
+              style={
+                styles.explainButtonText
+              }
+            >
+              {saved
+                ? 'Remove from saved ideas'
+                : 'Save this idea'}
+            </Text>
+          </View>
+        </BookmarkPulse>
       </Pressable>
 
       <View
@@ -1792,6 +1819,12 @@ const styles =
       marginTop: spacing[3],
       alignItems: 'flex-start',
       justifyContent: 'center',
+    },
+
+    saveIdeaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
     },
 
     explainButtonText: {

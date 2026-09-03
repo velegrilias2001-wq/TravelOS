@@ -43,6 +43,7 @@ import {
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
 import { useNetworkReachability } from '@/features/offline/use-network-reachability';
+import { SlideNotice } from '@/features/motion/slide-notice';
 
 import {
   bookingsLinkedToStop,
@@ -524,20 +525,24 @@ export default function TripMapScreen() {
           </Pressable>
         </View>
         {offlineNotice ? (
-          <View style={styles.notice}>
-            <Ionicons
-              name={
-                offlineNotice.kind === 'unmapped'
-                  ? 'location-outline'
-                  : 'cloud-offline-outline'
-              }
-              size={16}
-              color={colors.teal}
-            />
-            <Text style={styles.noticeText}>
-              {offlineNotice.body}
-            </Text>
-          </View>
+          <SlideNotice
+            noticeKey={`${offlineNotice.kind}:${offlineNotice.body}`}
+          >
+            <View style={styles.notice}>
+              <Ionicons
+                name={
+                  offlineNotice.kind === 'unmapped'
+                    ? 'location-outline'
+                    : 'cloud-offline-outline'
+                }
+                size={16}
+                color={colors.teal}
+              />
+              <Text style={styles.noticeText}>
+                {offlineNotice.body}
+              </Text>
+            </View>
+          </SlideNotice>
         ) : null}
       </View>
 
