@@ -15,13 +15,17 @@ import {
 
 import {
   Alert,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -255,6 +259,12 @@ function formatStopDate(
 
 export default function BookingsScreen() {
   const router = useRouter();
+  const { height: windowHeight } =
+    useWindowDimensions();
+  const sheetScrollMaxHeight = Math.max(
+    280,
+    Math.round(windowHeight * 0.92) - 220,
+  );
   const routeParams =
     useLocalSearchParams<{
       bookingId?: string | string[];
@@ -620,8 +630,7 @@ export default function BookingsScreen() {
 
               currencyCode:
                 parsedAmount === undefined
-                  ? currency.trim().toUpperCase() ||
-                    undefined
+                  ? undefined
                   : currency.trim().toUpperCase() ||
                     workspace.trip.accountingCurrency,
 
@@ -666,8 +675,7 @@ export default function BookingsScreen() {
 
               currencyCode:
                 parsedAmount === undefined
-                  ? currency.trim().toUpperCase() ||
-                    undefined
+                  ? undefined
                   : currency.trim().toUpperCase() ||
                     workspace.trip.accountingCurrency,
 
@@ -1231,16 +1239,22 @@ export default function BookingsScreen() {
         visible={modalVisible}
         transparent
         animationType="slide"
-        onRequestClose={
-          closeModal
-        }
+        onRequestClose={() => {
+          Keyboard.dismiss();
+          closeModal();
+        }}
       >
         <View
           style={
             styles.modalBackdrop
           }
         >
-          <View
+          <KeyboardAvoidingView
+            behavior={
+              Platform.OS === 'ios'
+                ? 'padding'
+                : undefined
+            }
             style={styles.sheet}
           >
             <View
@@ -1289,6 +1303,10 @@ export default function BookingsScreen() {
                 false
               }
               keyboardShouldPersistTaps="handled"
+              style={{
+                maxHeight:
+                  sheetScrollMaxHeight,
+              }}
             >
               <Text
                 style={
@@ -1715,48 +1733,54 @@ export default function BookingsScreen() {
                 multiline
               />
 
-              <Pressable
-                disabled={isSaving}
-                style={[
-                  styles.saveButton,
-
-                  isSaving &&
-                    styles.disabled,
-                ]}
-                onPress={
-                  saveBooking
-                }
-              >
-                <Text
-                  style={
-                    styles.saveButtonText
-                  }
-                >
-                  {isSaving
-                    ? 'Saving…'
-                    : editingBooking
-                      ? 'Save changes'
-                      : 'Add booking'}
-                </Text>
-
-                {!isSaving && (
-                  <Ionicons
-                    name="arrow-forward"
-                    size={19}
-                    color={
-                      colors.textInverse
-                    }
-                  />
-                )}
-              </Pressable>
-
               <View
                 style={
                   styles.sheetBottomSpace
                 }
               />
             </ScrollView>
-          </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                editingBooking
+                  ? 'Save booking changes'
+                  : 'Save new booking'
+              }
+              disabled={isSaving}
+              style={[
+                styles.saveButton,
+
+                isSaving &&
+                  styles.disabled,
+              ]}
+              onPress={
+                saveBooking
+              }
+            >
+              <Text
+                style={
+                  styles.saveButtonText
+                }
+              >
+                {isSaving
+                  ? 'Saving…'
+                  : editingBooking
+                    ? 'Save changes'
+                    : 'Add booking'}
+              </Text>
+
+              {!isSaving && (
+                <Ionicons
+                  name="arrow-forward"
+                  size={19}
+                  color={
+                    colors.textInverse
+                  }
+                />
+              )}
+            </Pressable>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </>
@@ -2435,7 +2459,7 @@ const styles =
         spacing[6],
 
       paddingBottom:
-        spacing[4],
+        spacing[8],
     },
 
     sheetHandle: {
@@ -2996,7 +3020,7 @@ const styles =
         spacing[3],
 
       marginTop:
-        spacing[3],
+        spacing[4],
     },
 
     saveButtonText: {

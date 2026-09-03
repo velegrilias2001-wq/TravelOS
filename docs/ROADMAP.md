@@ -203,7 +203,7 @@ These stay later. They were not implemented in this pass. iOS rebuild is last.
 - Notifications, only after timezone truth is stable on device.
 - Discover reranking. Do not install a BGE reranker until a real `/api/rerank` path can be measured.
 - Confirmation-photo OCR, only with an extractor that cannot write bookings.
-- Phase 5 visual/function matrix remainder: booking save, stop/booking delete, and trip delete confirmation. Owner toggle, unmapped Plan create, Companion Done, and Plan DONE badge were rehearsed on Pixel 8 on 2026-09-03.
+- Phase 5 visual/function matrix remainder: stop/booking delete, trip delete confirmation, and booking text-entry save on emulator (keyboard blocks adb automation; code is verified via 323 passing tests and tsc). Booking save button is now a sticky footer outside the ScrollView. Currency-without-amount save bug is fixed. Owner toggle, unmapped Plan create, Companion Done, and Plan DONE badge were rehearsed on Pixel 8 on 2026-09-03.
 - iOS development-client rebuild and Expo SQLite rehearsal.
 
 ## Cross-cutting rules
