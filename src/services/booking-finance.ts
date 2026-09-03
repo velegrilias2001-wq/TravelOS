@@ -7,6 +7,21 @@ function normalizeCurrencyCode(
   return clean || undefined;
 }
 
+export function resolveBookingCurrencyCode(
+  parsedAmount: number | undefined,
+  currencyInput: string,
+  accountingCurrency: string,
+): string | undefined {
+  if (parsedAmount === undefined) {
+    return undefined;
+  }
+
+  return (
+    currencyInput.trim().toUpperCase() ||
+    accountingCurrency
+  );
+}
+
 export function validateBookingFinance(
   booking: Booking,
 ): void {

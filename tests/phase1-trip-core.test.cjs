@@ -30,6 +30,7 @@ const {
   '../.test-build/src/services/budget-calculations.js',
 );
 const {
+  resolveBookingCurrencyCode,
   validateBookingFinance,
 } = require(
   '../.test-build/src/services/booking-finance.js',
@@ -139,6 +140,35 @@ test('cancelled bookings cannot be marked paid and amounts need a currency', () 
         updatedAt: TIMESTAMP,
       }),
     /amount and currency must be saved together/i,
+  );
+});
+
+test('booking saves omit currency when amount is omitted', () => {
+  assert.equal(
+    resolveBookingCurrencyCode(
+      undefined,
+      'EUR',
+      'USD',
+    ),
+    undefined,
+  );
+
+  assert.equal(
+    resolveBookingCurrencyCode(
+      120,
+      '',
+      'USD',
+    ),
+    'USD',
+  );
+
+  assert.equal(
+    resolveBookingCurrencyCode(
+      120,
+      'gbp',
+      'USD',
+    ),
+    'GBP',
   );
 });
 

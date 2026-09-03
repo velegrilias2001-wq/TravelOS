@@ -53,6 +53,9 @@ import {
   accommodationsLinkedToBooking,
 } from '@/services/accommodation-details';
 import {
+  resolveBookingCurrencyCode,
+} from '@/services/booking-finance';
+import {
   buildItineraryStopContexts,
 } from '@/services/booking-stop-relationship';
 import {
@@ -629,10 +632,11 @@ export default function BookingsScreen() {
                 parsedAmount,
 
               currencyCode:
-                parsedAmount === undefined
-                  ? undefined
-                  : currency.trim().toUpperCase() ||
-                    workspace.trip.accountingCurrency,
+                resolveBookingCurrencyCode(
+                  parsedAmount,
+                  currency,
+                  workspace.trip.accountingCurrency,
+                ),
 
               isPaid,
 
@@ -674,10 +678,11 @@ export default function BookingsScreen() {
                 parsedAmount,
 
               currencyCode:
-                parsedAmount === undefined
-                  ? undefined
-                  : currency.trim().toUpperCase() ||
-                    workspace.trip.accountingCurrency,
+                resolveBookingCurrencyCode(
+                  parsedAmount,
+                  currency,
+                  workspace.trip.accountingCurrency,
+                ),
 
               isPaid,
 
@@ -1204,6 +1209,8 @@ export default function BookingsScreen() {
                         </View>
 
                         <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Delete ${booking.title}`}
                           style={
                             styles.deleteButton
                           }
