@@ -35,7 +35,7 @@ export const CURATED_JOURNEY_RECORDS:
     id: 'lisbon-porto',
     title: 'Lisbon and Porto',
     summary:
-      'Two grounded Portuguese cities from the catalogue. Create Trip can currently confirm one destination; the second city stays an idea until you add it yourself.',
+      'Two grounded Portuguese cities from the catalogue. Extra cities can prefill Create Trip. Nothing is saved until you confirm.',
     destinationIdentities: [
       'curated:pt-lisbon',
       'curated:pt-porto',
