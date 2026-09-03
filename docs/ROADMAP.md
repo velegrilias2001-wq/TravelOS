@@ -36,7 +36,7 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 - [x] **Trip list batch read V1** — Home, Trips, World, Profile, and Import load the trip list with three SQLite queries (trips, destinations, traveler memberships) instead of one destination query and one traveler query per trip. Destination order and traveler memberships are preserved. Automated tests exist. An Android Pixel 8 pass opened Home, Trips, World, and Profile after a Metro reload; Import was not opened.
 - [x] **Recovery-archive coverage V1** — Node tests cover remaining migration archive paths: v3 retargets Memory and TripRuntimeState from an archived duplicate day; v5 archives a booking whose stop is missing; v6 archives missing Accommodation booking/stop IDs; v7 archives a Memory whose day and stop IDs are missing. Booking/stop, Accommodation, TripRuntimeState, Stop-day same-trip, and Memories day/stop unlink cascades already had Node coverage. No user-facing archive inspection tool.
 - [x] **Lint / baseline CI V1** — committed Expo SDK 57 `eslint-config-expo` flat config, non-interactive `eslint .`, and a GitHub Actions workflow for `npx tsc --noEmit`, `npm test`, lint, and AI-server tests on Node 22. Existing React Compiler findings are warnings. No git remote, so the workflow has not run on GitHub.
-- [ ] Rehearse migration version 3 against Expo SQLite on an iOS development build.
+- [ ] **Deferred — iOS migration 3 rehearsal** — last, together with the iOS development-client rebuild. Windows cannot run this.
 - [x] Rehearse migrations 7–15 on an Expo SQLite development build. An Android Pixel 8 development-build pass on 2026-09-03 upgraded the installed `travelos.db` to live `PRAGMA user_version = 15` with Memory `trip_id` / `day_id` / `stop_id` foreign keys. The first attempt failed until v15 dropped v7 itinerary unlink triggers before rebuilding `memories`. Existing trips survived. iOS was not rehearsed.
 
 Exit condition: existing native flows survive retries, partial data, navigation refocus, and supported migrations without corrupting or misrepresenting trip truth.
@@ -81,15 +81,15 @@ Goal: make TravelOS useful and correct while the traveler is moving.
 - [x] Add deterministic Companion selector/boundary tests and Android rehearsal for upcoming, incomplete, active fallback, linked Booking, mapped stop, cold relaunch, tab lifecycle, and completed non-live behavior.
 - [x] **Day clock V1** — when exactly one TripDay is assigned to a destination with a valid IANA timezone and that timezone’s local calendar date matches the day, Companion uses that city as the clock for phase, current day, and NOW/NEXT. Destination order is never a clock. Two cities claiming today, an unassigned day, or a city without a timezone keep the previous trip-level or device fallback. Automated tests exist. No device rehearsal.
 - [x] **Home day clock V1** — Home featured-trip phase uses the same assigned-city clock as Companion. TripDays load in one batched query and are not stored in Zustand. Missing days degrade to trip-level timezone. An active featured trip shows today’s assigned city when one exists. Automated tests exist. No device rehearsal.
-- [ ] Add secure reliable destination-timezone enrichment from the location picker or a restricted Time Zone API. Destinations may already store an IANA timezone from a provider result, catalogue, or traveler; the installed picker still does not return one.
+- [ ] **Deferred — picker / Time Zone API timezone** — `expo-location-picker` 1.0.2 still does not return an IANA timezone or stable place ID. Do not call Google Time Zone API with the Android Maps key. Traveler, catalogue, and future provider timezones already persist. Create Trip traveler timezone V1 is the unblocked slice.
 - [x] **Create Trip traveler timezone V1** — Create Trip can set or clear an explicit IANA timezone with `traveler` provenance. Replacing the map pin keeps a traveler timezone when the picker still has none. Coordinates are never used to guess a zone. Automated tests exist. No device rehearsal.
 - [x] **Stop lived phase V1** — explicit done/skipped stop progress without rewriting Plan times. Delayed is derived from the clock. `TripRuntimeState` is written only as a pointer to the last explicit lived stop. Migration version 17. Automated tests exist. No device rehearsal.
 - [x] **Plan lived badges V1** — Plan shows Done/Skipped from those explicit marks without rewriting saved times. Delayed is not a Plan badge. Marks remain Companion actions. Automated tests exist. No device rehearsal.
 - [x] **Map day framing + directions V1** — Map frames the assigned Day → Destination city and that day’s mapped stops when Companion has a display day. Unassigned days do not borrow another city’s coordinates. View all still fits every saved destination and stop. Directions open Apple Maps or Google Maps on the saved pin only. No route, ETA, or accommodation coordinates. Automated tests exist. No device rehearsal.
-- [ ] Add real route and travel-time providers without invented data.
+- [ ] **Deferred — real routes and ETAs** — Directions still hand a saved pin to Apple Maps or Google Maps. Do not invent travel times. A real routing provider is later work.
 - [x] **Companion plan-change notice V1** — when saved dates, day city assignment, stops, bookings, or stays change while Companion is already showing that trip, a dismissible notice states that NOW/NEXT follow SQLite. First load, trip switch, done/skipped marks, and clock refresh stay silent. Lived phases are not auto-rewritten. Session-only. Automated tests exist. No device rehearsal.
 - [x] **Offline essential context V1** — SQLite is the durable cache for trip, booking, stay, and saved map-pin facts. `expo-network` observes reachability; unknown does not invent online or offline. Companion and Map name on-device facts, missing coordinates, and that live tiles/lookup need a network. Directions still use a saved pin; there is no cached route and no offline tile pack. Automated tests exist. Native rebuild required; no device rehearsal.
-- [ ] Add useful notifications only after timezone and truth rules are stable.
+- [ ] **Deferred — notifications** — only after picker/API timezone and Companion truth rules are stable on device.
 
 Exit condition: Companion presents the correct travel context and remains trustworthy during connectivity, timing, and plan changes.
 
@@ -131,7 +131,7 @@ These steps are ordered. Grounded destination data must exist before semantic re
 
 - [x] **Grounded Destination Sourcing V1** — explicit multi-pack grounded corpus with provenance, optional editorial fit, identity by `(source, record id)`, and matcher ranking only fitted records. AI is not a destination source.
 - [x] **Semantic Discover V1** — measured BGE-M3 benchmark, precomputed corpus embeddings keyed by grounded identity plus content hash, `/ai/discover-retrieve` on the local AI server, and hybrid Discover results that keep deterministic fit reasons primary. Semantic extras carry explicit provenance. Unreachable AI or a stale hash degrades to deterministic-only results. Android Pixel 8 rehearsal on 2026-09-02 showed live retrieve extras on device via `adb reverse`. BGE-M3 stays a replaceable candidate, not a locked choice.
-- [ ] **Discover reranking** — benchmarked, not adopted. Ollama 0.33.2 has no `/api/rerank`. A constrained `qwen3:4b` listwise reorder of the embedding top-8 improved English recall@3 from 0.58 to 0.71, left Greek and MRR unchanged, kept Bergen first on fjord probes, and averaged 3284 ms. That is too slow and too uneven to wire into Discover. A BGE reranker remains the candidate; do not install one until a real rerank serving path can be measured.
+- [ ] **Deferred — Discover reranking** — benchmarked, not adopted. Ollama 0.33.2 has no `/api/rerank`. A constrained `qwen3:4b` listwise reorder of the embedding top-8 improved English recall@3 from 0.58 to 0.71, left Greek and MRR unchanged, kept Bergen first on fjord probes, and averaged 3284 ms. That is too slow and too uneven to wire into Discover. A BGE reranker remains the candidate; do not install one until a real rerank serving path can be measured.
 - [x] **Grounded AI explanations** — opt-in Qwen explanation of one grounded Discover candidate from catalogue facts and the explicit Brief. Invented destinations, coordinates, prices, other catalogue names, and extra fit tags fail closed. Unreachable AI leaves ranking unchanged. Android Pixel 8 rehearsal on 2026-09-02 accepted a Porto explanation and fail-closed a Rome explanation that invented a missing fit tag.
 - [x] **Best time V1** — sourced months for a known grounded catalogue destination, with cited source and `checkedAt` freshness. Destinations without timing evidence stay unknown. Months are not converted into Create Trip dates. Automated tests exist. Android Pixel 8 opened the catalogue list and Bergen sourced months on 2026-09-02; Create Trip from that screen was not exercised.
 - [x] **Ready-made journeys V1** — curated journey ideas over grounded catalogue destinations. They remain distinct from confirmed trips until the traveler accepts them through `/new-trip`. Extra catalogue cities can prefill additional Create Trip destinations. Automated tests exist. Android Pixel 8 opened the journey list on 2026-09-02. A 2026-09-03 pass opened Lisbon and Porto detail and Create Trip with both cities prefilled.
@@ -146,8 +146,11 @@ These steps are ordered. Grounded destination data must exist before semantic re
 
 ### Remaining Phase 4 work
 
-- [ ] Rebuild the iOS development client so the ICS file picker can be rehearsed there.
-- [ ] Add image OCR of confirmation photos only with an explicit extractor contract that still cannot write bookings.
+- [ ] **Deferred — iOS rebuild** — last. Rehearse migration 3, ICS file picker, and the rest of native import on an iOS development build. Windows cannot do this.
+- [ ] **Deferred — confirmation-photo OCR** — only with an explicit extractor contract that still cannot write bookings. Ticket photos without an embedded iCalendar already fail closed. No OCR engine is installed.
+- [x] **Import and AI confirmation gates** — AI-assisted extraction is not implemented. Import claims still require explicit review before a booking is written. Plan ideas and Discover explanations cannot become stops or destinations on their own.
+- [x] **No silent canonical facts** — Discover, import claims, and AI suggestions remain visibly separate from trip truth until the traveler confirms through the existing Create Trip, import-accept, or stop-editor paths.
+- [x] **Local-dev AI boundary V1** — production provider is none. The native client uses a loopback AI URL only; a cloud host in `EXPO_PUBLIC_TRAVELOS_AI_URL` is ignored. No cloud retention, no billed cost, unreachable AI degrades, and advice cannot write SQLite. Automated tests exist. No device rehearsal.
 - [x] **Import and AI confirmation gates** — AI-assisted extraction is not implemented. Import claims still require explicit review before a booking is written. Plan ideas and Discover explanations cannot become stops or destinations on their own.
 - [x] **No silent canonical facts** — Discover, import claims, and AI suggestions remain visibly separate from trip truth until the traveler confirms through the existing Create Trip, import-accept, or stop-editor paths.
 - [x] **Local-dev AI boundary V1** — production provider is none. The native client uses a loopback AI URL only; a cloud host in `EXPO_PUBLIC_TRAVELOS_AI_URL` is ignored. No cloud retention, no billed cost, unreachable AI degrades, and advice cannot write SQLite. Automated tests exist. No device rehearsal.
@@ -161,8 +164,8 @@ Goal: turn coherent functionality into a distinctive, accessible native product.
 - [x] Complete UX Refinement V1: preserve the TravelOS identity while making Companion the signature surface, tightening utility-screen hierarchy, reducing card stacking and shadows, improving Plan density, compacting Bookings/Accommodation summaries, and turning More into a fast grouped hub.
 - [x] Remove traveler-facing engineering terminology from Companion, Travelers, Trip Details, destination selection, and time/date form helpers while preserving the underlying canonical data rules.
 - [x] Establish shared compact utility-header and summary-strip primitives and apply them across Plan, Bookings, Budget, Accommodation, Travelers, More, and Trip Details without adding a UI framework.
-- [ ] Complete the remaining UX Refinement V1 Android visual/function matrix for Plan, Bookings, More, Travelers, forms, Map, CRUD, and cold relaunch; the debug build/install/launch and updated upcoming Companion first screenful are verified, but emulator control ended before the rest of the matrix could be observed.
-- [ ] Extend design QA to Discover, World, Profile, Memories, Travel Book, and Travel DNA screens that shipped after UX Refinement V1. Those surfaces were not part of the incomplete V1 visual matrix. No device visual matrix was run for this documentation handoff.
+- [ ] **Deferred — UX Refinement V1 Android visual/function matrix** — Plan, Bookings, More, Travelers, forms, Map, CRUD, and cold relaunch still need an emulator pass. Debug build/install/launch and the upcoming Companion first screenful were verified earlier; emulator control ended before the rest of the matrix.
+- [ ] **Deferred — design QA** for Discover, World, Profile, Memories, Travel Book, and Travel DNA. Those surfaces shipped after UX Refinement V1 and were not part of the incomplete V1 visual matrix.
 - Consolidate stable primitives for typography, fields, cards, sheets, navigation, alerts, empty states, loading, and errors.
 - Add native gestures, transitions, motion, and haptics where they improve comprehension.
 - Create an imagery strategy with licensing, caching, attribution, fallbacks, and performance constraints.
@@ -190,6 +193,19 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 
 Exit condition: TravelOS can be built, tested, observed, restored, and released safely on iOS and Android.
 
+## Parked remaining work (2026-09-03)
+
+These stay later. They were not implemented in this pass. iOS rebuild is last.
+
+- Picker or restricted Time Zone API enrichment. Do not use the Android Maps key. Traveler IANA on Create Trip / Trip Details already exists.
+- Real in-app routes and ETAs. Saved-pin directions stay. Do not invent travel times.
+- Notifications, only after timezone truth is stable on device.
+- Discover reranking. Do not install a BGE reranker until a real `/api/rerank` path can be measured.
+- Confirmation-photo OCR, only with an extractor that cannot write bookings.
+- Android native rebuild for `expo-network` plus live rehearsal of migrations 16 and 17. Live device `user_version` remains 15.
+- Phase 5 visual/function matrix and later design QA on emulator.
+- iOS development-client rebuild and Expo SQLite rehearsal.
+
 ## Cross-cutting rules
 
 - Preserve one canonical Trip and explicit ID relationships at every phase.
@@ -201,4 +217,4 @@ Exit condition: TravelOS can be built, tested, observed, restored, and released 
 - A phase is complete only when its behavior, failure states, tests, and documentation agree.
 - Update docs/CURRENT_STATE.md and this roadmap after each meaningful milestone.
 
-Unresolved work that remains in force across phases includes: picker-returned or live Time Zone API enrichment; a live FX market feed; Companion V2 lived-state decisions; traveler invitations/permissions; iOS Expo SQLite rehearsal (migration 3 and later upgrades); accessibility and design-system consolidation; EAS; and sync/backup. A GitHub Actions workflow is committed but has not run on GitHub because there is no remote. Those items stay open. They do not replace the immediate Discover sequence in Phase 4.
+Unresolved work that remains in force across phases is listed under Parked remaining work. A GitHub Actions workflow is committed but has not run on GitHub because there is no remote. Those items stay open. They do not authorize inventing timezones, routes, or a production AI provider.
