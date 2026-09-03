@@ -6,7 +6,7 @@ import {
 import { AppState } from 'react-native';
 
 import {
-  millisecondsUntilNextCalendarDateChange,
+  millisecondsUntilNextCompanionRefresh,
 } from '@/services/companion-refresh';
 import type {
   TripTimeZoneResolution,
@@ -14,9 +14,11 @@ import type {
 
 export function useCompanionRuntimeRefresh(
   resolution: TripTimeZoneResolution,
+  stopBoundaryTimes: readonly string[] = [],
 ): number {
   const [revision, setRevision] = useState(0);
   const resolutionKey = `${resolution.certainty}:${resolution.timeZone ?? 'device-local'}:${resolution.reason}`;
+  const stopTimesKey = stopBoundaryTimes.join('|');
 
   useFocusEffect(
     useCallback(() => {
@@ -29,9 +31,10 @@ export function useCompanionRuntimeRefresh(
           clearTimeout(boundaryTimer);
         }
 
-        const delay = millisecondsUntilNextCalendarDateChange(
+        const delay = millisecondsUntilNextCompanionRefresh(
           new Date(),
           resolution,
+          stopBoundaryTimes,
         );
 
         boundaryTimer = setTimeout(() => {
@@ -65,7 +68,7 @@ export function useCompanionRuntimeRefresh(
           clearTimeout(boundaryTimer);
         }
       };
-    }, [resolutionKey]),
+    }, [resolutionKey, stopTimesKey]),
   );
 
   return revision;

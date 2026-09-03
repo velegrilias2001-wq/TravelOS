@@ -5,7 +5,9 @@ const {
   selectCompanion,
 } = require('../.test-build/src/services/companion.js');
 const {
+  companionStopBoundaryTimes,
   millisecondsUntilNextCalendarDateChange,
+  millisecondsUntilNextCompanionRefresh,
 } = require('../.test-build/src/services/companion-refresh.js');
 const {
   resolveTripTimeZone,
@@ -476,5 +478,42 @@ test('calendar-boundary scheduling targets the next resolved local midnight with
       new Date('2026-10-24T20:00:00.000Z'),
       athens,
     ) > 0,
+  );
+});
+
+test('stop-boundary scheduling refreshes at the next saved local stop time', () => {
+  const tokyo = resolveTripTimeZone(
+    [{ id: 'tokyo', name: 'Tokyo', timezone: 'Asia/Tokyo' }],
+    'UTC',
+  );
+  const delay = millisecondsUntilNextCompanionRefresh(
+    new Date('2026-09-01T23:59:30.000Z'),
+    tokyo,
+    ['09:00', '10:00'],
+  );
+
+  assert.ok(delay >= 30_000);
+  assert.ok(delay < 31_000);
+
+  const afterLastStop = millisecondsUntilNextCompanionRefresh(
+    new Date('2026-09-02T01:30:00.000Z'),
+    tokyo,
+    ['09:00', '10:00'],
+  );
+  assert.equal(
+    afterLastStop,
+    millisecondsUntilNextCalendarDateChange(
+      new Date('2026-09-02T01:30:00.000Z'),
+      tokyo,
+    ),
+  );
+
+  assert.deepEqual(
+    companionStopBoundaryTimes([
+      { startTime: '09:00', endTime: '10:00' },
+      { startTime: '12:00' },
+      {},
+    ]),
+    ['09:00', '10:00', '12:00'],
   );
 });

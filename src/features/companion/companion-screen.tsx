@@ -36,6 +36,7 @@ import {
   type CompanionSelection,
   type CompanionStopContext,
 } from '@/services/companion';
+import { companionStopBoundaryTimes } from '@/services/companion-refresh';
 import { formatCalendarDateForDisplay } from '@/services/time-truth';
 import { companionActivePlaceLabel } from '@/services/trip-day-destination';
 import {
@@ -108,8 +109,21 @@ export function CompanionScreen() {
     () => selectCompanion(workspace),
     [workspace],
   );
+  const stopBoundaryTimes = useMemo(
+    () =>
+      initial.mode === 'active' &&
+      initial.timingReliable
+        ? companionStopBoundaryTimes(
+            initial.stopContexts.map(
+              (context) => context.stop,
+            ),
+          )
+        : [],
+    [initial],
+  );
   const runtimeRevision = useCompanionRuntimeRefresh(
     initial.runtime.timeZone,
+    stopBoundaryTimes,
   );
   const selection = useMemo(
     () => selectCompanion(workspace),

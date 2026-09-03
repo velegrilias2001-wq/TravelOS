@@ -1,5 +1,7 @@
 import {
   calendarDateAtInstant,
+  isCanonicalLocalTime,
+  localTimeAtInstant,
   type TripTimeZoneResolution,
 } from './time-truth';
 
@@ -56,4 +58,130 @@ export function millisecondsUntilNextCalendarDateChange(
     BOUNDARY_GRACE_MS,
     upper - instantMs + BOUNDARY_GRACE_MS,
   );
+}
+
+export function companionStopBoundaryTimes(
+  stops: readonly {
+    startTime?: string;
+    endTime?: string;
+  }[],
+): string[] {
+  const times = new Set<string>();
+
+  for (const stop of stops) {
+    if (
+      stop.startTime &&
+      isCanonicalLocalTime(stop.startTime)
+    ) {
+      times.add(stop.startTime);
+    }
+
+    if (
+      stop.endTime &&
+      isCanonicalLocalTime(stop.endTime)
+    ) {
+      times.add(stop.endTime);
+    }
+  }
+
+  return [...times].sort();
+}
+
+function millisecondsUntilLocalTimeOnCurrentDate(
+  instant: Date,
+  resolution: TripTimeZoneResolution,
+  targetTime: string,
+  calendarDelay: number,
+): number | null {
+  if (!isCanonicalLocalTime(targetTime)) {
+    return null;
+  }
+
+  const currentDate = calendarDateAtInstant(
+    instant,
+    resolution,
+  );
+  const currentTime = localTimeAtInstant(
+    instant,
+    resolution,
+  );
+
+  if (currentTime >= targetTime) {
+    return null;
+  }
+
+  const instantMs = instant.getTime();
+  let lower = instantMs;
+  let upper = instantMs + calendarDelay;
+
+  while (upper - lower > 1) {
+    const midpoint = Math.floor((lower + upper) / 2);
+    const candidate = new Date(midpoint);
+    const date = calendarDateAtInstant(
+      candidate,
+      resolution,
+    );
+    const time = localTimeAtInstant(
+      candidate,
+      resolution,
+    );
+
+    if (
+      date > currentDate ||
+      (date === currentDate && time >= targetTime)
+    ) {
+      upper = midpoint;
+    } else {
+      lower = midpoint;
+    }
+  }
+
+  const reached = new Date(upper);
+
+  if (
+    calendarDateAtInstant(reached, resolution) !==
+      currentDate ||
+    localTimeAtInstant(reached, resolution) !==
+      targetTime
+  ) {
+    return null;
+  }
+
+  return Math.max(
+    BOUNDARY_GRACE_MS,
+    upper - instantMs + BOUNDARY_GRACE_MS,
+  );
+}
+
+/**
+ * Next Companion refresh: the sooner of local midnight or the
+ * next saved stop start/end on the current local date.
+ * Untimed and non-canonical times are ignored. No polling.
+ */
+export function millisecondsUntilNextCompanionRefresh(
+  instant: Date,
+  resolution: TripTimeZoneResolution,
+  stopBoundaryTimes: readonly string[] = [],
+): number {
+  const calendarDelay =
+    millisecondsUntilNextCalendarDateChange(
+      instant,
+      resolution,
+    );
+  let soonest = calendarDelay;
+
+  for (const time of stopBoundaryTimes) {
+    const delay = millisecondsUntilLocalTimeOnCurrentDate(
+      instant,
+      resolution,
+      time,
+      calendarDelay,
+    );
+
+    if (delay !== null && delay < soonest) {
+      soonest = delay;
+    }
+  }
+
+  return soonest;
 }

@@ -76,12 +76,12 @@ Goal: make TravelOS useful and correct while the traveler is moving.
 - [x] Classify previous/current/next/later/untimed itinerary context without rewriting Plan order or calling an untimed stop current.
 - [x] Surface exact linked Booking context, truthful local Accommodation context, preparation signals, and mapped-stop actions using only canonical persisted data.
 - [x] Add premium phase-aware native presentation, restrained motion with reduced-motion support, working module actions, and calm imperfect-data states.
-- [x] Refresh runtime truth on focus, foreground return, and the next resolved local calendar boundary without polling.
+- [x] Refresh runtime truth on focus, foreground return, the next resolved local calendar boundary, and the next saved stop start/end while Companion stays open, without polling.
+- [x] **Stop-boundary refresh V1** — when timing is reliable, Companion’s single timer also fires at the next canonical stop start or end on the current local date. Untimed and non-canonical times are ignored. After the last timed boundary, refresh returns to local midnight. Automated tests exist. No device rehearsal.
 - [x] Add deterministic Companion selector/boundary tests and Android rehearsal for upcoming, incomplete, active fallback, linked Booking, mapped stop, cold relaunch, tab lifecycle, and completed non-live behavior.
 - [x] **Day clock V1** — when exactly one TripDay is assigned to a destination with a valid IANA timezone and that timezone’s local calendar date matches the day, Companion uses that city as the clock for phase, current day, and NOW/NEXT. Destination order is never a clock. Two cities claiming today, an unassigned day, or a city without a timezone keep the previous trip-level or device fallback. Automated tests exist. No device rehearsal.
 - [x] **Home day clock V1** — Home featured-trip phase uses the same assigned-city clock as Companion. TripDays load in one batched query and are not stored in Zustand. Missing days degrade to trip-level timezone. An active featured trip shows today’s assigned city when one exists. Automated tests exist. No device rehearsal.
 - [ ] Add secure reliable destination-timezone enrichment from the location picker or a restricted Time Zone API. Destinations may already store an IANA timezone from a provider result, catalogue, or traveler; the installed picker still does not return one.
-- [ ] Decide whether timed stop-boundary refresh is needed while Companion remains continuously open; V1 refreshes at focus, foreground, and local date boundaries.
 - [ ] Model delayed, completed, and skipped lived-stop phases without rewriting the original plan, then activate `TripRuntimeState` only for concrete durable progress.
 - [ ] Add smarter map framing, real route and travel-time providers, and navigation handoff without invented data.
 - [ ] Support live itinerary changes and make their effect on Companion explicit.
