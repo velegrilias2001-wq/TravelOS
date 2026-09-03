@@ -42,6 +42,7 @@ import {
   useTripWorkspace,
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
+import { useNetworkReachability } from '@/features/offline/use-network-reachability';
 
 import {
   bookingsLinkedToStop,
@@ -55,6 +56,10 @@ import {
 import {
   selectCompanion,
 } from '@/services/companion';
+import {
+  collectOfflineTripFacts,
+  selectOfflineTripNotice,
+} from '@/services/offline-trip-context';
 import {
   selectTripMapFrame,
   systemDirectionsUrl,
@@ -102,6 +107,18 @@ export default function TripMapScreen() {
     useTripWorkspace();
 
   useTripWorkspaceFocusRefresh();
+  const reachability = useNetworkReachability();
+  const offlineNotice = useMemo(() => {
+    if (!workspace) {
+      return null;
+    }
+
+    return selectOfflineTripNotice({
+      reachability,
+      facts: collectOfflineTripFacts(workspace),
+      surface: 'map',
+    });
+  }, [reachability, workspace]);
 
   const insets =
     useSafeAreaInsets();
@@ -506,6 +523,22 @@ export default function TripMapScreen() {
             />
           </Pressable>
         </View>
+        {offlineNotice ? (
+          <View style={styles.notice}>
+            <Ionicons
+              name={
+                offlineNotice.kind === 'unmapped'
+                  ? 'location-outline'
+                  : 'cloud-offline-outline'
+              }
+              size={16}
+              color={colors.teal}
+            />
+            <Text style={styles.noticeText}>
+              {offlineNotice.body}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <View
@@ -884,6 +917,24 @@ const styles =
         colors.textPrimary,
 
       marginTop: 2,
+    },
+
+    notice: {
+      marginTop: spacing[2],
+      padding: spacing[3],
+      borderRadius: radius.md,
+      backgroundColor: colors.surface,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing[2],
+      ...shadows.subtle,
+    },
+
+    noticeText: {
+      flex: 1,
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      color: colors.textSecondary,
     },
 
     fitButton: {

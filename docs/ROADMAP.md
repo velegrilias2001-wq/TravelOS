@@ -86,8 +86,7 @@ Goal: make TravelOS useful and correct while the traveler is moving.
 - [x] **Map day framing + directions V1** — Map frames the assigned Day → Destination city and that day’s mapped stops when Companion has a display day. Unassigned days do not borrow another city’s coordinates. View all still fits every saved destination and stop. Directions open Apple Maps or Google Maps on the saved pin only. No route, ETA, or accommodation coordinates. Automated tests exist. No device rehearsal.
 - [ ] Add real route and travel-time providers without invented data.
 - [x] **Companion plan-change notice V1** — when saved dates, day city assignment, stops, bookings, or stays change while Companion is already showing that trip, a dismissible notice states that NOW/NEXT follow SQLite. First load, trip switch, done/skipped marks, and clock refresh stay silent. Lived phases are not auto-rewritten. Session-only. Automated tests exist. No device rehearsal.
-- [ ] Cache essential trip, booking, accommodation, and map context for offline use.
-- [ ] Design graceful behavior for stale routes, no network, missing coordinates, and provider failure.
+- [x] **Offline essential context V1** — SQLite is the durable cache for trip, booking, stay, and saved map-pin facts. `expo-network` observes reachability; unknown does not invent online or offline. Companion and Map name on-device facts, missing coordinates, and that live tiles/lookup need a network. Directions still use a saved pin; there is no cached route and no offline tile pack. Automated tests exist. Native rebuild required; no device rehearsal.
 - [ ] Add useful notifications only after timezone and truth rules are stable.
 
 Exit condition: Companion presents the correct travel context and remains trustworthy during connectivity, timing, and plan changes.

@@ -29,6 +29,7 @@ import {
   useTripWorkspace,
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
+import { useNetworkReachability } from '@/features/offline/use-network-reachability';
 import {
   splitAccommodationDateTime,
   type AccommodationDayContext,
@@ -41,6 +42,10 @@ import {
   type CompanionStopContext,
 } from '@/services/companion';
 import { companionStopBoundaryTimes } from '@/services/companion-refresh';
+import {
+  collectOfflineTripFacts,
+  selectOfflineTripNotice,
+} from '@/services/offline-trip-context';
 import {
   mappedStopCoordinate,
   systemDirectionsUrl,
@@ -147,6 +152,16 @@ export function CompanionScreen() {
     notice: planChangeNotice,
     dismiss: dismissPlanChange,
   } = useCompanionPlanChangeNotice(workspace);
+  const reachability = useNetworkReachability();
+  const offlineNotice = useMemo(
+    () =>
+      selectOfflineTripNotice({
+        reachability,
+        facts: collectOfflineTripFacts(workspace),
+        surface: 'companion',
+      }),
+    [reachability, workspace],
+  );
 
   const initial = useMemo(
     () => selectCompanion(workspace),
@@ -249,6 +264,12 @@ export function CompanionScreen() {
             icon="sync-outline"
             body={planChangeNotice}
             onDismiss={dismissPlanChange}
+          />
+        ) : null}
+        {offlineNotice ? (
+          <TruthNotice
+            icon="cloud-offline-outline"
+            body={offlineNotice.body}
           />
         ) : null}
       </View>
