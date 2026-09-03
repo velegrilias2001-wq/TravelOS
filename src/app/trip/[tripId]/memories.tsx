@@ -8,7 +8,6 @@ import {
 } from 'react';
 import {
   Alert,
-  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -18,6 +17,7 @@ import {
   View,
 } from 'react-native';
 
+import { LocalImage } from '@/components/ui/local-image';
 import { Screen } from '@/components/ui/screen';
 import {
   CompactSummaryStrip,
@@ -774,6 +774,7 @@ export default function MemoriesScreen() {
           <View style={styles.quickActions}>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Add a note memory"
               style={styles.quickAction}
               onPress={() =>
                 openCreate('note')
@@ -791,6 +792,7 @@ export default function MemoriesScreen() {
 
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Add a photo memory"
               style={styles.quickAction}
               onPress={() =>
                 openCreate('photo')
@@ -825,6 +827,7 @@ export default function MemoriesScreen() {
             </Text>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Add first memory"
               style={styles.primaryButton}
               onPress={() =>
                 openCreate()
@@ -981,12 +984,9 @@ export default function MemoriesScreen() {
             {type === 'photo' && (
               <View style={styles.photoSection}>
                 {visibleImageUri ? (
-                  <Image
-                    source={{
-                      uri:
-                        visibleImageUri,
-                    }}
-                    resizeMode="cover"
+                  <LocalImage
+                    uri={visibleImageUri}
+                    accessibilityLabel="Memory photo preview"
                     style={styles.photoPreview}
                   />
                 ) : (
@@ -1008,6 +1008,7 @@ export default function MemoriesScreen() {
                 <View style={styles.photoActions}>
                   <Pressable
                     accessibilityRole="button"
+                    accessibilityLabel="Take photo with camera"
                     style={styles.photoAction}
                     onPress={() =>
                       void takePhoto()
@@ -1025,6 +1026,7 @@ export default function MemoriesScreen() {
 
                   <Pressable
                     accessibilityRole="button"
+                    accessibilityLabel="Choose photo from library"
                     style={styles.photoAction}
                     onPress={() =>
                       void pickFromLibrary()
@@ -1043,6 +1045,8 @@ export default function MemoriesScreen() {
                   {visibleImageUri && (
                     <Pressable
                       accessibilityRole="button"
+                      accessibilityLabel="Remove photo"
+                      hitSlop={12}
                       style={styles.photoRemoveAction}
                       onPress={clearPhoto}
                     >
@@ -1261,6 +1265,13 @@ export default function MemoriesScreen() {
 
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={
+                isSaving
+                  ? 'Saving memory'
+                  : editing
+                    ? 'Save memory changes'
+                    : 'Save memory'
+              }
               disabled={isSaving}
               style={[
                 styles.saveButton,
@@ -1315,11 +1326,9 @@ function MemoryCard({
       >
         {memory.type === 'photo' &&
         memory.mediaUri ? (
-          <Image
-            source={{
-              uri: memory.mediaUri,
-            }}
-            resizeMode="cover"
+          <LocalImage
+            uri={memory.mediaUri}
+            accessibilityLabel={`${memoryTitle(memory)} photo`}
             style={styles.memoryImage}
           />
         ) : (
@@ -1386,7 +1395,7 @@ function MemoryCard({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Delete ${memoryTitle(memory)}`}
-        hitSlop={10}
+        hitSlop={14}
         style={styles.deleteButton}
         onPress={onDelete}
       >
@@ -1415,6 +1424,7 @@ function TypeChoice({
   return (
     <Pressable
       accessibilityRole="radio"
+      accessibilityLabel={photo ? 'Photo memory' : 'Note memory'}
       accessibilityState={{
         checked: selected,
       }}
@@ -1512,6 +1522,7 @@ function PickerSummary({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{
         expanded,
       }}
@@ -1567,6 +1578,7 @@ function ChoiceRow({
   return (
     <Pressable
       accessibilityRole="radio"
+      accessibilityLabel={title}
       accessibilityState={{
         checked: selected,
       }}

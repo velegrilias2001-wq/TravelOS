@@ -16,6 +16,10 @@ import {
 } from '@/features/trip-workspace/trip-workspace-context';
 import { calculateBudgetSummary } from '@/services/budget-calculations';
 import { tripDestinationLabel } from '@/services/destination-authoring';
+import {
+  formatCurrencyAmount,
+  resolveDisplayLocale,
+} from '@/services/locale-format';
 import { isCanonicalDateKey } from '@/services/trip-details';
 import {
   colors,
@@ -31,11 +35,7 @@ function formatMoney(
   currencyCode: string,
 ): string {
   try {
-    return new Intl.NumberFormat('en', {
-      style: 'currency',
-      currency: currencyCode,
-      maximumFractionDigits: 2,
-    }).format(amount);
+    return formatCurrencyAmount(amount, currencyCode);
   } catch {
     return `${currencyCode} ${amount.toFixed(2)}`;
   }
@@ -49,7 +49,7 @@ function formatTripDate(value: string): string {
   const [year, month, day] = value.split('-').map(Number);
 
   return new Date(year, month - 1, day).toLocaleDateString(
-    'en-GB',
+    resolveDisplayLocale(),
     {
       day: 'numeric',
       month: 'short',

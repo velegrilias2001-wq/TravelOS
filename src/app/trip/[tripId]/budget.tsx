@@ -38,6 +38,7 @@ import {
   calculateBudgetSummary,
   normalizeCurrencyCode,
 } from '@/services/budget-calculations';
+import { formatCurrencyAmount, resolveDisplayLocale } from '@/services/locale-format';
 import {
   colors,
   fontFamily,
@@ -98,11 +99,7 @@ function formatMoney(
   currencyCode: string,
 ): string {
   try {
-    return new Intl.NumberFormat('en', {
-      style: 'currency',
-      currency: currencyCode,
-      maximumFractionDigits: 2,
-    }).format(amount);
+    return formatCurrencyAmount(amount, currencyCode);
   } catch {
     return `${currencyCode} ${amount.toFixed(2)}`;
   }
@@ -144,7 +141,7 @@ function formatDate(value?: string): string {
   }
 
   return fromDateKey(value).toLocaleDateString(
-    'en-GB',
+    resolveDisplayLocale(),
     {
       day: 'numeric',
       month: 'short',

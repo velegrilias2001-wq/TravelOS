@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 
+import { InlineError } from '@/components/ui/empty-state';
 import { Screen } from '@/components/ui/screen';
 import {
   UtilityScreenHeader,
@@ -290,33 +291,13 @@ export default function TravelDNAScreen() {
           leading={<BackButton />}
         />
 
-        <View style={styles.stateCard}>
-          <Ionicons
-            name="warning-outline"
-            size={24}
-            color={colors.brass}
-          />
-
-          <Text style={styles.stateTitle}>
-            Travel DNA couldn&apos;t be opened.
-          </Text>
-
-          <Text style={styles.stateText}>
-            Your saved data has not been changed.
-          </Text>
-
-          <Pressable
-            accessibilityRole="button"
-            style={styles.retryButton}
-            onPress={() => {
-              void loadProfile();
-            }}
-          >
-            <Text style={styles.retryText}>
-              Try again
-            </Text>
-          </Pressable>
-        </View>
+        <InlineError
+          title="Travel DNA couldn't be opened."
+          body="Your saved data has not been changed."
+          onRetry={() => {
+            void loadProfile();
+          }}
+        />
       </Screen>
     );
   }
@@ -577,6 +558,7 @@ function ChoiceColumn<T extends string>({
           <Pressable
             key={option.value}
             accessibilityRole="radio"
+            accessibilityLabel={option.label}
             accessibilityState={{
               checked: isSelected,
             }}
@@ -662,6 +644,7 @@ function ChipGrid<T extends string>({
                 ? 'radio'
                 : 'checkbox'
             }
+            accessibilityLabel={option.label}
             accessibilityState={{
               checked: isSelected,
             }}
@@ -896,7 +879,7 @@ const styles = StyleSheet.create({
   },
 
   chip: {
-    minHeight: 42,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[1],

@@ -7,7 +7,6 @@ import {
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -15,6 +14,7 @@ import {
   View,
 } from 'react-native';
 
+import { LocalImage } from '@/components/ui/local-image';
 import { Screen } from '@/components/ui/screen';
 import { UtilityScreenHeader } from '@/components/ui/utility-screen';
 import type { Memory } from '@/domain/entities/memory';
@@ -31,6 +31,7 @@ import {
   radius,
   spacing,
 } from '@/theme';
+import { MIN_TOUCH_TARGET } from '@/theme/touch';
 
 function chronologicalMemories(
   memories: Memory[],
@@ -384,9 +385,9 @@ export default function TravelBookScreen() {
 
       <View style={styles.coverCard}>
         {coverImageUri ? (
-          <Image
-            source={{ uri: coverImageUri }}
-            resizeMode="cover"
+          <LocalImage
+            uri={coverImageUri}
+            accessibilityLabel="Travel Book cover"
             style={styles.coverImage}
           />
         ) : (
@@ -555,6 +556,7 @@ export default function TravelBookScreen() {
                 <View style={styles.memoryRow}>
                   <Pressable
                     accessibilityRole="checkbox"
+                    accessibilityLabel={`${memory.title?.trim() || (memory.type === 'photo' ? 'Photo moment' : 'Note')}`}
                     accessibilityState={{
                       checked: selected,
                     }}
@@ -581,10 +583,9 @@ export default function TravelBookScreen() {
 
                     {memory.type === 'photo' &&
                     memory.mediaUri ? (
-                      <Image
-                        source={{
-                          uri: memory.mediaUri,
-                        }}
+                      <LocalImage
+                        uri={memory.mediaUri}
+                        accessibilityLabel={`${memory.title?.trim() || 'Photo'} thumbnail`}
                         style={styles.memoryThumb}
                       />
                     ) : (
@@ -626,6 +627,11 @@ export default function TravelBookScreen() {
                     memory.mediaUri && (
                       <Pressable
                         accessibilityRole="button"
+                        accessibilityLabel={
+                          isCover
+                            ? 'Cover photo selected'
+                            : 'Use as cover photo'
+                        }
                         style={[
                           styles.coverButton,
                           isCover &&
@@ -657,6 +663,9 @@ export default function TravelBookScreen() {
 
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={
+          isSaving ? 'Saving Travel Book' : 'Save Travel Book'
+        }
         disabled={isSaving}
         style={[
           styles.saveButton,
@@ -685,6 +694,7 @@ export default function TravelBookScreen() {
       {book && (
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel="Delete Travel Book"
           style={styles.deleteButton}
           onPress={handleDelete}
         >
@@ -743,6 +753,7 @@ function StateChoice({
   return (
     <Pressable
       accessibilityRole="radio"
+      accessibilityLabel={label}
       accessibilityState={{ checked: selected }}
       style={[
         styles.stateChoice,
@@ -806,9 +817,9 @@ function StoryMoment({
 
         {memory.type === 'photo' &&
           memory.mediaUri && (
-            <Image
-              source={{ uri: memory.mediaUri }}
-              resizeMode="cover"
+            <LocalImage
+              uri={memory.mediaUri}
+              accessibilityLabel={`${memory.title?.trim() || 'Photo'} story image`}
               style={styles.storyImage}
             />
           )}
@@ -1158,8 +1169,12 @@ const styles = StyleSheet.create({
   },
   coverButton: {
     marginLeft: spacing[2],
-    paddingHorizontal: spacing[2],
+    minHeight: MIN_TOUCH_TARGET,
+    minWidth: MIN_TOUCH_TARGET,
+    paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: radius.pill,
     backgroundColor: colors.backgroundSoft,
   },
@@ -1168,7 +1183,7 @@ const styles = StyleSheet.create({
   },
   coverButtonText: {
     fontFamily: fontFamily.sansBold,
-    fontSize: 9,
+    fontSize: fontSize.micro,
     letterSpacing: 0.5,
     color: colors.textMuted,
   },

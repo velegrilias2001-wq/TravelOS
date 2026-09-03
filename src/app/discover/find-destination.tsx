@@ -1045,6 +1045,7 @@ function TimingChoice({
   return (
     <Pressable
       accessibilityRole="radio"
+      accessibilityLabel={label}
       accessibilityState={{
         checked: selected,
       }}
@@ -1082,6 +1083,7 @@ function ChoiceChip({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{
         selected,
       }}
@@ -1347,7 +1349,7 @@ const styles =
     },
 
     choiceChip: {
-      minHeight: 42,
+      minHeight: 44,
       justifyContent: 'center',
       paddingHorizontal:
         spacing[4],

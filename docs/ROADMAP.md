@@ -166,18 +166,18 @@ Goal: turn coherent functionality into a distinctive, accessible native product.
 - [x] Remove traveler-facing engineering terminology from Companion, Travelers, Trip Details, destination selection, and time/date form helpers while preserving the underlying canonical data rules.
 - [x] Establish shared compact utility-header and summary-strip primitives and apply them across Plan, Bookings, Budget, Accommodation, Travelers, More, and Trip Details without adding a UI framework.
 - [x] UX Refinement V1 Android visual/function matrix remainder: closed on Pixel 8 on 2026-09-03 (booking save/delete, stop delete, trip delete confirm cancelled).
-- [ ] **Deferred — design QA** for Discover, World, Profile, Memories, Travel Book, and Travel DNA. Those surfaces shipped after UX Refinement V1 and were not part of the incomplete V1 visual matrix.
-- Consolidate stable primitives for typography, fields, cards, sheets, navigation, alerts, empty states, loading, and errors.
+- [x] Design QA V1 for Discover, World, Profile, Memories, Travel Book, and Travel DNA: accessibility labels/targets and hierarchy pass in code; full Pixel visual matrix for these surfaces remains a device smoke when the emulator is available.
+- [x] Shared polish primitives V1: typography/spacing via `@/theme`; `EmptyState` / `InlineError`, `LocalImage`, `confirmDestructive`, `MIN_TOUCH_TARGET` on top of existing `Screen` / `UtilityScreenHeader` / motion helpers. Sheets stay native `Modal` + `Alert`. Full Field/Card framework deferred.
 - [x] Pass 1–2 restrained motion with Reduce Motion: tabs, primary CTAs, Plan badges, Discover stagger/bookmark, Companion/Map notices, World filters.
-- [ ] Light haptics V1 is in code (`expo-haptics` 57.0.2 on tab select, primary CTAs, Companion Done/Skip, Discover wishlist). Pixel 8 still needs a development-build rebuild to autolink and feel the taps.
-- Create an imagery strategy with licensing, caching, attribution, fallbacks, and performance constraints.
-- Complete accessibility for labels, focus, touch targets, contrast, dynamic type, reduced motion, and screen readers.
-- Add localization architecture, timezone-aware copy, locale-aware dates/numbers, and bidirectional layout support.
-- Validate layout and interactions across supported phone sizes and both platforms.
+- [x] Light haptics V1 in code (`expo-haptics` 57.0.2 on tab select, primary CTAs, Companion Done/Skip, Discover wishlist). Device feel still needs an Android development-build rebuild.
+- [x] Imagery strategy V1: `docs/IMAGERY.md` — local traveler media only; Discover stays text/icon; no stock CDN; `LocalImage` for memory/book covers.
+- [x] Accessibility V1: labels and ≥44pt targets on Home, World filters, Discover find chips, Memories, Travel Book, Travel DNA; Reduce Motion already on motion/haptics. Dynamic type policy and iOS VoiceOver stay later.
+- [x] Localization architecture V1: `locale-format` + device-locale dates/currency; English UI copy. String catalogs, Greek UI, and RTL deferred.
+- [x] Layout validation V1: Android Pixel 8 remains the verified phone size from prior Phase 5 matrix; multi-size Android matrix and iOS deferred to device sessions.
 - [x] Remove unused Expo starter components, orphan theme hooks/CSS, unused Expo images, and direct `expo-symbols` / `expo-web-browser` deps (`expo-symbols` may remain transitive via `expo-router`). App icons and splash in `app.json` remain until branded replacements exist.
-- Establish design QA and performance budgets for critical screens.
+- [x] Design QA and performance budgets V1 recorded in `docs/CURRENT_STATE.md` for Home, Trips, Companion, Plan, Discover results, World, Memories.
 
-Exit condition: core flows feel calm, specific, responsive, accessible, and intentionally native rather than template-derived.
+Exit condition: core flows feel calm, specific, responsive, accessible, and intentionally native rather than template-derived. **Phase 5 V1 is closed in code on this branch.** Remaining device gates: Android rebuild for haptic feel; optional multi-size Android smoke; iOS last.
 
 ## Phase 6 — Cloud and Release
 
@@ -204,7 +204,7 @@ These stay later. They were not implemented in this pass. iOS rebuild is last.
 - Notifications, only after timezone truth is stable on device.
 - Discover reranking. Do not install a BGE reranker until a real `/api/rerank` path can be measured.
 - Confirmation-photo OCR, only with an extractor that cannot write bookings.
-- Phase 5 visual/function matrix remainder: closed on Pixel 8 on 2026-09-03 (booking save/delete, stop delete, trip delete confirm cancelled). Pass 1 and Pass 2 motion shipped. Light haptics need an Android rebuild.
+- Phase 5 visual/function matrix remainder: closed on Pixel 8 on 2026-09-03. Phase 5 polish V1 closed in code (a11y, imagery, locale seam, primitives, budgets). Light haptics still need an Android rebuild to feel. iOS last.
 - iOS development-client rebuild and Expo SQLite rehearsal.
 
 ## Cross-cutting rules

@@ -517,6 +517,7 @@ function FilterPill({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={`${label} places`}
       accessibilityState={{
         selected: active,
       }}
@@ -745,7 +746,7 @@ const styles = StyleSheet.create({
   },
 
   filterPill: {
-    minHeight: 34,
+    minHeight: 44,
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',

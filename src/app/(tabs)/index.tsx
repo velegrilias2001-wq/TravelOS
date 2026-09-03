@@ -157,6 +157,8 @@ export default function HomeScreen() {
         </View>
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open profile"
           style={styles.profileButton}
           onPress={() => router.push('/profile')}
         >
@@ -170,6 +172,8 @@ export default function HomeScreen() {
 
       {featuredTrip ? (
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${featuredTrip.title}`}
           style={({ pressed }) => [
             styles.heroCard,
             pressed && styles.pressed,
@@ -262,6 +266,8 @@ export default function HomeScreen() {
           </Text>
 
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Plan a trip"
             style={({ pressed }) => [
               styles.primaryButton,
               pressed && styles.pressed,
@@ -343,6 +349,8 @@ export default function HomeScreen() {
         </View>
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open Discover"
           onPress={() => router.push('/discover')}
         >
           <Text style={styles.sectionAction}>
@@ -433,6 +441,8 @@ export default function HomeScreen() {
 
       <View style={styles.actionGrid}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open my trips"
           style={({ pressed }) => [
             styles.actionCard,
             pressed && styles.pressed,
@@ -457,6 +467,8 @@ export default function HomeScreen() {
         </Pressable>
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open my world"
           style={({ pressed }) => [
             styles.actionCard,
             pressed && styles.pressed,

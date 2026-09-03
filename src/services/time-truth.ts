@@ -4,6 +4,7 @@ import type {
   TripDestination,
   TripStatus,
 } from '@/domain/entities';
+import { resolveDisplayLocale } from './locale-format';
 import { tripDayDestination } from './trip-day-destination';
 
 const CALENDAR_DATE_PATTERN =
@@ -119,7 +120,7 @@ export function formatCalendarDateForDisplay(
 
   return pickerValueFromCalendarDate(
     value,
-  ).toLocaleDateString('en-GB', options);
+  ).toLocaleDateString(resolveDisplayLocale(), options);
 }
 
 export function validateCalendarDateRange(
