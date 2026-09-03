@@ -1887,6 +1887,14 @@ export default function PlanScreen() {
                                         </Text>
                                       </View>
 
+                                      <Text
+                                        style={
+                                          styles.freeTimeSuggestionNote
+                                        }
+                                      >
+                                        These stay ideas. Nothing is saved as a stop.
+                                      </Text>
+
                                       {freeTimeAdvice.suggestions.map(
                                         (suggestion) => {
                                           const copy =
@@ -2857,6 +2865,17 @@ const styles =
       letterSpacing: 1.1,
       color:
         colors.brass,
+    },
+
+    freeTimeSuggestionNote: {
+      marginBottom: 4,
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.caption,
+      lineHeight: 17,
+      color:
+        colors.textSecondary,
     },
 
     freeTimeSuggestionCard: {

@@ -1,11 +1,10 @@
 import {
   AIAPIClient,
 } from './ai-api-client';
-
-const configuredBaseUrl =
-  process.env
-    .EXPO_PUBLIC_TRAVELOS_AI_URL
-    ?.trim();
+import {
+  LOCAL_DEV_AI_FALLBACK_URL,
+  resolveLocalDevAiBaseUrl,
+} from './ai-local-dev-contract';
 
 /**
  * Local Android development reaches the Windows-hosted
@@ -15,12 +14,14 @@ const configuredBaseUrl =
  *
  * Use the explicit IPv4 loopback address to avoid Android
  * localhost / IPv6 resolution differences.
+ *
+ * A non-loopback EXPO_PUBLIC_TRAVELOS_AI_URL is ignored.
+ * There is no production AI provider yet.
  */
-const localDevelopmentBaseUrl =
-  'http://127.0.0.1:8789';
-
 export const aiAPIClient =
   new AIAPIClient(
-    configuredBaseUrl ||
-      localDevelopmentBaseUrl,
+    resolveLocalDevAiBaseUrl(
+      process.env.EXPO_PUBLIC_TRAVELOS_AI_URL,
+      LOCAL_DEV_AI_FALLBACK_URL,
+    ),
   );

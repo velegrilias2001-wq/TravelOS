@@ -146,9 +146,9 @@ These steps are ordered. Grounded destination data must exist before semantic re
 
 - [ ] Rebuild the iOS development client so the ICS file picker can be rehearsed there.
 - [ ] Add image OCR of confirmation photos only with an explicit extractor contract that still cannot write bookings.
-- [ ] Keep AI-assisted extraction behind explicit review and confirmation gates if it is added later.
-- [ ] Never allow recommendations, imports, or AI suggestions to silently become canonical facts.
-- [ ] Define production provider, privacy, retention, cost, and fallback behavior before shipping intelligence beyond the local-dev AI foundation.
+- [x] **Import and AI confirmation gates** — AI-assisted extraction is not implemented. Import claims still require explicit review before a booking is written. Plan ideas and Discover explanations cannot become stops or destinations on their own.
+- [x] **No silent canonical facts** — Discover, import claims, and AI suggestions remain visibly separate from trip truth until the traveler confirms through the existing Create Trip, import-accept, or stop-editor paths.
+- [x] **Local-dev AI boundary V1** — production provider is none. The native client uses a loopback AI URL only; a cloud host in `EXPO_PUBLIC_TRAVELOS_AI_URL` is ignored. No cloud retention, no billed cost, unreachable AI degrades, and advice cannot write SQLite. Automated tests exist. No device rehearsal.
 
 Exit condition: discovery and import reduce planning effort while every unconfirmed claim remains visibly separate from trip truth.
 

@@ -67,6 +67,7 @@
     "src/services/ai-context.ts",
     "src/services/ai-context-service.ts",
     "src/services/ai-api-client.ts",
+    "src/services/ai-local-dev-contract.ts",
 
     "src/data/discover/index.ts",
     "src/data/discover/curated-western-europe.ts",
