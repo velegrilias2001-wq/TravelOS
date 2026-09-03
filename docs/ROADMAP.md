@@ -38,6 +38,7 @@ Goal: make existing trip, day, stop, booking, and workspace behavior safe to ext
 - [x] **Lint / baseline CI V1** — committed Expo SDK 57 `eslint-config-expo` flat config, non-interactive `eslint .`, and a GitHub Actions workflow for `npx tsc --noEmit`, `npm test`, lint, and AI-server tests on Node 22. Existing React Compiler findings are warnings. No git remote, so the workflow has not run on GitHub.
 - [ ] **Deferred — iOS migration 3 rehearsal** — last, together with the iOS development-client rebuild. Windows cannot run this.
 - [x] Rehearse migrations 7–15 on an Expo SQLite development build. An Android Pixel 8 development-build pass on 2026-09-03 upgraded the installed `travelos.db` to live `PRAGMA user_version = 15` with Memory `trip_id` / `day_id` / `stop_id` foreign keys. The first attempt failed until v15 dropped v7 itinerary unlink triggers before rebuilding `memories`. Existing trips survived. iOS was not rehearsed.
+- [x] Rehearse migrations 16–17 and native-link `expo-network` on an Expo SQLite development build. An Android Pixel 8 debug rebuild on 2026-09-03 installed over the existing `com.travelos.app` client and upgraded live `PRAGMA user_version` from 15 to 17. Home still listed existing trips. Companion and Map opened. Airplane-mode offline copy was not rehearsed. iOS was not rehearsed.
 
 Exit condition: existing native flows survive retries, partial data, navigation refocus, and supported migrations without corrupting or misrepresenting trip truth.
 
@@ -83,12 +84,12 @@ Goal: make TravelOS useful and correct while the traveler is moving.
 - [x] **Home day clock V1** — Home featured-trip phase uses the same assigned-city clock as Companion. TripDays load in one batched query and are not stored in Zustand. Missing days degrade to trip-level timezone. An active featured trip shows today’s assigned city when one exists. Automated tests exist. No device rehearsal.
 - [ ] **Deferred — picker / Time Zone API timezone** — `expo-location-picker` 1.0.2 still does not return an IANA timezone or stable place ID. Do not call Google Time Zone API with the Android Maps key. Traveler, catalogue, and future provider timezones already persist. Create Trip traveler timezone V1 is the unblocked slice.
 - [x] **Create Trip traveler timezone V1** — Create Trip can set or clear an explicit IANA timezone with `traveler` provenance. Replacing the map pin keeps a traveler timezone when the picker still has none. Coordinates are never used to guess a zone. Automated tests exist. No device rehearsal.
-- [x] **Stop lived phase V1** — explicit done/skipped stop progress without rewriting Plan times. Delayed is derived from the clock. `TripRuntimeState` is written only as a pointer to the last explicit lived stop. Migration version 17. Automated tests exist. No device rehearsal.
+- [x] **Stop lived phase V1** — explicit done/skipped stop progress without rewriting Plan times. Delayed is derived from the clock. `TripRuntimeState` is written only as a pointer to the last explicit lived stop. Migration version 17. Automated tests exist. An Android Pixel 8 rebuild on 2026-09-03 ran version 17; Companion showed Done/Skip. No mark was recorded in that pass.
 - [x] **Plan lived badges V1** — Plan shows Done/Skipped from those explicit marks without rewriting saved times. Delayed is not a Plan badge. Marks remain Companion actions. Automated tests exist. No device rehearsal.
 - [x] **Map day framing + directions V1** — Map frames the assigned Day → Destination city and that day’s mapped stops when Companion has a display day. Unassigned days do not borrow another city’s coordinates. View all still fits every saved destination and stop. Directions open Apple Maps or Google Maps on the saved pin only. No route, ETA, or accommodation coordinates. Automated tests exist. No device rehearsal.
 - [ ] **Deferred — real routes and ETAs** — Directions still hand a saved pin to Apple Maps or Google Maps. Do not invent travel times. A real routing provider is later work.
 - [x] **Companion plan-change notice V1** — when saved dates, day city assignment, stops, bookings, or stays change while Companion is already showing that trip, a dismissible notice states that NOW/NEXT follow SQLite. First load, trip switch, done/skipped marks, and clock refresh stay silent. Lived phases are not auto-rewritten. Session-only. Automated tests exist. No device rehearsal.
-- [x] **Offline essential context V1** — SQLite is the durable cache for trip, booking, stay, and saved map-pin facts. `expo-network` observes reachability; unknown does not invent online or offline. Companion and Map name on-device facts, missing coordinates, and that live tiles/lookup need a network. Directions still use a saved pin; there is no cached route and no offline tile pack. Automated tests exist. Native rebuild required; no device rehearsal.
+- [x] **Offline essential context V1** — SQLite is the durable cache for trip, booking, stay, and saved map-pin facts. `expo-network` observes reachability; unknown does not invent online or offline. Companion and Map name on-device facts, missing coordinates, and that live tiles/lookup need a network. Directions still use a saved pin; there is no cached route and no offline tile pack. Automated tests exist. An Android Pixel 8 native rebuild on 2026-09-03 linked `expo-network` 57.0.1; Companion and Map opened. Airplane-mode offline copy was not rehearsed.
 - [ ] **Deferred — notifications** — only after picker/API timezone and Companion truth rules are stable on device.
 
 Exit condition: Companion presents the correct travel context and remains trustworthy during connectivity, timing, and plan changes.
@@ -164,7 +165,7 @@ Goal: turn coherent functionality into a distinctive, accessible native product.
 - [x] Complete UX Refinement V1: preserve the TravelOS identity while making Companion the signature surface, tightening utility-screen hierarchy, reducing card stacking and shadows, improving Plan density, compacting Bookings/Accommodation summaries, and turning More into a fast grouped hub.
 - [x] Remove traveler-facing engineering terminology from Companion, Travelers, Trip Details, destination selection, and time/date form helpers while preserving the underlying canonical data rules.
 - [x] Establish shared compact utility-header and summary-strip primitives and apply them across Plan, Bookings, Budget, Accommodation, Travelers, More, and Trip Details without adding a UI framework.
-- [ ] **Deferred — UX Refinement V1 Android visual/function matrix** — Plan, Bookings, More, Travelers, forms, Map, CRUD, and cold relaunch still need an emulator pass. Debug build/install/launch and the upcoming Companion first screenful were verified earlier; emulator control ended before the rest of the matrix.
+- [ ] **Deferred — UX Refinement V1 Android visual/function matrix** — Travelers, forms, and CRUD still need an emulator pass. A 2026-09-03 Pixel 8 rebuild opened Companion, Plan, Map, Bookings, and More on Nagawa, then cold-relaunched to Home with live `user_version` 17.
 - [ ] **Deferred — design QA** for Discover, World, Profile, Memories, Travel Book, and Travel DNA. Those surfaces shipped after UX Refinement V1 and were not part of the incomplete V1 visual matrix.
 - Consolidate stable primitives for typography, fields, cards, sheets, navigation, alerts, empty states, loading, and errors.
 - Add native gestures, transitions, motion, and haptics where they improve comprehension.
@@ -202,8 +203,7 @@ These stay later. They were not implemented in this pass. iOS rebuild is last.
 - Notifications, only after timezone truth is stable on device.
 - Discover reranking. Do not install a BGE reranker until a real `/api/rerank` path can be measured.
 - Confirmation-photo OCR, only with an extractor that cannot write bookings.
-- Android native rebuild for `expo-network` plus live rehearsal of migrations 16 and 17. Live device `user_version` remains 15.
-- Phase 5 visual/function matrix and later design QA on emulator.
+- Phase 5 visual/function matrix remainder: Travelers, forms, and CRUD. Companion, Plan, Map, Bookings, More, and cold relaunch were opened on Pixel 8 on 2026-09-03.
 - iOS development-client rebuild and Expo SQLite rehearsal.
 
 ## Cross-cutting rules
