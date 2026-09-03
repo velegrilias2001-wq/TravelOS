@@ -168,13 +168,13 @@ Goal: turn coherent functionality into a distinctive, accessible native product.
 - [x] UX Refinement V1 Android visual/function matrix remainder: closed on Pixel 8 on 2026-09-03 (booking save/delete, stop delete, trip delete confirm cancelled).
 - [ ] **Deferred — design QA** for Discover, World, Profile, Memories, Travel Book, and Travel DNA. Those surfaces shipped after UX Refinement V1 and were not part of the incomplete V1 visual matrix.
 - Consolidate stable primitives for typography, fields, cards, sheets, navigation, alerts, empty states, loading, and errors.
-- [x] Pass 1–2 restrained motion with Reduce Motion: tabs, primary CTAs, Plan badges, Discover stagger/bookmark, Companion/Map notices, World filters. Splash glow is static.
+- [x] Pass 1–2 restrained motion with Reduce Motion: tabs, primary CTAs, Plan badges, Discover stagger/bookmark, Companion/Map notices, World filters.
 - [ ] Light haptics V1 is in code (`expo-haptics` 57.0.2 on tab select, primary CTAs, Companion Done/Skip, Discover wishlist). Pixel 8 still needs a development-build rebuild to autolink and feel the taps.
 - Create an imagery strategy with licensing, caching, attribution, fallbacks, and performance constraints.
 - Complete accessibility for labels, focus, touch targets, contrast, dynamic type, reduced motion, and screen readers.
 - Add localization architecture, timezone-aware copy, locale-aware dates/numbers, and bidirectional layout support.
 - Validate layout and interactions across supported phone sizes and both platforms.
-- Remove unused starter assets and components once their non-use is verified.
+- [x] Remove unused Expo starter components, orphan theme hooks/CSS, unused Expo images, and direct `expo-symbols` / `expo-web-browser` deps (`expo-symbols` may remain transitive via `expo-router`). App icons and splash in `app.json` remain until branded replacements exist.
 - Establish design QA and performance budgets for critical screens.
 
 Exit condition: core flows feel calm, specific, responsive, accessible, and intentionally native rather than template-derived.
