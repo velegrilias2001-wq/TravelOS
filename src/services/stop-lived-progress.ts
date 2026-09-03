@@ -48,3 +48,16 @@ export function livedPhaseByStopId(
 
   return phases;
 }
+
+export function planStopLivedBadge(
+  stopId: string,
+  states: readonly TripStopLivedState[] | undefined,
+): TripStopLivedPhase | undefined {
+  const phase = livedPhaseByStopId(states).get(stopId);
+
+  if (phase === 'done' || phase === 'skipped') {
+    return phase;
+  }
+
+  return undefined;
+}

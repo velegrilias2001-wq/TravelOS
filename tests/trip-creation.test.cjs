@@ -207,6 +207,37 @@ test(
 );
 
 test(
+  'new trip creation keeps an explicit traveler timezone without inventing one',
+  () => {
+    const trip = buildNewTrip(
+      makeInput({
+        destinations: [
+          {
+            name: 'Lisbon, Portugal',
+            countryCode: 'PT',
+            latitude: 38.7223,
+            longitude: -9.1393,
+            timezone: 'Europe/Lisbon',
+            timezoneSource: 'traveler',
+          },
+        ],
+      }),
+      IDENTITIES,
+      TIMESTAMP,
+    );
+
+    assert.equal(
+      trip.destinations[0]?.timezone,
+      'Europe/Lisbon',
+    );
+    assert.equal(
+      trip.destinations[0]?.timezoneSource,
+      'traveler',
+    );
+  },
+);
+
+test(
   'new trip creation rejects an empty destination list',
   () => {
     assert.throws(

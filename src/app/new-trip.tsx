@@ -36,8 +36,10 @@ import {
   DestinationPickerField,
 } from '@/features/destinations/destination-picker-field';
 
-import type {
-  DestinationSelection,
+import {
+  assignTravelerTimeZoneToSelection,
+  preserveSelectionEnrichment,
+  type DestinationSelection,
 } from '@/services/destination-authoring';
 
 import {
@@ -331,7 +333,28 @@ export default function NewTripScreen() {
   ) => {
     setDestinations((current) =>
       current.map((destination, currentIndex) =>
-        currentIndex === index ? selection : destination,
+        currentIndex === index
+          ? preserveSelectionEnrichment(
+              destination,
+              selection,
+            )
+          : destination,
+      ),
+    );
+  };
+
+  const setDestinationTimeZone = (
+    index: number,
+    timezone: string | null,
+  ) => {
+    setDestinations((current) =>
+      current.map((destination, currentIndex) =>
+        currentIndex === index
+          ? assignTravelerTimeZoneToSelection(
+              destination,
+              timezone,
+            )
+          : destination,
       ),
     );
   };
@@ -611,6 +634,9 @@ export default function NewTripScreen() {
                   disabled={isSaving}
                   onSelect={(selection) =>
                     replaceDestination(index, selection)
+                  }
+                  onTimeZoneChange={(timezone) =>
+                    setDestinationTimeZone(index, timezone)
                   }
                 />
 

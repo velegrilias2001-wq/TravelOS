@@ -61,6 +61,9 @@ import {
   deriveDayTimeConflicts,
   type FreeTimeGap,
 } from '@/services/itinerary-flexibility';
+import {
+  planStopLivedBadge,
+} from '@/services/stop-lived-progress';
 import type {
   FreeTimeActivityType,
   FreeTimeAdviceResult,
@@ -1077,6 +1080,10 @@ export default function PlanScreen() {
       }
     };
 
+  const livedByStopId = workspace
+    ? workspace.stopLivedStates
+    : undefined;
+
   return (
     <>
       <Screen scroll>
@@ -1427,6 +1434,12 @@ export default function PlanScreen() {
                               stop.id,
                             );
 
+                          const livedPhase =
+                            planStopLivedBadge(
+                              stop.id,
+                              livedByStopId,
+                            );
+
                           const freeTimeGap =
                             freeTimeByAfterStopId.get(
                               stop.id,
@@ -1534,6 +1547,52 @@ export default function PlanScreen() {
                                     stop.type
                                   }
                                 </Text>
+
+                                {livedPhase === 'done' && (
+                                  <View
+                                    style={
+                                      styles.livedRow
+                                    }
+                                  >
+                                    <Ionicons
+                                      name="checkmark-circle-outline"
+                                      size={13}
+                                      color={
+                                        colors.teal
+                                      }
+                                    />
+                                    <Text
+                                      style={
+                                        styles.livedText
+                                      }
+                                    >
+                                      Done
+                                    </Text>
+                                  </View>
+                                )}
+
+                                {livedPhase === 'skipped' && (
+                                  <View
+                                    style={
+                                      styles.livedRow
+                                    }
+                                  >
+                                    <Ionicons
+                                      name="close-circle-outline"
+                                      size={13}
+                                      color={
+                                        colors.brass
+                                      }
+                                    />
+                                    <Text
+                                      style={
+                                        styles.livedSkippedText
+                                      }
+                                    >
+                                      Skipped
+                                    </Text>
+                                  </View>
+                                )}
 
                                 {hasCoordinates(
                                   stop.location,
@@ -2042,6 +2101,32 @@ export default function PlanScreen() {
                     ? 'Edit moment'
                     : 'Add a moment'}
                 </Text>
+                {editingStop &&
+                  planStopLivedBadge(
+                    editingStop.id,
+                    livedByStopId,
+                  ) === 'done' && (
+                    <Text
+                      style={
+                        styles.sheetLivedNote
+                      }
+                    >
+                      Marked done in Companion. Changing the time still edits the saved plan, not that mark.
+                    </Text>
+                  )}
+                {editingStop &&
+                  planStopLivedBadge(
+                    editingStop.id,
+                    livedByStopId,
+                  ) === 'skipped' && (
+                    <Text
+                      style={
+                        styles.sheetLivedNote
+                      }
+                    >
+                      Marked skipped in Companion. Changing the time still edits the saved plan, not that mark.
+                    </Text>
+                  )}
               </View>
 
               <Pressable
@@ -3009,6 +3094,51 @@ const styles =
         'center',
       gap: 4,
       marginTop: 5,
+    },
+
+    livedRow: {
+      flexDirection:
+        'row',
+      alignItems:
+        'center',
+      gap: 4,
+      marginTop: 5,
+    },
+
+    livedText: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 0.6,
+      color:
+        colors.teal,
+      textTransform:
+        'uppercase',
+    },
+
+    livedSkippedText: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize:
+        fontSize.micro,
+      letterSpacing: 0.6,
+      color:
+        colors.brass,
+      textTransform:
+        'uppercase',
+    },
+
+    sheetLivedNote: {
+      marginTop: 6,
+      maxWidth: 220,
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize:
+        fontSize.caption,
+      lineHeight: 17,
+      color:
+        colors.textSecondary,
     },
 
     mappedText: {

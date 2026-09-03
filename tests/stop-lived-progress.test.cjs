@@ -19,6 +19,7 @@ const {
 );
 const {
   createStopLivedState,
+  planStopLivedBadge,
 } = require('../.test-build/src/services/stop-lived-progress.js');
 const {
   NodeSQLiteDatabase,
@@ -129,6 +130,28 @@ test('lived stop progress must stay on the same trip and only done or skipped', 
       createStopLivedState(stop, 'trip-1', 'delayed', TIMESTAMP),
     /done or skipped/,
   );
+});
+
+test('Plan lived badges use only explicit done or skipped marks', () => {
+  const states = [
+    {
+      stopId: 'stop-1',
+      tripId: 'trip-1',
+      phase: 'done',
+      recordedAt: TIMESTAMP,
+    },
+    {
+      stopId: 'stop-2',
+      tripId: 'trip-1',
+      phase: 'skipped',
+      recordedAt: TIMESTAMP,
+    },
+  ];
+
+  assert.equal(planStopLivedBadge('stop-1', states), 'done');
+  assert.equal(planStopLivedBadge('stop-2', states), 'skipped');
+  assert.equal(planStopLivedBadge('stop-open', states), undefined);
+  assert.equal(planStopLivedBadge('stop-1', undefined), undefined);
 });
 
 test('migration v17 installs lived-stop states without inventing progress', async () => {

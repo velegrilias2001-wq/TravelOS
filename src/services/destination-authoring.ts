@@ -278,9 +278,30 @@ export function assignTravelerTimeZone(
   destination: TripDestination,
   timezone: string | null,
 ): TripDestination {
+  return {
+    ...destination,
+    ...travelerTimeZoneFields(timezone),
+  };
+}
+
+export function assignTravelerTimeZoneToSelection(
+  selection: DestinationSelection,
+  timezone: string | null,
+): DestinationSelection {
+  return {
+    ...selection,
+    ...travelerTimeZoneFields(timezone),
+  };
+}
+
+function travelerTimeZoneFields(
+  timezone: string | null,
+): Pick<
+  DestinationSelection,
+  'timezone' | 'timezoneSource'
+> {
   if (timezone === null || timezone.trim() === '') {
     return {
-      ...destination,
       timezone: undefined,
       timezoneSource: undefined,
     };
@@ -289,9 +310,24 @@ export function assignTravelerTimeZone(
   const next = normalizeTimeZone(timezone);
 
   return {
-    ...destination,
     timezone: next,
     timezoneSource: next ? 'traveler' : undefined,
+  };
+}
+
+export function preserveSelectionEnrichment(
+  existing: DestinationSelection,
+  replacement: DestinationSelection,
+): DestinationSelection {
+  return {
+    ...replacement,
+    timezone: replacement.timezone ?? existing.timezone,
+    timezoneSource: replacement.timezone
+      ? replacement.timezoneSource ?? existing.timezoneSource
+      : existing.timezoneSource,
+    currencyCode:
+      replacement.currencyCode ?? existing.currencyCode,
+    placeId: replacement.placeId ?? existing.placeId,
   };
 }
 

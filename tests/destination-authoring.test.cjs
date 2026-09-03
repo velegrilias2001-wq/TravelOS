@@ -18,9 +18,11 @@ const {
 );
 const {
   applyDestinationSelection,
+  assignTravelerTimeZoneToSelection,
   destinationAuthoringKind,
   mapDestinationProviderResult,
   mappedDestinations,
+  preserveSelectionEnrichment,
   singleMappedDestinationCoordinate,
 } = require(
   '../.test-build/src/services/destination-authoring.js',
@@ -251,3 +253,50 @@ test(
     }
   },
 );
+
+test('traveler timezone on a map selection is explicit and not guessed', () => {
+  const selected = {
+    name: 'Lisbon',
+    countryCode: 'PT',
+    latitude: 38.7223,
+    longitude: -9.1393,
+  };
+
+  const withZone = assignTravelerTimeZoneToSelection(
+    selected,
+    'Europe/Lisbon',
+  );
+
+  assert.equal(withZone.timezone, 'Europe/Lisbon');
+  assert.equal(withZone.timezoneSource, 'traveler');
+
+  const cleared = assignTravelerTimeZoneToSelection(
+    withZone,
+    null,
+  );
+
+  assert.equal(cleared.timezone, undefined);
+  assert.equal(cleared.timezoneSource, undefined);
+});
+
+test('replacing a map pin keeps a traveler timezone when the picker has none', () => {
+  const existing = {
+    name: 'Lisbon',
+    countryCode: 'PT',
+    latitude: 38.7223,
+    longitude: -9.1393,
+    timezone: 'Europe/Lisbon',
+    timezoneSource: 'traveler',
+  };
+
+  const merged = preserveSelectionEnrichment(existing, {
+    name: 'Lisbon waterfront',
+    countryCode: 'PT',
+    latitude: 38.7071,
+    longitude: -9.1355,
+  });
+
+  assert.equal(merged.name, 'Lisbon waterfront');
+  assert.equal(merged.timezone, 'Europe/Lisbon');
+  assert.equal(merged.timezoneSource, 'traveler');
+});
