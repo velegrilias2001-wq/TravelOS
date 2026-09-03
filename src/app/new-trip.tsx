@@ -35,6 +35,7 @@ import type {
 import {
   DestinationPickerField,
 } from '@/features/destinations/destination-picker-field';
+import { PressableScale } from '@/features/motion/pressable-scale';
 
 import {
   assignTravelerTimeZoneToSelection,
@@ -1058,25 +1059,21 @@ export default function NewTripScreen() {
           </View>
         </View>
 
-        <Pressable
+        <PressableScale
           accessibilityRole="button"
           accessibilityLabel="Create trip"
           disabled={
             isSaving ||
             !isReady
           }
-          style={({
-            pressed,
-          }) => [
+          style={[
             styles.createButton,
-
-            pressed &&
-              styles.pressed,
 
             (isSaving ||
               !isReady) &&
               styles.disabled,
           ]}
+          pressedStyle={styles.pressed}
           onPress={
             createTrip
           }
@@ -1100,7 +1097,7 @@ export default function NewTripScreen() {
               }
             />
           ) : null}
-        </Pressable>
+        </PressableScale>
 
         {!isReady &&
         !isSaving ? (

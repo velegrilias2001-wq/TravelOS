@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
+import { TabBarIcon } from '@/features/motion/tab-bar-icon';
 import {
   colors,
   fontFamily,
@@ -46,7 +46,7 @@ export default function MainTabsLayout() {
             color,
             focused,
           }) => (
-            <Ionicons
+            <TabBarIcon
               name={
                 focused
                   ? 'home'
@@ -54,6 +54,7 @@ export default function MainTabsLayout() {
               }
               size={22}
               color={color}
+              focused={focused}
             />
           ),
         }}
@@ -68,7 +69,7 @@ export default function MainTabsLayout() {
             color,
             focused,
           }) => (
-            <Ionicons
+            <TabBarIcon
               name={
                 focused
                   ? 'map'
@@ -76,6 +77,7 @@ export default function MainTabsLayout() {
               }
               size={22}
               color={color}
+              focused={focused}
             />
           ),
         }}
@@ -90,7 +92,7 @@ export default function MainTabsLayout() {
             color,
             focused,
           }) => (
-            <Ionicons
+            <TabBarIcon
               name={
                 focused
                   ? 'compass'
@@ -98,6 +100,7 @@ export default function MainTabsLayout() {
               }
               size={23}
               color={color}
+              focused={focused}
             />
           ),
         }}
@@ -112,14 +115,15 @@ export default function MainTabsLayout() {
             color,
             focused,
           }) => (
-            <Ionicons
+            <TabBarIcon
               name={
                 focused
                   ? 'earth'
                   : 'earth-outline'
               }
-              size={23}
+              size={22}
               color={color}
+              focused={focused}
             />
           ),
         }}
@@ -134,7 +138,7 @@ export default function MainTabsLayout() {
             color,
             focused,
           }) => (
-            <Ionicons
+            <TabBarIcon
               name={
                 focused
                   ? 'person'
@@ -142,6 +146,7 @@ export default function MainTabsLayout() {
               }
               size={22}
               color={color}
+              focused={focused}
             />
           ),
         }}

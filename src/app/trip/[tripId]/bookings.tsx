@@ -30,6 +30,10 @@ import {
 } from 'react-native';
 
 import {
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
+
+import {
   CalendarDateField,
   LocalTimeField,
 } from '@/components/ui/native-date-time-fields';
@@ -52,6 +56,7 @@ import {
 import {
   accommodationsLinkedToBooking,
 } from '@/services/accommodation-details';
+import { PressableScale } from '@/features/motion/pressable-scale';
 import {
   resolveBookingCurrencyCode,
 } from '@/services/booking-finance';
@@ -262,12 +267,17 @@ function formatStopDate(
 
 export default function BookingsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { height: windowHeight } =
     useWindowDimensions();
   const sheetScrollMaxHeight = Math.max(
     280,
-    Math.round(windowHeight * 0.92) - 220,
+    Math.round(windowHeight * 0.92) - 260,
   );
+  const sheetBottomPad = Math.max(
+    insets.bottom,
+    12,
+  ) + 16;
   const routeParams =
     useLocalSearchParams<{
       bookingId?: string | string[];
@@ -1262,7 +1272,13 @@ export default function BookingsScreen() {
                 ? 'padding'
                 : undefined
             }
-            style={styles.sheet}
+            style={[
+              styles.sheet,
+              {
+                paddingBottom:
+                  sheetBottomPad,
+              },
+            ]}
           >
             <View
               style={
@@ -1345,11 +1361,17 @@ export default function BookingsScreen() {
                           selected &&
                             styles.typeButtonSelected,
                         ]}
-                        onPress={() =>
+                        onPress={() => {
                           setType(
                             item.value,
-                          )
-                        }
+                          );
+                          setTitle(
+                            (current) =>
+                              current.trim()
+                                ? current
+                                : item.label,
+                          );
+                        }}
                       >
                         <Ionicons
                           name={
@@ -1747,7 +1769,7 @@ export default function BookingsScreen() {
               />
             </ScrollView>
 
-            <Pressable
+            <PressableScale
               accessibilityRole="button"
               accessibilityLabel={
                 editingBooking
@@ -1761,6 +1783,7 @@ export default function BookingsScreen() {
                 isSaving &&
                   styles.disabled,
               ]}
+              pressedStyle={styles.pressed}
               onPress={
                 saveBooking
               }
@@ -1786,7 +1809,7 @@ export default function BookingsScreen() {
                   }
                 />
               )}
-            </Pressable>
+            </PressableScale>
           </KeyboardAvoidingView>
         </View>
       </Modal>

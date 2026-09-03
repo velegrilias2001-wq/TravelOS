@@ -203,7 +203,7 @@ These stay later. They were not implemented in this pass. iOS rebuild is last.
 - Notifications, only after timezone truth is stable on device.
 - Discover reranking. Do not install a BGE reranker until a real `/api/rerank` path can be measured.
 - Confirmation-photo OCR, only with an extractor that cannot write bookings.
-- Phase 5 visual/function matrix remainder: stop/booking delete, trip delete confirmation, and booking save on emulator. Code and automation script are ready; device rehearsal is blocked until the Pixel 8 emulator is online again with the installed development client and Lisbon fixture. Booking sticky footer, currency helper, and delete accessibility labels are implemented. Owner toggle, unmapped Plan create, Companion Done, and Plan DONE badge were rehearsed on Pixel 8 on 2026-09-03.
+- Phase 5 visual/function matrix remainder: closed on Pixel 8 on 2026-09-03 (booking save/delete, stop delete, trip delete confirm cancelled). Pass 1 motion shipped (tabs, CTA scale, Plan lived FadeIn, Reduce Motion). Pass 2 motion stays later.
 - iOS development-client rebuild and Expo SQLite rehearsal.
 
 ## Cross-cutting rules

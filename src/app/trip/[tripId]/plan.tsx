@@ -28,6 +28,7 @@ import {
   pickLocation,
 } from 'expo-location-picker';
 
+import { FadeIn } from '@/features/motion/fade-in';
 import { LocalTimeField } from '@/components/ui/native-date-time-fields';
 import {
   Screen,
@@ -1549,49 +1550,57 @@ export default function PlanScreen() {
                                 </Text>
 
                                 {livedPhase === 'done' && (
-                                  <View
-                                    style={
-                                      styles.livedRow
-                                    }
+                                  <FadeIn
+                                    factKey={`done:${stop.id}`}
                                   >
-                                    <Ionicons
-                                      name="checkmark-circle-outline"
-                                      size={13}
-                                      color={
-                                        colors.teal
-                                      }
-                                    />
-                                    <Text
+                                    <View
                                       style={
-                                        styles.livedText
+                                        styles.livedRow
                                       }
                                     >
-                                      Done
-                                    </Text>
-                                  </View>
+                                      <Ionicons
+                                        name="checkmark-circle-outline"
+                                        size={13}
+                                        color={
+                                          colors.teal
+                                        }
+                                      />
+                                      <Text
+                                        style={
+                                          styles.livedText
+                                        }
+                                      >
+                                        Done
+                                      </Text>
+                                    </View>
+                                  </FadeIn>
                                 )}
 
                                 {livedPhase === 'skipped' && (
-                                  <View
-                                    style={
-                                      styles.livedRow
-                                    }
+                                  <FadeIn
+                                    factKey={`skipped:${stop.id}`}
                                   >
-                                    <Ionicons
-                                      name="close-circle-outline"
-                                      size={13}
-                                      color={
-                                        colors.brass
-                                      }
-                                    />
-                                    <Text
+                                    <View
                                       style={
-                                        styles.livedSkippedText
+                                        styles.livedRow
                                       }
                                     >
-                                      Skipped
-                                    </Text>
-                                  </View>
+                                      <Ionicons
+                                        name="close-circle-outline"
+                                        size={13}
+                                        color={
+                                          colors.brass
+                                        }
+                                      />
+                                      <Text
+                                        style={
+                                          styles.livedSkippedText
+                                        }
+                                      >
+                                        Skipped
+                                      </Text>
+                                    </View>
+                                  </FadeIn>
                                 )}
 
                                 {hasCoordinates(
