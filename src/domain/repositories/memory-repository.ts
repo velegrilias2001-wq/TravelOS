@@ -8,6 +8,10 @@ import type { TripId } from '../entities/trip';
 export interface MemoryRepository {
   getByTripId(tripId: TripId): Promise<Memory[]>;
 
+  getByTripIds(
+    tripIds: readonly TripId[],
+  ): Promise<Memory[]>;
+
   getById(id: MemoryId): Promise<Memory | null>;
 
   save(memory: Memory): Promise<void>;

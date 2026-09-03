@@ -17,6 +17,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import MapView, {
   Marker,
   type LatLng,
@@ -55,6 +56,7 @@ const EMPTY_WORLD_CONTEXT: WorldPlaceContext = {
   days: [],
   stops: [],
   livedStates: [],
+  memories: [],
 };
 
 const WORLD_REGION = {
@@ -548,7 +550,9 @@ function DestinationCard({
       accessibilityRole="button"
       accessibilityLabel={
         item.mapped
-          ? `Show ${item.destination.name} on the map`
+          ? item.archive.memoryCount > 0
+            ? `Show ${item.destination.name} on the map, ${item.archive.memoryCount} ${item.archive.memoryCount === 1 ? 'memory' : 'memories'}`
+            : `Show ${item.destination.name} on the map`
           : `Add map details for ${item.destination.name}`
       }
       style={({ pressed }) => [
@@ -559,6 +563,13 @@ function DestinationCard({
       ]}
       onPress={onPress}
     >
+      {item.archive.coverUri ? (
+        <Image
+          source={{ uri: item.archive.coverUri }}
+          style={styles.archiveCover}
+          contentFit="cover"
+        />
+      ) : null}
       <View style={styles.destinationCardTop}>
         <View
           style={[
@@ -617,6 +628,13 @@ function DestinationCard({
         {!item.mapped ? (
           <Text style={styles.unmapped}>
             ADD MAP
+          </Text>
+        ) : item.archive.memoryCount > 0 ? (
+          <Text style={styles.archiveCount}>
+            {item.archive.memoryCount}{' '}
+            {item.archive.memoryCount === 1
+              ? 'MEMORY'
+              : 'MEMORIES'}
           </Text>
         ) : null}
       </View>
@@ -805,6 +823,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
+    overflow: 'hidden',
   },
 
   destinationCardSelected: {
@@ -816,6 +835,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing[3],
+  },
+
+  archiveCover: {
+    height: 88,
+    marginHorizontal: -spacing[3],
+    marginTop: -spacing[3],
+    marginBottom: spacing[3],
+    backgroundColor: colors.tealSoft,
   },
 
   destinationIcon: {
@@ -862,6 +889,13 @@ const styles = StyleSheet.create({
   },
 
   unmapped: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 0.9,
+    color: colors.teal,
+  },
+
+  archiveCount: {
     fontFamily: fontFamily.sansBold,
     fontSize: fontSize.micro,
     letterSpacing: 0.9,

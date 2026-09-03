@@ -1,4 +1,5 @@
 import type {
+  Memory,
   Trip,
   TripDay,
   TripDestination,
@@ -11,19 +12,35 @@ export type WorldPlaceKind = 'planned' | 'lived';
 
 export type WorldPlaceFilter = 'all' | 'planned' | 'lived';
 
+export interface WorldPlaceArchive {
+  memoryCount: number;
+  photoCount: number;
+  noteCount: number;
+  coverUri: string | null;
+}
+
 export interface WorldPlace {
   id: string;
   trip: Trip;
   destination: TripDestination;
   kind: WorldPlaceKind;
   mapped: boolean;
+  archive: WorldPlaceArchive;
 }
 
 export interface WorldPlaceContext {
   days: readonly TripDay[];
   stops: readonly TripStop[];
   livedStates: readonly TripStopLivedState[];
+  memories: readonly Memory[];
 }
+
+const EMPTY_ARCHIVE: WorldPlaceArchive = {
+  memoryCount: 0,
+  photoCount: 0,
+  noteCount: 0,
+  coverUri: null,
+};
 
 function placeKey(
   tripId: string,
@@ -70,6 +87,75 @@ export function selectLivedDestinationKeys(
   return livedKeys;
 }
 
+export function destinationIdForMemory(
+  memory: Memory,
+  days: readonly TripDay[],
+  stops: readonly TripStop[],
+): string | null {
+  if (memory.stopId) {
+    const stop = stops.find(
+      (candidate) =>
+        candidate.id === memory.stopId &&
+        candidate.tripId === memory.tripId,
+    );
+
+    if (!stop) {
+      return null;
+    }
+
+    const day = days.find(
+      (candidate) =>
+        candidate.id === stop.dayId &&
+        candidate.tripId === stop.tripId,
+    );
+
+    return day?.destinationId ?? null;
+  }
+
+  if (memory.dayId) {
+    const day = days.find(
+      (candidate) =>
+        candidate.id === memory.dayId &&
+        candidate.tripId === memory.tripId,
+    );
+
+    return day?.destinationId ?? null;
+  }
+
+  return null;
+}
+
+function buildArchive(
+  memories: readonly Memory[],
+): WorldPlaceArchive {
+  const photos = memories.filter(
+    (memory) =>
+      memory.type === 'photo' &&
+      Boolean(memory.mediaUri),
+  );
+  const notes = memories.filter(
+    (memory) => memory.type === 'note',
+  );
+  const cover = [...photos].sort((left, right) => {
+    const byTime = left.capturedAt.localeCompare(
+      right.capturedAt,
+    );
+
+    if (byTime !== 0) {
+      return byTime;
+    }
+
+    return left.id.localeCompare(right.id);
+  })[0];
+
+  return {
+    memoryCount: memories.length,
+    photoCount: photos.length,
+    noteCount: notes.length,
+    coverUri: cover?.mediaUri ?? null,
+  };
+}
+
 export function selectWorldPlaces(
   trips: readonly Trip[],
   context: WorldPlaceContext,
@@ -79,21 +165,48 @@ export function selectWorldPlaces(
     context.stops,
     context.livedStates,
   );
+  const memoriesByPlace = new Map<string, Memory[]>();
+
+  for (const memory of context.memories) {
+    const destinationId = destinationIdForMemory(
+      memory,
+      context.days,
+      context.stops,
+    );
+
+    if (!destinationId) {
+      continue;
+    }
+
+    const key = placeKey(memory.tripId, destinationId);
+    const current = memoriesByPlace.get(key) ?? [];
+    current.push(memory);
+    memoriesByPlace.set(key, current);
+  }
 
   return trips.flatMap((trip) =>
-    trip.destinations.map((destination) => ({
-      id: placeKey(trip.id, destination.id),
-      trip,
-      destination,
-      kind: livedKeys.has(
-        placeKey(trip.id, destination.id),
-      )
+    trip.destinations.map((destination) => {
+      const id = placeKey(trip.id, destination.id);
+      const kind: WorldPlaceKind = livedKeys.has(id)
         ? 'lived'
-        : 'planned',
-      mapped: hasRealDestinationCoordinates(
+        : 'planned';
+
+      return {
+        id,
+        trip,
         destination,
-      ),
-    })),
+        kind,
+        mapped: hasRealDestinationCoordinates(
+          destination,
+        ),
+        archive:
+          kind === 'lived'
+            ? buildArchive(
+                memoriesByPlace.get(id) ?? [],
+              )
+            : EMPTY_ARCHIVE,
+      };
+    }),
   );
 }
 
@@ -116,6 +229,7 @@ export function worldPlaceCounts(
   lived: number;
   planned: number;
   mapped: number;
+  archiveMemories: number;
 } {
   return {
     lived: places.filter(
@@ -127,5 +241,10 @@ export function worldPlaceCounts(
     mapped: places.filter(
       (place) => place.mapped,
     ).length,
+    archiveMemories: places.reduce(
+      (total, place) =>
+        total + place.archive.memoryCount,
+      0,
+    ),
   };
 }

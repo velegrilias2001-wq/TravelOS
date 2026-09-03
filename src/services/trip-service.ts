@@ -91,17 +91,19 @@ export class TripService {
     days: TripDay[];
     stops: TripStop[];
     livedStates: TripStopLivedState[];
+    memories: Memory[];
   }> {
-    const [days, stops, livedStates] =
+    const [days, stops, livedStates, memories] =
       await Promise.all([
         this.repo.trip.getDaysForTrips(tripIds),
         this.repo.trip.getStopsForTrips(tripIds),
         this.repo.stopLivedStates.getByTripIds(
           tripIds,
         ),
+        this.repo.memory.getByTripIds(tripIds),
       ]);
 
-    return { days, stops, livedStates };
+    return { days, stops, livedStates, memories };
   }
 
   async getTrip(

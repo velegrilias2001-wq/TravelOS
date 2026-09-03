@@ -92,7 +92,7 @@ These are web-era solutions. Native accounts, sync, diagnostics, privacy, and re
 | Destination advisor and season guidance | Redesign | Native Discover now includes Start with a place, Find me somewhere, Best time, and Ready-made journeys against the grounded catalogue. Journeys are ideas until Create Trip confirmation; extra catalogue cities can prefill additional destinations |
 | Import breadth | Redesign | Start with a supportable subset and a mandatory review queue |
 | Wishlist | Preserve | Native Wishlist V1 persists grounded Discover destination and journey identities in SQLite. They are not Trips and are not World visited history |
-| World and travel archive | Preserve / reinterpret | Native World planned vs lived V1 maps persisted trip destinations with real coordinates and labels them from explicit done-stop + Day → Destination IDs. It does not infer visits from titles, completed status, skipped stops, or wishlist rows |
+| World and travel archive | Preserve / reinterpret | Native World planned vs lived V1 maps persisted trip destinations with real coordinates and labels them from explicit done-stop + Day → Destination IDs. World archive V1 can show ID-linked memories on lived cards. It does not infer visits from titles, completed status, skipped stops, unlinked notes, or wishlist rows |
 | Editorial visual tone | Preserve | Translate to native typography, imagery, motion, gestures, and platform conventions |
 | Desktop grids and browser forms | Do not copy | Design phone-first flows, sheets, pickers, gestures, and focused steps |
 | Browser local-vault architecture | Do not copy | Design native local-first storage, accounts, backup, and sync around canonical IDs |

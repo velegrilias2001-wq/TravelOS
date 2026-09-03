@@ -46,14 +46,31 @@ export class SQLiteMemoryRepository implements MemoryRepository {
   ) {}
 
   async getByTripId(tripId: TripId): Promise<Memory[]> {
+    return this.getByTripIds([tripId]);
+  }
+
+  async getByTripIds(
+    tripIds: readonly TripId[],
+  ): Promise<Memory[]> {
+    if (tripIds.length === 0) {
+      return [];
+    }
+
+    const placeholders = Array.from(
+      { length: tripIds.length },
+      () => '?',
+    ).join(', ');
     const rows = await this.database.query<MemoryRow>(
       `
         SELECT *
         FROM memories
-        WHERE trip_id = ?
-        ORDER BY captured_at ASC;
+        WHERE trip_id IN (${placeholders})
+        ORDER BY
+          trip_id ASC,
+          captured_at ASC,
+          id ASC;
       `,
-      [tripId],
+      [...tripIds],
     );
 
     return rows.map(mapMemory);

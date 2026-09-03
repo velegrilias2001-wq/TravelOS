@@ -83,6 +83,7 @@ function makeContext(overrides = {}) {
       },
     ],
     livedStates: [],
+    memories: [],
     ...overrides,
   };
 }
@@ -227,6 +228,7 @@ test('World filters use lived evidence instead of trip status', () => {
     lived: 1,
     planned: 1,
     mapped: 2,
+    archiveMemories: 0,
   });
   assert.deepEqual(
     filterWorldPlaces(places, 'lived').map(
@@ -240,4 +242,134 @@ test('World filters use lived evidence instead of trip status', () => {
     ),
     ['destination-porto'],
   );
+});
+
+test('a memory without day or stop does not attach to a city', () => {
+  const places = selectWorldPlaces(
+    [makeTrip()],
+    makeContext({
+      livedStates: [
+        {
+          stopId: 'stop-belem',
+          tripId: 'trip-lisbon',
+          phase: 'done',
+          recordedAt: TIMESTAMP,
+        },
+      ],
+      memories: [
+        {
+          id: 'memory-loose',
+          tripId: 'trip-lisbon',
+          type: 'note',
+          title: 'Lisbon',
+          capturedAt: TIMESTAMP,
+          createdAt: TIMESTAMP,
+          updatedAt: TIMESTAMP,
+        },
+      ],
+    }),
+  );
+
+  assert.equal(places[0].archive.memoryCount, 0);
+  assert.equal(places[1].archive.memoryCount, 0);
+});
+
+test('a memory on a planned city does not become a visit or archive', () => {
+  const places = selectWorldPlaces(
+    [makeTrip()],
+    makeContext({
+      memories: [
+        {
+          id: 'memory-plan',
+          tripId: 'trip-lisbon',
+          dayId: 'day-2',
+          type: 'note',
+          caption: 'Looking forward to Porto',
+          capturedAt: TIMESTAMP,
+          createdAt: TIMESTAMP,
+          updatedAt: TIMESTAMP,
+        },
+      ],
+    }),
+  );
+
+  assert.equal(places[1].kind, 'planned');
+  assert.equal(places[1].archive.memoryCount, 0);
+});
+
+test('a lived city archive uses explicit day and stop memory IDs', () => {
+  const places = selectWorldPlaces(
+    [makeTrip()],
+    makeContext({
+      livedStates: [
+        {
+          stopId: 'stop-belem',
+          tripId: 'trip-lisbon',
+          phase: 'done',
+          recordedAt: TIMESTAMP,
+        },
+      ],
+      memories: [
+        {
+          id: 'memory-note',
+          tripId: 'trip-lisbon',
+          dayId: 'day-1',
+          type: 'note',
+          capturedAt: TIMESTAMP,
+          createdAt: TIMESTAMP,
+          updatedAt: TIMESTAMP,
+        },
+        {
+          id: 'memory-photo',
+          tripId: 'trip-lisbon',
+          stopId: 'stop-belem',
+          type: 'photo',
+          mediaUri: 'file:///belem.jpg',
+          capturedAt: '2026-09-03T10:00:00.000Z',
+          createdAt: TIMESTAMP,
+          updatedAt: TIMESTAMP,
+        },
+      ],
+    }),
+  );
+
+  assert.deepEqual(places[0].archive, {
+    memoryCount: 2,
+    photoCount: 1,
+    noteCount: 1,
+    coverUri: 'file:///belem.jpg',
+  });
+  assert.equal(places[1].archive.memoryCount, 0);
+  assert.equal(worldPlaceCounts(places).archiveMemories, 2);
+});
+
+test('a photo without a saved media URI does not invent a cover', () => {
+  const places = selectWorldPlaces(
+    [makeTrip()],
+    makeContext({
+      livedStates: [
+        {
+          stopId: 'stop-belem',
+          tripId: 'trip-lisbon',
+          phase: 'done',
+          recordedAt: TIMESTAMP,
+        },
+      ],
+      memories: [
+        {
+          id: 'memory-photo',
+          tripId: 'trip-lisbon',
+          dayId: 'day-1',
+          type: 'photo',
+          capturedAt: TIMESTAMP,
+          createdAt: TIMESTAMP,
+          updatedAt: TIMESTAMP,
+        },
+      ],
+    }),
+  );
+
+  assert.equal(places[0].archive.photoCount, 0);
+  assert.equal(places[0].archive.memoryCount, 1);
+  assert.equal(places[0].archive.coverUri, null);
 });
