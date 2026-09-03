@@ -86,6 +86,15 @@ function mapTripStop(
   };
 }
 
+function sqlPlaceholders(
+  count: number,
+): string {
+  return Array.from(
+    { length: count },
+    () => '?',
+  ).join(', ');
+}
+
 export class SQLiteTripRepository
   implements TripRepository
 {
@@ -135,6 +144,35 @@ export class SQLiteTripRepository
     tripIds: readonly TripId[],
   ): Promise<TripDay[]> {
     return loadTripDaysForTrips(this.database, tripIds);
+  }
+
+  async getStopsForTrips(
+    tripIds: readonly TripId[],
+  ): Promise<TripStop[]> {
+    if (tripIds.length === 0) {
+      return [];
+    }
+
+    const rows =
+      await this.database.query<TripStopRow>(
+        `
+          SELECT s.*
+          FROM trip_stops s
+
+          LEFT JOIN trip_days d
+            ON d.id = s.day_id
+
+          WHERE s.trip_id IN (${sqlPlaceholders(tripIds.length)})
+
+          ORDER BY
+            s.trip_id ASC,
+            d.day_number ASC,
+            s.position ASC;
+        `,
+        [...tripIds],
+      );
+
+    return rows.map(mapTripStop);
   }
 
   async saveDay(

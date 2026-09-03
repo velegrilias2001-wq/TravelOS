@@ -28,12 +28,19 @@ import {
 
 import type {
   Trip,
-  TripDestination,
 } from '@/domain/entities';
 import {
-  hasRealDestinationCoordinates,
-} from '@/services/destination-authoring';
-import { useTripStore } from '@/store/trip-store';
+  useTripStore,
+} from '@/store/trip-store';
+import { tripService } from '@/services/trip-service';
+import {
+  filterWorldPlaces,
+  selectWorldPlaces,
+  worldPlaceCounts,
+  type WorldPlace,
+  type WorldPlaceContext,
+  type WorldPlaceFilter,
+} from '@/services/world-places';
 import {
   colors,
   fontFamily,
@@ -44,18 +51,11 @@ import {
   spacing,
 } from '@/theme';
 
-type WorldFilter =
-  | 'all'
-  | 'planning'
-  | 'completed';
-
-interface WorldDestination {
-  id: string;
-  trip: Trip;
-  destination: TripDestination;
-  state: 'planning' | 'completed' | 'archived';
-  mapped: boolean;
-}
+const EMPTY_WORLD_CONTEXT: WorldPlaceContext = {
+  days: [],
+  stops: [],
+  livedStates: [],
+};
 
 const WORLD_REGION = {
   latitude: 18,
@@ -74,28 +74,55 @@ export default function WorldScreen() {
   );
 
   const [filter, setFilter] =
-    useState<WorldFilter>('all');
+    useState<WorldPlaceFilter>('all');
   const [mapReady, setMapReady] =
     useState(false);
   const [
     selectedDestinationId,
     setSelectedDestinationId,
   ] = useState<string | null>(null);
+  const [placeContext, setPlaceContext] =
+    useState(EMPTY_WORLD_CONTEXT);
 
-  const destinations = useMemo(
-    () => buildWorldDestinations(trips),
+  const tripIds = useMemo(
+    () => trips.map((trip) => trip.id).join('\0'),
     [trips],
   );
 
-  const filteredDestinations = useMemo(
-    () =>
-      destinations.filter((item) => {
-        if (filter === 'all') {
-          return true;
-        }
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
 
-        return item.state === filter;
-      }),
+      void (async () => {
+        try {
+          const loaded =
+            await tripService.listWorldPlaceContext(
+              trips.map((trip) => trip.id),
+            );
+
+          if (!cancelled) {
+            setPlaceContext(loaded);
+          }
+        } catch {
+          if (!cancelled) {
+            setPlaceContext(EMPTY_WORLD_CONTEXT);
+          }
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [tripIds, trips]),
+  );
+
+  const destinations = useMemo(
+    () => selectWorldPlaces(trips, placeContext),
+    [placeContext, trips],
+  );
+
+  const filteredDestinations = useMemo(
+    () => filterWorldPlaces(destinations, filter),
     [destinations, filter],
   );
 
@@ -107,19 +134,8 @@ export default function WorldScreen() {
     [filteredDestinations],
   );
 
-  const completedTrips = useMemo(
-    () =>
-      trips.filter(
-        (trip) => trip.status === 'completed',
-      ).length,
-    [trips],
-  );
-
-  const mappedCount = useMemo(
-    () =>
-      destinations.filter(
-        (item) => item.mapped,
-      ).length,
+  const counts = useMemo(
+    () => worldPlaceCounts(destinations),
     [destinations],
   );
 
@@ -203,7 +219,7 @@ export default function WorldScreen() {
   };
 
   const focusDestination = (
-    item: WorldDestination,
+    item: WorldPlace,
   ) => {
     setSelectedDestinationId(item.id);
 
@@ -256,11 +272,9 @@ export default function WorldScreen() {
             title={item.destination.name}
             description={item.trip.title}
             pinColor={
-              item.state === 'completed'
+              item.kind === 'lived'
                 ? colors.teal
-                : item.state === 'planning'
-                  ? colors.brass
-                  : colors.textMuted
+                : colors.brass
             }
             onPress={() =>
               setSelectedDestinationId(
@@ -329,15 +343,15 @@ export default function WorldScreen() {
             <View style={styles.statDivider} />
 
             <Stat
-              value={completedTrips}
-              label="completed"
+              value={counts.lived}
+              label="lived"
             />
 
             <View style={styles.statDivider} />
 
             <Stat
-              value={mappedCount}
-              label="mapped"
+              value={counts.planned}
+              label="planned"
             />
           </View>
 
@@ -349,18 +363,18 @@ export default function WorldScreen() {
             />
 
             <FilterPill
-              label="Planning"
-              active={filter === 'planning'}
+              label="Planned"
+              active={filter === 'planned'}
               onPress={() =>
-                setFilter('planning')
+                setFilter('planned')
               }
             />
 
             <FilterPill
-              label="Completed"
-              active={filter === 'completed'}
+              label="Lived"
+              active={filter === 'lived'}
               onPress={() =>
-                setFilter('completed')
+                setFilter('lived')
               }
             />
           </View>
@@ -391,11 +405,19 @@ export default function WorldScreen() {
 
             <View style={styles.emptyCopy}>
               <Text style={styles.emptyTitle}>
-                Your world starts with a trip.
+                {filter === 'lived'
+                  ? 'No lived places yet.'
+                  : filter === 'planned'
+                    ? 'No planned places in this list.'
+                    : 'Your world starts with a trip.'}
               </Text>
 
               <Text style={styles.emptyBody}>
-                Plan somewhere new and your travel world will grow from there.
+                {filter === 'lived'
+                  ? 'Mark a planned stop done in Companion after you are there. A completed trip is not a visit.'
+                  : filter === 'planned'
+                    ? 'Every saved destination on these trips already has a done stop on an assigned day.'
+                    : 'Plan somewhere new and your travel world will grow from there.'}
               </Text>
             </View>
           </View>
@@ -458,30 +480,6 @@ export default function WorldScreen() {
   );
 }
 
-function buildWorldDestinations(
-  trips: Trip[],
-): WorldDestination[] {
-  return trips.flatMap((trip) =>
-    trip.destinations.map(
-      (destination) => ({
-        id: `${trip.id}:${destination.id}`,
-        trip,
-        destination,
-        state:
-          trip.status === 'completed'
-            ? 'completed'
-            : trip.status === 'archived'
-              ? 'archived'
-              : 'planning',
-        mapped:
-          hasRealDestinationCoordinates(
-            destination,
-          ),
-      }),
-    ),
-  );
-}
-
 function Stat({
   value,
   label,
@@ -541,7 +539,7 @@ function DestinationCard({
   selected,
   onPress,
 }: {
-  item: WorldDestination;
+  item: WorldPlace;
   selected: boolean;
   onPress(): void;
 }) {
@@ -565,8 +563,8 @@ function DestinationCard({
         <View
           style={[
             styles.destinationIcon,
-            item.state === 'completed' &&
-              styles.destinationIconCompleted,
+            item.kind === 'lived' &&
+              styles.destinationIconLived,
           ]}
         >
           <Ionicons
@@ -577,7 +575,7 @@ function DestinationCard({
             }
             size={18}
             color={
-              item.state === 'completed'
+              item.kind === 'lived'
                 ? colors.teal
                 : colors.brand
             }
@@ -611,11 +609,9 @@ function DestinationCard({
 
       <View style={styles.destinationMeta}>
         <Text style={styles.destinationState}>
-          {item.state === 'completed'
-            ? 'COMPLETED'
-            : item.state === 'archived'
-              ? 'ARCHIVED'
-              : 'PLANNING'}
+          {item.kind === 'lived'
+            ? 'LIVED'
+            : 'PLANNED'}
         </Text>
 
         {!item.mapped ? (
@@ -832,7 +828,7 @@ const styles = StyleSheet.create({
       colors.brandSoft,
   },
 
-  destinationIconCompleted: {
+  destinationIconLived: {
     backgroundColor: colors.tealSoft,
   },
 

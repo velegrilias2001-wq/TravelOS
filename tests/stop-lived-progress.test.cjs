@@ -11,6 +11,7 @@ const {
 const {
   deleteTripStopLivedState,
   loadTripStopLivedStates,
+  loadTripStopLivedStatesForTrips,
   upsertLivedRuntimePointer,
   upsertTripStopLivedState,
 } = require(
@@ -329,6 +330,59 @@ test('explicit lived progress writes a runtime pointer and leaves plan times unc
       'trip-1',
     );
     assert.equal(afterClear.length, 0);
+  } finally {
+    database.close();
+  }
+});
+
+test('lived states for many trips load in one query', async () => {
+  const database = new NodeSQLiteDatabase();
+
+  try {
+    await migrateDatabase(database);
+    await insertTrip(database, 'trip-1');
+    await insertTrip(database, 'trip-2');
+    await insertDay(database, 'day-1', 'trip-1');
+    await insertDay(database, 'day-2', 'trip-2');
+    await insertStop(database, 'stop-1', 'trip-1', 'day-1');
+    await insertStop(database, 'stop-2', 'trip-2', 'day-2');
+    await upsertTripStopLivedState(database, {
+      stopId: 'stop-1',
+      tripId: 'trip-1',
+      phase: 'done',
+      recordedAt: TIMESTAMP,
+    });
+    await upsertTripStopLivedState(database, {
+      stopId: 'stop-2',
+      tripId: 'trip-2',
+      phase: 'skipped',
+      recordedAt: TIMESTAMP,
+    });
+
+    let queryCount = 0;
+    const originalQuery = database.query.bind(database);
+    database.query = async (...args) => {
+      queryCount += 1;
+      return originalQuery(...args);
+    };
+
+    const rows = await loadTripStopLivedStatesForTrips(
+      database,
+      ['trip-1', 'trip-2'],
+    );
+
+    assert.equal(queryCount, 1);
+    assert.deepEqual(
+      rows.map((row) => [row.tripId, row.phase]),
+      [
+        ['trip-1', 'done'],
+        ['trip-2', 'skipped'],
+      ],
+    );
+    assert.deepEqual(
+      await loadTripStopLivedStatesForTrips(database, []),
+      [],
+    );
   } finally {
     database.close();
   }

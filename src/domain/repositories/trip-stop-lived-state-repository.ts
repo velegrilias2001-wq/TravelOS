@@ -7,6 +7,10 @@ export interface TripStopLivedStateRepository {
     tripId: TripId,
   ): Promise<TripStopLivedState[]>;
 
+  getByTripIds(
+    tripIds: readonly TripId[],
+  ): Promise<TripStopLivedState[]>;
+
   saveProgress(
     state: TripStopLivedState,
     stop: TripStop,

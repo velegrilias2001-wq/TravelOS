@@ -12,6 +12,7 @@ import {
   deleteTripStopLivedState,
   latestLivedState,
   loadTripStopLivedStates,
+  loadTripStopLivedStatesForTrips,
   upsertLivedRuntimePointer,
   upsertTripStopLivedState,
 } from './stop-lived-persistence-operations';
@@ -45,6 +46,15 @@ export class SQLiteTripStopLivedStateRepository
     return loadTripStopLivedStates(
       this.database,
       tripId,
+    );
+  }
+
+  async getByTripIds(
+    tripIds: readonly TripId[],
+  ): Promise<TripStopLivedState[]> {
+    return loadTripStopLivedStatesForTrips(
+      this.database,
+      tripIds,
     );
   }
 

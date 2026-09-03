@@ -85,6 +85,25 @@ export class TripService {
     return this.repo.trip.getDaysForTrips(tripIds);
   }
 
+  async listWorldPlaceContext(
+    tripIds: readonly TripId[],
+  ): Promise<{
+    days: TripDay[];
+    stops: TripStop[];
+    livedStates: TripStopLivedState[];
+  }> {
+    const [days, stops, livedStates] =
+      await Promise.all([
+        this.repo.trip.getDaysForTrips(tripIds),
+        this.repo.trip.getStopsForTrips(tripIds),
+        this.repo.stopLivedStates.getByTripIds(
+          tripIds,
+        ),
+      ]);
+
+    return { days, stops, livedStates };
+  }
+
   async getTrip(
     id: TripId,
   ): Promise<Trip | null> {

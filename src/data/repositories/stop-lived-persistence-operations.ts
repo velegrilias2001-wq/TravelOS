@@ -32,16 +32,35 @@ export async function loadTripStopLivedStates(
   database: DatabaseConnection,
   tripId: TripId,
 ): Promise<TripStopLivedState[]> {
+  return loadTripStopLivedStatesForTrips(
+    database,
+    [tripId],
+  );
+}
+
+export async function loadTripStopLivedStatesForTrips(
+  database: DatabaseConnection,
+  tripIds: readonly TripId[],
+): Promise<TripStopLivedState[]> {
+  if (tripIds.length === 0) {
+    return [];
+  }
+
+  const placeholders = Array.from(
+    { length: tripIds.length },
+    () => '?',
+  ).join(', ');
   const rows = await database.query<LivedStateRow>(
     `
       SELECT *
       FROM trip_stop_lived_states
-      WHERE trip_id = ?
+      WHERE trip_id IN (${placeholders})
       ORDER BY
+        trip_id ASC,
         recorded_at ASC,
         stop_id ASC;
     `,
-    [tripId],
+    [...tripIds],
   );
 
   return rows.map(mapLivedState);
