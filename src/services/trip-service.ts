@@ -45,6 +45,9 @@ import {
 } from './stop-time';
 import { applyTripDayDestination } from './trip-day-destination';
 import { createStopLivedState } from './stop-lived-progress';
+import {
+  discardOwnedMemoryMedia,
+} from './memory-media';
 
 export interface TripWorkspace {
   trip: Trip;
@@ -335,7 +338,13 @@ export class TripService {
   async deleteTrip(
     id: TripId,
   ): Promise<void> {
+    const memories =
+      await this.repo.memory.getByTripId(id);
+
     await this.repo.trip.delete(id);
+    await discardOwnedMemoryMedia(
+      memories.map((memory) => memory.mediaUri),
+    );
   }
 
   async assignDayDestination(

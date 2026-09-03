@@ -17,6 +17,9 @@ import type {
 import type {
   TripId,
 } from '@/domain/entities/trip';
+import {
+  discardOwnedMemoryMedia,
+} from './memory-media';
 
 export type EditableMemoryType =
   Extract<
@@ -180,6 +183,12 @@ export class MemoryService {
 
     await memoryRepository.save(updated);
 
+    if (existing.mediaUri !== updated.mediaUri) {
+      await discardOwnedMemoryMedia([
+        existing.mediaUri,
+      ]);
+    }
+
     return updated;
   }
 
@@ -203,6 +212,9 @@ export class MemoryService {
     }
 
     await memoryRepository.delete(id);
+    await discardOwnedMemoryMedia([
+      existing.mediaUri,
+    ]);
 
     return existing;
   }

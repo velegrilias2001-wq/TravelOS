@@ -60,6 +60,7 @@
     "src/services/trip-map-context.ts",
     "src/services/offline-trip-context.ts",
     "src/services/world-places.ts",
+    "src/services/memory-media-ownership.ts",
     "src/services/trip-creation.ts",
     "src/services/travel-dna-service.ts",
 

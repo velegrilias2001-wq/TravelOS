@@ -593,47 +593,31 @@ export default function MemoriesScreen() {
               )
             : undefined;
 
-        const saved =
-          editing
-            ? await actions.updateMemory(
-                editing.id,
-                {
-                  dayId,
-                  stopId,
-                  type,
-                  title,
-                  caption,
-                  mediaUri:
-                    nextMediaUri,
-                },
-              )
-            : await actions.createMemory(
-                {
-                  dayId,
-                  stopId,
-                  type,
-                  title,
-                  caption,
-                  mediaUri:
-                    nextMediaUri,
-                },
-              );
-
-        if (
-          editing?.mediaUri &&
-          editing.mediaUri !==
-            saved.mediaUri
-        ) {
-          try {
-            await deleteManagedMemoryMedia(
-              editing.mediaUri,
-            );
-          } catch (error) {
-            console.warn(
-              '[Memories] Old media cleanup failed:',
-              error,
-            );
-          }
+        if (editing) {
+          await actions.updateMemory(
+            editing.id,
+            {
+              dayId,
+              stopId,
+              type,
+              title,
+              caption,
+              mediaUri:
+                nextMediaUri,
+            },
+          );
+        } else {
+          await actions.createMemory(
+            {
+              dayId,
+              stopId,
+              type,
+              title,
+              caption,
+              mediaUri:
+                nextMediaUri,
+            },
+          );
         }
 
         setModalVisible(false);
@@ -683,25 +667,9 @@ export default function MemoriesScreen() {
           onPress:
             async () => {
               try {
-                const deleted =
-                  await actions.deleteMemory(
-                    memory.id,
-                  );
-
-                if (
-                  deleted?.mediaUri
-                ) {
-                  try {
-                    await deleteManagedMemoryMedia(
-                      deleted.mediaUri,
-                    );
-                  } catch (error) {
-                    console.warn(
-                      '[Memories] Media cleanup failed:',
-                      error,
-                    );
-                  }
-                }
+                await actions.deleteMemory(
+                  memory.id,
+                );
               } catch (error) {
                 console.error(
                   '[Memories] Delete failed:',
@@ -725,7 +693,7 @@ export default function MemoriesScreen() {
         <UtilityScreenHeader
           eyebrow={destinationLabel.toUpperCase()}
           title="Memories"
-          subtitle="Keep the small moments that made this journey yours."
+          subtitle="Keep the small moments that made this journey yours. Photo copies stay on this device — there is no backup or export yet."
           leading={(
             <Pressable
               accessibilityRole="button"
@@ -938,7 +906,7 @@ export default function MemoriesScreen() {
             color={colors.brass}
           />
           <Text style={styles.localNoteText}>
-            Memories and their saved photos stay in TravelOS app storage on this device.
+            Photo copies stay in TravelOS on this device and work offline. Gallery originals are left untouched. There is no backup or export yet.
           </Text>
         </View>
 

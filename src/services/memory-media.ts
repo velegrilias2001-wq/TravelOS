@@ -1,14 +1,26 @@
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system/legacy';
 
+import {
+  isOwnedMemoryMediaUri,
+  ownedMemoryMediaPrefix,
+} from './memory-media-ownership';
+
+export {
+  MEMORY_MEDIA_CONTRACT,
+  collectOwnedMemoryUris,
+  collectOwnedMemoryUrisFromRecords,
+  isOwnedMemoryMediaUri,
+  memoryMediaExportRefusal,
+  ownedMemoryMediaPrefix,
+  replacedOwnedMemoryUri,
+} from './memory-media-ownership';
+
 export interface MemoryImageSource {
   uri: string;
   fileName?: string | null;
   mimeType?: string | null;
 }
-
-const MEMORY_DIRECTORY_NAME =
-  'travelos/memories/';
 
 function documentDirectory(): string {
   if (!FileSystem.documentDirectory) {
@@ -21,10 +33,7 @@ function documentDirectory(): string {
 }
 
 function memoryDirectory(): string {
-  return (
-    documentDirectory() +
-    MEMORY_DIRECTORY_NAME
-  );
+  return ownedMemoryMediaPrefix(documentDirectory());
 }
 
 function extensionFromMimeType(
@@ -153,15 +162,9 @@ export async function persistMemoryImage(
 export function isManagedMemoryMedia(
   uri?: string,
 ): boolean {
-  if (
-    !uri ||
-    !FileSystem.documentDirectory
-  ) {
-    return false;
-  }
-
-  return uri.startsWith(
-    memoryDirectory(),
+  return isOwnedMemoryMediaUri(
+    uri,
+    FileSystem.documentDirectory,
   );
 }
 
@@ -181,4 +184,17 @@ export async function deleteManagedMemoryMedia(
       idempotent: true,
     },
   );
+}
+
+export async function discardOwnedMemoryMedia(
+  uris: readonly (string | undefined)[],
+): Promise<void> {
+  for (const uri of uris) {
+    try {
+      await deleteManagedMemoryMedia(uri);
+    } catch {
+      // SQLite is already the source of truth.
+      // A leftover file must not fail the workflow.
+    }
+  }
 }

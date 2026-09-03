@@ -344,7 +344,7 @@ export default function TripDetailsScreen() {
   const deleteTrip = () => {
       Alert.alert(
         `Delete “${trip.title}”?`,
-        'This permanently removes this trip and its related local plan, moments, bookings, stays, budget, expenses, memories and Travel Book content from this device. There is no backup or export yet, so deletion cannot be undone. To keep the trip hidden instead, choose Archived in Status and save.',
+        'This permanently removes this trip and its related local plan, moments, bookings, stays, budget, expenses, memories, Travel Book, and photo copies in app storage from this device. Gallery originals are left untouched. There is no backup or export yet, so deletion cannot be undone. To keep the trip hidden instead, choose Archived in Status and save.',
       [
         {
           text: 'Cancel',

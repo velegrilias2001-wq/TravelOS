@@ -91,7 +91,7 @@ Goal: make TravelOS useful and correct while the traveler is moving.
 
 Exit condition: Companion presents the correct travel context and remains trustworthy during connectivity, timing, and plan changes.
 
-## Phase 3 — Post-trip in progress
+## Phase 3 — Post-trip implemented
 
 Goal: turn completed trips into a meaningful personal history.
 
@@ -100,8 +100,8 @@ Goal: turn completed trips into a meaningful personal history.
 - [x] World V1: native map and destination cards from persisted Trip destinations with real saved coordinates only. Filters use durable `Trip.status` (planning / completed / archived), not the runtime phase resolver, and do not infer visited history from a destination title.
 - [x] **World planned vs lived V1** — World labels and filters destinations as planned or lived from explicit done-stop + Day → Destination IDs. A completed trip is not a visit. Skipped stops and unassigned days do not invent a city. Same names on different trips stay separate. Wishlist is still not World history. Automated tests exist. No device rehearsal.
 - [x] **World archive V1** — lived World places can show memories linked by explicit day or stop IDs, including a saved photo cover when one exists. Memories do not mark a visit. Unlinked memories and planned-city notes stay off World. Wishlist and destination titles are not archive evidence. Automated tests exist. No device rehearsal.
-- [ ] Preserve the difference between the planned itinerary and lived history; per-stop done/skipped marks exist, and `TripRuntimeState` is only a last-lived-stop pointer rather than inferred NOW.
-- [ ] Define remaining media ownership, backup, export, deletion, and offline behavior before expanding Memories beyond on-device photo/note storage.
+- [x] **Preserve planned vs lived** — Plan times are not rewritten by done/skipped marks. Companion lived phase and World planned/lived labels stay separate from the planned itinerary. `TripRuntimeState` is only a last-lived-stop pointer. Plan does not yet show done/skipped badges.
+- [x] **Memory media contract V1** — owned files are app-document copies under `travelos/memories/`. Gallery originals are never deleted. Backup and export are none. Copies remain available offline. Memory replace/delete and trip delete update SQLite first, then best-effort delete owned files. Video authoring remains absent. Automated tests exist. No device rehearsal.
 - [x] Route Memory and Travel Book mutations through TripWorkspace invalidation.
 
 Exit condition: a completed trip becomes a durable, truthful, and user-controlled personal record.
