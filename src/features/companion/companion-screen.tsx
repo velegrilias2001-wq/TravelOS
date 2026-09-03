@@ -57,6 +57,7 @@ import {
   spacing,
 } from '@/theme';
 
+import { useCompanionPlanChangeNotice } from './use-companion-plan-change';
 import { useCompanionRuntimeRefresh } from './use-companion-runtime-refresh';
 
 type CompanionPath =
@@ -142,6 +143,10 @@ export function CompanionScreen() {
   const router = useRouter();
   const { workspace, actions } = useTripWorkspace();
   useTripWorkspaceFocusRefresh();
+  const {
+    notice: planChangeNotice,
+    dismiss: dismissPlanChange,
+  } = useCompanionPlanChangeNotice(workspace);
 
   const initial = useMemo(
     () => selectCompanion(workspace),
@@ -239,6 +244,13 @@ export function CompanionScreen() {
             body="Trip status and travel dates differ. Companion follows your travel dates."
           />
         )}
+        {planChangeNotice ? (
+          <TruthNotice
+            icon="sync-outline"
+            body={planChangeNotice}
+            onDismiss={dismissPlanChange}
+          />
+        ) : null}
       </View>
 
       <PhaseTransition phase={selection.mode}>
@@ -1320,10 +1332,12 @@ function TruthNotice({
   icon,
   body,
   brass = false,
+  onDismiss,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   body: string;
   brass?: boolean;
+  onDismiss?: () => void;
 }) {
   return (
     <View style={[styles.notice, brass && styles.noticeBrass]}>
@@ -1333,6 +1347,20 @@ function TruthNotice({
         color={brass ? colors.brass : colors.teal}
       />
       <Text style={styles.noticeText}>{body}</Text>
+      {onDismiss ? (
+        <Pressable
+          onPress={onDismiss}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss plan update"
+        >
+          <Ionicons
+            name="close"
+            size={16}
+            color={colors.textMuted}
+          />
+        </Pressable>
+      ) : null}
     </View>
   );
 }

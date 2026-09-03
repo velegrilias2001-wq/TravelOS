@@ -85,7 +85,7 @@ Goal: make TravelOS useful and correct while the traveler is moving.
 - [x] **Stop lived phase V1** — explicit done/skipped stop progress without rewriting Plan times. Delayed is derived from the clock. `TripRuntimeState` is written only as a pointer to the last explicit lived stop. Migration version 17. Automated tests exist. No device rehearsal.
 - [x] **Map day framing + directions V1** — Map frames the assigned Day → Destination city and that day’s mapped stops when Companion has a display day. Unassigned days do not borrow another city’s coordinates. View all still fits every saved destination and stop. Directions open Apple Maps or Google Maps on the saved pin only. No route, ETA, or accommodation coordinates. Automated tests exist. No device rehearsal.
 - [ ] Add real route and travel-time providers without invented data.
-- [ ] Support live itinerary changes and make their effect on Companion explicit.
+- [x] **Companion plan-change notice V1** — when saved dates, day city assignment, stops, bookings, or stays change while Companion is already showing that trip, a dismissible notice states that NOW/NEXT follow SQLite. First load, trip switch, done/skipped marks, and clock refresh stay silent. Lived phases are not auto-rewritten. Session-only. Automated tests exist. No device rehearsal.
 - [ ] Cache essential trip, booking, accommodation, and map context for offline use.
 - [ ] Design graceful behavior for stale routes, no network, missing coordinates, and provider failure.
 - [ ] Add useful notifications only after timezone and truth rules are stable.
