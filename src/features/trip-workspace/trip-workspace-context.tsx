@@ -162,6 +162,14 @@ interface TripWorkspaceActions {
   deleteTravelBook(
     travelBookId: TravelBookId,
   ): Promise<void>;
+
+  recordStopLivedPhase(
+    stopId: TripStopId,
+    phase: 'done' | 'skipped',
+  ): Promise<void>;
+  clearStopLivedPhase(
+    stopId: TripStopId,
+  ): Promise<void>;
 }
 
 interface TripWorkspaceContextValue {
@@ -473,6 +481,23 @@ export function TripWorkspaceProvider({
           deleteTravelBook(
             requireWorkspaceTripId(tripId),
             travelBookId,
+          ),
+        ),
+
+      recordStopLivedPhase: (stopId, phase) =>
+        lifecycle.runMutation(() =>
+          tripService.recordStopLivedPhase(
+            requireWorkspaceTripId(tripId),
+            stopId,
+            phase,
+          ),
+        ),
+
+      clearStopLivedPhase: (stopId) =>
+        lifecycle.runMutation(() =>
+          tripService.clearStopLivedPhase(
+            requireWorkspaceTripId(tripId),
+            stopId,
           ),
         ),
     }),

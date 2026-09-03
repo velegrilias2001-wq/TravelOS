@@ -27,3 +27,5 @@ export * from './trip-day';
 export * from './trip-runtime-state';
 
 export * from './trip-stop';
+
+export * from './trip-stop-lived-state';

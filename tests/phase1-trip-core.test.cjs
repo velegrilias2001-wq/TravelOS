@@ -54,7 +54,7 @@ test('migration v16 installs destination provenance, FX rates and traveler roles
       'PRAGMA user_version;',
     );
     assert.equal(version.user_version, DATABASE_VERSION);
-    assert.equal(DATABASE_VERSION, 16);
+    assert.equal(DATABASE_VERSION, 17);
 
     const destinationColumns = await database.query(
       'PRAGMA table_info(trip_destinations);',

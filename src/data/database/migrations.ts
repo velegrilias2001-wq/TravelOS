@@ -9,6 +9,9 @@ import {
   installPhase1TripCore,
 } from './phase1-trip-core-migration';
 import {
+  installStopLivedStates,
+} from './stop-lived-state-migration';
+import {
   reconcileMemoryRelationships,
 } from './memory-integrity-migration';
 import {
@@ -18,7 +21,7 @@ import {
   reconcileStopDayRelationships,
 } from './stop-day-integrity-migration';
 
-export const DATABASE_VERSION = 16;
+export const DATABASE_VERSION = 17;
 
 interface UserVersionRow {
   user_version: number;
@@ -1390,6 +1393,27 @@ export async function migrateDatabase(
 
         await transaction.execAsync(`
           PRAGMA user_version = 16;
+        `);
+      },
+    );
+  }
+
+  /**
+   * Version 17
+   * Persist explicit done/skipped lived-stop phases
+   * without rewriting Plan times. Delayed stays
+   * derived. TripRuntimeState is written only as a
+   * pointer to the last explicit lived stop.
+   */
+  if (currentVersion < 17) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await installStopLivedStates(
+          transaction,
+        );
+
+        await transaction.execAsync(`
+          PRAGMA user_version = 17;
         `);
       },
     );

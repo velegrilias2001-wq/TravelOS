@@ -7,7 +7,9 @@ import type {
 import type {
   TripWorkspace,
 } from './trip-service';
-
+import {
+  livedPhaseByStopId,
+} from './stop-lived-progress';
 import {
   selectTripReadiness,
   type TripReadinessSnapshot,
@@ -43,6 +45,9 @@ export type CompanionMode =
 
 export type CompanionStopPhase =
   | 'previous'
+  | 'delayed'
+  | 'done'
+  | 'skipped'
   | 'current'
   | 'next'
   | 'later'
@@ -145,19 +150,48 @@ function stopContext(
   };
 }
 
+function overlayLivedPhase(
+  workspace: TripWorkspace,
+  stop: TripStop,
+  fallback: CompanionStopPhase,
+): CompanionStopContext {
+  const lived = livedPhaseByStopId(
+    workspace.stopLivedStates,
+  ).get(stop.id);
+
+  if (lived === 'skipped') {
+    return stopContext(workspace, stop, 'skipped');
+  }
+
+  if (lived === 'done') {
+    return stopContext(workspace, stop, 'done');
+  }
+
+  return stopContext(workspace, stop, fallback);
+}
+
 function activeStopContexts(
   workspace: TripWorkspace,
   stops: TripStop[],
   localTime: string | null,
   timingReliable: boolean,
 ): CompanionStopContext[] {
+  const lived = livedPhaseByStopId(
+    workspace.stopLivedStates,
+  );
+  const remaining = stops.filter(
+    (stop) =>
+      lived.get(stop.id) !== 'done' &&
+      lived.get(stop.id) !== 'skipped',
+  );
+
   if (!timingReliable || !localTime) {
     return stops.map((stop) =>
-      stopContext(workspace, stop, 'ordered'),
+      overlayLivedPhase(workspace, stop, 'ordered'),
     );
   }
 
-  const currentCandidates = stops.filter(
+  const currentCandidates = remaining.filter(
     (stop) =>
       Boolean(
         stop.startTime &&
@@ -172,7 +206,7 @@ function activeStopContexts(
     currentCandidates.length === 1
       ? currentCandidates[0].id
       : null;
-  const firstFutureId = stops.find(
+  const firstFutureId = remaining.find(
     (stop) =>
       stop.startTime &&
       isCanonicalLocalTime(stop.startTime) &&
@@ -181,6 +215,16 @@ function activeStopContexts(
   )?.id;
 
   return stops.map((stop) => {
+    const livedPhase = lived.get(stop.id);
+
+    if (livedPhase === 'skipped') {
+      return stopContext(workspace, stop, 'skipped');
+    }
+
+    if (livedPhase === 'done') {
+      return stopContext(workspace, stop, 'done');
+    }
+
     if (
       !stop.startTime ||
       !isCanonicalLocalTime(stop.startTime)
@@ -199,7 +243,7 @@ function activeStopContexts(
     return stopContext(
       workspace,
       stop,
-      stop.startTime < localTime ? 'previous' : 'later',
+      stop.startTime < localTime ? 'delayed' : 'later',
     );
   });
 }
@@ -415,14 +459,16 @@ export function selectCompanion(
           timingReliable,
         )
       : stops.map((stop) =>
-          stopContext(
+          overlayLivedPhase(
             workspace,
             stop,
             mode === 'completed' ? 'history' : 'ordered',
           ),
         );
   const previousStops = stopContexts.filter(
-    (context) => context.phase === 'previous',
+    (context) =>
+      context.phase === 'previous' ||
+      context.phase === 'delayed',
   );
   const currentStop =
     stopContexts.find(

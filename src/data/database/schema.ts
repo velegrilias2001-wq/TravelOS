@@ -572,6 +572,32 @@ CREATE TABLE IF NOT EXISTS trip_runtime_states (
 
 );
 
+CREATE TABLE IF NOT EXISTS trip_stop_lived_states (
+
+  stop_id TEXT PRIMARY KEY NOT NULL,
+
+  trip_id TEXT NOT NULL,
+
+  phase TEXT NOT NULL
+
+    CHECK (phase IN ('done', 'skipped')),
+
+  recorded_at TEXT NOT NULL,
+
+  FOREIGN KEY (trip_id)
+
+    REFERENCES trips(id)
+
+    ON DELETE CASCADE,
+
+  FOREIGN KEY (stop_id)
+
+    REFERENCES trip_stops(id)
+
+    ON DELETE CASCADE
+
+);
+
 CREATE TABLE IF NOT EXISTS memories (
 
   id TEXT PRIMARY KEY NOT NULL,
@@ -737,6 +763,10 @@ ON trip_runtime_states(current_day_id);
 CREATE INDEX IF NOT EXISTS idx_trip_runtime_states_current_stop_id
 
 ON trip_runtime_states(current_stop_id);
+
+CREATE INDEX IF NOT EXISTS idx_trip_stop_lived_states_trip_id
+
+ON trip_stop_lived_states(trip_id);
 
 CREATE TABLE IF NOT EXISTS import_batches (
 

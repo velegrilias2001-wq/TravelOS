@@ -11,6 +11,7 @@ import {
   travelerRepository,
   tripRepository,
   tripRuntimeStateRepository,
+  tripStopLivedStateRepository,
 } from '@/data/repositories';
 
 export const repositories = {
@@ -26,6 +27,7 @@ export const repositories = {
   imports: importRepository,
   savedPlaces: savedPlaceRepository,
   runtimeState: tripRuntimeStateRepository,
+  stopLivedStates: tripStopLivedStateRepository,
 } as const;
 
 export type RepositoryRegistry = typeof repositories;

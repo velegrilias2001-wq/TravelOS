@@ -44,6 +44,7 @@ function makeWorkspace() {
     budget: null,
     fxRates: [],
     runtimeState: null,
+    stopLivedStates: [],
     memories: [],
     travelBook: null,
   };

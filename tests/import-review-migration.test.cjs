@@ -54,8 +54,8 @@ test(
         'PRAGMA user_version;',
       );
 
-      assert.equal(version.user_version, 16);
-      assert.equal(DATABASE_VERSION, 16);
+      assert.equal(version.user_version, 17);
+      assert.equal(DATABASE_VERSION, 17);
 
       const batches = await database.queryFirst(
         `

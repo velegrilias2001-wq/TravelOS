@@ -177,6 +177,7 @@ function makeWorkspace(overrides = {}) {
       updatedAt: TIMESTAMP,
     },
     runtimeState: null,
+    stopLivedStates: [],
     memories: [],
     travelBook: null,
     ...overrides,
@@ -515,5 +516,83 @@ test('stop-boundary scheduling refreshes at the next saved local stop time', () 
       {},
     ]),
     ['09:00', '10:00', '12:00'],
+  );
+});
+
+test('skipped and done lived stops leave the saved plan times and are never NOW', () => {
+  const skipped = selectCompanion(
+    makeWorkspace({
+      stopLivedStates: [
+        {
+          stopId: 'stop-breakfast',
+          tripId: 'trip-companion',
+          phase: 'skipped',
+          recordedAt: TIMESTAMP,
+        },
+      ],
+    }),
+    fixedClock('2026-09-02T00:30:00.000Z'),
+  );
+
+  assert.equal(skipped.currentStop, null);
+  assert.equal(skipped.nextStop.stop.id, 'stop-museum');
+  assert.equal(
+    skipped.stopContexts.find(
+      (context) => context.stop.id === 'stop-breakfast',
+    ).phase,
+    'skipped',
+  );
+  assert.equal(
+    skipped.stopContexts.find(
+      (context) => context.stop.id === 'stop-breakfast',
+    ).stop.startTime,
+    '09:00',
+  );
+  assert.equal(
+    skipped.stopContexts.find(
+      (context) => context.stop.id === 'stop-breakfast',
+    ).stop.endTime,
+    '10:00',
+  );
+
+  const done = selectCompanion(
+    makeWorkspace({
+      stopLivedStates: [
+        {
+          stopId: 'stop-breakfast',
+          tripId: 'trip-companion',
+          phase: 'done',
+          recordedAt: TIMESTAMP,
+        },
+      ],
+    }),
+    fixedClock('2026-09-02T00:30:00.000Z'),
+  );
+
+  assert.equal(done.currentStop, null);
+  assert.equal(done.nextStop.stop.id, 'stop-museum');
+  assert.equal(
+    done.stopContexts.find(
+      (context) => context.stop.id === 'stop-breakfast',
+    ).phase,
+    'done',
+  );
+});
+
+test('a passed timed stop is delayed until the traveler marks it done or skipped', () => {
+  const result = selectCompanion(
+    makeWorkspace(),
+    fixedClock('2026-09-02T01:30:00.000Z'),
+  );
+
+  assert.equal(
+    result.stopContexts.find(
+      (context) => context.stop.id === 'stop-breakfast',
+    ).phase,
+    'delayed',
+  );
+  assert.deepEqual(
+    result.previousStops.map((context) => context.stop.id),
+    ['stop-breakfast'],
   );
 });

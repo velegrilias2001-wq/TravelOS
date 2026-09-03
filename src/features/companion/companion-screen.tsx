@@ -19,6 +19,8 @@ import { Screen } from '@/components/ui/screen';
 import type {
   Accommodation,
   Booking,
+  TripStopId,
+  TripStopLivedPhase,
   TripStopType,
 } from '@/domain/entities';
 import {
@@ -65,6 +67,14 @@ type OpenRoute = (
   params?: Record<string, string>,
 ) => void;
 
+type LivedProgressActions = {
+  record(
+    stopId: TripStopId,
+    phase: TripStopLivedPhase,
+  ): void;
+  clear(stopId: TripStopId): void;
+};
+
 function formatTripDate(date: string): string {
   return formatCalendarDateForDisplay(date, {
     day: 'numeric',
@@ -102,7 +112,7 @@ function stopIcon(
 
 export function CompanionScreen() {
   const router = useRouter();
-  const { workspace } = useTripWorkspace();
+  const { workspace, actions } = useTripWorkspace();
   useTripWorkspaceFocusRefresh();
 
   const initial = useMemo(
@@ -135,6 +145,14 @@ export function CompanionScreen() {
       pathname,
       params: { tripId: workspace.trip.id, ...params },
     });
+  };
+  const livedProgress: LivedProgressActions = {
+    record: (stopId, phase) => {
+      void actions.recordStopLivedPhase(stopId, phase);
+    },
+    clear: (stopId) => {
+      void actions.clearStopLivedPhase(stopId);
+    },
   };
   const destinations = workspace.trip.destinations
     .map((destination) => destination.name.trim())
@@ -202,7 +220,11 @@ export function CompanionScreen() {
             openRoute={openRoute}
           />
         ) : selection.mode === 'active' ? (
-          <Active selection={selection} openRoute={openRoute} />
+          <Active
+            selection={selection}
+            openRoute={openRoute}
+            livedProgress={livedProgress}
+          />
         ) : selection.mode === 'completed' ? (
           <Completed
             selection={selection}
@@ -342,9 +364,11 @@ function FirstDayPreview({
 function Active({
   selection,
   openRoute,
+  livedProgress,
 }: {
   selection: CompanionSelection;
   openRoute: OpenRoute;
+  livedProgress: LivedProgressActions;
 }) {
   if (!selection.displayDay) {
     return (
@@ -391,6 +415,7 @@ function Active({
           label="NOW"
           context={selection.currentStop}
           openRoute={openRoute}
+          livedProgress={livedProgress}
         />
       )}
       {selection.nextStop && (
@@ -398,6 +423,7 @@ function Active({
           label="NEXT"
           context={selection.nextStop}
           openRoute={openRoute}
+          livedProgress={livedProgress}
         />
       )}
       {!selection.timingReliable && selection.stopContexts.length > 0 && (
@@ -412,7 +438,15 @@ function Active({
         selection.stopContexts.length > 0 && (
           <TruthNotice
             icon="checkmark-done-outline"
-            body="No later timed moment is saved today. Moments without a time remain visible without being called current."
+            body={
+              selection.stopContexts.some(
+                (context) =>
+                  context.phase === 'done' ||
+                  context.phase === 'skipped',
+              )
+                ? 'No later timed moment is still open today. Done and skipped marks do not change the saved plan.'
+                : 'No later timed moment is saved today. Moments without a time remain visible without being called current.'
+            }
           />
         )}
 
@@ -445,6 +479,7 @@ function Active({
                     stopId: context.stop.id,
                   })
                 }
+                livedProgress={livedProgress}
               />
             ))}
           </View>
@@ -658,14 +693,83 @@ function Section({
   );
 }
 
+function timelineStopLabel(
+  phase: CompanionStopContext['phase'],
+): string {
+  switch (phase) {
+    case 'current':
+      return 'NOW';
+    case 'next':
+      return 'NEXT';
+    case 'previous':
+      return 'EARLIER';
+    case 'delayed':
+      return 'DELAYED';
+    case 'done':
+      return 'DONE';
+    case 'skipped':
+      return 'SKIPPED';
+    case 'untimed':
+      return 'NO TIME';
+    case 'ordered':
+      return 'PLAN ORDER';
+    case 'history':
+      return 'HISTORY';
+    default:
+      return 'LATER';
+  }
+}
+
+function LivedProgressPills({
+  context,
+  livedProgress,
+}: {
+  context: CompanionStopContext;
+  livedProgress: LivedProgressActions;
+}) {
+  if (
+    context.phase === 'done' ||
+    context.phase === 'skipped'
+  ) {
+    return (
+      <PillAction
+        icon="arrow-undo-outline"
+        label="Undo"
+        onPress={() => livedProgress.clear(context.stop.id)}
+      />
+    );
+  }
+
+  return (
+    <>
+      <PillAction
+        icon="checkmark-outline"
+        label="Done"
+        onPress={() =>
+          livedProgress.record(context.stop.id, 'done')
+        }
+      />
+      <PillAction
+        icon="play-skip-forward-outline"
+        label="Skip"
+        onPress={() =>
+          livedProgress.record(context.stop.id, 'skipped')
+        }
+      />
+    </>
+  );
+}
+
 function FocusStop({
   label,
   context,
   openRoute,
+  livedProgress,
 }: {
   label: 'NOW' | 'NEXT';
   context: CompanionStopContext;
   openRoute: OpenRoute;
+  livedProgress: LivedProgressActions;
 }) {
   const booking = context.bookings[0];
 
@@ -718,6 +822,10 @@ function FocusStop({
         </Pressable>
       )}
       <View style={styles.actionRow}>
+        <LivedProgressPills
+          context={context}
+          livedProgress={livedProgress}
+        />
         <PillAction
           icon="create-outline"
           label="Open in Plan"
@@ -747,60 +855,61 @@ function TimelineStop({
   context,
   last,
   onPress,
+  livedProgress,
 }: {
   context: CompanionStopContext;
   last: boolean;
   onPress: () => void;
+  livedProgress: LivedProgressActions;
 }) {
-  const label =
-    context.phase === 'current'
-      ? 'NOW'
-      : context.phase === 'next'
-        ? 'NEXT'
-        : context.phase === 'previous'
-          ? 'EARLIER'
-          : context.phase === 'untimed'
-            ? 'NO TIME'
-            : context.phase === 'ordered'
-              ? 'PLAN ORDER'
-              : context.phase === 'history'
-                ? 'HISTORY'
-                : 'LATER';
+  const label = timelineStopLabel(context.phase);
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Open ${context.stop.title} in Plan, ${label.toLowerCase()}`}
-      style={styles.timelineRow}
-      onPress={onPress}
-    >
+    <View style={styles.timelineRow}>
       <View style={styles.rail}>
         <View
           style={[
             styles.dot,
             context.phase === 'current' && styles.dotCurrent,
-            context.phase === 'previous' && styles.dotPast,
+            (context.phase === 'previous' ||
+              context.phase === 'delayed' ||
+              context.phase === 'done' ||
+              context.phase === 'skipped') &&
+              styles.dotPast,
           ]}
         />
         {!last && <View style={styles.line} />}
       </View>
-      <View style={styles.timelineCard}>
-        <View style={styles.flex}>
-          <Text style={styles.timelineLabel}>{label}</Text>
-          <Text style={styles.rowTitle}>{context.stop.title}</Text>
-          <Text style={styles.rowMeta}>
-            {context.stop.startTime ? `${context.stop.startTime} · ` : ''}
-            {context.stop.type}
-            {context.bookings.length > 0
-              ? ` · ${context.bookings.length} linked ${context.bookings.length === 1 ? 'booking' : 'bookings'}`
-              : ''}
-          </Text>
+      <View style={styles.flex}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${context.stop.title} in Plan, ${label.toLowerCase()}`}
+          style={styles.timelineCard}
+          onPress={onPress}
+        >
+          <View style={styles.flex}>
+            <Text style={styles.timelineLabel}>{label}</Text>
+            <Text style={styles.rowTitle}>{context.stop.title}</Text>
+            <Text style={styles.rowMeta}>
+              {context.stop.startTime ? `${context.stop.startTime} · ` : ''}
+              {context.stop.type}
+              {context.bookings.length > 0
+                ? ` · ${context.bookings.length} linked ${context.bookings.length === 1 ? 'booking' : 'bookings'}`
+                : ''}
+            </Text>
+          </View>
+          {context.isMapped && (
+            <Ionicons name="location-outline" size={17} color={colors.teal} />
+          )}
+        </Pressable>
+        <View style={styles.timelineLivedActions}>
+          <LivedProgressPills
+            context={context}
+            livedProgress={livedProgress}
+          />
         </View>
-        {context.isMapped && (
-          <Ionicons name="location-outline" size={17} color={colors.teal} />
-        )}
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -1551,6 +1660,14 @@ const styles = StyleSheet.create({
     color: colors.brand,
   },
   timelineRow: { minHeight: 76, flexDirection: 'row' },
+  timelineLivedActions: {
+    marginTop: spacing[2],
+    marginBottom: spacing[3],
+    marginLeft: spacing[2],
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+  },
   rail: { width: 22, alignItems: 'center' },
   dot: {
     width: 9,

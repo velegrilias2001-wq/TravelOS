@@ -16,6 +16,8 @@ import type {
   TripRuntimeState,
   TripStop,
   TripStopId,
+  TripStopLivedPhase,
+  TripStopLivedState,
 } from '@/domain/entities';
 
 import {
@@ -42,6 +44,7 @@ import {
   validateStopTimeUpdate,
 } from './stop-time';
 import { applyTripDayDestination } from './trip-day-destination';
+import { createStopLivedState } from './stop-lived-progress';
 
 export interface TripWorkspace {
   trip: Trip;
@@ -58,6 +61,8 @@ export interface TripWorkspace {
   fxRates: TripFxRate[];
 
   runtimeState: TripRuntimeState | null;
+
+  stopLivedStates: TripStopLivedState[];
 
   memories: Memory[];
 
@@ -107,6 +112,7 @@ export class TripService {
       budget,
       fxRates,
       runtimeState,
+      stopLivedStates,
       memories,
       travelBook,
     ] = await Promise.all([
@@ -118,6 +124,7 @@ export class TripService {
       this.repo.budget.getByTripId(id),
       this.repo.fxRates.getByTripId(id),
       this.repo.runtimeState.getByTripId(id),
+      this.repo.stopLivedStates.getByTripId(id),
       this.repo.memory.getByTripId(id),
       this.repo.travelBook.getByTripId(id),
     ]);
@@ -132,6 +139,7 @@ export class TripService {
       budget,
       fxRates,
       runtimeState,
+      stopLivedStates,
       memories,
       travelBook,
     };
@@ -340,6 +348,51 @@ export class TripService {
     );
 
     await this.repo.trip.saveDay(updated);
+  }
+
+  async recordStopLivedPhase(
+    tripId: TripId,
+    stopId: TripStopId,
+    phase: TripStopLivedPhase,
+  ): Promise<void> {
+    const stop =
+      await this.repo.trip.getStopById(stopId);
+
+    if (!stop) {
+      throw new Error('That stop was not found');
+    }
+
+    const now = new Date().toISOString();
+    const state = createStopLivedState(
+      stop,
+      tripId,
+      phase,
+      now,
+    );
+
+    await this.repo.stopLivedStates.saveProgress(
+      state,
+      stop,
+      now,
+    );
+  }
+
+  async clearStopLivedPhase(
+    tripId: TripId,
+    stopId: TripStopId,
+  ): Promise<void> {
+    const stop =
+      await this.repo.trip.getStopById(stopId);
+
+    if (!stop || stop.tripId !== tripId) {
+      throw new Error('That stop was not found');
+    }
+
+    await this.repo.stopLivedStates.clearProgress(
+      tripId,
+      stopId,
+      new Date().toISOString(),
+    );
   }
 }
 
