@@ -348,6 +348,34 @@ test('missing and ambiguous timezone truth degrades to ordered itinerary context
   );
 });
 
+test('an assigned city timezone can make NOW and NEXT exact', () => {
+  const workspace = makeWorkspace();
+  workspace.trip = {
+    ...workspace.trip,
+    destinations: [
+      { id: 'tokyo', name: 'Tokyo', timezone: 'Asia/Tokyo' },
+      { id: 'paris', name: 'Paris', timezone: 'Europe/Paris' },
+    ],
+  };
+  workspace.days = workspace.days.map((day) =>
+    day.id === 'day-2'
+      ? { ...day, destinationId: 'tokyo' }
+      : day,
+  );
+
+  const result = selectCompanion(
+    workspace,
+    fixedClock('2026-09-02T00:30:00.000Z', 'UTC'),
+  );
+
+  assert.equal(result.timingReliable, true);
+  assert.equal(result.runtime.timeZone.reason, 'assigned-destination');
+  assert.equal(result.runtime.timeZone.timeZone, 'Asia/Tokyo');
+  assert.equal(result.localTime, '09:30');
+  assert.equal(result.currentStop.stop.id, 'stop-breakfast');
+  assert.equal(result.nextStop.stop.id, 'stop-museum');
+});
+
 test('missing current TripDay and an incomplete trip stay explicit and safe', () => {
   const workspace = makeWorkspace();
   workspace.days = workspace.days.filter((day) => day.id !== 'day-2');

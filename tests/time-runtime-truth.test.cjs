@@ -175,6 +175,146 @@ test(
 );
 
 test(
+  'an assigned day city can be the clock when its timezone is known',
+  () => {
+    const trip = makeTrip({
+      destinations: [
+        {
+          id: 'destination-lisbon',
+          name: 'Lisbon',
+          timezone: 'Europe/Lisbon',
+        },
+        {
+          id: 'destination-tokyo',
+          name: 'Tokyo',
+          timezone: 'Asia/Tokyo',
+        },
+      ],
+    });
+    const days = makeDays(trip).map((day, index) =>
+      index === 0
+        ? { ...day, destinationId: 'destination-lisbon' }
+        : day,
+    );
+    const runtime = resolveTripRuntime(
+      trip,
+      days,
+      fixedClock(
+        '2026-08-22T23:30:00.000Z',
+        'America/Los_Angeles',
+      ),
+    );
+
+    assert.equal(runtime.phase, 'active');
+    assert.equal(runtime.currentDate, '2026-08-23');
+    assert.equal(runtime.currentDay.id, 'day-1');
+    assert.equal(runtime.timeZone.source, 'destination');
+    assert.equal(runtime.timeZone.certainty, 'canonical');
+    assert.equal(runtime.timeZone.timeZone, 'Europe/Lisbon');
+    assert.equal(runtime.timeZone.reason, 'assigned-destination');
+
+    const unassigned = resolveTripRuntime(
+      trip,
+      makeDays(trip),
+      fixedClock(
+        '2026-08-22T23:30:00.000Z',
+        'America/Los_Angeles',
+      ),
+    );
+    assert.equal(unassigned.timeZone.source, 'device');
+    assert.equal(
+      unassigned.timeZone.reason,
+      'ambiguous-destination-timezones',
+    );
+    const assignedWithoutZone = resolveTripRuntime(
+      makeTrip({
+        destinations: [
+          { id: 'destination-lisbon', name: 'Lisbon' },
+          {
+            id: 'destination-tokyo',
+            name: 'Tokyo',
+            timezone: 'Asia/Tokyo',
+          },
+        ],
+      }),
+      makeDays(trip).map((day, index) =>
+        index === 0
+          ? { ...day, destinationId: 'destination-lisbon' }
+          : day,
+      ),
+      fixedClock(
+        '2026-08-22T23:30:00.000Z',
+        'America/Los_Angeles',
+      ),
+    );
+    assert.equal(assignedWithoutZone.timeZone.source, 'device');
+    assert.equal(
+      assignedWithoutZone.timeZone.reason,
+      'missing-destination-timezone',
+    );
+    assert.notEqual(
+      assignedWithoutZone.timeZone.timeZone,
+      'Asia/Tokyo',
+    );
+  },
+);
+
+test(
+  'two assigned cities claiming today stay on the device fallback',
+  () => {
+    const trip = makeTrip({
+      startDate: '2026-09-02',
+      endDate: '2026-09-03',
+      destinations: [
+        {
+          id: 'destination-la',
+          name: 'Los Angeles',
+          timezone: 'America/Los_Angeles',
+        },
+        {
+          id: 'destination-tokyo',
+          name: 'Tokyo',
+          timezone: 'Asia/Tokyo',
+        },
+      ],
+    });
+    const days = [
+      {
+        id: 'day-1',
+        tripId: trip.id,
+        date: '2026-09-02',
+        dayNumber: 1,
+        destinationId: 'destination-la',
+        createdAt: TIMESTAMP,
+        updatedAt: TIMESTAMP,
+      },
+      {
+        id: 'day-2',
+        tripId: trip.id,
+        date: '2026-09-03',
+        dayNumber: 2,
+        destinationId: 'destination-tokyo',
+        createdAt: TIMESTAMP,
+        updatedAt: TIMESTAMP,
+      },
+    ];
+    const runtime = resolveTripRuntime(
+      trip,
+      days,
+      fixedClock('2026-09-03T06:30:00.000Z', 'UTC'),
+    );
+
+    assert.equal(runtime.timeZone.source, 'device');
+    assert.equal(
+      runtime.timeZone.reason,
+      'ambiguous-destination-timezones',
+    );
+    assert.equal(runtime.currentDate, '2026-09-03');
+    assert.equal(runtime.currentDay.id, 'day-2');
+  },
+);
+
+test(
   'runtime phase and exact day are deterministic at timezone boundaries',
   () => {
     const trip = makeTrip();

@@ -389,7 +389,7 @@ function Active({
       {!selection.timingReliable && selection.stopContexts.length > 0 && (
         <TruthNotice
           icon="reorder-three-outline"
-          body="Live now and next timing isn’t available yet. Today’s itinerary remains in plan order."
+          body="Live now and next timing needs a saved timezone for today’s city. Today’s itinerary remains in plan order."
         />
       )}
       {selection.timingReliable &&

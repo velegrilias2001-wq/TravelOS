@@ -4,6 +4,7 @@ import type {
   TripDestination,
   TripStatus,
 } from '@/domain/entities';
+import { tripDayDestination } from './trip-day-destination';
 
 const CALENDAR_DATE_PATTERN =
   /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -342,6 +343,7 @@ export function isValidIanaTimeZone(
 export type TripTimeZoneReason =
   | 'single-destination'
   | 'shared-destination-timezone'
+  | 'assigned-destination'
   | 'no-destination'
   | 'missing-destination-timezone'
   | 'invalid-destination-timezone'
@@ -437,6 +439,95 @@ export function resolveTripTimeZone(
         ? 'single-destination'
         : 'shared-destination-timezone',
   };
+}
+
+export function resolveAssignedDayTimeZone(
+  day: TripDay | null | undefined,
+  destinations: readonly TripDestination[],
+): TripTimeZoneResolution | null {
+  if (!day) {
+    return null;
+  }
+
+  const destination = tripDayDestination(
+    day,
+    destinations,
+  );
+  const timeZone = destination?.timezone?.trim();
+
+  if (!timeZone) {
+    return null;
+  }
+
+  if (!isValidIanaTimeZone(timeZone)) {
+    return null;
+  }
+
+  return {
+    source: 'destination',
+    certainty: 'canonical',
+    timeZone,
+    reason: 'assigned-destination',
+  };
+}
+
+function canonicalDaysInTripRange(
+  trip: Trip,
+  days: TripDay[],
+): TripDay[] {
+  if (
+    !isCanonicalDateKey(trip.startDate) ||
+    !isCanonicalDateKey(trip.endDate) ||
+    trip.startDate > trip.endDate
+  ) {
+    return [];
+  }
+
+  return days.filter(
+    (day) =>
+      day.tripId === trip.id &&
+      isCanonicalDateKey(day.date) &&
+      day.date >= trip.startDate &&
+      day.date <= trip.endDate,
+  );
+}
+
+function assignedDayClockMatches(
+  trip: Trip,
+  days: TripDay[],
+  instant: Date,
+): Array<{
+  day: TripDay;
+  timeZone: TripTimeZoneResolution;
+  localDate: string;
+}> {
+  const matches: Array<{
+    day: TripDay;
+    timeZone: TripTimeZoneResolution;
+    localDate: string;
+  }> = [];
+
+  for (const day of canonicalDaysInTripRange(trip, days)) {
+    const timeZone = resolveAssignedDayTimeZone(
+      day,
+      trip.destinations,
+    );
+
+    if (!timeZone?.timeZone) {
+      continue;
+    }
+
+    const localDate = dateAtInstantInTimeZone(
+      instant,
+      timeZone.timeZone,
+    );
+
+    if (localDate === day.date) {
+      matches.push({ day, timeZone, localDate });
+    }
+  }
+
+  return matches;
 }
 
 function dateAtInstantInTimeZone(
@@ -536,14 +627,25 @@ export function resolveTripRuntime(
   days: TripDay[],
   clock: RuntimeClock = systemRuntimeClock,
 ): TripRuntimeResolution {
-  const timeZone = resolveTripTimeZone(
+  const tripTimeZone = resolveTripTimeZone(
     trip.destinations,
     clock.deviceTimeZone(),
   );
-  const currentDate = calendarDateAtInstant(
-    clock.now(),
-    timeZone,
+  const instant = clock.now();
+  const assignedMatches = assignedDayClockMatches(
+    trip,
+    days,
+    instant,
   );
+  const uniqueAssignedMatch =
+    assignedMatches.length === 1
+      ? assignedMatches[0]
+      : null;
+  const timeZone =
+    uniqueAssignedMatch?.timeZone ?? tripTimeZone;
+  const currentDate =
+    uniqueAssignedMatch?.localDate ??
+    calendarDateAtInstant(instant, timeZone);
 
   let phase: DerivedTripRuntimePhase = 'unknown';
 
@@ -562,11 +664,13 @@ export function resolveTripRuntime(
 
   const currentDay =
     phase === 'active'
-      ? days.find(
+      ? uniqueAssignedMatch?.day ??
+        days.find(
           (day) =>
             day.tripId === trip.id &&
             day.date === currentDate,
-        ) ?? null
+        ) ??
+        null
       : null;
 
   return {

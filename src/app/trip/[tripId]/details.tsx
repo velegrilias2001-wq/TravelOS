@@ -812,7 +812,7 @@ export default function TripDetailsScreen() {
 
           {destinations.length > 1 ? (
             <Text style={styles.destinationFootnote}>
-              Each city can keep its own timezone when a catalogue, map provider, or you supply one. TravelOS will not guess a timezone from coordinates or destination order. Companion uses a shared trip timezone only when every city agrees.
+              Each city can keep its own timezone when a catalogue, map provider, or you supply one. TravelOS will not guess a timezone from coordinates or destination order. Companion uses that city’s timezone for today when the day is assigned and exactly one city is locally today.
             </Text>
           ) : null}
         </View>
