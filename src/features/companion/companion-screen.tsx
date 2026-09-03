@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Linking from 'expo-linking';
 import {
   useEffect,
   useMemo,
@@ -9,6 +10,7 @@ import {
 import {
   AccessibilityInfo,
   Animated,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -39,6 +41,10 @@ import {
   type CompanionStopContext,
 } from '@/services/companion';
 import { companionStopBoundaryTimes } from '@/services/companion-refresh';
+import {
+  mappedStopCoordinate,
+  systemDirectionsUrl,
+} from '@/services/trip-map-context';
 import { formatCalendarDateForDisplay } from '@/services/time-truth';
 import { companionActivePlaceLabel } from '@/services/trip-day-destination';
 import {
@@ -74,6 +80,28 @@ type LivedProgressActions = {
   ): void;
   clear(stopId: TripStopId): void;
 };
+
+function openStopDirections(
+  context: CompanionStopContext,
+): void {
+  const coordinate = mappedStopCoordinate(context.stop);
+
+  if (!coordinate) {
+    return;
+  }
+
+  const url = systemDirectionsUrl(
+    coordinate,
+    context.stop.title,
+    Platform.OS,
+  );
+
+  if (!url) {
+    return;
+  }
+
+  void Linking.openURL(url);
+}
 
 function formatTripDate(date: string): string {
   return formatCalendarDateForDisplay(date, {
@@ -844,6 +872,13 @@ function FocusStop({
                 stopId: context.stop.id,
               })
             }
+          />
+        )}
+        {context.isMapped && (
+          <PillAction
+            icon="navigate-outline"
+            label="Directions"
+            onPress={() => openStopDirections(context)}
           />
         )}
       </View>

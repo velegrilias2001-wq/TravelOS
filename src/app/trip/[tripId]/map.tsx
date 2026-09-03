@@ -15,11 +15,14 @@ import {
 
 import {
   Pressable,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+
+import * as Linking from 'expo-linking';
 
 import MapView, {
   Marker,
@@ -48,8 +51,14 @@ import {
 } from '@/services/accommodation-details';
 import {
   mappedDestinations,
-  tripDestinationLabel,
 } from '@/services/destination-authoring';
+import {
+  selectCompanion,
+} from '@/services/companion';
+import {
+  selectTripMapFrame,
+  systemDirectionsUrl,
+} from '@/services/trip-map-context';
 
 import {
   colors,
@@ -83,7 +92,10 @@ export default function TripMapScreen() {
     ? routeParams.stopId[0]
     : routeParams.stopId;
   const handledStopId = useRef<string | null>(null);
-  const [mapReady, setMapReady] = useState(false);
+  const [mapReady, setMapReady] =
+    useState(false);
+  const [viewAll, setViewAll] =
+    useState(false);
   const [focusedStopId, setFocusedStopId] =
     useState<string | null>(null);
   const { workspace } =
@@ -162,29 +174,77 @@ export default function TripMapScreen() {
     [workspace.trip.destinations],
   );
 
-  const allCoordinates =
-    useMemo<LatLng[]>(
-      () => {
-        return [
-          ...destinationPoints.map(
-            (item) => item.coordinate,
-          ),
-          ...mappedStops.map(
-            (item) => item.coordinate,
-          ),
-        ];
-      },
-      [
-        destinationPoints,
-        mappedStops,
-      ],
-    );
+  const companion = useMemo(
+    () => selectCompanion(workspace),
+    [workspace],
+  );
+
+  const dayFrame = useMemo(
+    () =>
+      selectTripMapFrame(workspace, {
+        displayDay: companion.displayDay,
+        viewAll: false,
+        mode: companion.mode,
+      }),
+    [companion.displayDay, companion.mode, workspace],
+  );
+
+  const mapFrame = useMemo(
+    () =>
+      viewAll
+        ? selectTripMapFrame(workspace, {
+            displayDay: companion.displayDay,
+            viewAll: true,
+            mode: companion.mode,
+          })
+        : dayFrame,
+    [
+      companion.displayDay,
+      companion.mode,
+      dayFrame,
+      viewAll,
+      workspace,
+    ],
+  );
+
+  const canToggleDayFrame =
+    dayFrame.kind === 'display-day' ||
+    dayFrame.kind === 'assigned-destination';
+
+  const visibleStops = useMemo(
+    () => {
+      if (
+        viewAll ||
+        !companion.displayDay
+      ) {
+        return mappedStops;
+      }
+
+      const todays = mappedStops.filter(
+        (item) =>
+          item.stop.dayId ===
+          companion.displayDay?.id,
+      );
+
+      return todays.length > 0
+        ? todays
+        : mappedStops;
+    },
+    [
+      companion.displayDay,
+      mappedStops,
+      viewAll,
+    ],
+  );
+
+  const frameCoordinates =
+    mapFrame.coordinates;
 
   const initialRegion =
     useMemo<Region>(
       () => {
         const first =
-          allCoordinates[0];
+          frameCoordinates[0];
 
         if (!first) {
           return WORLD_REGION;
@@ -200,26 +260,26 @@ export default function TripMapScreen() {
             0.15,
         };
       },
-      [allCoordinates],
+      [frameCoordinates],
     );
 
   const fitMap =
     useCallback(() => {
       if (
         !mapRef.current ||
-        allCoordinates.length ===
+        frameCoordinates.length ===
           0
       ) {
         return;
       }
 
       if (
-        allCoordinates.length ===
+        frameCoordinates.length ===
         1
       ) {
         mapRef.current.animateToRegion(
           {
-            ...allCoordinates[0],
+            ...frameCoordinates[0],
 
             latitudeDelta:
               0.08,
@@ -234,7 +294,7 @@ export default function TripMapScreen() {
       }
 
       mapRef.current.fitToCoordinates(
-        allCoordinates,
+        frameCoordinates,
         {
           animated: true,
 
@@ -246,7 +306,24 @@ export default function TripMapScreen() {
           },
         },
       );
-    }, [allCoordinates]);
+    }, [frameCoordinates]);
+
+  const openDirections = useCallback(
+    (item: MappedStop) => {
+      const url = systemDirectionsUrl(
+        item.coordinate,
+        item.stop.title,
+        Platform.OS,
+      );
+
+      if (!url) {
+        return;
+      }
+
+      void Linking.openURL(url);
+    },
+    [],
+  );
 
   const focusStop = useCallback((item: MappedStop) => {
     setFocusedStopId(item.stop.id);
@@ -299,9 +376,7 @@ export default function TripMapScreen() {
   ]);
 
   const destinationName =
-    tripDestinationLabel(
-      workspace.trip.destinations,
-    );
+    mapFrame.title;
 
   return (
     <View style={styles.screen}>
@@ -403,7 +478,7 @@ export default function TripMapScreen() {
                 styles.eyebrow
               }
             >
-              TRIP MAP
+              {mapFrame.eyebrow}
             </Text>
 
             <Text
@@ -534,7 +609,9 @@ export default function TripMapScreen() {
                     styles.summaryLabel
                   }
                 >
-                  ON YOUR MAP
+                  {mapFrame.kind === 'all-mapped'
+                    ? 'ON YOUR MAP'
+                    : 'IN THIS FRAME'}
                 </Text>
 
                 <Text
@@ -543,9 +620,9 @@ export default function TripMapScreen() {
                   }
                 >
                   {
-                    mappedStops.length
+                    visibleStops.length
                   }{' '}
-                  {mappedStops.length ===
+                  {visibleStops.length ===
                   1
                     ? 'place'
                     : 'places'}
@@ -556,16 +633,28 @@ export default function TripMapScreen() {
                 style={
                   styles.summaryFit
                 }
-                onPress={
-                  fitMap
-                }
+                onPress={() => {
+                  if (canToggleDayFrame) {
+                    setViewAll(
+                      (current) =>
+                        !current,
+                    );
+                    return;
+                  }
+
+                  fitMap();
+                }}
               >
                 <Text
                   style={
                     styles.summaryFitText
                   }
                 >
-                  View all
+                  {canToggleDayFrame
+                    ? viewAll
+                      ? 'Today'
+                      : 'View all'
+                    : 'View all'}
                 </Text>
               </Pressable>
             </View>
@@ -579,7 +668,7 @@ export default function TripMapScreen() {
                 styles.stopScroll
               }
             >
-              {mappedStops.map(
+              {visibleStops.map(
                 (item) => (
                   <Pressable
                     key={
@@ -683,6 +772,24 @@ export default function TripMapScreen() {
                         </Text>
                       </View>
                     )}
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open directions to ${item.stop.title}`}
+                      hitSlop={8}
+                      onPress={() =>
+                        openDirections(item)
+                      }
+                      style={styles.bookingRow}
+                    >
+                      <Ionicons
+                        name="navigate-outline"
+                        size={13}
+                        color={colors.teal}
+                      />
+                      <Text style={styles.directionsText}>
+                        Directions
+                      </Text>
+                    </Pressable>
                   </Pressable>
                 ),
               )}
@@ -1099,5 +1206,13 @@ const styles =
         fontSize.micro,
       color:
         colors.brass,
+    },
+    directionsText: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize:
+        fontSize.micro,
+      color:
+        colors.teal,
     },
   });

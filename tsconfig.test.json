@@ -56,6 +56,7 @@
     "src/services/companion.ts",
     "src/services/companion-refresh.ts",
     "src/services/stop-lived-progress.ts",
+    "src/services/trip-map-context.ts",
     "src/services/trip-creation.ts",
     "src/services/travel-dna-service.ts",
 

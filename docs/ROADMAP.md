@@ -83,7 +83,8 @@ Goal: make TravelOS useful and correct while the traveler is moving.
 - [x] **Home day clock V1** — Home featured-trip phase uses the same assigned-city clock as Companion. TripDays load in one batched query and are not stored in Zustand. Missing days degrade to trip-level timezone. An active featured trip shows today’s assigned city when one exists. Automated tests exist. No device rehearsal.
 - [ ] Add secure reliable destination-timezone enrichment from the location picker or a restricted Time Zone API. Destinations may already store an IANA timezone from a provider result, catalogue, or traveler; the installed picker still does not return one.
 - [x] **Stop lived phase V1** — explicit done/skipped stop progress without rewriting Plan times. Delayed is derived from the clock. `TripRuntimeState` is written only as a pointer to the last explicit lived stop. Migration version 17. Automated tests exist. No device rehearsal.
-- [ ] Add smarter map framing, real route and travel-time providers, and navigation handoff without invented data.
+- [x] **Map day framing + directions V1** — Map frames the assigned Day → Destination city and that day’s mapped stops when Companion has a display day. Unassigned days do not borrow another city’s coordinates. View all still fits every saved destination and stop. Directions open Apple Maps or Google Maps on the saved pin only. No route, ETA, or accommodation coordinates. Automated tests exist. No device rehearsal.
+- [ ] Add real route and travel-time providers without invented data.
 - [ ] Support live itinerary changes and make their effect on Companion explicit.
 - [ ] Cache essential trip, booking, accommodation, and map context for offline use.
 - [ ] Design graceful behavior for stale routes, no network, missing coordinates, and provider failure.
