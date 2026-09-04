@@ -105,6 +105,6 @@ export function memoryMediaExportRefusal(): {
   return {
     available: false,
     reason:
-      'TravelOS does not export or back up memory photos yet. Copies stay on this device and remain available offline.',
+      'TravelOS does not export or back up memory photo files yet. Structured trip JSON export is separate and still omits photo bytes. Copies stay on this device and remain available offline.',
   };
 }

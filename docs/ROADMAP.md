@@ -183,10 +183,12 @@ Exit condition: core flows feel calm, specific, responsive, accessible, and inte
 
 Goal: make user data durable across devices and operate TravelOS as a released product.
 
+- [x] Local data export V1: Profile can write a versioned JSON backup of trips, Travel DNA, saved places, and related canonical facts without mutating SQLite. Photo bytes are omitted; restore and cloud sync remain later. `expo-sharing` 57 is used when available.
+- [x] EAS build profiles V1: committed `eas.json` with development / preview / production. `eas init` / project ID still required before cloud builds.
 - Define accounts, identity, guest conversion, shared-trip permissions, and data ownership.
 - Design backend sync and conflict resolution around SQLite-backed canonical IDs.
-- Add backup, restore, and user-controlled export before relying on cloud-only recovery.
-- Add EAS build profiles, credentials policy, versioning, and environment management.
+- Add restore after local export before relying on cloud-only recovery.
+- Add credentials policy, versioning discipline, and environment management beyond the committed EAS profiles.
 - Complete iOS bundle, maps, permissions, device testing, TestFlight, and App Store readiness.
 - Complete Android signing, API-key restrictions, device testing, Play testing tracks, and Play Store readiness.
 - Add notifications after platform permission, timezone, and Companion rules are complete.

@@ -13,7 +13,7 @@ module.exports = ({ config }) => {
 
     plugins: [
       ...(config.plugins ?? []),
-
+      'expo-sharing',
       [
         'react-native-maps',
         {

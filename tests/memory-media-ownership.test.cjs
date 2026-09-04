@@ -146,6 +146,6 @@ test('memory media contract refuses backup, export, and video authoring', () => 
   const refusal = memoryMediaExportRefusal();
 
   assert.equal(refusal.available, false);
-  assert.match(refusal.reason, /does not export or back up/i);
+  assert.match(refusal.reason, /does not export or back up memory photo/i);
   assert.match(refusal.reason, /this device/i);
 });

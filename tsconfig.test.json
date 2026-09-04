@@ -51,6 +51,7 @@
     "src/services/stop-time.ts",
     "src/services/itinerary-flexibility.ts",
     "src/services/locale-format.ts",
+    "src/services/local-data-export.ts",
     "src/services/time-truth.ts",
     "src/services/home-runtime.ts",
     "src/services/destination-authoring.ts",

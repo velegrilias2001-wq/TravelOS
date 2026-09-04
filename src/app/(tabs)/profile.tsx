@@ -1,16 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import {
+  Alert,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import * as Sharing from 'expo-sharing';
 
 import { Screen } from '@/components/ui/screen';
 import {
   hasRealDestinationCoordinates,
 } from '@/services/destination-authoring';
+import { createLocalDataExportFile } from '@/services/local-data-export-runtime';
 import { useTripStore } from '@/store/trip-store';
 import {
   colors,
@@ -25,6 +29,8 @@ export default function ProfileScreen() {
   const trips = useTripStore(
     (state) => state.trips,
   );
+  const [isExporting, setIsExporting] =
+    useState(false);
 
   const completedTrips = trips.filter(
     (trip) => trip.status === 'completed',
@@ -38,6 +44,45 @@ export default function ProfileScreen() {
       ).length,
     0,
   );
+
+  const exportLocalBackup = () => {
+    if (isExporting) {
+      return;
+    }
+
+    void (async () => {
+      setIsExporting(true);
+
+      try {
+        const { path, document } =
+          await createLocalDataExportFile();
+        const canShare = await Sharing.isAvailableAsync();
+
+        if (!canShare) {
+          Alert.alert(
+            'Export saved on this device',
+            `Wrote ${document.trips.length} trip${document.trips.length === 1 ? '' : 's'} to a local JSON file. Sharing is unavailable on this platform.`,
+          );
+          return;
+        }
+
+        await Sharing.shareAsync(path, {
+          mimeType: 'application/json',
+          dialogTitle: 'Export TravelOS local backup',
+          UTI: 'public.json',
+        });
+      } catch (error) {
+        Alert.alert(
+          'Export could not finish',
+          error instanceof Error
+            ? error.message
+            : 'Something went wrong while preparing the backup.',
+        );
+      } finally {
+        setIsExporting(false);
+      }
+    })();
+  };
 
   return (
     <Screen scroll>
@@ -143,6 +188,19 @@ export default function ProfileScreen() {
 
         <View style={styles.rowDivider} />
 
+        <ActiveRow
+          icon="download-outline"
+          title={
+            isExporting
+              ? 'Preparing export…'
+              : 'Export local backup'
+          }
+          body="Save a JSON copy of your trips, Travel DNA, and related facts from this device. Photo files are not included. Restore is not available yet."
+          onPress={exportLocalBackup}
+        />
+
+        <View style={styles.rowDivider} />
+
         <FutureRow
           icon="notifications-outline"
           title="Trip notifications"
@@ -183,7 +241,7 @@ export default function ProfileScreen() {
           </Text>
 
           <Text style={styles.privacyBody}>
-            Travel data is currently stored on this device. Cloud backup and account sync will be added as explicit options later.
+            Travel data is stored on this device. You can export a local JSON backup from Profile. Cloud sync and photo-file backup remain later, explicit options.
           </Text>
         </View>
       </View>
