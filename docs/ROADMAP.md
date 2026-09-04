@@ -152,9 +152,7 @@ These steps are ordered. Grounded destination data must exist before semantic re
 - [x] **Import and AI confirmation gates** — AI-assisted extraction is not implemented. Import claims still require explicit review before a booking is written. Plan ideas and Discover explanations cannot become stops or destinations on their own.
 - [x] **No silent canonical facts** — Discover, import claims, and AI suggestions remain visibly separate from trip truth until the traveler confirms through the existing Create Trip, import-accept, or stop-editor paths.
 - [x] **Local-dev AI boundary V1** — production provider is none. The native client uses a loopback AI URL only; a cloud host in `EXPO_PUBLIC_TRAVELOS_AI_URL` is ignored. No cloud retention, no billed cost, unreachable AI degrades, and advice cannot write SQLite. Automated tests exist. No device rehearsal.
-- [x] **Import and AI confirmation gates** — AI-assisted extraction is not implemented. Import claims still require explicit review before a booking is written. Plan ideas and Discover explanations cannot become stops or destinations on their own.
-- [x] **No silent canonical facts** — Discover, import claims, and AI suggestions remain visibly separate from trip truth until the traveler confirms through the existing Create Trip, import-accept, or stop-editor paths.
-- [x] **Local-dev AI boundary V1** — production provider is none. The native client uses a loopback AI URL only; a cloud host in `EXPO_PUBLIC_TRAVELOS_AI_URL` is ignored. No cloud retention, no billed cost, unreachable AI degrades, and advice cannot write SQLite. Automated tests exist. No device rehearsal.
+- [x] **Local-dev AI provider abstraction V1** — `server/ai-provider.js` + env model IDs, copilot prompt file, tool registry (available vs not_configured), feature flags. Existing free-time / retrieve / explain routes unchanged for the app. No HF production token in the client, no chat UI, no Whisper/vision, no Discover rerank adoption.
 
 Exit condition: discovery and import reduce planning effort while every unconfirmed claim remains visibly separate from trip truth.
 

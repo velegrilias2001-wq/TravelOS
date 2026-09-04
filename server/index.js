@@ -7,9 +7,18 @@ const {
 } = require('zod');
 
 const {
-  chatWithOllama,
-  embedWithOllama,
-} = require('./ollama-provider');
+  AiProviderError,
+  createAiProvider,
+} = require('./ai-provider');
+
+const {
+  getConfiguredAiTools,
+  listAiTools,
+} = require('./ai-tools-registry');
+
+const {
+  TRAVELOS_COPILOT_SYSTEM_PROMPT,
+} = require('./prompts/travelos-copilot');
 
 const {
   buildFreeTimeAdvisorPrompt,
@@ -29,6 +38,8 @@ const {
   parseDiscoverExplainRequest,
   parseDiscoverExplainResponse,
 } = require('./discover-explain');
+
+const ai = createAiProvider();
 
 let discoverEmbeddings = null;
 
@@ -57,13 +68,22 @@ app.get('/health', (_req, res) => {
   res.json({
     ok: true,
     service: 'travelos-ai',
+    ai: ai.describe(),
+  });
+});
+
+app.get('/ai/tools', (_req, res) => {
+  res.json({
+    ok: true,
+    configured: getConfiguredAiTools(),
+    all: listAiTools(),
   });
 });
 
 app.get('/ai/health', async (_req, res) => {
   try {
     const result =
-      await chatWithOllama({
+      await ai.chat({
         messages: [
           {
             role: 'user',
@@ -78,13 +98,18 @@ app.get('/ai/health', async (_req, res) => {
       provider: result.provider,
       model: result.model,
       response: result.content,
+      config: ai.describe(),
     });
   } catch (error) {
     console.error(error);
 
     res.status(503).json({
       ok: false,
-      error: 'ai_provider_unavailable',
+      error:
+        error instanceof AiProviderError
+          ? error.code
+          : 'ai_provider_unavailable',
+      config: ai.describe(),
     });
   }
 });
@@ -102,12 +127,12 @@ app.post(
         );
 
       const result =
-        await chatWithOllama({
+        await ai.chat({
           messages: [
             {
               role: 'system',
               content:
-                'Follow TravelOS truth rules exactly. Return only the requested structured output.',
+                TRAVELOS_COPILOT_SYSTEM_PROMPT,
             },
             {
               role: 'user',
@@ -187,7 +212,9 @@ app.post(
         message ===
           'AI returned invalid JSON' ||
         message ===
-          'AI suggestion exceeds the verified free-time gap'
+          'AI suggestion exceeds the verified free-time gap' ||
+        (error instanceof AiProviderError &&
+          error.code === 'invalid_ai_response')
       ) {
         console.error(error);
 
@@ -207,7 +234,9 @@ app.post(
         .json({
           ok: false,
           error:
-            'ai_provider_unavailable',
+            error instanceof AiProviderError
+              ? error.code
+              : 'ai_provider_unavailable',
         });
     }
   },
@@ -217,6 +246,18 @@ app.post(
   '/ai/discover-retrieve',
   async (req, res) => {
     try {
+      if (
+        !ai.config.semanticSearchEnabled
+      ) {
+        return res
+          .status(503)
+          .json({
+            ok: false,
+            error:
+              'embeddings_unavailable',
+          });
+      }
+
       if (!discoverEmbeddings) {
         return res
           .status(503)
@@ -246,7 +287,7 @@ app.post(
       }
 
       const embedded =
-        await embedWithOllama({
+        await ai.embed({
           input: request.query,
           model:
             discoverEmbeddings.model,
@@ -290,7 +331,9 @@ app.post(
         message ===
           'Query embedding dimension mismatch' ||
         message ===
-          'Cannot normalize an empty embedding vector'
+          'Cannot normalize an empty embedding vector' ||
+        (error instanceof AiProviderError &&
+          error.code === 'invalid_ai_response')
       ) {
         console.error(error);
 
@@ -310,7 +353,9 @@ app.post(
         .json({
           ok: false,
           error:
-            'ai_provider_unavailable',
+            error instanceof AiProviderError
+              ? error.code
+              : 'ai_provider_unavailable',
         });
     }
   },
@@ -326,12 +371,12 @@ app.post(
         );
 
       const result =
-        await chatWithOllama({
+        await ai.chat({
           messages: [
             {
               role: 'system',
               content:
-                'Follow TravelOS truth rules exactly. Return only the requested structured output.',
+                TRAVELOS_COPILOT_SYSTEM_PROMPT,
             },
             {
               role: 'user',
@@ -385,7 +430,9 @@ app.post(
         message ===
           'AI explanation invented unsupported facts' ||
         message ===
-          'AI explanation mentioned another destination'
+          'AI explanation mentioned another destination' ||
+        (error instanceof AiProviderError &&
+          error.code === 'invalid_ai_response')
       ) {
         console.error(error);
 
@@ -405,7 +452,9 @@ app.post(
         .json({
           ok: false,
           error:
-            'ai_provider_unavailable',
+            error instanceof AiProviderError
+              ? error.code
+              : 'ai_provider_unavailable',
         });
     }
   },

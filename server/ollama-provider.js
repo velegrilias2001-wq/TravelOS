@@ -40,6 +40,7 @@ async function chatWithOllama({
   messages,
   model = DEFAULT_MODEL,
   format,
+  baseUrl = DEFAULT_BASE_URL,
 }) {
   const requestBody = {
     model,
@@ -53,7 +54,7 @@ async function chatWithOllama({
   }
 
   const response = await fetch(
-    `${DEFAULT_BASE_URL}/api/chat`,
+    `${baseUrl}/api/chat`,
     {
       method: 'POST',
       headers: {
@@ -96,6 +97,7 @@ async function chatWithOllama({
 async function embedWithOllama({
   input,
   model = DEFAULT_EMBED_MODEL,
+  baseUrl = DEFAULT_BASE_URL,
 }) {
   const inputs = Array.isArray(input)
     ? input
@@ -115,7 +117,7 @@ async function embedWithOllama({
   }
 
   const response = await fetch(
-    `${DEFAULT_BASE_URL}/api/embed`,
+    `${baseUrl}/api/embed`,
     {
       method: 'POST',
       headers: {
@@ -162,7 +164,7 @@ async function embedWithOllama({
 
   for (const value of inputs) {
     const legacy = await fetch(
-      `${DEFAULT_BASE_URL}/api/embeddings`,
+      `${baseUrl}/api/embeddings`,
       {
         method: 'POST',
         headers: {
