@@ -183,8 +183,9 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 
 - [x] Local data export V1: Profile can write a versioned JSON backup of trips, Travel DNA, saved places, and related canonical facts without mutating SQLite. Photo bytes are omitted; cloud sync remains later. `expo-sharing` 57 is used when available.
 - [x] Local data restore V1: Profile can pick a `travelos.local-export.v1` JSON backup, confirm a destructive replace, and atomically wipe+reload canonical local tables while preserving exported IDs. Photo bytes are not restored; import review queues are cleared (not in the export contract). Automated parse and round-trip persistence tests exist.
-- [x] EAS build profiles V1: committed `eas.json` with development / preview / production. Production uses `autoIncrement: versionCode`. `eas init` / Expo login still required before cloud builds.
-- [x] Credentials and versioning discipline V1: root `.env.example` names required/optional env vars without values; `server/.env.example` already documents AI server vars; Maps key stays out of git; `app.json` carries `android.versionCode` and `ios.buildNumber`; export snapshots record `expo.version` via `expo-constants`. EAS project linking and store signing credentials remain operator steps after login.
+- [x] EAS build profiles V1: committed `eas.json` with development / preview / production. Production uses `autoIncrement: true` (Android `versionCode` / iOS `buildNumber`).
+- [x] EAS project link V1: Expo account `velegris`, project `@velegris/TravelOS`, `extra.eas.projectId` in `app.json`. Cloud builds and store credentials can proceed next.
+- [x] Credentials and versioning discipline V1: root `.env.example` names required/optional env vars without values; `server/.env.example` already documents AI server vars; Maps key stays out of git; `app.config.js` loads `.env.local` for config evaluation without printing secrets; `app.json` carries `android.versionCode` and `ios.buildNumber`; export snapshots record `expo.version` via `expo-constants`. Store signing credentials remain operator steps on EAS.
 - Define accounts, identity, guest conversion, shared-trip permissions, and data ownership.
 - Design backend sync and conflict resolution around SQLite-backed canonical IDs.
 - Complete iOS bundle, maps, permissions, device testing, TestFlight, and App Store readiness.

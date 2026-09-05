@@ -57,7 +57,7 @@ Do not commit, print, or share secret values. Restrict the Maps key to the Andro
 ### Versioning
 
 - User-facing version: `package.json` / `app.json` `expo.version` (currently `1.0.0`).
-- Android Play monotonic build: `app.json` `expo.android.versionCode` (EAS production uses `autoIncrement: versionCode`).
+- Android Play monotonic build: `app.json` `expo.android.versionCode` (EAS production uses `autoIncrement: true`).
 - iOS build number (when iOS is rebuilt): `app.json` `expo.ios.buildNumber`.
 - Cloud EAS builds still require `npx eas login` and `npx eas init` to attach a project ID.
 
