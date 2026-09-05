@@ -42,10 +42,10 @@ Create an uncommitted `.env.local` from `.env.example`:
 
 | Variable | Purpose |
 | --- | --- |
-| GOOGLE_MAPS_API_KEY | Android Google Maps and native place-search configuration (required by `app.config.js`) |
+| GOOGLE_MAPS_API_KEY | Google Maps / Places configuration for Android and (when rebuilt) iOS via `app.config.js` |
 | EXPO_PUBLIC_TRAVELOS_AI_URL | Optional loopback AI server URL. Cloud hosts are ignored. |
 
-Do not commit, print, or share secret values. Restrict the Maps key to the Android package / SHA and only the APIs TravelOS uses (Maps SDK for Android, Places API New). Local AI server tokens stay in `server/.env` only — never in `EXPO_PUBLIC_*`.
+Do not commit, print, or share secret values. Restrict the Maps key to the APIs TravelOS uses (Maps SDK for Android, Places API New; Maps SDK for iOS when shipping iOS). Android restriction: package `com.travelos.app` plus the EAS/Play signing SHA-1. iOS restriction: bundle `com.travelos.app`. Local AI server tokens stay in `server/.env` only — never in `EXPO_PUBLIC_*`.
 
 ### Versioning
 
@@ -68,11 +68,11 @@ Then open the project from the installed TravelOS development build.
 
 ### Build and run on iOS
 
-On macOS:
+On macOS (Windows cannot produce an iOS binary):
 
     npm run ios
 
-iOS maps, bundle configuration, permissions, and release behavior are not yet considered production-ready. Treat iOS work as an explicit platform-hardening task.
+`ios.bundleIdentifier` is `com.travelos.app`. Maps use `PROVIDER_GOOGLE`, so enable Maps SDK for iOS and set the same `GOOGLE_MAPS_API_KEY` (EAS secret or `.env.local`) with an iOS-app restriction for that bundle. Memory camera/photo strings come from the `expo-image-picker` config plugin. TestFlight / App Store remain operator steps after a Mac/EAS iOS build.
 
 ## Validation
 

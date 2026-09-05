@@ -186,11 +186,12 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 - [x] EAS build profiles V1: committed `eas.json` with development / preview / production. Production uses `autoIncrement: true` (Android `versionCode` / iOS `buildNumber`).
 - [x] EAS project link V1: Expo account `velegris`, project `@velegris/TravelOS`, `extra.eas.projectId` in `app.json`. Cloud builds and store credentials can proceed next.
 - [x] Credentials and versioning discipline V1: root `.env.example` names required/optional env vars without values; `server/.env.example` already documents AI server vars; Maps key stays out of git; `app.config.js` loads `.env.local` for config evaluation without printing secrets; `app.json` carries `android.versionCode` and `ios.buildNumber`; export snapshots record `expo.version` via `expo-constants`. Store signing credentials remain operator steps on EAS.
-- Define accounts, identity, guest conversion, shared-trip permissions, and data ownership.
-- Design backend sync and conflict resolution around SQLite-backed canonical IDs.
 - Complete iOS bundle, maps, permissions, device testing, TestFlight, and App Store readiness (**last**; Windows cannot rebuild iOS).
+- [x] **iOS release prep V1 (config only)** — `ios.bundleIdentifier` `com.travelos.app`; `react-native-maps` receives `iosGoogleMapsApiKey` from the same `GOOGLE_MAPS_API_KEY`; `expo-image-picker` config plugin sets Memory camera/photo usage strings. No iOS binary built on this Windows pass.
 - Complete Android signing via EAS credentials, set `GOOGLE_MAPS_API_KEY` as an EAS secret for cloud builds, verify Maps key package/SHA restrictions, then preview/production Play tracks.
 - [x] **Android EAS preview build V1** — `GOOGLE_MAPS_API_KEY` stored as EAS env secret for development/preview/production; `eas.json` profiles declare matching `environment`; remote Android keystore created on Expo; first preview APK built 2026-09-05 (`ca98eafd-e956-4e05-9a62-78aeddfdfa94`). Play tracks and Maps package/SHA restriction verification remain open.
+- Define accounts, identity, guest conversion, shared-trip permissions, and data ownership (**design still open** — do not invent cloud identity in this pass).
+- Design backend sync and conflict resolution around SQLite-backed canonical IDs (**later**; local export/restore remains the durable backup path).
 - Add notifications after platform permission, timezone, and Companion rules are complete (still parked with Time Zone API).
 - Add privacy-aware crash reporting, performance monitoring, structured diagnostics, and operational alerts.
 - [x] **CI / migration / rollback procedure V1** — local release gates are `npx tsc --noEmit`, `npm test`, `cd server && npm test`, `npm run lint`, and `git diff --check`. GitHub Actions workflow is committed; this branch still needs `git push -u origin HEAD` before CI runs remotely. Migrations stay forward-only (never edit shipped migrations). Rollback without cloud sync: keep a Profile JSON export before destructive restore; revert native clients by installing a prior APK/AAB; SQLite has no automatic cloud undo.
@@ -227,8 +228,12 @@ Goal: keep the canonical native core and close the gap with the PWA on **feel** 
 - [x] Emulator smoke: Barcelona explain returned `ollama · qwen3:4b` with Ask again
 - [x] Still no rerank install
 
-### Wave 5 — Release / iOS / sync (unchanged Phase 6)
-- Maps SHA, Play, accounts, iOS last
+### Wave 5 — Release / iOS / sync (Phase 6)
+- [x] In-repo iOS release prep: `bundleIdentifier` `com.travelos.app`, iOS Maps API key wiring, Memory photo/camera usage strings
+- [ ] Operator: add EAS preview SHA-1 `16:CB:EE:C7:E9:A5:6C:DB:7C:B1:A1:BF:2F:0A:8C:1D:9B:7F:52:AA` to Google Cloud Maps key (package `com.travelos.app`), then smoke maps on preview APK
+- [ ] Operator: Play Console internal/closed track (AAB via EAS production profile)
+- [ ] Accounts / cloud sync: design only — not implemented; local export/restore stays the backup path
+- [ ] iOS development-client / TestFlight rebuild on macOS (**last**; Windows cannot)
 
 Hard rules stay in force: AI is not a destination source; suggestions never mutate SQLite; production provider remains `none` until an explicit cloud decision.
 

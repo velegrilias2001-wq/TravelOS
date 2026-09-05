@@ -64,9 +64,20 @@ module.exports = ({ config }) => {
       ...(config.plugins ?? []),
       'expo-sharing',
       [
+        'expo-image-picker',
+        {
+          photosPermission:
+            'TravelOS uses your photo library only when you add a Memory photo.',
+          cameraPermission:
+            'TravelOS uses the camera only when you capture a Memory photo.',
+        },
+      ],
+      [
         'react-native-maps',
         {
           androidGoogleMapsApiKey:
+            googleMapsApiKey,
+          iosGoogleMapsApiKey:
             googleMapsApiKey,
         },
       ],
