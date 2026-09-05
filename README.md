@@ -4,16 +4,9 @@ TravelOS is a premium native travel operating system for planning trips, acting 
 
 ## Current status
 
-The app is a working native foundation and vertical prototype. It currently includes:
+TravelOS is a mature **local-first Personal Travel OS** on Expo SDK 57 (Android development build verified). Trip core, Companion, Discover/import, Memories/World, Phase 5 polish, local export/restore, and EAS project linking are in place. Cloud sync, accounts, Play/App Store release, and iOS rebuild remain open. Authoritative detail: `docs/CURRENT_STATE.md` and `docs/ROADMAP.md`.
 
-- Home, Trips, and persisted trip creation.
-- Trip Space with Today, Plan, Map, Bookings, and a placeholder More tab.
-- SQLite-backed trips, self-healing automatic days, atomic itinerary-stop reorder, bookings, and payment status.
-- Truth-aware upcoming/active/completed Today behavior.
-- Android Google Maps, native location selection, persisted coordinates, and stop pins.
-- Domain, repository, service, and Zustand UI/session layers.
-
-Discover, World, Profile, budget, accommodation UI, travelers, full Companion, Memories, Travel Book, sync, broad test coverage, and release infrastructure are not complete. See docs/CURRENT_STATE.md for the verified implementation snapshot.
+Verified local checks (2026-09-05): `npx tsc --noEmit`, app `npm test` (333), server `npm test` (33). EAS project: `@velegris/TravelOS`.
 
 ## Stack
 
@@ -59,7 +52,7 @@ Do not commit, print, or share secret values. Restrict the Maps key to the Andro
 - User-facing version: `package.json` / `app.json` `expo.version` (currently `1.0.0`).
 - Android Play monotonic build: `app.json` `expo.android.versionCode` (EAS production uses `autoIncrement: true`).
 - iOS build number (when iOS is rebuilt): `app.json` `expo.ios.buildNumber`.
-- Cloud EAS builds still require `npx eas login` and `npx eas init` to attach a project ID.
+- Cloud EAS builds: project `@velegris/TravelOS` is linked. Use `npx eas-cli` (not `npx eas`). Set `GOOGLE_MAPS_API_KEY` as an EAS secret before cloud Android builds.
 
 ### Build and run on Android
 

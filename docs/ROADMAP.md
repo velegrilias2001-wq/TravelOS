@@ -188,11 +188,11 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 - [x] Credentials and versioning discipline V1: root `.env.example` names required/optional env vars without values; `server/.env.example` already documents AI server vars; Maps key stays out of git; `app.config.js` loads `.env.local` for config evaluation without printing secrets; `app.json` carries `android.versionCode` and `ios.buildNumber`; export snapshots record `expo.version` via `expo-constants`. Store signing credentials remain operator steps on EAS.
 - Define accounts, identity, guest conversion, shared-trip permissions, and data ownership.
 - Design backend sync and conflict resolution around SQLite-backed canonical IDs.
-- Complete iOS bundle, maps, permissions, device testing, TestFlight, and App Store readiness.
-- Complete Android signing (EAS credentials after `eas init`), API-key restrictions verification, device testing, Play testing tracks, and Play Store readiness.
-- Add notifications after platform permission, timezone, and Companion rules are complete.
+- Complete iOS bundle, maps, permissions, device testing, TestFlight, and App Store readiness (**last**; Windows cannot rebuild iOS).
+- Complete Android signing via EAS credentials, set `GOOGLE_MAPS_API_KEY` as an EAS secret for cloud builds, verify Maps key package/SHA restrictions, then preview/production Play tracks.
+- Add notifications after platform permission, timezone, and Companion rules are complete (still parked with Time Zone API).
 - Add privacy-aware crash reporting, performance monitoring, structured diagnostics, and operational alerts.
-- Add CI release gates, migration rehearsal, rollback plans, and support procedures.
+- [x] **CI / migration / rollback procedure V1** — local release gates are `npx tsc --noEmit`, `npm test`, `cd server && npm test`, `npm run lint`, and `git diff --check`. GitHub Actions workflow is committed; this branch still needs `git push -u origin HEAD` before CI runs remotely. Migrations stay forward-only (never edit shipped migrations). Rollback without cloud sync: keep a Profile JSON export before destructive restore; revert native clients by installing a prior APK/AAB; SQLite has no automatic cloud undo.
 
 Exit condition: TravelOS can be built, tested, observed, restored, and released safely on iOS and Android.
 
