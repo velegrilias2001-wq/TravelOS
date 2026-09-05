@@ -210,8 +210,9 @@ Goal: keep the canonical native core and close the gap with the PWA on **feel** 
 - [ ] Device smoke on preview APK after Maps SHA + tab-bar build
 
 ### Wave 2 — Create Trip delight
-- Progressive disclosure (destination → dates → intent) matching PWA confidence without AI Architect inventing places
-- Motion on step transitions; clearer empty/error states
+- [x] Progressive disclosure: Where → When → Shape/Create with step pips, RiseIn, Continue CTAs, review card; Discover prefill still skips to When when destinations exist
+- Motion on step transitions; clearer empty/error hints per step
+- Device smoke: Android emulator after change (Metro / development client)
 
 ### Wave 3 — Companion + Plan copilot density
 - Surface free-time advice entry where verified gaps exist (existing `POST /ai/free-time`)

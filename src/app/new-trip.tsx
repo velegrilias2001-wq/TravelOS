@@ -36,6 +36,8 @@ import {
   DestinationPickerField,
 } from '@/features/destinations/destination-picker-field';
 import { PressableScale } from '@/features/motion/pressable-scale';
+import { RiseIn } from '@/features/motion/rise-in';
+import { motion } from '@/features/motion/timing';
 
 import {
   assignTravelerTimeZoneToSelection,
@@ -143,6 +145,41 @@ const PACE_OPTIONS:
         'Make the most of each day.',
     },
   ];
+
+type CreateTripStep =
+  | 'where'
+  | 'when'
+  | 'finish';
+
+const CREATE_TRIP_STEPS: CreateTripStep[] = [
+  'where',
+  'when',
+  'finish',
+];
+
+const STEP_COPY: Record<
+  CreateTripStep,
+  { eyebrow: string; title: string; subtitle: string }
+> = {
+  where: {
+    eyebrow: 'STEP 1 · WHERE',
+    title: 'Start with somewhere.',
+    subtitle:
+      'Pick one or more real places. Nothing is a trip until you create it.',
+  },
+  when: {
+    eyebrow: 'STEP 2 · WHEN',
+    title: 'Choose the dates.',
+    subtitle:
+      'TravelOS builds days from these dates. You can refine the plan after.',
+  },
+  finish: {
+    eyebrow: 'STEP 3 · SHAPE',
+    title: 'Make it yours.',
+    subtitle:
+      'Optional intent and pace, a name, and the currency for trip totals.',
+  },
+};
 
 export default function NewTripScreen() {
   const router = useRouter();
@@ -262,12 +299,62 @@ export default function NewTripScreen() {
     setIsSaving,
   ] = useState(false);
 
+  const [step, setStep] =
+    useState<CreateTripStep>(() =>
+      discoverPrefill &&
+      (discoverPrefill.destination ||
+        (discoverPrefill.extraDestinations?.length ??
+          0) > 0)
+        ? 'when'
+        : 'where',
+    );
+
   const isReady = Boolean(
     destinations.length > 0 &&
       startDate &&
       endDate &&
       currency.length === 3,
   );
+
+  const stepIndex = CREATE_TRIP_STEPS.indexOf(step);
+
+  const canAdvanceWhere = destinations.length > 0;
+  const canAdvanceWhen = Boolean(startDate && endDate);
+
+  const goNext = () => {
+    if (step === 'where' && !canAdvanceWhere) {
+      Alert.alert(
+        'Destination needed',
+        'Choose at least one place to continue.',
+      );
+      return;
+    }
+
+    if (step === 'when' && !canAdvanceWhen) {
+      Alert.alert(
+        'Dates needed',
+        'Choose a start and end date to continue.',
+      );
+      return;
+    }
+
+    const next = CREATE_TRIP_STEPS[stepIndex + 1];
+
+    if (next) {
+      setStep(next);
+    }
+  };
+
+  const goBackStep = () => {
+    const previous = CREATE_TRIP_STEPS[stepIndex - 1];
+
+    if (previous) {
+      setStep(previous);
+      return;
+    }
+
+    router.back();
+  };
 
   const primaryDestination = destinations[0];
 
@@ -508,9 +595,7 @@ export default function NewTripScreen() {
             style={
               styles.backButton
             }
-            onPress={() =>
-              router.back()
-            }
+            onPress={goBackStep}
           >
             <Ionicons
               name="arrow-back"
@@ -534,29 +619,51 @@ export default function NewTripScreen() {
           />
         </View>
 
-        <View style={styles.intro}>
-          <Text
-            style={styles.eyebrow}
-          >
-            NEW JOURNEY
-          </Text>
+        <View style={styles.stepRow}>
+          {CREATE_TRIP_STEPS.map(
+            (item, index) => {
+              const active = index === stepIndex;
+              const done = index < stepIndex;
 
-          <Text style={styles.title}>
-            {discoverPrefill
-              ? 'Make it a trip.'
-              : 'Start with somewhere.'}
-          </Text>
-
-          <Text
-            style={styles.subtitle}
-          >
-            {discoverPrefill
-              ? 'Your Discover choice is ready. Add the remaining trip details, review anything you want to change, and create the trip when you are ready.'
-              : 'Pick a place and your dates, then add a little context about the kind of trip you want.'}
-          </Text>
+              return (
+                <View
+                  key={item}
+                  style={[
+                    styles.stepPip,
+                    active && styles.stepPipActive,
+                    done && styles.stepPipDone,
+                  ]}
+                />
+              );
+            },
+          )}
         </View>
 
-        {discoverPrefill ? (
+        <RiseIn factKey={`step:${step}`}>
+          <View style={styles.intro}>
+            <Text
+              style={styles.eyebrow}
+            >
+              {STEP_COPY[step].eyebrow}
+            </Text>
+
+            <Text style={styles.title}>
+              {discoverPrefill && step === 'where'
+                ? 'Make it a trip.'
+                : STEP_COPY[step].title}
+            </Text>
+
+            <Text
+              style={styles.subtitle}
+            >
+              {discoverPrefill && step === 'where'
+                ? 'Your Discover choice is ready. Review destinations, then continue.'
+                : STEP_COPY[step].subtitle}
+            </Text>
+          </View>
+        </RiseIn>
+
+        {discoverPrefill && step === 'where' ? (
           <View
             style={
               styles.discoverCard
@@ -603,492 +710,532 @@ export default function NewTripScreen() {
                   styles.discoverBody
                 }
               >
-                Nothing has been created yet. Review the details below and create the trip only when you are ready.
+                Nothing has been created yet. Continue only when the places look right.
               </Text>
             </View>
           </View>
         ) : null}
 
-        <View style={styles.form}>
-          {destinations.length === 0 ? (
-            <DestinationPickerField
-              disabled={isSaving}
-              onSelect={addDestination}
-            />
-          ) : (
-            destinations.map((destination, index) => (
-              <View
-                key={`${destination.name}-${index}`}
-                style={
-                  index > 0
-                    ? styles.destinationAfter
-                    : undefined
-                }
-              >
-                <DestinationPickerField
-                  label={
-                    destinations.length === 1
-                      ? 'DESTINATION'
-                      : `DESTINATION ${index + 1}`
-                  }
-                  destination={destination}
-                  disabled={isSaving}
-                  onSelect={(selection) =>
-                    replaceDestination(index, selection)
-                  }
-                  onTimeZoneChange={(timezone) =>
-                    setDestinationTimeZone(index, timezone)
-                  }
-                />
-
-                {destinations.length > 1 ? (
-                  <View style={styles.destinationActions}>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Move ${destination.name} earlier`}
-                      disabled={isSaving || index === 0}
-                      hitSlop={5}
-                      style={({ pressed }) => [
-                        styles.destinationAction,
-                        (isSaving || index === 0) &&
-                          styles.destinationActionDisabled,
-                        pressed && styles.pressed,
-                      ]}
-                      onPress={() => moveDestination(index, -1)}
-                    >
-                      <Ionicons
-                        name="chevron-up"
-                        size={18}
-                        color={colors.textSecondary}
-                      />
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Move ${destination.name} later`}
-                      disabled={
-                        isSaving ||
-                        index === destinations.length - 1
+        <RiseIn
+          factKey={`body:${step}`}
+          delayMs={motion.staggerMs}
+        >
+          <View style={styles.form}>
+            {step === 'where' ? (
+              <>
+                {destinations.length === 0 ? (
+                  <DestinationPickerField
+                    disabled={isSaving}
+                    onSelect={addDestination}
+                  />
+                ) : (
+                  destinations.map((destination, index) => (
+                    <View
+                      key={`${destination.name}-${index}`}
+                      style={
+                        index > 0
+                          ? styles.destinationAfter
+                          : undefined
                       }
-                      hitSlop={5}
-                      style={({ pressed }) => [
-                        styles.destinationAction,
-                        (isSaving ||
-                          index === destinations.length - 1) &&
-                          styles.destinationActionDisabled,
-                        pressed && styles.pressed,
-                      ]}
-                      onPress={() => moveDestination(index, 1)}
                     >
-                      <Ionicons
-                        name="chevron-down"
-                        size={18}
-                        color={colors.textSecondary}
+                      <DestinationPickerField
+                        label={
+                          destinations.length === 1
+                            ? 'DESTINATION'
+                            : `DESTINATION ${index + 1}`
+                        }
+                        destination={destination}
+                        disabled={isSaving}
+                        onSelect={(selection) =>
+                          replaceDestination(index, selection)
+                        }
+                        onTimeZoneChange={(timezone) =>
+                          setDestinationTimeZone(index, timezone)
+                        }
                       />
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Remove ${destination.name}`}
+
+                      {destinations.length > 1 ? (
+                        <View style={styles.destinationActions}>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Move ${destination.name} earlier`}
+                            disabled={isSaving || index === 0}
+                            hitSlop={5}
+                            style={({ pressed }) => [
+                              styles.destinationAction,
+                              (isSaving || index === 0) &&
+                                styles.destinationActionDisabled,
+                              pressed && styles.pressed,
+                            ]}
+                            onPress={() => moveDestination(index, -1)}
+                          >
+                            <Ionicons
+                              name="chevron-up"
+                              size={18}
+                              color={colors.textSecondary}
+                            />
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Move ${destination.name} later`}
+                            disabled={
+                              isSaving ||
+                              index === destinations.length - 1
+                            }
+                            hitSlop={5}
+                            style={({ pressed }) => [
+                              styles.destinationAction,
+                              (isSaving ||
+                                index === destinations.length - 1) &&
+                                styles.destinationActionDisabled,
+                              pressed && styles.pressed,
+                            ]}
+                            onPress={() => moveDestination(index, 1)}
+                          >
+                            <Ionicons
+                              name="chevron-down"
+                              size={18}
+                              color={colors.textSecondary}
+                            />
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Remove ${destination.name}`}
+                            disabled={isSaving}
+                            hitSlop={5}
+                            style={({ pressed }) => [
+                              styles.destinationAction,
+                              pressed && styles.pressed,
+                            ]}
+                            onPress={() => removeDestination(index)}
+                          >
+                            <Ionicons
+                              name="trash-outline"
+                              size={18}
+                              color={colors.coral}
+                            />
+                          </Pressable>
+                        </View>
+                      ) : null}
+                    </View>
+                  ))
+                )}
+
+                {destinations.length > 0 &&
+                destinations.length < MAX_TRIP_DESTINATIONS ? (
+                  <View style={styles.destinationAddAfter}>
+                    <DestinationPickerField
+                      variant="add"
                       disabled={isSaving}
-                      hitSlop={5}
-                      style={({ pressed }) => [
-                        styles.destinationAction,
-                        pressed && styles.pressed,
-                      ]}
-                      onPress={() => removeDestination(index)}
-                    >
-                      <Ionicons
-                        name="trash-outline"
-                        size={18}
-                        color={colors.coral}
-                      />
-                    </Pressable>
+                      onSelect={addDestination}
+                    />
                   </View>
                 ) : null}
-              </View>
-            ))
-          )}
+              </>
+            ) : null}
 
-          {destinations.length > 0 &&
-          destinations.length < MAX_TRIP_DESTINATIONS ? (
-            <View style={styles.destinationAddAfter}>
-              <DestinationPickerField
-                variant="add"
-                disabled={isSaving}
-                onSelect={addDestination}
-              />
-            </View>
-          ) : null}
-
-          <View
-            style={styles.section}
-          >
-            <View
-              style={
-                styles.sectionHeading
-              }
-            >
-              <Text
-                style={
-                  styles.sectionEyebrow
-                }
-              >
-                WHEN
-              </Text>
-
-              <Text
-                style={
-                  styles.sectionTitle
-                }
-              >
-                Travel dates
-              </Text>
-            </View>
-
-            <View
-              style={
-                styles.dateFields
-              }
-            >
-              <CalendarDateField
-                label="START DATE"
-                value={startDate}
-                fallbackDate={
-                  endDate
-                }
-                disabled={isSaving}
-                onChange={
-                  setStartDate
-                }
-              />
-
-              <CalendarDateField
-                label="END DATE"
-                value={endDate}
-                fallbackDate={
-                  startDate
-                }
-                disabled={isSaving}
-                onChange={
-                  setEndDate
-                }
-              />
-            </View>
-          </View>
-
-          <View
-            style={styles.section}
-          >
-            <View
-              style={
-                styles.sectionHeading
-              }
-            >
-              <Text
-                style={
-                  styles.sectionEyebrow
-                }
-              >
-                WHY THIS TRIP
-              </Text>
-
-              <Text
-                style={
-                  styles.sectionTitle
-                }
-              >
-                Shape the journey
-              </Text>
-
-              <Text
-                style={
-                  styles.sectionDescription
-                }
-              >
-                Optional. Choose what matters most for this trip and how full you want the days to feel.
-              </Text>
-            </View>
-
-            <View
-              style={
-                styles.choiceGroup
-              }
-            >
-              <Text
-                style={
-                  styles.fieldLabel
-                }
-              >
-                PRIMARY INTENT · OPTIONAL
-              </Text>
-
+            {step === 'when' ? (
               <View
-                style={
-                  styles.intentGrid
-                }
+                style={styles.section}
               >
-                {INTENT_OPTIONS.map(
-                  (option) => {
-                    const selected =
-                      intent ===
-                      option.value;
+                {destinations.length > 0 ? (
+                  <Text style={styles.stepContext}>
+                    {destinations
+                      .map((item) => item.name)
+                      .join(' · ')}
+                  </Text>
+                ) : null}
 
-                    return (
-                      <Pressable
-                        key={
-                          option.value
-                        }
-                        accessibilityRole="button"
-                        accessibilityState={{
-                          selected,
-                        }}
-                        accessibilityLabel={`Trip intent: ${option.label}`}
-                        disabled={
-                          isSaving
-                        }
-                        onPress={() =>
-                          toggleIntent(
-                            option.value,
-                          )
-                        }
-                        style={({
-                          pressed,
-                        }) => [
-                          styles.intentChip,
+                <View
+                  style={
+                    styles.sectionHeading
+                  }
+                >
+                  <Text
+                    style={
+                      styles.sectionEyebrow
+                    }
+                  >
+                    WHEN
+                  </Text>
 
-                          selected &&
-                            styles.choiceSelected,
+                  <Text
+                    style={
+                      styles.sectionTitle
+                    }
+                  >
+                    Travel dates
+                  </Text>
+                </View>
 
-                          pressed &&
-                            styles.pressed,
+                <View
+                  style={
+                    styles.dateFields
+                  }
+                >
+                  <CalendarDateField
+                    label="START DATE"
+                    value={startDate}
+                    fallbackDate={
+                      endDate
+                    }
+                    disabled={isSaving}
+                    onChange={
+                      setStartDate
+                    }
+                  />
 
-                          isSaving &&
-                            styles.inputDisabled,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.intentChipText,
-
-                            selected &&
-                              styles.choiceSelectedText,
-                          ]}
-                        >
-                          {
-                            option.label
-                          }
-                        </Text>
-                      </Pressable>
-                    );
-                  },
-                )}
+                  <CalendarDateField
+                    label="END DATE"
+                    value={endDate}
+                    fallbackDate={
+                      startDate
+                    }
+                    disabled={isSaving}
+                    onChange={
+                      setEndDate
+                    }
+                  />
+                </View>
               </View>
-            </View>
+            ) : null}
 
-            <View
-              style={
-                styles.choiceGroup
-              }
-            >
-              <Text
-                style={
-                  styles.fieldLabel
-                }
-              >
-                TRIP PACE · OPTIONAL
-              </Text>
+            {step === 'finish' ? (
+              <>
+                <View style={styles.reviewCard}>
+                  <Text style={styles.reviewEyebrow}>
+                    READY TO CREATE
+                  </Text>
+                  <Text style={styles.reviewTitle}>
+                    {title.trim() || tripNamePlaceholder}
+                  </Text>
+                  <Text style={styles.reviewMeta}>
+                    {destinations
+                      .map((item) => item.name)
+                      .join(' · ')}
+                  </Text>
+                  <Text style={styles.reviewMeta}>
+                    {startDate && endDate
+                      ? `${startDate} → ${endDate}`
+                      : 'Dates incomplete'}
+                    {' · '}
+                    {currency}
+                  </Text>
+                </View>
 
-              <View
-                style={
-                  styles.paceOptions
-                }
-              >
-                {PACE_OPTIONS.map(
-                  (option) => {
-                    const selected =
-                      pace ===
-                      option.value;
+                <View
+                  style={styles.section}
+                >
+                  <View
+                    style={
+                      styles.sectionHeading
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.sectionEyebrow
+                      }
+                    >
+                      WHY THIS TRIP
+                    </Text>
 
-                    return (
-                      <Pressable
-                        key={
-                          option.value
-                        }
-                        accessibilityRole="button"
-                        accessibilityState={{
-                          selected,
-                        }}
-                        accessibilityLabel={`Trip pace: ${option.label}`}
-                        disabled={
-                          isSaving
-                        }
-                        onPress={() =>
-                          togglePace(
-                            option.value,
-                          )
-                        }
-                        style={({
-                          pressed,
-                        }) => [
-                          styles.paceCard,
+                    <Text
+                      style={
+                        styles.sectionTitle
+                      }
+                    >
+                      Shape the journey
+                    </Text>
 
-                          selected &&
-                            styles.choiceSelected,
+                    <Text
+                      style={
+                        styles.sectionDescription
+                      }
+                    >
+                      Optional. Choose what matters most for this trip and how full you want the days to feel.
+                    </Text>
+                  </View>
 
-                          pressed &&
-                            styles.pressed,
+                  <View
+                    style={
+                      styles.choiceGroup
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.fieldLabel
+                      }
+                    >
+                      PRIMARY INTENT · OPTIONAL
+                    </Text>
 
-                          isSaving &&
-                            styles.inputDisabled,
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.radioOuter,
+                    <View
+                      style={
+                        styles.intentGrid
+                      }
+                    >
+                      {INTENT_OPTIONS.map(
+                        (option) => {
+                          const selected =
+                            intent ===
+                            option.value;
 
-                            selected &&
-                              styles.radioOuterSelected,
-                          ]}
-                        >
-                          {selected ? (
-                            <View
-                              style={
-                                styles.radioInner
+                          return (
+                            <Pressable
+                              key={
+                                option.value
                               }
-                            />
-                          ) : null}
-                        </View>
+                              accessibilityRole="button"
+                              accessibilityState={{
+                                selected,
+                              }}
+                              accessibilityLabel={`Trip intent: ${option.label}`}
+                              disabled={
+                                isSaving
+                              }
+                              onPress={() =>
+                                toggleIntent(
+                                  option.value,
+                                )
+                              }
+                              style={({
+                                pressed,
+                              }) => [
+                                styles.intentChip,
 
-                        <View
-                          style={
-                            styles.paceCopy
-                          }
-                        >
-                          <Text
-                            style={[
-                              styles.paceLabel,
+                                selected &&
+                                  styles.choiceSelected,
 
-                              selected &&
-                                styles.choiceSelectedText,
-                            ]}
-                          >
-                            {
-                              option.label
-                            }
-                          </Text>
+                                pressed &&
+                                  styles.pressed,
 
-                          <Text
-                            style={
-                              styles.paceDescription
-                            }
-                          >
-                            {
-                              option.description
-                            }
-                          </Text>
-                        </View>
-                      </Pressable>
-                    );
-                  },
-                )}
-              </View>
-            </View>
+                                isSaving &&
+                                  styles.inputDisabled,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.intentChipText,
+
+                                  selected &&
+                                    styles.choiceSelectedText,
+                                ]}
+                              >
+                                {
+                                  option.label
+                                }
+                              </Text>
+                            </Pressable>
+                          );
+                        },
+                      )}
+                    </View>
+                  </View>
+
+                  <View
+                    style={
+                      styles.choiceGroup
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.fieldLabel
+                      }
+                    >
+                      TRIP PACE · OPTIONAL
+                    </Text>
+
+                    <View
+                      style={
+                        styles.paceOptions
+                      }
+                    >
+                      {PACE_OPTIONS.map(
+                        (option) => {
+                          const selected =
+                            pace ===
+                            option.value;
+
+                          return (
+                            <Pressable
+                              key={
+                                option.value
+                              }
+                              accessibilityRole="button"
+                              accessibilityState={{
+                                selected,
+                              }}
+                              accessibilityLabel={`Trip pace: ${option.label}`}
+                              disabled={
+                                isSaving
+                              }
+                              onPress={() =>
+                                togglePace(
+                                  option.value,
+                                )
+                              }
+                              style={({
+                                pressed,
+                              }) => [
+                                styles.paceCard,
+
+                                selected &&
+                                  styles.choiceSelected,
+
+                                pressed &&
+                                  styles.pressed,
+
+                                isSaving &&
+                                  styles.inputDisabled,
+                              ]}
+                            >
+                              <View
+                                style={[
+                                  styles.radioOuter,
+
+                                  selected &&
+                                    styles.radioOuterSelected,
+                                ]}
+                              >
+                                {selected ? (
+                                  <View
+                                    style={
+                                      styles.radioInner
+                                    }
+                                  />
+                                ) : null}
+                              </View>
+
+                              <View
+                                style={
+                                  styles.paceCopy
+                                }
+                              >
+                                <Text
+                                  style={[
+                                    styles.paceLabel,
+
+                                    selected &&
+                                      styles.choiceSelectedText,
+                                  ]}
+                                >
+                                  {
+                                    option.label
+                                  }
+                                </Text>
+
+                                <Text
+                                  style={
+                                    styles.paceDescription
+                                  }
+                                >
+                                  {
+                                    option.description
+                                  }
+                                </Text>
+                              </View>
+                            </Pressable>
+                          );
+                        },
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                <View
+                  style={styles.section}
+                >
+                  <View
+                    style={
+                      styles.sectionHeading
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.sectionEyebrow
+                      }
+                    >
+                      MAKE IT YOURS
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.sectionTitle
+                      }
+                    >
+                      Trip details
+                    </Text>
+                  </View>
+
+                  <Field
+                    label="TRIP NAME · OPTIONAL"
+                    placeholder={
+                      tripNamePlaceholder
+                    }
+                    value={title}
+                    disabled={isSaving}
+                    onChangeText={
+                      setTitle
+                    }
+                  />
+
+                  <View
+                    style={
+                      styles.currencyField
+                    }
+                  >
+                    <Field
+                      label="TRIP CURRENCY"
+                      placeholder="EUR"
+                      value={currency}
+                      disabled={isSaving}
+                      maxLength={3}
+                      onChangeText={
+                        updateCurrency
+                      }
+                      autoCapitalize="characters"
+                    />
+
+                    <Text
+                      style={
+                        styles.helperText
+                      }
+                    >
+                      Used for your budget and trip totals. Expenses can still use the currency you paid.
+                    </Text>
+                  </View>
+                </View>
+              </>
+            ) : null}
           </View>
+        </RiseIn>
 
-          <View
-            style={styles.section}
-          >
-            <View
-              style={
-                styles.sectionHeading
-              }
-            >
-              <Text
-                style={
-                  styles.sectionEyebrow
-                }
-              >
-                MAKE IT YOURS
-              </Text>
-
-              <Text
-                style={
-                  styles.sectionTitle
-                }
-              >
-                Trip details
-              </Text>
-            </View>
-
-            <Field
-              label="TRIP NAME · OPTIONAL"
-              placeholder={
-                tripNamePlaceholder
-              }
-              value={title}
-              disabled={isSaving}
-              onChangeText={
-                setTitle
-              }
-            />
-
-            <View
-              style={
-                styles.currencyField
-              }
-            >
-              <Field
-                label="TRIP CURRENCY"
-                placeholder="EUR"
-                value={currency}
-                disabled={isSaving}
-                maxLength={3}
-                onChangeText={
-                  updateCurrency
-                }
-                autoCapitalize="characters"
-              />
-
-              <Text
-                style={
-                  styles.helperText
-                }
-              >
-                Used for your budget and trip totals. Expenses can still use the currency you paid.
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <PressableScale
-          accessibilityRole="button"
-          accessibilityLabel="Create trip"
-          disabled={
-            isSaving ||
-            !isReady
-          }
-          style={[
-            styles.createButton,
-
-            (isSaving ||
-              !isReady) &&
-              styles.disabled,
-          ]}
-          pressedStyle={styles.pressed}
-          onPress={
-            createTrip
-          }
-        >
-          <Text
-            style={
-              styles.createButtonText
+        {step !== 'finish' ? (
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Continue"
+            disabled={
+              isSaving ||
+              (step === 'where' && !canAdvanceWhere) ||
+              (step === 'when' && !canAdvanceWhen)
             }
+            style={[
+              styles.createButton,
+              ((step === 'where' && !canAdvanceWhere) ||
+                (step === 'when' && !canAdvanceWhen) ||
+                isSaving) &&
+                styles.disabled,
+            ]}
+            pressedStyle={styles.pressed}
+            onPress={goNext}
           >
-            {isSaving
-              ? 'Creating trip…'
-              : 'Create trip'}
-          </Text>
-
-          {!isSaving ? (
+            <Text
+              style={
+                styles.createButtonText
+              }
+            >
+              Continue
+            </Text>
             <Ionicons
               name="arrow-forward"
               size={20}
@@ -1096,15 +1243,66 @@ export default function NewTripScreen() {
                 colors.textInverse
               }
             />
-          ) : null}
-        </PressableScale>
+          </PressableScale>
+        ) : (
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Create trip"
+            disabled={
+              isSaving ||
+              !isReady
+            }
+            style={[
+              styles.createButton,
 
-        {!isReady &&
+              (isSaving ||
+                !isReady) &&
+                styles.disabled,
+            ]}
+            pressedStyle={styles.pressed}
+            onPress={
+              createTrip
+            }
+          >
+            <Text
+              style={
+                styles.createButtonText
+              }
+            >
+              {isSaving
+                ? 'Creating trip…'
+                : 'Create trip'}
+            </Text>
+
+            {!isSaving ? (
+              <Ionicons
+                name="arrow-forward"
+                size={20}
+                color={
+                  colors.textInverse
+                }
+              />
+            ) : null}
+          </PressableScale>
+        )}
+
+        {step === 'where' &&
+        !canAdvanceWhere &&
         !isSaving ? (
           <Text
             style={styles.ctaHint}
           >
-            Choose a destination and travel dates to continue.
+            Choose a destination to continue.
+          </Text>
+        ) : null}
+
+        {step === 'when' &&
+        !canAdvanceWhen &&
+        !isSaving ? (
+          <Text
+            style={styles.ctaHint}
+          >
+            Choose start and end dates to continue.
           </Text>
         ) : null}
 
@@ -1201,6 +1399,64 @@ const styles =
       justifyContent:
         'space-between',
       paddingTop: spacing[3],
+    },
+
+    stepRow: {
+      flexDirection: 'row',
+      gap: spacing[2],
+      marginTop: spacing[4],
+      marginBottom: spacing[2],
+    },
+
+    stepPip: {
+      flex: 1,
+      height: 4,
+      borderRadius: radius.pill,
+      backgroundColor: colors.border,
+    },
+
+    stepPipActive: {
+      backgroundColor: colors.brand,
+    },
+
+    stepPipDone: {
+      backgroundColor: colors.teal,
+    },
+
+    stepContext: {
+      fontFamily: fontFamily.sansMedium,
+      fontSize: fontSize.bodySmall,
+      color: colors.textSecondary,
+      marginBottom: spacing[4],
+    },
+
+    reviewCard: {
+      padding: spacing[5],
+      borderRadius: radius.lg,
+      backgroundColor: colors.brand,
+      gap: spacing[2],
+      marginBottom: spacing[2],
+    },
+
+    reviewEyebrow: {
+      fontFamily: fontFamily.sansBold,
+      fontSize: fontSize.micro,
+      letterSpacing: 1.4,
+      color: colors.brass,
+    },
+
+    reviewTitle: {
+      fontFamily: fontFamily.serifSemiBold,
+      fontSize: fontSize.title,
+      lineHeight: lineHeight.title,
+      color: colors.textInverse,
+    },
+
+    reviewMeta: {
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.bodySmall,
+      lineHeight: lineHeight.bodySmall,
+      color: 'rgba(255,253,248,0.72)',
     },
 
     backButton: {
