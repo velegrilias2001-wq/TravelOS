@@ -45,13 +45,21 @@ This project includes native modules and is developed with a development build, 
 
 ### Environment
 
-Create an uncommitted .env.local file containing the required variable:
+Create an uncommitted `.env.local` from `.env.example`:
 
 | Variable | Purpose |
 | --- | --- |
-| GOOGLE_MAPS_API_KEY | Android Google Maps and native place-search configuration |
+| GOOGLE_MAPS_API_KEY | Android Google Maps and native place-search configuration (required by `app.config.js`) |
+| EXPO_PUBLIC_TRAVELOS_AI_URL | Optional loopback AI server URL. Cloud hosts are ignored. |
 
-Do not commit, print, or share the value. app.config.js requires the variable while resolving native configuration. The Google Cloud project must enable the services used by the app, currently Maps SDK for Android and Places API (New), and the key should be appropriately restricted.
+Do not commit, print, or share secret values. Restrict the Maps key to the Android package / SHA and only the APIs TravelOS uses (Maps SDK for Android, Places API New). Local AI server tokens stay in `server/.env` only — never in `EXPO_PUBLIC_*`.
+
+### Versioning
+
+- User-facing version: `package.json` / `app.json` `expo.version` (currently `1.0.0`).
+- Android Play monotonic build: `app.json` `expo.android.versionCode` (EAS production uses `autoIncrement: versionCode`).
+- iOS build number (when iOS is rebuilt): `app.json` `expo.ios.buildNumber`.
+- Cloud EAS builds still require `npx eas login` and `npx eas init` to attach a project ID.
 
 ### Build and run on Android
 

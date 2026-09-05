@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system/legacy';
 
 import type { Accommodation } from '@/domain/entities/accommodation';
@@ -16,6 +17,14 @@ import {
   type LocalDataExportSnapshot,
 } from '@/services/local-data-export';
 import { repositories } from '@/services/repository-registry';
+
+export function resolveTravelOSAppVersion(): string {
+  return (
+    Constants.expoConfig?.version ??
+    Constants.nativeAppVersion ??
+    '1.0.0'
+  );
+}
 
 export async function collectLocalDataExportSnapshot(): Promise<LocalDataExportSnapshot> {
   const trips = await repositories.trip.getAll();
@@ -147,7 +156,10 @@ export async function createLocalDataExportFile(): Promise<{
   document: LocalDataExportDocument;
 }> {
   const snapshot = await collectLocalDataExportSnapshot();
-  const document = buildLocalDataExportDocument(snapshot);
+  const document = buildLocalDataExportDocument({
+    ...snapshot,
+    appVersion: resolveTravelOSAppVersion(),
+  });
   const path = await writeLocalDataExportFile(document);
   return { path, document };
 }

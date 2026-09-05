@@ -183,12 +183,12 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 
 - [x] Local data export V1: Profile can write a versioned JSON backup of trips, Travel DNA, saved places, and related canonical facts without mutating SQLite. Photo bytes are omitted; cloud sync remains later. `expo-sharing` 57 is used when available.
 - [x] Local data restore V1: Profile can pick a `travelos.local-export.v1` JSON backup, confirm a destructive replace, and atomically wipe+reload canonical local tables while preserving exported IDs. Photo bytes are not restored; import review queues are cleared (not in the export contract). Automated parse and round-trip persistence tests exist.
-- [x] EAS build profiles V1: committed `eas.json` with development / preview / production. `eas init` / project ID still required before cloud builds.
+- [x] EAS build profiles V1: committed `eas.json` with development / preview / production. Production uses `autoIncrement: versionCode`. `eas init` / Expo login still required before cloud builds.
+- [x] Credentials and versioning discipline V1: root `.env.example` names required/optional env vars without values; `server/.env.example` already documents AI server vars; Maps key stays out of git; `app.json` carries `android.versionCode` and `ios.buildNumber`; export snapshots record `expo.version` via `expo-constants`. EAS project linking and store signing credentials remain operator steps after login.
 - Define accounts, identity, guest conversion, shared-trip permissions, and data ownership.
 - Design backend sync and conflict resolution around SQLite-backed canonical IDs.
-- Add credentials policy, versioning discipline, and environment management beyond the committed EAS profiles.
 - Complete iOS bundle, maps, permissions, device testing, TestFlight, and App Store readiness.
-- Complete Android signing, API-key restrictions, device testing, Play testing tracks, and Play Store readiness.
+- Complete Android signing (EAS credentials after `eas init`), API-key restrictions verification, device testing, Play testing tracks, and Play Store readiness.
 - Add notifications after platform permission, timezone, and Companion rules are complete.
 - Add privacy-aware crash reporting, performance monitoring, structured diagnostics, and operational alerts.
 - Add CI release gates, migration rehearsal, rollback plans, and support procedures.
@@ -204,7 +204,7 @@ These stay later. They were not implemented in this pass. iOS rebuild is last.
 - Notifications, only after timezone truth is stable on device.
 - Discover reranking. Do not install a BGE reranker until a real `/api/rerank` path can be measured.
 - Confirmation-photo OCR, only with an extractor that cannot write bookings.
-- Phase 5 visual/function matrix remainder: closed on Pixel 8 on 2026-09-03. Phase 5 polish V1 closed in code (a11y, imagery, locale seam, primitives, budgets). Light haptics still need an Android rebuild to feel. iOS last.
+- Phase 5 visual/function matrix remainder: closed on Pixel 8 on 2026-09-03. Phase 5 polish V1 closed in code. Android rebuild on 2026-09-05 linked haptics/sharing. iOS last.
 - iOS development-client rebuild and Expo SQLite rehearsal.
 
 ## Cross-cutting rules
@@ -218,4 +218,4 @@ These stay later. They were not implemented in this pass. iOS rebuild is last.
 - A phase is complete only when its behavior, failure states, tests, and documentation agree.
 - Update docs/CURRENT_STATE.md and this roadmap after each meaningful milestone.
 
-Unresolved work that remains in force across phases is listed under Parked remaining work. A GitHub Actions workflow is committed but has not run on GitHub because there is no remote. Those items stay open. They do not authorize inventing timezones, routes, or a production AI provider.
+Unresolved work that remains in force across phases is listed under Parked remaining work. A GitHub Actions workflow is committed; this branch still needs an upstream push before CI runs on GitHub. Those items stay open. They do not authorize inventing timezones, routes, or a production AI provider.

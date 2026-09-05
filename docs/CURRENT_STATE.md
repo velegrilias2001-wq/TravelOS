@@ -85,6 +85,7 @@ Evidence classes used throughout:
 - Cursor handoff checkpoint: 735c964 — chore: complete Cursor project handoff
 - Grounded Destination Sourcing V1 checkpoint: bad9d68 — feat: add grounded destination sourcing V1
 - The native architecture checkpoint remains ec0b28a — Add native location picker and mapped itinerary stops.
+- Phase 6 credentials and versioning discipline V1 is implemented on this branch: committed root `.env.example` (names only), `app.json` `android.versionCode` / `ios.buildNumber`, EAS production `autoIncrement: versionCode`, and export `appVersion` from `expo-constants`. Secrets stay in uncommitted `.env.local` / `server/.env`. Expo account login + `eas init` are still required before cloud builds. Store signing credentials are not created in-repo.
 - Git remote `origin` is `https://github.com/veleg/TravelOS.git`. Branch `docs/expo-sqlite-rehearsal-7-15` has no upstream tracking branch yet, so CI has not been exercised from this branch.
 - `.env.local` is gitignored. Its contents were not read.
 
@@ -109,7 +110,7 @@ Recent native milestones include the repository/service foundation, native navig
 | Optional local AI backend | `server/` Express package (`travelos-ai-server`) with a client `AIAPIClient` |
 | Styling | Local design tokens and React Native StyleSheet-based screen styling |
 
-The package currently has start, Android, iOS, web, reset-project, lint, and automated test scripts. Lint uses a committed Expo SDK 57 `eslint.config.js` and `eslint .` (non-interactive). A GitHub Actions workflow exists for typecheck, tests, lint, and AI-server tests. There is still no usable git remote, so CI has not run on GitHub. Local `eas.json` profiles exist; `eas init` / Expo account login is still required before cloud builds.
+The package currently has start, Android, iOS, web, reset-project, lint, and automated test scripts. Lint uses a committed Expo SDK 57 `eslint.config.js` and `eslint .` (non-interactive). A GitHub Actions workflow exists for typecheck, tests, lint, and AI-server tests. There is still no usable git remote, so CI has not run on GitHub. Local `eas.json` profiles exist (production auto-increments Android `versionCode`). `eas init` / Expo account login is still required before cloud builds.
 
 ## Architecture
 
