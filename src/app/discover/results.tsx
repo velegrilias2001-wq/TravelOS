@@ -13,6 +13,7 @@ import {
 } from 'react';
 
 import {
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
@@ -24,6 +25,7 @@ import {
 } from '@/components/ui/screen';
 import { BookmarkPulse } from '@/features/motion/bookmark-pulse';
 import { playSelectionHaptic } from '@/features/motion/haptic';
+import { RiseIn } from '@/features/motion/rise-in';
 import { StaggerEnter } from '@/features/motion/stagger-enter';
 
 import type {
@@ -100,6 +102,26 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+
+type DiscoverExplanationState =
+  | {
+      status: 'loading';
+    }
+  | {
+      status: 'ready';
+      sentences: string[];
+      provider: string;
+      model: string;
+    }
+  | {
+      status: 'unavailable';
+    };
+
+type SemanticLaneStatus =
+  | 'idle'
+  | 'loading'
+  | 'ready'
+  | 'unavailable';
 
 const INTENT_LABELS: Record<
   TripIntent,
@@ -296,30 +318,21 @@ export default function DiscoverResultsScreen() {
   const [
     semanticStatus,
     setSemanticStatus,
-  ] = useState<
-    | 'idle'
-    | 'loading'
-    | 'ready'
-    | 'unavailable'
-  >('idle');
+  ] = useState<SemanticLaneStatus>('idle');
+
+  const [
+    semanticProvenance,
+    setSemanticProvenance,
+  ] = useState<{
+    provider: string;
+    model: string;
+  } | null>(null);
 
   const [
     explanations,
     setExplanations,
   ] = useState<
-    Record<
-      string,
-      | {
-          status: 'loading';
-        }
-      | {
-          status: 'ready';
-          sentences: string[];
-        }
-      | {
-          status: 'unavailable';
-        }
-    >
+    Record<string, DiscoverExplanationState>
   >({});
 
   const [
@@ -412,6 +425,7 @@ export default function DiscoverResultsScreen() {
   useEffect(() => {
     if (!brief || !travelDNALoaded) {
       setSemanticMatches([]);
+      setSemanticProvenance(null);
       setSemanticStatus('idle');
       return;
     }
@@ -424,6 +438,7 @@ export default function DiscoverResultsScreen() {
 
     if (!request) {
       setSemanticMatches([]);
+      setSemanticProvenance(null);
       setSemanticStatus('idle');
       return;
     }
@@ -433,6 +448,7 @@ export default function DiscoverResultsScreen() {
 
     setSemanticStatus('loading');
     setSemanticMatches([]);
+    setSemanticProvenance(null);
 
     const loadSemanticMatches =
       async () => {
@@ -453,6 +469,10 @@ export default function DiscoverResultsScreen() {
               result.matches,
             ),
           );
+          setSemanticProvenance({
+            provider: result.provider,
+            model: result.model,
+          });
           setSemanticStatus('ready');
         } catch (error) {
           if (
@@ -465,6 +485,7 @@ export default function DiscoverResultsScreen() {
           }
 
           setSemanticMatches([]);
+          setSemanticProvenance(null);
           setSemanticStatus(
             'unavailable',
           );
@@ -675,13 +696,21 @@ export default function DiscoverResultsScreen() {
       },
     }));
 
+    const controller =
+      new AbortController();
+
     const loadExplanation =
       async () => {
         try {
           const result =
             await aiAPIClient.explainDiscoverMatch(
               request,
+              controller.signal,
             );
+
+          if (controller.signal.aborted) {
+            return;
+          }
 
           const sentences =
             assertGroundedDiscoverExplanation(
@@ -700,10 +729,20 @@ export default function DiscoverResultsScreen() {
               [identity]: {
                 status: 'ready',
                 sentences,
+                provider: result.provider,
+                model: result.model,
               },
             }),
           );
-        } catch {
+        } catch (error) {
+          if (
+            controller.signal.aborted ||
+            (error instanceof Error &&
+              error.name === 'AbortError')
+          ) {
+            return;
+          }
+
           setExplanations(
             (current) => ({
               ...current,
@@ -858,6 +897,8 @@ export default function DiscoverResultsScreen() {
 
       {semanticStatus ===
         'loading' ||
+      semanticStatus ===
+        'unavailable' ||
       semanticMatches.length >
         0 ? (
         <View
@@ -878,6 +919,10 @@ export default function DiscoverResultsScreen() {
                 styles.loadingCard
               }
             >
+              <ActivityIndicator
+                size="small"
+                color={colors.teal}
+              />
               <Text
                 style={
                   styles.loadingText
@@ -885,53 +930,97 @@ export default function DiscoverResultsScreen() {
               >
                 Looking for close catalogue matches…
               </Text>
+              <Text
+                style={
+                  styles.loadingHint
+                }
+              >
+                Explicit ranking above stays available while this runs.
+              </Text>
+            </View>
+          ) : semanticStatus ===
+            'unavailable' ? (
+            <View
+              style={
+                styles.degradeCard
+              }
+            >
+              <Text
+                style={
+                  styles.degradeTitle
+                }
+              >
+                Semantic lane unavailable
+              </Text>
+              <Text
+                style={
+                  styles.degradeBody
+                }
+              >
+                Local retrieve could not run. Your explicit matches above are unchanged. Nothing was invented or saved.
+              </Text>
             </View>
           ) : (
-            semanticMatches.map(
-              (match, index) => (
-                <StaggerEnter
-                  key={
-                    match.candidate.id
+            <>
+              {semanticProvenance ? (
+                <Text
+                  style={
+                    styles.laneProvenance
                   }
-                  index={index}
                 >
-                  <DestinationMatchCard
-                    kind="semantic"
-                    match={{
-                      candidate:
-                        match.candidate,
-                      score:
-                        match.score,
-                      reasons: [],
-                    }}
-                    explanation={
-                      explanations[
-                        match.candidate.id
-                      ]
+                  Retrieved with{' '}
+                  {semanticProvenance.provider}{' '}
+                  ·{' '}
+                  {semanticProvenance.model}
+                </Text>
+              ) : null}
+
+              {semanticMatches.map(
+                (match, index) => (
+                  <StaggerEnter
+                    key={
+                      match.candidate.id
                     }
-                    onAskExplanation={() =>
-                      askExplanation(
+                    index={index}
+                  >
+                    <DestinationMatchCard
+                      kind="semantic"
+                      match={{
+                        candidate:
+                          match.candidate,
+                        score:
+                          match.score,
+                        reasons: [],
+                      }}
+                      explanation={
+                        explanations[
+                          match.candidate.id
+                        ]
+                      }
+                      onAskExplanation={() =>
+                        askExplanation(
+                          match.candidate.id,
+                        )
+                      }
+                      saved={savedIdentities.includes(
                         match.candidate.id,
-                      )
-                    }
-                    saved={savedIdentities.includes(
-                      match.candidate.id,
-                    )}
-                    onToggleSaved={() =>
-                      toggleSaved(
-                        match.candidate.id,
-                      )
-                    }
-                    onChoose={() =>
-                      chooseDestination(
-                        match.candidate
-                          .destination,
-                      )
-                    }
-                  />
-                </StaggerEnter>
-              ),
-            )
+                      )}
+                      onToggleSaved={() =>
+                        toggleSaved(
+                          match.candidate.id,
+                        )
+                      }
+                      onChoose={() =>
+                        chooseDestination(
+                          match.candidate
+                            .destination,
+                        )
+                      }
+                    />
+                  </StaggerEnter>
+                ),
+              )}
+            </>
           )}
         </View>
       ) : null}
@@ -1151,17 +1240,7 @@ function DestinationMatchCard({
   rank?: number;
   kind?: 'deterministic' | 'semantic';
   match: DiscoverMatch;
-  explanation?:
-    | {
-        status: 'loading';
-      }
-    | {
-        status: 'ready';
-        sentences: string[];
-      }
-    | {
-        status: 'unavailable';
-      };
+  explanation?: DiscoverExplanationState;
   saved: boolean;
   onAskExplanation(): void;
   onToggleSaved(): void;
@@ -1172,6 +1251,9 @@ function DestinationMatchCard({
 
   const isSemantic =
     kind === 'semantic';
+
+  const explaining =
+    explanation?.status === 'loading';
 
   return (
     <Pressable
@@ -1316,68 +1398,146 @@ function DestinationMatchCard({
 
       {explanation?.status ===
       'ready' ? (
+        <RiseIn
+          factKey={`explain:${match.candidate.id}:${explanation.provider}:${explanation.model}`}
+        >
+          <View
+            style={
+              styles.explanationBlock
+            }
+          >
+            <View
+              style={
+                styles.explanationHeadingRow
+              }
+            >
+              <Text
+                style={
+                  styles.reasonsEyebrow
+                }
+              >
+                FROM THE CATALOGUE
+              </Text>
+              <Text
+                style={
+                  styles.explanationProvenance
+                }
+              >
+                {explanation.provider} ·{' '}
+                {explanation.model}
+              </Text>
+            </View>
+
+            {explanation.sentences.map(
+              (sentence) => (
+                <Text
+                  key={sentence}
+                  style={
+                    styles.explanationText
+                  }
+                >
+                  {sentence}
+                </Text>
+              ),
+            )}
+
+            <Text
+              style={
+                styles.explanationGuard
+              }
+            >
+              Paraphrase of catalogue facts only. Nothing was saved.
+            </Text>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Ask TravelOS again why ${destination.name} fits`}
+              onPress={onAskExplanation}
+              style={
+                styles.explainButton
+              }
+            >
+              <Text
+                style={
+                  styles.explainButtonText
+                }
+              >
+                Ask again
+              </Text>
+            </Pressable>
+          </View>
+        </RiseIn>
+      ) : explanation?.status ===
+        'unavailable' ? (
         <View
           style={
-            styles.explanationBlock
+            styles.explanationUnavailable
           }
         >
           <Text
             style={
-              styles.reasonsEyebrow
+              styles.explanationError
             }
           >
-            FROM THE CATALOGUE
+            TravelOS could not explain this from the catalogue. Nothing was saved.
           </Text>
-
-          {explanation.sentences.map(
-            (sentence) => (
-              <Text
-                key={sentence}
-                style={
-                  styles.explanationText
-                }
-              >
-                {sentence}
-              </Text>
-            ),
-          )}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Retry explaining ${destination.name}`}
+            onPress={onAskExplanation}
+            style={
+              styles.explainAskRow
+            }
+          >
+            <Ionicons
+              name="refresh-outline"
+              size={16}
+              color={colors.teal}
+            />
+            <Text
+              style={
+                styles.explainButtonText
+              }
+            >
+              Try again
+            </Text>
+          </Pressable>
         </View>
       ) : (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Ask TravelOS why ${destination.name} fits`}
-          disabled={
-            explanation?.status ===
-            'loading'
-          }
+          disabled={explaining}
           onPress={onAskExplanation}
-          style={
-            styles.explainButton
-          }
+          style={[
+            styles.explainAskRow,
+            explaining &&
+              styles.explainAskRowDisabled,
+          ]}
         >
+          {explaining ? (
+            <ActivityIndicator
+              size="small"
+              color={colors.teal}
+            />
+          ) : (
+            <Ionicons
+              name="sparkles-outline"
+              size={16}
+              color={colors.teal}
+            />
+          )}
           <Text
             style={
               styles.explainButtonText
             }
           >
-            {explanation?.status ===
-            'loading'
+            {explaining
               ? 'Asking TravelOS…'
               : 'Ask TravelOS why it fits'}
           </Text>
         </Pressable>
       )}
-
-      {explanation?.status ===
-      'unavailable' ? (
-        <Text
-          style={
-            styles.explanationError
-          }
-        >
-          TravelOS could not explain this from the catalogue. Nothing was saved.
-        </Text>
-      ) : null}
 
       <Pressable
         accessibilityRole="button"
@@ -1823,6 +1983,18 @@ const styles =
       justifyContent: 'center',
     },
 
+    explainAskRow: {
+      minHeight: 44,
+      marginTop: spacing[3],
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+    },
+
+    explainAskRowDisabled: {
+      opacity: 0.7,
+    },
+
     saveIdeaRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1845,6 +2017,23 @@ const styles =
       gap: spacing[2],
     },
 
+    explanationHeadingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent:
+        'space-between',
+      gap: spacing[3],
+    },
+
+    explanationProvenance: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      color: colors.textMuted,
+      flexShrink: 1,
+      textAlign: 'right',
+    },
+
     explanationText: {
       fontFamily:
         fontFamily.sansRegular,
@@ -1853,6 +2042,20 @@ const styles =
         lineHeight.caption,
       color:
         colors.textSecondary,
+    },
+
+    explanationGuard: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      lineHeight:
+        lineHeight.caption,
+      color: colors.textMuted,
+    },
+
+    explanationUnavailable: {
+      marginTop: spacing[3],
+      gap: spacing[1],
     },
 
     explanationError: {
@@ -1869,6 +2072,7 @@ const styles =
       minHeight: 90,
       alignItems: 'center',
       justifyContent: 'center',
+      gap: spacing[2],
       padding: spacing[5],
       borderWidth: 1,
       borderColor: colors.border,
@@ -1882,8 +2086,53 @@ const styles =
         fontFamily.sansRegular,
       fontSize:
         fontSize.bodySmall,
-      color:
-        colors.textSecondary,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+
+    loadingHint: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      lineHeight:
+        lineHeight.caption,
+      color: colors.textMuted,
+      textAlign: 'center',
+    },
+
+    degradeCard: {
+      padding: spacing[5],
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      backgroundColor:
+        colors.surface,
+      gap: spacing[2],
+    },
+
+    degradeTitle: {
+      fontFamily:
+        fontFamily.sansSemiBold,
+      fontSize:
+        fontSize.bodySmall,
+      color: colors.textPrimary,
+    },
+
+    degradeBody: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      lineHeight:
+        lineHeight.caption,
+      color: colors.textMuted,
+    },
+
+    laneProvenance: {
+      marginBottom: spacing[3],
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      color: colors.textMuted,
     },
 
     section: {

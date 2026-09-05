@@ -221,8 +221,11 @@ Goal: keep the canonical native core and close the gap with the PWA on **feel** 
 - [x] Emulator smoke: Companion opens; copilot card stays hidden when the day has no verified gaps (honest empty)
 
 ### Wave 4 — Discover explain polish
-- Faster retrieve/explain UX on existing endpoints
-- Still no rerank install until measured
+- [x] Retrieve/explain UX shows `provider · model` provenance
+- [x] Semantic lane calm degrade when retrieve is unavailable (explicit ranking stays)
+- [x] Explain loading spinner, Ask again / Try again, RiseIn on ready copy
+- [x] Emulator smoke: Barcelona explain returned `ollama · qwen3:4b` with Ask again
+- [x] Still no rerank install
 
 ### Wave 5 — Release / iOS / sync (unchanged Phase 6)
 - Maps SHA, Play, accounts, iOS last
