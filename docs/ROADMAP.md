@@ -215,9 +215,10 @@ Goal: keep the canonical native core and close the gap with the PWA on **feel** 
 - Device smoke: Android emulator after change (Metro / development client)
 
 ### Wave 3 — Companion + Plan copilot density
-- Surface free-time advice entry where verified gaps exist (existing `POST /ai/free-time`)
-- Provenance chips; degrade calmly when loopback AI is down
-- No chat that writes itinerary
+- [x] Shared free-time advice hook + `FreeTimeAdviceCard` with provider/model provenance
+- [x] Companion Active surfaces the next verified free-time gap (“Ask TravelOS”) without writing Plan
+- [x] Plan free-time ideas note includes `provider · model` provenance
+- [x] Emulator smoke: Companion opens; copilot card stays hidden when the day has no verified gaps (honest empty)
 
 ### Wave 4 — Discover explain polish
 - Faster retrieve/explain UX on existing endpoints

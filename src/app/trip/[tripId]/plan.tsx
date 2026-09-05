@@ -1960,7 +1960,9 @@ export default function PlanScreen() {
                                           styles.freeTimeSuggestionNote
                                         }
                                       >
-                                        These stay ideas. Nothing is saved as a stop.
+                                        {freeTimeAdvice.provider} ·{' '}
+                                        {freeTimeAdvice.model}. These stay
+                                        ideas. Nothing is saved as a stop.
                                       </Text>
 
                                       {freeTimeAdvice.suggestions.map(

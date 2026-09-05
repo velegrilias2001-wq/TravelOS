@@ -66,6 +66,7 @@ import {
 
 import { useCompanionPlanChangeNotice } from './use-companion-plan-change';
 import { useCompanionRuntimeRefresh } from './use-companion-runtime-refresh';
+import { CompanionFreeTimeCopilot } from './companion-free-time-copilot';
 
 type CompanionPath =
   | '/trip/[tripId]/plan'
@@ -288,6 +289,7 @@ export function CompanionScreen() {
           />
         ) : selection.mode === 'active' ? (
           <Active
+            tripId={workspace.trip.id}
             selection={selection}
             openRoute={openRoute}
             livedProgress={livedProgress}
@@ -429,10 +431,12 @@ function FirstDayPreview({
 }
 
 function Active({
+  tripId,
   selection,
   openRoute,
   livedProgress,
 }: {
+  tripId: string;
   selection: CompanionSelection;
   openRoute: OpenRoute;
   livedProgress: LivedProgressActions;
@@ -516,6 +520,13 @@ function Active({
             }
           />
         )}
+
+      <CompanionFreeTimeCopilot
+        tripId={tripId}
+        day={selection.displayDay}
+        stops={selection.stopContexts.map((context) => context.stop)}
+        onOpenPlan={() => openRoute('/trip/[tripId]/plan')}
+      />
 
       <Section
         eyebrow="TODAY"
