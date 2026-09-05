@@ -1,4 +1,7 @@
-import type { Database } from '../database/database';
+import type {
+  Database,
+  DatabaseConnection,
+} from '../database/database';
 
 import type {
   Accommodation,
@@ -143,116 +146,126 @@ export async function getAccommodationsByStopId(
   return rows.map(mapAccommodation);
 }
 
+export async function writeCanonicalAccommodation(
+  connection: DatabaseConnection,
+  accommodation: Accommodation,
+): Promise<void> {
+  if (accommodation.bookingId) {
+    const booking =
+      await connection.queryFirst<{
+        id: string;
+      }>(
+        `
+          SELECT id
+          FROM bookings
+          WHERE id = ? AND trip_id = ?;
+        `,
+        [
+          accommodation.bookingId,
+          accommodation.tripId,
+        ],
+      );
+
+    if (!booking) {
+      throw new Error(
+        'Accommodation booking must belong to the same trip',
+      );
+    }
+  }
+
+  if (accommodation.stopId) {
+    const stop =
+      await connection.queryFirst<{
+        id: string;
+      }>(
+        `
+          SELECT id
+          FROM trip_stops
+          WHERE id = ? AND trip_id = ?;
+        `,
+        [
+          accommodation.stopId,
+          accommodation.tripId,
+        ],
+      );
+
+    if (!stop) {
+      throw new Error(
+        'Accommodation stop must belong to the same trip',
+      );
+    }
+  }
+
+  await connection.execute(
+    `
+      INSERT INTO accommodations (
+        id,
+        trip_id,
+        stop_id,
+        booking_id,
+        name,
+        type,
+        address,
+        latitude,
+        longitude,
+        check_in_at,
+        check_out_at,
+        phone,
+        website,
+        notes,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?
+      )
+      ON CONFLICT(id) DO UPDATE SET
+        trip_id = excluded.trip_id,
+        stop_id = excluded.stop_id,
+        booking_id = excluded.booking_id,
+        name = excluded.name,
+        type = excluded.type,
+        address = excluded.address,
+        latitude = excluded.latitude,
+        longitude = excluded.longitude,
+        check_in_at = excluded.check_in_at,
+        check_out_at = excluded.check_out_at,
+        phone = excluded.phone,
+        website = excluded.website,
+        notes = excluded.notes,
+        updated_at = excluded.updated_at;
+    `,
+    [
+      accommodation.id,
+      accommodation.tripId,
+      accommodation.stopId ?? null,
+      accommodation.bookingId ?? null,
+      accommodation.name,
+      accommodation.type,
+      accommodation.address ?? null,
+      accommodation.latitude ?? null,
+      accommodation.longitude ?? null,
+      accommodation.checkInAt ?? null,
+      accommodation.checkOutAt ?? null,
+      accommodation.phone ?? null,
+      accommodation.website ?? null,
+      accommodation.notes ?? null,
+      accommodation.createdAt,
+      accommodation.updatedAt,
+    ],
+  );
+}
+
 export async function saveCanonicalAccommodation(
   database: Database,
   accommodation: Accommodation,
 ): Promise<void> {
   await database.transaction(
     async (transaction) => {
-      if (accommodation.bookingId) {
-        const booking =
-          await transaction.queryFirst<{
-            id: string;
-          }>(
-            `
-              SELECT id
-              FROM bookings
-              WHERE id = ? AND trip_id = ?;
-            `,
-            [
-              accommodation.bookingId,
-              accommodation.tripId,
-            ],
-          );
-
-        if (!booking) {
-          throw new Error(
-            'Accommodation booking must belong to the same trip',
-          );
-        }
-      }
-
-      if (accommodation.stopId) {
-        const stop =
-          await transaction.queryFirst<{
-            id: string;
-          }>(
-            `
-              SELECT id
-              FROM trip_stops
-              WHERE id = ? AND trip_id = ?;
-            `,
-            [
-              accommodation.stopId,
-              accommodation.tripId,
-            ],
-          );
-
-        if (!stop) {
-          throw new Error(
-            'Accommodation stop must belong to the same trip',
-          );
-        }
-      }
-
-      await transaction.execute(
-        `
-          INSERT INTO accommodations (
-            id,
-            trip_id,
-            stop_id,
-            booking_id,
-            name,
-            type,
-            address,
-            latitude,
-            longitude,
-            check_in_at,
-            check_out_at,
-            phone,
-            website,
-            notes,
-            created_at,
-            updated_at
-          )
-          VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?, ?
-          )
-          ON CONFLICT(id) DO UPDATE SET
-            trip_id = excluded.trip_id,
-            stop_id = excluded.stop_id,
-            booking_id = excluded.booking_id,
-            name = excluded.name,
-            type = excluded.type,
-            address = excluded.address,
-            latitude = excluded.latitude,
-            longitude = excluded.longitude,
-            check_in_at = excluded.check_in_at,
-            check_out_at = excluded.check_out_at,
-            phone = excluded.phone,
-            website = excluded.website,
-            notes = excluded.notes,
-            updated_at = excluded.updated_at;
-        `,
-        [
-          accommodation.id,
-          accommodation.tripId,
-          accommodation.stopId ?? null,
-          accommodation.bookingId ?? null,
-          accommodation.name,
-          accommodation.type,
-          accommodation.address ?? null,
-          accommodation.latitude ?? null,
-          accommodation.longitude ?? null,
-          accommodation.checkInAt ?? null,
-          accommodation.checkOutAt ?? null,
-          accommodation.phone ?? null,
-          accommodation.website ?? null,
-          accommodation.notes ?? null,
-          accommodation.createdAt,
-          accommodation.updatedAt,
-        ],
+      await writeCanonicalAccommodation(
+        transaction,
+        accommodation,
       );
     },
   );

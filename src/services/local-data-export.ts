@@ -20,7 +20,7 @@ export const LOCAL_DATA_EXPORT_CONTRACT = {
   format: LOCAL_DATA_EXPORT_FORMAT,
   mutatesSqlite: false,
   includesPhotoBytes: false,
-  restoreAvailable: false,
+  restoreAvailable: true,
   cloudSync: false,
 } as const;
 

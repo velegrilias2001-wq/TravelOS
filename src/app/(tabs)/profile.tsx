@@ -10,11 +10,16 @@ import {
 } from 'react-native';
 import * as Sharing from 'expo-sharing';
 
+import { confirmDestructive } from '@/components/ui/confirm';
 import { Screen } from '@/components/ui/screen';
 import {
   hasRealDestinationCoordinates,
 } from '@/services/destination-authoring';
 import { createLocalDataExportFile } from '@/services/local-data-export-runtime';
+import {
+  pickLocalDataExportDocument,
+  restoreLocalDataExportDocument,
+} from '@/services/local-data-restore-runtime';
 import { useTripStore } from '@/store/trip-store';
 import {
   colors,
@@ -31,6 +36,8 @@ export default function ProfileScreen() {
   );
   const [isExporting, setIsExporting] =
     useState(false);
+  const [isRestoring, setIsRestoring] =
+    useState(false);
 
   const completedTrips = trips.filter(
     (trip) => trip.status === 'completed',
@@ -46,7 +53,7 @@ export default function ProfileScreen() {
   );
 
   const exportLocalBackup = () => {
-    if (isExporting) {
+    if (isExporting || isRestoring) {
       return;
     }
 
@@ -80,6 +87,64 @@ export default function ProfileScreen() {
         );
       } finally {
         setIsExporting(false);
+      }
+    })();
+  };
+
+  const restoreLocalBackup = () => {
+    if (isExporting || isRestoring) {
+      return;
+    }
+
+    void (async () => {
+      try {
+        const picked = await pickLocalDataExportDocument();
+
+        if (!picked) {
+          return;
+        }
+
+        const { document, summary, sourceLabel } = picked;
+
+        confirmDestructive({
+          title: 'Replace local TravelOS data?',
+          message:
+            `This replaces every trip, Travel DNA, traveler, and saved idea on this device with “${sourceLabel}” (${summary.tripCount} trip${summary.tripCount === 1 ? '' : 's'}, exported ${summary.exportedAt}). Photo files are not restored. Import review queues are cleared. This cannot be undone.`,
+          confirmLabel: 'Replace data',
+          onConfirm: () => {
+            void (async () => {
+              setIsRestoring(true);
+
+              try {
+                const restored =
+                  await restoreLocalDataExportDocument(
+                    document,
+                  );
+
+                Alert.alert(
+                  'Local backup restored',
+                  `Loaded ${restored.tripCount} trip${restored.tripCount === 1 ? '' : 's'} from the backup onto this device.`,
+                );
+              } catch (error) {
+                Alert.alert(
+                  'Restore could not finish',
+                  error instanceof Error
+                    ? error.message
+                    : 'Something went wrong while restoring the backup.',
+                );
+              } finally {
+                setIsRestoring(false);
+              }
+            })();
+          },
+        });
+      } catch (error) {
+        Alert.alert(
+          'Restore could not start',
+          error instanceof Error
+            ? error.message
+            : 'Something went wrong while reading the backup.',
+        );
       }
     })();
   };
@@ -195,8 +260,21 @@ export default function ProfileScreen() {
               ? 'Preparing export…'
               : 'Export local backup'
           }
-          body="Save a JSON copy of your trips, Travel DNA, and related facts from this device. Photo files are not included. Restore is not available yet."
+          body="Save a JSON copy of your trips, Travel DNA, and related facts from this device. Photo files are not included."
           onPress={exportLocalBackup}
+        />
+
+        <View style={styles.rowDivider} />
+
+        <ActiveRow
+          icon="cloud-upload-outline"
+          title={
+            isRestoring
+              ? 'Restoring backup…'
+              : 'Restore local backup'
+          }
+          body="Replace the data on this device with a TravelOS JSON backup. Photo files are not restored. Confirm before continuing."
+          onPress={restoreLocalBackup}
         />
 
         <View style={styles.rowDivider} />
@@ -241,7 +319,7 @@ export default function ProfileScreen() {
           </Text>
 
           <Text style={styles.privacyBody}>
-            Travel data is stored on this device. You can export a local JSON backup from Profile. Cloud sync and photo-file backup remain later, explicit options.
+            Travel data is stored on this device. Export and restore use a local JSON backup. Cloud sync and photo-file backup remain later, explicit options.
           </Text>
         </View>
       </View>

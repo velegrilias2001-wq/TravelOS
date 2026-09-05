@@ -167,7 +167,7 @@ Goal: turn coherent functionality into a distinctive, accessible native product.
 - [x] Design QA V1 for Discover, World, Profile, Memories, Travel Book, and Travel DNA: accessibility labels/targets and hierarchy pass in code; full Pixel visual matrix for these surfaces remains a device smoke when the emulator is available.
 - [x] Shared polish primitives V1: typography/spacing via `@/theme`; `EmptyState` / `InlineError`, `LocalImage`, `confirmDestructive`, `MIN_TOUCH_TARGET` on top of existing `Screen` / `UtilityScreenHeader` / motion helpers. Sheets stay native `Modal` + `Alert`. Full Field/Card framework deferred.
 - [x] Pass 1–2 restrained motion with Reduce Motion: tabs, primary CTAs, Plan badges, Discover stagger/bookmark, Companion/Map notices, World filters.
-- [x] Light haptics V1 in code (`expo-haptics` 57.0.2 on tab select, primary CTAs, Companion Done/Skip, Discover wishlist). Device feel still needs an Android development-build rebuild.
+- [x] Light haptics V1 in code (`expo-haptics` 57.0.2 on tab select, primary CTAs, Companion Done/Skip, Discover wishlist). Android development-build rebuild on 2026-09-05 linked the native module; emulator feel remains limited.
 - [x] Imagery strategy V1: `docs/IMAGERY.md` — local traveler media only; Discover stays text/icon; no stock CDN; `LocalImage` for memory/book covers.
 - [x] Accessibility V1: labels and ≥44pt targets on Home, World filters, Discover find chips, Memories, Travel Book, Travel DNA; Reduce Motion already on motion/haptics. Dynamic type policy and iOS VoiceOver stay later.
 - [x] Localization architecture V1: `locale-format` + device-locale dates/currency; English UI copy. String catalogs, Greek UI, and RTL deferred.
@@ -175,17 +175,17 @@ Goal: turn coherent functionality into a distinctive, accessible native product.
 - [x] Remove unused Expo starter components, orphan theme hooks/CSS, unused Expo images, and direct `expo-symbols` / `expo-web-browser` deps (`expo-symbols` may remain transitive via `expo-router`). App icons and splash in `app.json` remain until branded replacements exist.
 - [x] Design QA and performance budgets V1 recorded in `docs/CURRENT_STATE.md` for Home, Trips, Companion, Plan, Discover results, World, Memories.
 
-Exit condition: core flows feel calm, specific, responsive, accessible, and intentionally native rather than template-derived. **Phase 5 V1 is closed in code on this branch.** Remaining device gates: Android rebuild for haptic feel; optional multi-size Android smoke; iOS last.
+Exit condition: core flows feel calm, specific, responsive, accessible, and intentionally native rather than template-derived. **Phase 5 V1 is closed in code on this branch.** Remaining device gates: optional multi-size Android smoke; iOS last.
 
 ## Phase 6 — Cloud and Release
 
 Goal: make user data durable across devices and operate TravelOS as a released product.
 
-- [x] Local data export V1: Profile can write a versioned JSON backup of trips, Travel DNA, saved places, and related canonical facts without mutating SQLite. Photo bytes are omitted; restore and cloud sync remain later. `expo-sharing` 57 is used when available.
+- [x] Local data export V1: Profile can write a versioned JSON backup of trips, Travel DNA, saved places, and related canonical facts without mutating SQLite. Photo bytes are omitted; cloud sync remains later. `expo-sharing` 57 is used when available.
+- [x] Local data restore V1: Profile can pick a `travelos.local-export.v1` JSON backup, confirm a destructive replace, and atomically wipe+reload canonical local tables while preserving exported IDs. Photo bytes are not restored; import review queues are cleared (not in the export contract). Automated parse and round-trip persistence tests exist.
 - [x] EAS build profiles V1: committed `eas.json` with development / preview / production. `eas init` / project ID still required before cloud builds.
 - Define accounts, identity, guest conversion, shared-trip permissions, and data ownership.
 - Design backend sync and conflict resolution around SQLite-backed canonical IDs.
-- Add restore after local export before relying on cloud-only recovery.
 - Add credentials policy, versioning discipline, and environment management beyond the committed EAS profiles.
 - Complete iOS bundle, maps, permissions, device testing, TestFlight, and App Store readiness.
 - Complete Android signing, API-key restrictions, device testing, Play testing tracks, and Play Store readiness.

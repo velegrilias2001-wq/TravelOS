@@ -53,7 +53,7 @@ test('local export document is versioned and read-only', () => {
   assert.equal(document.format, LOCAL_DATA_EXPORT_FORMAT);
   assert.equal(document.contract.mutatesSqlite, false);
   assert.equal(document.contract.includesPhotoBytes, false);
-  assert.equal(document.contract.restoreAvailable, false);
+  assert.equal(document.contract.restoreAvailable, true);
   assert.equal(document.contract.cloudSync, false);
   assert.equal(document.trips.length, 1);
   assert.equal(document.trips[0].days.length, 1);
@@ -90,5 +90,5 @@ test('empty local export still carries the contract', () => {
   });
 
   assert.equal(document.trips.length, 0);
-  assert.equal(document.contract.restoreAvailable, false);
+  assert.equal(document.contract.restoreAvailable, true);
 });

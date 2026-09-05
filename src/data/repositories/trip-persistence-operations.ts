@@ -25,121 +25,125 @@ interface PersistedStopRow {
   position: number;
 }
 
+export async function writeCanonicalTrip(
+  connection: DatabaseConnection,
+  trip: Trip,
+): Promise<void> {
+  await connection.execute(
+    `
+      INSERT INTO trips (
+        id,
+        title,
+        status,
+        intent,
+        pace,
+        start_date,
+        end_date,
+        accounting_currency,
+        created_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        title = excluded.title,
+        status = excluded.status,
+        intent = excluded.intent,
+        pace = excluded.pace,
+        start_date = excluded.start_date,
+        end_date = excluded.end_date,
+        accounting_currency =
+          excluded.accounting_currency,
+        updated_at = excluded.updated_at;
+    `,
+    [
+      trip.id,
+      trip.title,
+      trip.status,
+      trip.intent ?? null,
+      trip.pace ?? null,
+      trip.startDate,
+      trip.endDate,
+      trip.accountingCurrency,
+      trip.createdAt,
+      trip.updatedAt,
+    ],
+  );
+
+  await saveTripDestinations(connection, trip);
+
+  const existingRoles = await connection.query<{
+    traveler_id: string;
+    role: string;
+  }>(
+    `
+      SELECT traveler_id, role
+      FROM trip_travelers
+      WHERE trip_id = ?;
+    `,
+    [trip.id],
+  );
+
+  const roleByTraveler = new Map(
+    existingRoles.map((row) => [
+      row.traveler_id,
+      row.role,
+    ]),
+  );
+
+  await connection.execute(
+    `
+      DELETE FROM trip_travelers
+      WHERE trip_id = ?;
+    `,
+    [trip.id],
+  );
+
+  for (const travelerId of trip.travelerIds) {
+    const travelerExists =
+      await connection.queryFirst<{
+        id: string;
+      }>(
+        `
+          SELECT id
+          FROM travelers
+          WHERE id = ?;
+        `,
+        [travelerId],
+      );
+
+    if (travelerExists) {
+      const role =
+        trip.ownerTravelerId === travelerId
+          ? 'owner'
+          : trip.ownerTravelerId
+            ? 'member'
+            : roleByTraveler.get(travelerId) ===
+                'owner'
+              ? 'owner'
+              : 'member';
+
+      await connection.execute(
+        `
+          INSERT INTO trip_travelers (
+            trip_id,
+            traveler_id,
+            role
+          )
+          VALUES (?, ?, ?);
+        `,
+        [trip.id, travelerId, role],
+      );
+    }
+  }
+}
+
 export async function saveCanonicalTrip(
   database: Database,
   trip: Trip,
 ): Promise<void> {
   await database.transaction(
     async (transaction) => {
-      await transaction.execute(
-        `
-          INSERT INTO trips (
-            id,
-            title,
-            status,
-            intent,
-            pace,
-            start_date,
-            end_date,
-            accounting_currency,
-            created_at,
-            updated_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(id) DO UPDATE SET
-            title = excluded.title,
-            status = excluded.status,
-            intent = excluded.intent,
-            pace = excluded.pace,
-            start_date = excluded.start_date,
-            end_date = excluded.end_date,
-            accounting_currency =
-              excluded.accounting_currency,
-            updated_at = excluded.updated_at;
-        `,
-        [
-          trip.id,
-          trip.title,
-          trip.status,
-          trip.intent ?? null,
-          trip.pace ?? null,
-          trip.startDate,
-          trip.endDate,
-          trip.accountingCurrency,
-          trip.createdAt,
-          trip.updatedAt,
-        ],
-      );
-
-      await saveTripDestinations(
-        transaction,
-        trip,
-      );
-
-      const existingRoles = await transaction.query<{
-        traveler_id: string;
-        role: string;
-      }>(
-        `
-          SELECT traveler_id, role
-          FROM trip_travelers
-          WHERE trip_id = ?;
-        `,
-        [trip.id],
-      );
-
-      const roleByTraveler = new Map(
-        existingRoles.map((row) => [
-          row.traveler_id,
-          row.role,
-        ]),
-      );
-
-      await transaction.execute(
-        `
-          DELETE FROM trip_travelers
-          WHERE trip_id = ?;
-        `,
-        [trip.id],
-      );
-
-      for (const travelerId of trip.travelerIds) {
-        const travelerExists =
-          await transaction.queryFirst<{
-            id: string;
-          }>(
-            `
-              SELECT id
-              FROM travelers
-              WHERE id = ?;
-            `,
-            [travelerId],
-          );
-
-        if (travelerExists) {
-          const role =
-            trip.ownerTravelerId === travelerId
-              ? 'owner'
-              : trip.ownerTravelerId
-                ? 'member'
-                : roleByTraveler.get(travelerId) ===
-                    'owner'
-                  ? 'owner'
-                  : 'member';
-
-          await transaction.execute(
-            `
-              INSERT INTO trip_travelers (
-                trip_id,
-                traveler_id,
-                role
-              )
-              VALUES (?, ?, ?);
-            `,
-            [trip.id, travelerId, role],
-          );
-        }
-      }
+      await writeCanonicalTrip(transaction, trip);
     },
   );
 }
