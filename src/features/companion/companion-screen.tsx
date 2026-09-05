@@ -30,6 +30,7 @@ import {
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
 import { playLightImpact } from '@/features/motion/haptic';
+import { RiseIn } from '@/features/motion/rise-in';
 import { useNetworkReachability } from '@/features/offline/use-network-reachability';
 import { SlideNotice } from '@/features/motion/slide-notice';
 import {
@@ -457,45 +458,72 @@ function Active({
     );
   }
 
+  const dayProgress = dayJourneyProgress(selection.stopContexts);
+
   return (
     <View style={styles.stack}>
-      <View style={styles.progressCard}>
-        <View style={styles.progressCopy}>
-          <Text style={styles.darkEyebrow}>TODAY</Text>
-          <Text style={styles.progressTitle}>
-            Day {selection.dayIndex ?? '—'} of {selection.totalDays}
-          </Text>
-          <Text style={styles.darkMeta}>
-            {formatDayDate(selection.displayDay.date)}
-          </Text>
+      <RiseIn factKey={`active-day:${selection.displayDay.id}`}>
+        <View style={styles.progressCard}>
+          <View style={styles.progressCopy}>
+            <Text style={styles.darkEyebrow}>TODAY</Text>
+            <Text style={styles.progressTitle}>
+              Day {selection.dayIndex ?? '—'} of {selection.totalDays}
+            </Text>
+            <Text style={styles.darkMeta}>
+              {formatDayDate(selection.displayDay.date)}
+            </Text>
+            {dayProgress ? (
+              <View style={styles.dayProgressBlock}>
+                <View style={styles.dayProgressTrack}>
+                  <View
+                    style={[
+                      styles.dayProgressFill,
+                      { width: `${dayProgress.percent}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.dayProgressMeta}>
+                  {dayProgress.settled} of {dayProgress.total} moments settled
+                  · {dayProgress.percent}%
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          <View style={styles.remainingBadge}>
+            <Text style={styles.remainingNumber}>
+              {selection.timingReliable
+                ? selection.remainingStops.length
+                : selection.stopContexts.length}
+            </Text>
+            <Text style={styles.remainingLabel}>
+              {selection.timingReliable ? 'TIMED AHEAD' : 'ON PLAN'}
+            </Text>
+          </View>
         </View>
-        <View style={styles.remainingBadge}>
-          <Text style={styles.remainingNumber}>
-            {selection.timingReliable
-              ? selection.remainingStops.length
-              : selection.stopContexts.length}
-          </Text>
-          <Text style={styles.remainingLabel}>
-            {selection.timingReliable ? 'TIMED AHEAD' : 'ON PLAN'}
-          </Text>
-        </View>
-      </View>
+      </RiseIn>
 
       {selection.currentStop && (
-        <FocusStop
-          label="NOW"
-          context={selection.currentStop}
-          openRoute={openRoute}
-          livedProgress={livedProgress}
-        />
+        <RiseIn factKey={`now:${selection.currentStop.stop.id}`}>
+          <FocusStop
+            label="NOW"
+            context={selection.currentStop}
+            openRoute={openRoute}
+            livedProgress={livedProgress}
+          />
+        </RiseIn>
       )}
       {selection.nextStop && (
-        <FocusStop
-          label="NEXT"
-          context={selection.nextStop}
-          openRoute={openRoute}
-          livedProgress={livedProgress}
-        />
+        <RiseIn
+          factKey={`next:${selection.nextStop.stop.id}`}
+          delayMs={60}
+        >
+          <FocusStop
+            label="NEXT"
+            context={selection.nextStop}
+            openRoute={openRoute}
+            livedProgress={livedProgress}
+          />
+        </RiseIn>
       )}
       {!selection.timingReliable && selection.stopContexts.length > 0 && (
         <TruthNotice
@@ -771,6 +799,27 @@ function Section({
   );
 }
 
+function dayJourneyProgress(
+  stopContexts: CompanionStopContext[],
+): { settled: number; total: number; percent: number } | null {
+  if (stopContexts.length === 0) {
+    return null;
+  }
+
+  const settled = stopContexts.filter(
+    (context) =>
+      context.phase === 'done' ||
+      context.phase === 'skipped' ||
+      context.phase === 'previous',
+  ).length;
+
+  return {
+    settled,
+    total: stopContexts.length,
+    percent: Math.round((settled / stopContexts.length) * 100),
+  };
+}
+
 function timelineStopLabel(
   phase: CompanionStopContext['phase'],
 ): string {
@@ -850,22 +899,52 @@ function FocusStop({
   livedProgress: LivedProgressActions;
 }) {
   const booking = context.bookings[0];
+  const isNow = label === 'NOW';
 
   return (
-    <View style={[styles.focusCard, label === 'NEXT' && styles.nextCard]}>
+    <View
+      style={[
+        styles.focusCard,
+        isNow ? styles.focusCardNow : styles.focusCardNext,
+      ]}
+    >
       <View style={styles.focusTop}>
-        <Text style={styles.focusLabel}>{label}</Text>
+        <View
+          style={[
+            styles.focusBadge,
+            isNow ? styles.focusBadgeNow : styles.focusBadgeNext,
+          ]}
+        >
+          <Text
+            style={[
+              styles.focusLabel,
+              isNow && styles.focusLabelOnInk,
+            ]}
+          >
+            {label}
+          </Text>
+        </View>
         <Text style={styles.focusTime}>
-          {context.stop.startTime}
-          {context.stop.endTime ? ` — ${context.stop.endTime}` : ''}
+          {context.stop.startTime
+            ? `${context.stop.startTime}${
+                context.stop.endTime
+                  ? ` — ${context.stop.endTime}`
+                  : ''
+              }`
+            : 'Time not set'}
         </Text>
       </View>
       <View style={styles.focusMain}>
-        <View style={styles.focusIcon}>
+        <View
+          style={[
+            styles.focusIcon,
+            isNow && styles.focusIconNow,
+          ]}
+        >
           <Ionicons
             name={stopIcon(context.stop.type)}
             size={23}
-            color={colors.teal}
+            color={isNow ? colors.textInverse : colors.teal}
           />
         </View>
         <View style={styles.flex}>
@@ -875,30 +954,48 @@ function FocusStop({
           </Text>
         </View>
       </View>
-      {booking && (
+      {booking ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Open linked booking ${booking.title}`}
-          style={styles.bookingTruth}
+          style={styles.bookingTruthCard}
           onPress={() =>
             openRoute('/trip/[tripId]/bookings', {
               bookingId: booking.id,
             })
           }
         >
-          <Ionicons name="ticket-outline" size={15} color={colors.brass} />
-          <Text numberOfLines={1} style={styles.bookingTruthText}>
-            {booking.status}
-            {booking.provider ? ` · ${booking.provider}` : ''}
-            {typeof booking.isPaid === 'boolean'
-              ? booking.isPaid
-                ? ' · paid'
-                : ' · unpaid'
-              : ''}
+          <View style={styles.bookingTruthHeader}>
+            <Text style={styles.bookingTruthEyebrow}>
+              LINKED BOOKING
+            </Text>
+            <View style={styles.statusCapsule}>
+              <Text style={styles.statusCapsuleText}>
+                {booking.status}
+              </Text>
+            </View>
+          </View>
+          <Text numberOfLines={1} style={styles.bookingTruthTitle}>
+            {booking.title}
           </Text>
-          <Ionicons name="chevron-forward" size={15} color={colors.brass} />
+          <Text numberOfLines={1} style={styles.bookingTruthMeta}>
+            {[
+              booking.type,
+              booking.provider,
+              booking.confirmationCode
+                ? `code ${booking.confirmationCode}`
+                : null,
+              typeof booking.isPaid === 'boolean'
+                ? booking.isPaid
+                  ? 'paid'
+                  : 'unpaid'
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
         </Pressable>
-      )}
+      ) : null}
       <View style={styles.actionRow}>
         <LivedProgressPills
           context={context}
@@ -948,43 +1045,113 @@ function TimelineStop({
   livedProgress: LivedProgressActions;
 }) {
   const label = timelineStopLabel(context.phase);
+  const isCurrent = context.phase === 'current';
+  const isNext = context.phase === 'next';
+  const isSettled =
+    context.phase === 'previous' ||
+    context.phase === 'done' ||
+    context.phase === 'skipped' ||
+    context.phase === 'delayed';
+  const isMuted =
+    context.phase === 'later' ||
+    context.phase === 'ordered' ||
+    context.phase === 'untimed' ||
+    context.phase === 'history';
 
   return (
     <View style={styles.timelineRow}>
       <View style={styles.rail}>
         <View
           style={[
-            styles.dot,
-            context.phase === 'current' && styles.dotCurrent,
-            (context.phase === 'previous' ||
-              context.phase === 'delayed' ||
-              context.phase === 'done' ||
-              context.phase === 'skipped') &&
-              styles.dotPast,
+            styles.railNode,
+            isCurrent && styles.railNodeCurrent,
+            isNext && styles.railNodeNext,
+            isSettled && styles.railNodeSettled,
+            isMuted && styles.railNodeMuted,
           ]}
-        />
-        {!last && <View style={styles.line} />}
+        >
+          {isSettled ? (
+            <Ionicons
+              name={
+                context.phase === 'skipped'
+                  ? 'play-skip-forward'
+                  : 'checkmark'
+              }
+              size={11}
+              color={colors.textInverse}
+            />
+          ) : isCurrent ? (
+            <View style={styles.railNodePulse} />
+          ) : null}
+        </View>
+        {!last && (
+          <View
+            style={[
+              styles.line,
+              isSettled && styles.lineSettled,
+            ]}
+          />
+        )}
       </View>
       <View style={styles.flex}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Open ${context.stop.title} in Plan, ${label.toLowerCase()}`}
-          style={styles.timelineCard}
+          style={[
+            styles.timelineCard,
+            isCurrent && styles.timelineCardCurrent,
+            isNext && styles.timelineCardNext,
+            isMuted && styles.timelineCardMuted,
+          ]}
           onPress={onPress}
         >
-          <View style={styles.flex}>
-            <Text style={styles.timelineLabel}>{label}</Text>
-            <Text style={styles.rowTitle}>{context.stop.title}</Text>
+          <View style={styles.timelineCardCopy}>
+            <View style={styles.timelineCardTop}>
+              <Text
+                style={[
+                  styles.timelineLabel,
+                  isCurrent && styles.timelineLabelCurrent,
+                ]}
+              >
+                {label}
+              </Text>
+              {context.stop.startTime ? (
+                <Text style={styles.timelineTime}>
+                  {context.stop.startTime}
+                  {context.stop.endTime
+                    ? `–${context.stop.endTime}`
+                    : ''}
+                </Text>
+              ) : null}
+            </View>
+            <Text
+              style={[
+                styles.rowTitle,
+                isMuted && styles.rowTitleMuted,
+              ]}
+            >
+              {context.stop.title}
+            </Text>
             <Text style={styles.rowMeta}>
-              {context.stop.startTime ? `${context.stop.startTime} · ` : ''}
+              {context.stop.location?.name
+                ? `${context.stop.location.name} · `
+                : ''}
               {context.stop.type}
               {context.bookings.length > 0
-                ? ` · ${context.bookings.length} linked ${context.bookings.length === 1 ? 'booking' : 'bookings'}`
+                ? ` · ${context.bookings.length} linked ${
+                    context.bookings.length === 1
+                      ? 'booking'
+                      : 'bookings'
+                  }`
                 : ''}
             </Text>
           </View>
           {context.isMapped && (
-            <Ionicons name="location-outline" size={17} color={colors.teal} />
+            <Ionicons
+              name="location-outline"
+              size={17}
+              color={isMuted ? colors.textMuted : colors.teal}
+            />
           )}
         </Pressable>
         <View style={styles.timelineLivedActions}>
@@ -1103,16 +1270,55 @@ function BookingCard({
   onPress: () => void;
 }) {
   const time = formatBookingTemporalValue(booking.startAt);
+  const endTime = formatBookingTemporalValue(booking.endAt);
 
   return (
-    <ContextCard
-      icon="ticket-outline"
-      label={label}
-      title={booking.title}
-      meta={`${booking.status}${booking.provider ? ` · ${booking.provider}` : ''}${time ? ` · ${time}` : ''}`}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${booking.title}`}
+      style={({ pressed }) => [
+        styles.bookingRouteCard,
+        pressed && styles.pressed,
+      ]}
       onPress={onPress}
-      brass
-    />
+    >
+      <View style={styles.bookingRouteTop}>
+        <Text style={styles.bookingRouteEyebrow}>{label}</Text>
+        <View style={styles.statusCapsule}>
+          <Text style={styles.statusCapsuleText}>{booking.status}</Text>
+        </View>
+      </View>
+      <Text style={styles.bookingRouteTitle}>{booking.title}</Text>
+      <View style={styles.bookingRouteMetaRow}>
+        <Text style={styles.bookingRouteType}>{booking.type}</Text>
+        {booking.provider ? (
+          <Text style={styles.bookingRouteProvider}>
+            {booking.provider}
+          </Text>
+        ) : null}
+      </View>
+      {(time || endTime || booking.confirmationCode) && (
+        <View style={styles.bookingRouteFooter}>
+          <Text style={styles.bookingRouteFooterText}>
+            {[
+              time && endTime
+                ? `${time} → ${endTime}`
+                : time || endTime,
+              booking.confirmationCode
+                ? `code ${booking.confirmationCode}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+          <Ionicons
+            name="arrow-forward"
+            size={16}
+            color={colors.brass}
+          />
+        </View>
+      )}
+    </Pressable>
   );
 }
 
@@ -1602,6 +1808,26 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: '#D4C29F',
   },
+  dayProgressBlock: {
+    marginTop: spacing[4],
+    gap: spacing[2],
+  },
+  dayProgressTrack: {
+    height: 4,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    overflow: 'hidden',
+  },
+  dayProgressFill: {
+    height: 4,
+    borderRadius: radius.pill,
+    backgroundColor: colors.brass,
+  },
+  dayProgressMeta: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: 'rgba(255,253,248,0.72)',
+  },
   firstDayCard: {
     overflow: 'hidden',
     borderWidth: 1,
@@ -1676,21 +1902,42 @@ const styles = StyleSheet.create({
     padding: spacing[5],
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.teal,
     backgroundColor: colors.surface,
     ...shadows.card,
   },
-  nextCard: { borderColor: colors.borderStrong },
+  focusCardNow: {
+    borderColor: colors.teal,
+  },
+  focusCardNext: {
+    borderColor: colors.borderStrong,
+  },
   focusTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing[3],
+  },
+  focusBadge: {
+    minHeight: 28,
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  focusBadgeNow: {
+    backgroundColor: colors.brand,
+  },
+  focusBadgeNext: {
+    backgroundColor: colors.brassSoft,
   },
   focusLabel: {
     fontFamily: fontFamily.sansBold,
     fontSize: fontSize.micro,
     letterSpacing: 1.8,
     color: colors.brass,
+  },
+  focusLabelOnInk: {
+    color: colors.textInverse,
   },
   focusTime: {
     fontFamily: fontFamily.sansSemiBold,
@@ -1711,6 +1958,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  focusIconNow: {
+    backgroundColor: colors.brand,
+  },
   focusTitle: {
     fontFamily: fontFamily.serifSemiBold,
     fontSize: fontSize.titleSmall,
@@ -1724,22 +1974,111 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textTransform: 'capitalize',
   },
-  bookingTruth: {
-    minHeight: 48,
+  bookingTruthCard: {
     marginTop: spacing[4],
-    paddingHorizontal: spacing[3],
-    borderRadius: radius.md,
+    padding: spacing[4],
+    borderRadius: radius.lg,
     backgroundColor: colors.brassSoft,
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing[2],
   },
-  bookingTruthText: {
+  bookingTruthHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[3],
+  },
+  bookingTruthEyebrow: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.2,
+    color: colors.brass,
+  },
+  bookingTruthTitle: {
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.bodyLarge,
+    color: colors.textPrimary,
+  },
+  bookingTruthMeta: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: colors.textSecondary,
+    textTransform: 'capitalize',
+  },
+  statusCapsule: {
+    minHeight: 24,
+    paddingHorizontal: spacing[2],
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.brass,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusCapsuleText: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 9,
+    letterSpacing: 1,
+    color: colors.brass,
+    textTransform: 'uppercase',
+  },
+  bookingRouteCard: {
+    padding: spacing[5],
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    gap: spacing[3],
+    ...shadows.subtle,
+  },
+  bookingRouteTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[3],
+  },
+  bookingRouteEyebrow: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.4,
+    color: colors.brass,
+  },
+  bookingRouteTitle: {
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleSmall,
+    lineHeight: lineHeight.titleSmall,
+    color: colors.textPrimary,
+  },
+  bookingRouteMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+  bookingRouteType: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.2,
+    color: colors.teal,
+    textTransform: 'uppercase',
+  },
+  bookingRouteProvider: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
+  },
+  bookingRouteFooter: {
+    marginTop: spacing[1],
+    paddingTop: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[3],
+  },
+  bookingRouteFooterText: {
     flex: 1,
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.caption,
     color: colors.textSecondary,
-    textTransform: 'capitalize',
   },
   actionRow: {
     marginTop: spacing[4],
@@ -1772,49 +2111,100 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing[2],
   },
-  rail: { width: 22, alignItems: 'center' },
-  dot: {
-    width: 9,
-    height: 9,
-    marginTop: 25,
+  rail: { width: 28, alignItems: 'center' },
+  railNode: {
+    width: 18,
+    height: 18,
+    marginTop: 22,
     borderRadius: radius.pill,
     borderWidth: 2,
     borderColor: colors.teal,
     backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  dotCurrent: {
-    width: 13,
-    height: 13,
-    marginTop: 23,
-    borderWidth: 3,
-    backgroundColor: colors.tealSoft,
+  railNodeCurrent: {
+    width: 22,
+    height: 22,
+    marginTop: 20,
+    borderWidth: 0,
+    backgroundColor: colors.teal,
   },
-  dotPast: {
+  railNodeNext: {
+    borderColor: colors.brass,
+    backgroundColor: colors.brassSoft,
+  },
+  railNodeSettled: {
+    borderWidth: 0,
+    backgroundColor: colors.brand,
+  },
+  railNodeMuted: {
     borderColor: colors.borderStrong,
-    backgroundColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  railNodePulse: {
+    width: 6,
+    height: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.textInverse,
   },
   line: {
     flex: 1,
-    width: 1,
+    width: 2,
     marginVertical: 3,
     backgroundColor: colors.borderStrong,
   },
+  lineSettled: {
+    backgroundColor: colors.brandSoft,
+  },
   timelineCard: {
     flex: 1,
-    minHeight: 66,
+    minHeight: 72,
     marginLeft: spacing[2],
     marginBottom: spacing[2],
     padding: spacing[3],
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'transparent',
     backgroundColor: colors.surfaceWarm,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing[2],
+  },
+  timelineCardCurrent: {
+    borderColor: colors.teal,
+    backgroundColor: colors.surface,
+    ...shadows.subtle,
+  },
+  timelineCardNext: {
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  timelineCardMuted: {
+    opacity: 0.72,
+  },
+  timelineCardCopy: {
+    flex: 1,
+  },
+  timelineCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[3],
   },
   timelineLabel: {
     fontFamily: fontFamily.sansBold,
     fontSize: 9,
     letterSpacing: 1,
     color: colors.brass,
+  },
+  timelineLabelCurrent: {
+    color: colors.teal,
+  },
+  timelineTime: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.textSecondary,
   },
   row: {
     minHeight: 68,
@@ -1837,6 +2227,9 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.sansSemiBold,
     fontSize: fontSize.bodySmall,
     color: colors.textPrimary,
+  },
+  rowTitleMuted: {
+    color: colors.textSecondary,
   },
   rowMeta: {
     marginTop: 3,

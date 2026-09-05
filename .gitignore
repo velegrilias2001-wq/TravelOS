@@ -44,3 +44,6 @@ example
 /android
 .env.local
 server/.env
+
+# local design-reference extracts (never commit)
+.tmp-ref-frames/

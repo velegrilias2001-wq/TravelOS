@@ -251,6 +251,16 @@ These stay later. They were not implemented in this pass. iOS rebuild is last.
 - Phase 5 visual/function matrix remainder: closed on Pixel 8 on 2026-09-03. Phase 5 polish V1 closed in code. Android rebuild on 2026-09-05 linked haptics/sharing. iOS last.
 - iOS development-client rebuild and Expo SQLite rehearsal.
 
+### Design Elevation — Flutter-craft on TravelOS (no rewrite)
+Goal: borrow motion/hierarchy craft from premium flight UI demos without cloning brands, inventing facts, or leaving Expo.
+
+- [x] **1 · Companion Active** — day progress from settled moments, NOW/NEXT badges, linked-booking truth card, journey timeline rail (settled ✓ / current / muted later). Real stop/booking fields only.
+- [ ] **2 · Bookings** — route-card hierarchy for saved bookings
+- [ ] **3 · Create Trip** — sheet rhythm + sticky CTA polish
+- [ ] **4 · Discover** — search/results craft
+- [ ] **5 · Home** — denser hero without dashboard clutter
+- [ ] **6 · Plan** — horizontal day strip
+
 ## Cross-cutting rules
 
 - Preserve one canonical Trip and explicit ID relationships at every phase.
