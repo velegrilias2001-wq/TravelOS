@@ -189,7 +189,7 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 - Complete iOS bundle, maps, permissions, device testing, TestFlight, and App Store readiness (**last**; Windows cannot rebuild iOS).
 - [x] **iOS release prep V1 (config only)** — `ios.bundleIdentifier` `com.travelos.app`; `react-native-maps` receives `iosGoogleMapsApiKey` from the same `GOOGLE_MAPS_API_KEY`; `expo-image-picker` config plugin sets Memory camera/photo usage strings. No iOS binary built on this Windows pass.
 - Complete Android signing via EAS credentials, set `GOOGLE_MAPS_API_KEY` as an EAS secret for cloud builds, verify Maps key package/SHA restrictions, then preview/production Play tracks.
-- [x] **Android EAS preview build V1** — `GOOGLE_MAPS_API_KEY` stored as EAS env secret for development/preview/production; `eas.json` profiles declare matching `environment`; remote Android keystore created on Expo; first preview APK built 2026-09-05 (`ca98eafd-e956-4e05-9a62-78aeddfdfa94`). Play tracks and Maps package/SHA restriction verification remain open.
+- [x] **Android EAS preview build V1** — `GOOGLE_MAPS_API_KEY` stored as EAS env secret for development/preview/production; `eas.json` profiles declare matching `environment`; remote Android keystore created on Expo; preview APKs built 2026-09-05 (`ca98eafd-e956-4e05-9a62-78aeddfdfa94`, then tab-bar `817e2c05-c1b6-4cbd-9160-fe9e2987297f` on commit `a36f2b5`). Play tracks and Maps package/SHA restriction verification remain open.
 - Define accounts, identity, guest conversion, shared-trip permissions, and data ownership (**design still open** — do not invent cloud identity in this pass).
 - Design backend sync and conflict resolution around SQLite-backed canonical IDs (**later**; local export/restore remains the durable backup path).
 - Add notifications after platform permission, timezone, and Companion rules are complete (still parked with Time Zone API).
@@ -202,18 +202,18 @@ Exit condition: TravelOS can be built, tested, observed, restored, and released 
 
 Goal: keep the canonical native core and close the gap with the PWA on **feel** — unique TravelOS design, purposeful motion, and the strongest copilot possible on the **existing** `/ai/*` APIs — without inventing destinations or silent SQLite writes.
 
-### Wave 1 — Home / identity / copilot foundation (in progress)
+### Wave 1 — Home / identity / copilot foundation
 - [x] Deeper ink/teal palette refinement (still TravelOS, not a new brand)
 - [x] Shared `motion` timing + `RiseIn` soft enter
 - [x] Editorial Home: brand-first, Create / Help me decide / Import doors, what-matters-now hero
 - [x] Stronger local-dev copilot system prompt
 - [x] Profile → TravelOS Copilot health probe (`GET /ai/tools`)
-- [ ] Device smoke on preview APK after Maps SHA + tab-bar build
+- [ ] Operator: device smoke on preview APK after Maps SHA is restricted (tab-bar safe-area already in native client)
 
 ### Wave 2 — Create Trip delight
 - [x] Progressive disclosure: Where → When → Shape/Create with step pips, RiseIn, Continue CTAs, review card; Discover prefill still skips to When when destinations exist
-- Motion on step transitions; clearer empty/error hints per step
-- Device smoke: Android emulator after change (Metro / development client)
+- [x] Motion on step transitions (`RiseIn` per step); empty Continue hints for Where/When
+- [x] Emulator smoke: Android development client Step 1 Where verified
 
 ### Wave 3 — Companion + Plan copilot density
 - [x] Shared free-time advice hook + `FreeTimeAdviceCard` with provider/model provenance
@@ -234,6 +234,9 @@ Goal: keep the canonical native core and close the gap with the PWA on **feel** 
 - [ ] Operator: Play Console internal/closed track (AAB via EAS production profile)
 - [ ] Accounts / cloud sync: design only — not implemented; local export/restore stays the backup path
 - [ ] iOS development-client / TestFlight rebuild on macOS (**last**; Windows cannot)
+- [ ] Operator: `git push -u origin HEAD` so GitHub Actions CI runs for this branch
+
+**Elevation Program — agent-completable work is closed on this branch.** Remaining Wave 5 items are operator / Mac / store gates.
 
 Hard rules stay in force: AI is not a destination source; suggestions never mutate SQLite; production provider remains `none` until an explicit cloud decision.
 
