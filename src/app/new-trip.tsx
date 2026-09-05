@@ -13,11 +13,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+
+import {
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import {
   CalendarDateField,
@@ -576,6 +581,8 @@ export default function NewTripScreen() {
       }
     };
 
+  const insets = useSafeAreaInsets();
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -585,7 +592,10 @@ export default function NewTripScreen() {
           : undefined
       }
     >
-      <Screen scroll>
+      <Screen
+        scroll={false}
+        contentStyle={styles.screenBody}
+      >
         <View
           style={styles.topBar}
         >
@@ -639,6 +649,12 @@ export default function NewTripScreen() {
           )}
         </View>
 
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         <RiseIn factKey={`step:${step}`}>
           <View style={styles.intro}>
             <Text
@@ -1210,6 +1226,20 @@ export default function NewTripScreen() {
           </View>
         </RiseIn>
 
+        <View style={styles.scrollBottomSpace} />
+        </ScrollView>
+
+        <View
+          style={[
+            styles.stickyFooter,
+            {
+              paddingBottom: Math.max(
+                insets.bottom,
+                spacing[4],
+              ),
+            },
+          ]}
+        >
         {step !== 'finish' ? (
           <PressableScale
             accessibilityRole="button"
@@ -1305,12 +1335,7 @@ export default function NewTripScreen() {
             Choose start and end dates to continue.
           </Text>
         ) : null}
-
-        <View
-          style={
-            styles.bottomSpace
-          }
-        />
+        </View>
       </Screen>
     </KeyboardAvoidingView>
   );
@@ -1391,6 +1416,28 @@ const styles =
       flex: 1,
       backgroundColor:
         colors.background,
+    },
+
+    screenBody: {
+      flex: 1,
+      paddingBottom: 0,
+    },
+
+    scrollContent: {
+      paddingBottom: spacing[4],
+      flexGrow: 1,
+    },
+
+    stickyFooter: {
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.background,
+      paddingTop: spacing[3],
+      gap: spacing[2],
+    },
+
+    scrollBottomSpace: {
+      height: spacing[4],
     },
 
     topBar: {

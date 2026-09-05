@@ -180,15 +180,6 @@ export default function HomeScreen() {
           factKey={compositionKey}
           delayMs={motion.staggerMs}
         >
-          <Text style={styles.nowEyebrow}>
-            WHAT MATTERS NOW
-          </Text>
-          <Text style={styles.heading}>
-            {featuredPhase === 'active'
-              ? 'You are on the journey.'
-              : 'Your next trip is waiting.'}
-          </Text>
-
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel={`Open ${featuredTrip.title}`}
@@ -211,6 +202,12 @@ export default function HomeScreen() {
                 color={colors.textInverse}
               />
             </View>
+
+            <Text style={styles.heroGreeting}>
+              {featuredPhase === 'active'
+                ? 'You are on the journey.'
+                : 'Your next trip is waiting.'}
+            </Text>
 
             <View style={styles.heroContent}>
               <Text style={styles.heroDestination}>
@@ -341,6 +338,7 @@ export default function HomeScreen() {
         </RiseIn>
       )}
 
+      {!featuredTrip ? (
       <RiseIn
         factKey={`life:${compositionKey}`}
         delayMs={motion.staggerMs * 3}
@@ -419,6 +417,7 @@ export default function HomeScreen() {
           </PressableScale>
         </View>
       </RiseIn>
+      ) : null}
 
       {trips.length > 0 ? (
         <RiseIn
@@ -650,7 +649,16 @@ const styles = StyleSheet.create({
   },
 
   heroContent: {
-    marginVertical: spacing[8],
+    marginTop: spacing[4],
+    marginBottom: spacing[5],
+  },
+
+  heroGreeting: {
+    marginTop: spacing[4],
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleSmall,
+    lineHeight: lineHeight.titleSmall,
+    color: colors.textInverse,
   },
 
   heroDestination: {

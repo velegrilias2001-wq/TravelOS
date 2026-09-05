@@ -255,11 +255,11 @@ These stay later. They were not implemented in this pass. iOS rebuild is last.
 Goal: borrow motion/hierarchy craft from premium flight UI demos without cloning brands, inventing facts, or leaving Expo.
 
 - [x] **1 · Companion Active** — day progress from settled moments, NOW/NEXT badges, linked-booking truth card, journey timeline rail (settled ✓ / current / muted later). Real stop/booking fields only.
-- [ ] **2 · Bookings** — route-card hierarchy for saved bookings
-- [ ] **3 · Create Trip** — sheet rhythm + sticky CTA polish
-- [ ] **4 · Discover** — search/results craft
-- [ ] **5 · Home** — denser hero without dashboard clutter
-- [ ] **6 · Plan** — horizontal day strip
+- [x] **2 · Bookings** — route-card hierarchy (type eyebrow, Playfair title, temporal rail, status badge) without inventing airports
+- [x] **3 · Create Trip** — sticky Continue/Create footer + sheet scroll rhythm
+- [x] **4 · Discover** — overlap sheet under primary door + RiseIn/StaggerEnter
+- [x] **5 · Home** — denser hero greeting inside card; hide glance stats when a featured trip exists
+- [x] **6 · Plan** — horizontal day strip from real TripDays (date + assigned city when set)
 
 ## Cross-cutting rules
 

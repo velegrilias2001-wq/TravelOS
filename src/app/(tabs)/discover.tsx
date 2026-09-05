@@ -9,6 +9,9 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
+import { RiseIn } from '@/features/motion/rise-in';
+import { StaggerEnter } from '@/features/motion/stagger-enter';
+import { motion } from '@/features/motion/timing';
 
 import {
   colors,
@@ -25,116 +28,126 @@ export default function DiscoverScreen() {
 
   return (
     <Screen scroll>
-      <View style={styles.header}>
-        <Text style={styles.eyebrow}>
-          DISCOVER
-        </Text>
+      <RiseIn factKey="discover-home">
+        <View style={styles.header}>
+          <Text style={styles.eyebrow}>
+            DISCOVER
+          </Text>
 
-        <Text style={styles.title}>
-          Where could this take you?
-        </Text>
+          <Text style={styles.title}>
+            Where could this take you?
+          </Text>
 
-        <Text style={styles.subtitle}>
-          Start with a place you already have in mind, or let TravelOS help you decide where and when to go.
-        </Text>
-      </View>
+          <Text style={styles.subtitle}>
+            Start with a place you already have in mind, or let TravelOS help you decide where and when to go.
+          </Text>
+        </View>
+      </RiseIn>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Start planning a destination you already know"
-        style={({ pressed }) => [
-          styles.primaryCard,
-          pressed && styles.pressed,
-        ]}
-        onPress={() =>
-          router.push('/new-trip')
-        }
-      >
-        <View style={styles.primaryTop}>
-          <View style={styles.primaryIcon}>
-            <Ionicons
-              name="location-outline"
-              size={24}
-              color={colors.textInverse}
-            />
+      <View style={styles.overlapStack}>
+        <RiseIn
+          factKey="discover-primary"
+          delayMs={motion.staggerMs}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Start planning a destination you already know"
+            style={({ pressed }) => [
+              styles.primaryCard,
+              pressed && styles.pressed,
+            ]}
+            onPress={() =>
+              router.push('/new-trip')
+            }
+          >
+            <View style={styles.primaryTop}>
+              <View style={styles.primaryIcon}>
+                <Ionicons
+                  name="location-outline"
+                  size={24}
+                  color={colors.textInverse}
+                />
+              </View>
+
+              <View style={styles.primaryArrow}>
+                <Ionicons
+                  name="arrow-forward"
+                  size={18}
+                  color={colors.brand}
+                />
+              </View>
+            </View>
+
+            <Text style={styles.primaryEyebrow}>
+              I KNOW WHERE
+            </Text>
+
+            <Text style={styles.primaryTitle}>
+              Start with a place
+            </Text>
+
+            <Text style={styles.primaryBody}>
+              Choose your destination and dates, then build the trip from there.
+            </Text>
+          </Pressable>
+        </RiseIn>
+
+        <View style={styles.overlapSheet}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionEyebrow}>
+              FIND THE TRIP
+            </Text>
+
+            <Text style={styles.sectionTitle}>
+              Let TravelOS help you choose
+            </Text>
           </View>
 
-          <View style={styles.primaryArrow}>
-            <Ionicons
-              name="arrow-forward"
-              size={18}
-              color={colors.brand}
-            />
+          <View style={styles.optionList}>
+            {(
+              [
+                {
+                  icon: 'sparkles-outline' as const,
+                  title: 'Find me somewhere',
+                  body: 'Tell us when you can travel, your budget and what kind of trip you want.',
+                  path: '/discover/find-destination' as const,
+                },
+                {
+                  icon: 'calendar-outline' as const,
+                  title: 'Best time to go',
+                  body: 'Already know the place? See sourced months for that destination.',
+                  path: '/discover/best-time' as const,
+                },
+                {
+                  icon: 'compass-outline' as const,
+                  title: 'Ready-made journeys',
+                  body: 'Explore curated trip ideas you can keep, adapt and make your own.',
+                  path: '/discover/journeys' as const,
+                },
+                {
+                  icon: 'bookmark-outline' as const,
+                  title: 'Saved ideas',
+                  body: 'Keep catalogue destinations and journey ideas without turning them into trips.',
+                  path: '/discover/saved' as const,
+                },
+              ] as const
+            ).map((option, index) => (
+              <StaggerEnter
+                key={option.path}
+                index={index}
+              >
+                <DiscoverOption
+                  icon={option.icon}
+                  title={option.title}
+                  body={option.body}
+                  onPress={() =>
+                    router.push(option.path)
+                  }
+                />
+              </StaggerEnter>
+            ))}
           </View>
         </View>
-
-        <Text style={styles.primaryEyebrow}>
-          I KNOW WHERE
-        </Text>
-
-        <Text style={styles.primaryTitle}>
-          Start with a place
-        </Text>
-
-        <Text style={styles.primaryBody}>
-          Choose your destination and dates, then build the trip from there.
-        </Text>
-      </Pressable>
-
-      <View style={styles.sectionHeading}>
-        <Text style={styles.sectionEyebrow}>
-          FIND THE TRIP
-        </Text>
-
-        <Text style={styles.sectionTitle}>
-          Let TravelOS help you choose
-        </Text>
-      </View>
-
-      <View style={styles.optionList}>
-        <DiscoverOption
-          icon="sparkles-outline"
-          title="Find me somewhere"
-          body="Tell us when you can travel, your budget and what kind of trip you want."
-          onPress={() =>
-            router.push(
-              '/discover/find-destination',
-            )
-          }
-        />
-
-        <DiscoverOption
-          icon="calendar-outline"
-          title="Best time to go"
-          body="Already know the place? See sourced months for that destination."
-          onPress={() =>
-            router.push(
-              '/discover/best-time',
-            )
-          }
-        />
-
-        <DiscoverOption
-          icon="compass-outline"
-          title="Ready-made journeys"
-          body="Explore curated trip ideas you can keep, adapt and make your own."
-          onPress={() =>
-            router.push(
-              '/discover/journeys',
-            )
-          }
-        />
-
-        <DiscoverOption
-          icon="bookmark-outline"
-          title="Saved ideas"
-          body="Keep catalogue destinations and journey ideas without turning them into trips."
-          onPress={() =>
-            router.push(
-              '/discover/saved',
-            )
-          }
-        />
       </View>
 
       <View style={styles.promiseCard}>
@@ -215,7 +228,24 @@ const styles =
   StyleSheet.create({
     header: {
       paddingTop: spacing[6],
-      marginBottom: spacing[7],
+      marginBottom: spacing[5],
+    },
+
+    overlapStack: {
+      marginBottom: spacing[5],
+    },
+
+    overlapSheet: {
+      marginTop: -spacing[5],
+      paddingTop: spacing[7],
+      paddingHorizontal: spacing[4],
+      paddingBottom: spacing[4],
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...shadows.subtle,
     },
 
     eyebrow: {

@@ -941,7 +941,9 @@ export default function BookingsScreen() {
                       pressed,
                     }) => [
                       styles.bookingCard,
-
+                      booking.status ===
+                        'confirmed' &&
+                        styles.bookingCardConfirmed,
                       pressed &&
                         styles.pressed,
                     ]}
@@ -977,33 +979,18 @@ export default function BookingsScreen() {
                           styles.bookingTop
                         }
                       >
-                        <View
+                        <Text
                           style={
-                            styles.bookingTitleWrap
+                            styles.bookingTypeEyebrow
                           }
                         >
-                          <Text
-                            style={
-                              styles.bookingTitle
-                            }
-                          >
-                            {
-                              booking.title
-                            }
-                          </Text>
-
-                          {booking.provider && (
-                            <Text
-                              style={
-                                styles.provider
-                              }
-                            >
-                              {
-                                booking.provider
-                              }
-                            </Text>
-                          )}
-                        </View>
+                          {BOOKING_TYPES.find(
+                            (item) =>
+                              item.value ===
+                              booking.type,
+                          )?.label ??
+                            booking.type}
+                        </Text>
 
                         <View
                           style={[
@@ -1016,6 +1003,10 @@ export default function BookingsScreen() {
                             booking.status ===
                               'completed' &&
                               styles.statusCompleted,
+
+                            booking.status ===
+                              'confirmed' &&
+                              styles.statusConfirmed,
                           ]}
                         >
                           <Text
@@ -1028,55 +1019,56 @@ export default function BookingsScreen() {
                         </View>
                       </View>
 
-                      {dateLabel && (
-                        <View
+                      <Text
+                        style={
+                          styles.bookingTitle
+                        }
+                      >
+                        {booking.title}
+                      </Text>
+
+                      {(dateLabel ||
+                        formatDateTime(
+                          booking.endAt,
+                        )) && (
+                        <Text
                           style={
-                            styles.metaRow
+                            styles.bookingTemporal
                           }
                         >
-                          <Ionicons
-                            name="calendar-outline"
-                            size={15}
-                            color={
-                              colors.textMuted
-                            }
-                          />
-
-                          <Text
-                            style={
-                              styles.metaText
-                            }
-                          >
-                            {dateLabel}
-                          </Text>
-                        </View>
+                          {dateLabel &&
+                          formatDateTime(
+                            booking.endAt,
+                          )
+                            ? `${dateLabel} → ${formatDateTime(booking.endAt)}`
+                            : dateLabel ||
+                              formatDateTime(
+                                booking.endAt,
+                              )}
+                        </Text>
                       )}
 
-                      {booking.confirmationCode && (
-                        <View
-                          style={
-                            styles.metaRow
-                          }
-                        >
-                          <Ionicons
-                            name="key-outline"
-                            size={15}
-                            color={
-                              colors.textMuted
-                            }
-                          />
-
-                          <Text
-                            style={
-                              styles.metaText
-                            }
-                          >
-                            {
-                              booking.confirmationCode
-                            }
-                          </Text>
-                        </View>
-                      )}
+                      <Text
+                        numberOfLines={1}
+                        style={
+                          styles.bookingMetaLine
+                        }
+                      >
+                        {[
+                          booking.provider,
+                          booking.confirmationCode
+                            ? `code ${booking.confirmationCode}`
+                            : null,
+                          booking.isPaid
+                            ? 'paid'
+                            : booking.isPaid ===
+                                false
+                              ? 'unpaid'
+                              : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </Text>
 
                       {linkedStopContext && (
                         <Pressable
@@ -1232,10 +1224,8 @@ export default function BookingsScreen() {
                         >
                           <Ionicons
                             name="trash-outline"
-                            size={17}
-                            color={
-                              colors.danger
-                            }
+                            size={18}
+                            color={colors.coral}
                           />
                         </Pressable>
                       </View>
@@ -2186,6 +2176,11 @@ const styles =
       ...shadows.subtle,
     },
 
+    bookingCardConfirmed: {
+      borderLeftWidth: 3,
+      borderLeftColor: colors.brand,
+    },
+
     bookingIcon: {
       width: 46,
       height: 46,
@@ -2208,6 +2203,7 @@ const styles =
 
     bookingContent: {
       flex: 1,
+      gap: spacing[2],
     },
 
     bookingTop: {
@@ -2217,8 +2213,19 @@ const styles =
       justifyContent:
         'space-between',
 
+      alignItems: 'center',
+
       gap:
         spacing[3],
+    },
+
+    bookingTypeEyebrow: {
+      fontFamily:
+        fontFamily.sansBold,
+      fontSize: fontSize.micro,
+      letterSpacing: 1.3,
+      color: colors.brass,
+      textTransform: 'uppercase',
     },
 
     bookingTitleWrap: {
@@ -2227,13 +2234,32 @@ const styles =
 
     bookingTitle: {
       fontFamily:
-        fontFamily.sansSemiBold,
+        fontFamily.serifSemiBold,
 
       fontSize:
-        fontSize.body,
+        fontSize.titleSmall,
+
+      lineHeight:
+        lineHeight.titleSmall,
 
       color:
         colors.textPrimary,
+    },
+
+    bookingTemporal: {
+      fontFamily:
+        fontFamily.sansMedium,
+      fontSize: fontSize.caption,
+      color: colors.textSecondary,
+    },
+
+    bookingMetaLine: {
+      fontFamily:
+        fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      color: colors.textMuted,
+      textTransform: 'capitalize',
+      minHeight: 16,
     },
 
     provider: {
@@ -2274,6 +2300,11 @@ const styles =
     statusCompleted: {
       backgroundColor:
         colors.brandSoft,
+    },
+
+    statusConfirmed: {
+      backgroundColor:
+        colors.brassSoft,
     },
 
     statusText: {

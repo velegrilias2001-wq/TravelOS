@@ -302,6 +302,9 @@ export default function PlanScreen() {
   const [collapsedDayIds, setCollapsedDayIds] =
     useState<Set<string>>(() => new Set());
 
+  const [focusedDayId, setFocusedDayId] =
+    useState<string | null>(null);
+
   const toggleDay = (dayId: string) => {
     setCollapsedDayIds((current) => {
       const next = new Set(current);
@@ -312,6 +315,15 @@ export default function PlanScreen() {
         next.add(dayId);
       }
 
+      return next;
+    });
+  };
+
+  const focusDay = (dayId: string) => {
+    setFocusedDayId(dayId);
+    setCollapsedDayIds((current) => {
+      const next = new Set(current);
+      next.delete(dayId);
       return next;
     });
   };
@@ -1095,6 +1107,72 @@ export default function PlanScreen() {
           title="Your plan"
           subtitle={`${workspace.days.length} ${workspace.days.length === 1 ? 'day' : 'days'} · ${workspace.stops.length} ${workspace.stops.length === 1 ? 'moment' : 'moments'}`}
         />
+
+        {workspace.days.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.dayStrip}
+            style={styles.dayStripScroll}
+          >
+            {workspace.days.map((day) => {
+              const selected =
+                focusedDayId === day.id ||
+                (!focusedDayId &&
+                  day.id === workspace.days[0]?.id);
+              const assignedCity =
+                tripDayDestination(
+                  day,
+                  workspace.trip.destinations,
+                );
+
+              return (
+                <Pressable
+                  key={`strip-${day.id}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Jump to day ${day.dayNumber}, ${formatDayDate(day.date)}`}
+                  accessibilityState={{ selected }}
+                  style={[
+                    styles.dayStripChip,
+                    selected && styles.dayStripChipSelected,
+                  ]}
+                  onPress={() => focusDay(day.id)}
+                >
+                  <Text
+                    style={[
+                      styles.dayStripWeekday,
+                      selected &&
+                        styles.dayStripWeekdaySelected,
+                    ]}
+                  >
+                    DAY {day.dayNumber}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.dayStripDate,
+                      selected &&
+                        styles.dayStripDateSelected,
+                    ]}
+                  >
+                    {formatDayDate(day.date)}
+                  </Text>
+                  {assignedCity ? (
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.dayStripCity,
+                        selected &&
+                          styles.dayStripCitySelected,
+                      ]}
+                    >
+                      {assignedCity.name}
+                    </Text>
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        ) : null}
 
         <View
           style={
@@ -2560,6 +2638,65 @@ export default function PlanScreen() {
 
 const styles =
   StyleSheet.create({
+    dayStripScroll: {
+      marginBottom: spacing[4],
+      marginHorizontal: -spacing[1],
+    },
+
+    dayStrip: {
+      gap: spacing[2],
+      paddingHorizontal: spacing[1],
+      paddingBottom: spacing[1],
+    },
+
+    dayStripChip: {
+      minWidth: 108,
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[3],
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      gap: spacing[1],
+    },
+
+    dayStripChipSelected: {
+      borderColor: colors.brand,
+      backgroundColor: colors.brand,
+    },
+
+    dayStripWeekday: {
+      fontFamily: fontFamily.sansBold,
+      fontSize: 9,
+      letterSpacing: 1.2,
+      color: colors.brass,
+    },
+
+    dayStripWeekdaySelected: {
+      color: colors.brass,
+    },
+
+    dayStripDate: {
+      fontFamily: fontFamily.sansSemiBold,
+      fontSize: fontSize.bodySmall,
+      color: colors.textPrimary,
+    },
+
+    dayStripDateSelected: {
+      color: colors.textInverse,
+    },
+
+    dayStripCity: {
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      color: colors.textMuted,
+      maxWidth: 120,
+    },
+
+    dayStripCitySelected: {
+      color: 'rgba(255,253,248,0.72)',
+    },
+
     timeline: {
       gap:
         spacing[4],
