@@ -10,13 +10,15 @@ import {
   useState,
 } from 'react';
 import {
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
+import { PressableScale } from '@/features/motion/pressable-scale';
+import { RiseIn } from '@/features/motion/rise-in';
+import { motion } from '@/features/motion/timing';
 import type { Trip, TripDay } from '@/domain/entities';
 import {
   homeFeaturedPlaceLabel,
@@ -43,17 +45,17 @@ function formatTripDates(trip: Trip): string {
   const startLabel = formatCalendarDateForDisplay(
     trip.startDate,
     {
-    day: 'numeric',
-    month: 'short',
+      day: 'numeric',
+      month: 'short',
     },
   );
 
   const endLabel = formatCalendarDateForDisplay(
     trip.endDate,
     {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
     },
   );
 
@@ -141,137 +143,141 @@ export default function HomeScreen() {
     });
   };
 
+  const compositionKey = featuredTrip
+    ? `featured:${featuredTrip.id}:${featuredPhase}`
+    : `empty:${trips.length}`;
+
   return (
     <Screen scroll>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.brand}>
-            TRAVEL OS
-          </Text>
+      <RiseIn factKey={`brand:${compositionKey}`}>
+        <View style={styles.header}>
+          <View style={styles.brandBlock}>
+            <Text style={styles.brand}>
+              TRAVEL OS
+            </Text>
+            <Text style={styles.brandTag}>
+              PLAN · LIVE · KEEP
+            </Text>
+          </View>
 
-          <Text style={styles.heading}>
-            Your world,
-            {'\n'}
-            beautifully planned.
-          </Text>
-        </View>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open profile"
-          style={styles.profileButton}
-          onPress={() => router.push('/profile')}
-        >
-          <Ionicons
-            name="person-outline"
-            size={20}
-            color={colors.brand}
-          />
-        </Pressable>
-      </View>
-
-      {featuredTrip ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${featuredTrip.title}`}
-          style={({ pressed }) => [
-            styles.heroCard,
-            pressed && styles.pressed,
-          ]}
-          onPress={() => openTrip(featuredTrip)}
-        >
-          <View style={styles.heroTopRow}>
-            <View style={styles.statusPill}>
-              <View style={styles.statusDot} />
-
-              <Text style={styles.statusText}>
-                {featuredPhase === 'active'
-                  ? 'HAPPENING NOW'
-                  : 'UP NEXT'}
-              </Text>
-            </View>
-
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Open profile"
+            style={styles.profileButton}
+            onPress={() => router.push('/profile')}
+          >
             <Ionicons
-              name="arrow-forward"
-              size={22}
-              color={colors.textInverse}
-            />
-          </View>
-
-          <View style={styles.heroContent}>
-            <Text style={styles.heroDestination}>
-              {featured
-                ? homeFeaturedPlaceLabel(
-                    featured.trip,
-                    featured.runtime,
-                  )
-                : 'Destination not set'}
-            </Text>
-
-            <Text
-              style={styles.heroTitle}
-              numberOfLines={2}
-            >
-              {featuredTrip.title}
-            </Text>
-
-            <View style={styles.metaRow}>
-              <Ionicons
-                name="calendar-outline"
-                size={16}
-                color="rgba(255,255,255,0.75)"
-              />
-
-              <Text style={styles.heroMeta}>
-                {formatTripDates(featuredTrip)}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.heroFooter}>
-            <Text style={styles.heroFooterText}>
-              Open trip
-            </Text>
-
-            <View style={styles.heroArrow}>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={colors.brand}
-              />
-            </View>
-          </View>
-        </Pressable>
-      ) : (
-        <View style={styles.emptyHero}>
-          <View style={styles.emptyIcon}>
-            <Ionicons
-              name="airplane-outline"
-              size={25}
+              name="person-outline"
+              size={20}
               color={colors.brand}
             />
-          </View>
+          </PressableScale>
+        </View>
+      </RiseIn>
 
-          <Text style={styles.emptyEyebrow}>
-            YOUR NEXT JOURNEY
+      {featuredTrip ? (
+        <RiseIn
+          factKey={compositionKey}
+          delayMs={motion.staggerMs}
+        >
+          <Text style={styles.nowEyebrow}>
+            WHAT MATTERS NOW
+          </Text>
+          <Text style={styles.heading}>
+            {featuredPhase === 'active'
+              ? 'You are on the journey.'
+              : 'Your next trip is waiting.'}
           </Text>
 
-          <Text style={styles.emptyTitle}>
-            Where are you going next?
-          </Text>
-
-          <Text style={styles.emptyBody}>
-            Build your first trip and keep your
-            plans, bookings and memories together.
-          </Text>
-
-          <Pressable
+          <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Plan a trip"
-            style={({ pressed }) => [
-              styles.primaryButton,
-              pressed && styles.pressed,
-            ]}
+            accessibilityLabel={`Open ${featuredTrip.title}`}
+            style={styles.heroCard}
+            onPress={() => openTrip(featuredTrip)}
+          >
+            <View style={styles.heroTopRow}>
+              <View style={styles.statusPill}>
+                <View style={styles.statusDot} />
+                <Text style={styles.statusText}>
+                  {featuredPhase === 'active'
+                    ? 'HAPPENING NOW'
+                    : 'UP NEXT'}
+                </Text>
+              </View>
+
+              <Ionicons
+                name="arrow-forward"
+                size={22}
+                color={colors.textInverse}
+              />
+            </View>
+
+            <View style={styles.heroContent}>
+              <Text style={styles.heroDestination}>
+                {featured
+                  ? homeFeaturedPlaceLabel(
+                      featured.trip,
+                      featured.runtime,
+                    )
+                  : 'Destination not set'}
+              </Text>
+
+              <Text
+                style={styles.heroTitle}
+                numberOfLines={2}
+              >
+                {featuredTrip.title}
+              </Text>
+
+              <View style={styles.metaRow}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={16}
+                  color="rgba(255,253,248,0.75)"
+                />
+                <Text style={styles.heroMeta}>
+                  {formatTripDates(featuredTrip)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.heroFooter}>
+              <Text style={styles.heroFooterText}>
+                {featuredPhase === 'active'
+                  ? 'Open Companion'
+                  : 'Continue planning'}
+              </Text>
+              <View style={styles.heroArrow}>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.brand}
+                />
+              </View>
+            </View>
+          </PressableScale>
+        </RiseIn>
+      ) : (
+        <RiseIn
+          factKey={compositionKey}
+          delayMs={motion.staggerMs}
+        >
+          <Text style={styles.nowEyebrow}>
+            THE NEXT TRIP STARTS HERE
+          </Text>
+          <Text style={styles.heading}>
+            Where do you want{'\n'}to go next?
+          </Text>
+          <Text style={styles.lead}>
+            Know the place, only a budget, or just
+            need ideas — start from what is already
+            true.
+          </Text>
+
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Create a trip"
+            style={styles.primaryButton}
             onPress={() => router.push('/new-trip')}
           >
             <Ionicons
@@ -279,219 +285,257 @@ export default function HomeScreen() {
               size={20}
               color={colors.textInverse}
             />
-
             <Text style={styles.primaryButtonText}>
-              Plan a trip
+              Create a trip
             </Text>
-          </Pressable>
-        </View>
+          </PressableScale>
+
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Help me decide"
+            style={styles.secondaryButton}
+            onPress={() =>
+              router.push('/discover/find-destination')
+            }
+          >
+            <Ionicons
+              name="compass-outline"
+              size={20}
+              color={colors.brand}
+            />
+            <Text style={styles.secondaryButtonText}>
+              Help me decide
+            </Text>
+          </PressableScale>
+
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Import bookings or files"
+            style={styles.importRow}
+            onPress={() =>
+              router.push('/import' as Href)
+            }
+          >
+            <View style={styles.importIcon}>
+              <Ionicons
+                name="download-outline"
+                size={18}
+                color={colors.teal}
+              />
+            </View>
+            <View style={styles.importCopy}>
+              <Text style={styles.importTitle}>
+                Already have bookings or files?
+              </Text>
+              <Text style={styles.importBody}>
+                Bring them in and start from what you
+                already decided.
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={colors.textMuted}
+            />
+          </PressableScale>
+        </RiseIn>
       )}
 
-      <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionEyebrow}>
-            YOUR TRAVEL LIFE
-          </Text>
-
-          <Text style={styles.sectionTitle}>
-            At a glance
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <View style={styles.statIcon}>
-            <Ionicons
-              name="map-outline"
-              size={19}
-              color={colors.teal}
-            />
-          </View>
-
-          <Text style={styles.statValue}>
-            {isLoading ? '—' : trips.length}
-          </Text>
-
-          <Text style={styles.statLabel}>
-            Trips
-          </Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <View style={styles.statIcon}>
-            <Ionicons
-              name="checkmark-circle-outline"
-              size={20}
-              color={colors.teal}
-            />
-          </View>
-
-          <Text style={styles.statValue}>
-            {isLoading ? '—' : completedTrips}
-          </Text>
-
-          <Text style={styles.statLabel}>
-            Completed
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionEyebrow}>
-            EXPLORE
-          </Text>
-
-          <Text style={styles.sectionTitle}>
-            Where to next?
-          </Text>
-        </View>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open Discover"
-          onPress={() => router.push('/discover')}
-        >
-          <Text style={styles.sectionAction}>
-            Discover
-          </Text>
-        </Pressable>
-      </View>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Plan a new trip"
-        style={({ pressed }) => [
-          styles.newTripCard,
-          pressed && styles.pressed,
-        ]}
-        onPress={() => router.push('/new-trip')}
+      <RiseIn
+        factKey={`life:${compositionKey}`}
+        delayMs={motion.staggerMs * 3}
       >
-        <View style={styles.newTripIcon}>
-          <Ionicons
-            name="airplane-outline"
-            size={23}
-            color={colors.textInverse}
-          />
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionEyebrow}>
+              YOUR TRAVEL LIFE
+            </Text>
+            <Text style={styles.sectionTitle}>
+              At a glance
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.newTripCopy}>
-          <Text style={styles.newTripEyebrow}>
-            START A JOURNEY
-          </Text>
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <View style={styles.statIcon}>
+              <Ionicons
+                name="map-outline"
+                size={19}
+                color={colors.teal}
+              />
+            </View>
+            <Text style={styles.statValue}>
+              {isLoading ? '—' : trips.length}
+            </Text>
+            <Text style={styles.statLabel}>
+              Trips
+            </Text>
+          </View>
 
-          <Text style={styles.newTripTitle}>
-            Plan a new trip
-          </Text>
+          <View style={styles.statCard}>
+            <View
+              style={[
+                styles.statIcon,
+                { backgroundColor: colors.brassSoft },
+              ]}
+            >
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={19}
+                color={colors.brass}
+              />
+            </View>
+            <Text style={styles.statValue}>
+              {isLoading ? '—' : completedTrips}
+            </Text>
+            <Text style={styles.statLabel}>
+              Lived
+            </Text>
+          </View>
 
-          <Text style={styles.newTripDescription}>
-            Choose a destination and dates.
-          </Text>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Open trips"
+            style={styles.statCard}
+            onPress={() => router.push('/trips')}
+          >
+            <View
+              style={[
+                styles.statIcon,
+                { backgroundColor: colors.coralSoft },
+              ]}
+            >
+              <Ionicons
+                name="albums-outline"
+                size={19}
+                color={colors.coral}
+              />
+            </View>
+            <Text style={styles.statValue}>All</Text>
+            <Text style={styles.statLabel}>
+              Open trips
+            </Text>
+          </PressableScale>
         </View>
+      </RiseIn>
 
-        <View style={styles.newTripArrow}>
-          <Ionicons
-            name="arrow-forward"
-            size={18}
-            color={colors.brand}
-          />
-        </View>
-      </Pressable>
+      {trips.length > 0 ? (
+        <RiseIn
+          factKey={`trips:${compositionKey}`}
+          delayMs={motion.staggerMs * 4}
+        >
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionEyebrow}>
+                TRIPS
+              </Text>
+              <Text style={styles.sectionTitle}>
+                Recent
+              </Text>
+            </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Import a calendar"
-        style={({ pressed }) => [
-          styles.importCard,
-          pressed && styles.pressed,
-        ]}
-        onPress={() => router.push('/import' as Href)}
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel="See all trips"
+              onPress={() => router.push('/trips')}
+            >
+              <Text style={styles.sectionAction}>
+                See all
+              </Text>
+            </PressableScale>
+          </View>
+
+          <View style={styles.tripList}>
+            {trips.slice(0, 4).map((trip) => (
+              <PressableScale
+                key={trip.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${trip.title}`}
+                style={styles.tripRow}
+                onPress={() => openTrip(trip)}
+              >
+                <View style={styles.tripCopy}>
+                  <Text
+                    style={styles.tripTitle}
+                    numberOfLines={1}
+                  >
+                    {trip.title}
+                  </Text>
+                  <Text style={styles.tripMeta}>
+                    {formatTripDates(trip)}
+                  </Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={colors.textMuted}
+                />
+              </PressableScale>
+            ))}
+          </View>
+        </RiseIn>
+      ) : null}
+
+      <RiseIn
+        factKey={`doors:${compositionKey}`}
+        delayMs={motion.staggerMs * 5}
       >
-        <View style={styles.importIcon}>
-          <Ionicons
-            name="download-outline"
-            size={22}
-            color={colors.brand}
-          />
-        </View>
-
-        <View style={styles.newTripCopy}>
-          <Text style={styles.importEyebrow}>
-            ALREADY BOOKED
-          </Text>
-
-          <Text style={styles.importTitle}>
-            Import a calendar
-          </Text>
-
-          <Text style={styles.importDescription}>
-            Review .ics events before they become bookings.
-          </Text>
-        </View>
-
-        <View style={styles.importArrow}>
-          <Ionicons
-            name="arrow-forward"
-            size={18}
-            color={colors.brand}
-          />
-        </View>
-      </Pressable>
-
-      <View style={styles.actionGrid}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open my trips"
-          style={({ pressed }) => [
-            styles.actionCard,
-            pressed && styles.pressed,
-          ]}
-          onPress={() => router.push('/trips')}
-        >
-          <View style={styles.actionIcon}>
-            <Ionicons
-              name="calendar-outline"
-              size={22}
-              color={colors.brand}
-            />
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionEyebrow}>
+              EXPLORE
+            </Text>
+            <Text style={styles.sectionTitle}>
+              More doors
+            </Text>
           </View>
+        </View>
 
-          <Text style={styles.actionTitle}>
-            My trips
-          </Text>
+        <View style={styles.actionGrid}>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Open Discover"
+            style={styles.actionCard}
+            onPress={() => router.push('/discover')}
+          >
+            <View style={styles.actionIcon}>
+              <Ionicons
+                name="compass-outline"
+                size={23}
+                color={colors.brand}
+              />
+            </View>
+            <Text style={styles.actionTitle}>
+              Discover
+            </Text>
+            <Text style={styles.actionDescription}>
+              Grounded ideas for what could be next.
+            </Text>
+          </PressableScale>
 
-          <Text style={styles.actionDescription}>
-            Trips you have started.
-          </Text>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open my world"
-          style={({ pressed }) => [
-            styles.actionCard,
-            pressed && styles.pressed,
-          ]}
-          onPress={() => router.push('/world')}
-        >
-          <View style={styles.actionIcon}>
-            <Ionicons
-              name="earth-outline"
-              size={23}
-              color={colors.brand}
-            />
-          </View>
-
-          <Text style={styles.actionTitle}>
-            My world
-          </Text>
-
-          <Text style={styles.actionDescription}>
-            Places you have been.
-          </Text>
-        </Pressable>
-      </View>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Open World"
+            style={styles.actionCard}
+            onPress={() => router.push('/world')}
+          >
+            <View style={styles.actionIcon}>
+              <Ionicons
+                name="earth-outline"
+                size={23}
+                color={colors.brand}
+              />
+            </View>
+            <Text style={styles.actionTitle}>
+              My world
+            </Text>
+            <Text style={styles.actionDescription}>
+              Places you have planned or lived.
+            </Text>
+          </PressableScale>
+        </View>
+      </RiseIn>
 
       <View style={styles.bottomSpace} />
     </Screen>
@@ -504,23 +548,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingTop: spacing[5],
-    marginBottom: spacing[8],
+    marginBottom: spacing[6],
+  },
+
+  brandBlock: {
+    gap: spacing[1],
   },
 
   brand: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.caption,
-    letterSpacing: letterSpacing.eyebrow,
-    color: colors.brass,
-    marginBottom: spacing[3],
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleSmall,
+    letterSpacing: letterSpacing.tight,
+    color: colors.brand,
   },
 
-  heading: {
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.titleLarge,
-    lineHeight: lineHeight.titleLarge,
-    letterSpacing: -0.8,
-    color: colors.textPrimary,
+  brandTag: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: letterSpacing.eyebrow,
+    color: colors.brass,
   },
 
   profileButton: {
@@ -535,6 +581,32 @@ const styles = StyleSheet.create({
     ...shadows.subtle,
   },
 
+  nowEyebrow: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: letterSpacing.eyebrow,
+    color: colors.brass,
+    marginBottom: spacing[2],
+  },
+
+  heading: {
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleLarge,
+    lineHeight: lineHeight.titleLarge,
+    letterSpacing: letterSpacing.tight,
+    color: colors.textPrimary,
+    marginBottom: spacing[3],
+  },
+
+  lead: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
+    color: colors.textSecondary,
+    marginBottom: spacing[6],
+    maxWidth: 340,
+  },
+
   heroCard: {
     minHeight: 290,
     borderRadius: radius.xl,
@@ -542,6 +614,7 @@ const styles = StyleSheet.create({
     padding: spacing[6],
     justifyContent: 'space-between',
     overflow: 'hidden',
+    marginTop: spacing[4],
     ...shadows.card,
   },
 
@@ -559,14 +632,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,253,248,0.12)',
   },
 
   statusDot: {
     width: 7,
     height: 7,
     borderRadius: radius.pill,
-    backgroundColor: '#D5B887',
+    backgroundColor: colors.brass,
   },
 
   statusText: {
@@ -583,7 +656,7 @@ const styles = StyleSheet.create({
   heroDestination: {
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.bodySmall,
-    color: 'rgba(255,255,255,0.68)',
+    color: 'rgba(255,253,248,0.68)',
     marginBottom: spacing[2],
   },
 
@@ -591,7 +664,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.serifSemiBold,
     fontSize: fontSize.display,
     lineHeight: lineHeight.display,
-    letterSpacing: -0.8,
+    letterSpacing: letterSpacing.tight,
     color: colors.textInverse,
   },
 
@@ -605,7 +678,7 @@ const styles = StyleSheet.create({
   heroMeta: {
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.bodySmall,
-    color: 'rgba(255,255,255,0.75)',
+    color: 'rgba(255,253,248,0.75)',
   },
 
   heroFooter: {
@@ -614,7 +687,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: spacing[4],
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.12)',
+    borderTopColor: 'rgba(255,253,248,0.12)',
   },
 
   heroFooterText: {
@@ -632,63 +705,79 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  emptyHero: {
-    borderRadius: radius.xl,
-    backgroundColor: colors.surfaceWarm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing[7],
-    ...shadows.subtle,
-  },
-
-  emptyIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.md,
-    backgroundColor: colors.brandSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing[6],
-  },
-
-  emptyEyebrow: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.6,
-    color: colors.brass,
-    marginBottom: spacing[2],
-  },
-
-  emptyTitle: {
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.title,
-    lineHeight: lineHeight.title,
-    color: colors.textPrimary,
-    marginBottom: spacing[3],
-  },
-
-  emptyBody: {
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.bodySmall,
-    lineHeight: lineHeight.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing[6],
-  },
-
   primaryButton: {
-    height: 52,
+    height: 54,
     borderRadius: radius.md,
     backgroundColor: colors.brand,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[2],
+    marginBottom: spacing[3],
   },
 
   primaryButtonText: {
     fontFamily: fontFamily.sansSemiBold,
-    fontSize: fontSize.bodySmall,
+    fontSize: fontSize.body,
     color: colors.textInverse,
+  },
+
+  secondaryButton: {
+    height: 54,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[4],
+  },
+
+  secondaryButtonText: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.body,
+    color: colors.brand,
+  },
+
+  importRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[4],
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  importIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.tealSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  importCopy: {
+    flex: 1,
+    gap: 2,
+  },
+
+  importTitle: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+  },
+
+  importBody: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textSecondary,
   },
 
   sectionHeader: {
@@ -702,7 +791,7 @@ const styles = StyleSheet.create({
   sectionEyebrow: {
     fontFamily: fontFamily.sansBold,
     fontSize: fontSize.micro,
-    letterSpacing: 1.6,
+    letterSpacing: letterSpacing.eyebrow,
     color: colors.brass,
     marginBottom: spacing[1],
   },
@@ -726,29 +815,29 @@ const styles = StyleSheet.create({
 
   statCard: {
     flex: 1,
-    minHeight: 132,
+    minHeight: 124,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing[5],
-    ...shadows.subtle,
+    padding: spacing[4],
+    justifyContent: 'space-between',
   },
 
   statIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.sm,
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
     backgroundColor: colors.tealSoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing[4],
   },
 
   statValue: {
     fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.title,
+    fontSize: fontSize.titleSmall,
     color: colors.textPrimary,
+    marginTop: spacing[4],
   },
 
   statLabel: {
@@ -758,114 +847,37 @@ const styles = StyleSheet.create({
     marginTop: spacing[1],
   },
 
-  newTripCard: {
-    minHeight: 112,
+  tripList: {
+    gap: spacing[2],
+  },
+
+  tripRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[4],
-    marginBottom: spacing[3],
-    padding: spacing[5],
-    borderRadius: radius.lg,
-    backgroundColor: colors.brand,
-    ...shadows.card,
-  },
-
-  newTripIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-
-  newTripCopy: {
-    flex: 1,
-  },
-
-  newTripEyebrow: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.4,
-    color: '#D5B887',
-  },
-
-  newTripTitle: {
-    marginTop: spacing[1],
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.titleSmall,
-    lineHeight: lineHeight.titleSmall,
-    color: colors.textInverse,
-  },
-
-  newTripDescription: {
-    marginTop: spacing[1],
-    fontFamily: fontFamily.sansRegular,
-    fontSize: fontSize.caption,
-    color: 'rgba(255,255,255,0.72)',
-  },
-
-  newTripArrow: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-
-  importCard: {
-    minHeight: 96,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[4],
-    marginBottom: spacing[3],
-    padding: spacing[5],
+    gap: spacing[3],
+    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[4],
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.subtle,
   },
 
-  importIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.backgroundSoft,
+  tripCopy: {
+    flex: 1,
+    gap: 2,
   },
 
-  importEyebrow: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.micro,
-    letterSpacing: 1.4,
-    color: colors.brass,
-  },
-
-  importTitle: {
-    marginTop: spacing[1],
-    fontFamily: fontFamily.serifSemiBold,
-    fontSize: fontSize.titleSmall,
-    lineHeight: lineHeight.titleSmall,
+  tripTitle: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.body,
     color: colors.textPrimary,
   },
 
-  importDescription: {
-    marginTop: spacing[1],
+  tripMeta: {
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.caption,
-    color: colors.textSecondary,
-  },
-
-  importArrow: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.backgroundSoft,
+    color: colors.textMuted,
   },
 
   actionGrid: {
@@ -875,41 +887,36 @@ const styles = StyleSheet.create({
 
   actionCard: {
     flex: 1,
-    minHeight: 160,
+    minHeight: 148,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceWarm,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing[5],
-    ...shadows.subtle,
+    padding: spacing[4],
   },
 
   actionIcon: {
-    width: 42,
-    height: 42,
+    width: 40,
+    height: 40,
     borderRadius: radius.md,
-    backgroundColor: colors.backgroundSoft,
+    backgroundColor: colors.brandSoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing[5],
+    marginBottom: spacing[4],
   },
 
   actionTitle: {
     fontFamily: fontFamily.sansSemiBold,
     fontSize: fontSize.body,
     color: colors.textPrimary,
-    marginBottom: spacing[2],
+    marginBottom: spacing[1],
   },
 
   actionDescription: {
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.caption,
-    lineHeight: fontSize.body,
-    color: colors.textMuted,
-  },
-
-  pressed: {
-    opacity: 0.82,
+    lineHeight: lineHeight.caption,
+    color: colors.textSecondary,
   },
 
   bottomSpace: {

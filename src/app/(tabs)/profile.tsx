@@ -12,6 +12,7 @@ import * as Sharing from 'expo-sharing';
 
 import { confirmDestructive } from '@/components/ui/confirm';
 import { Screen } from '@/components/ui/screen';
+import { probeCopilotHealth } from '@/features/copilot/probe-copilot-health';
 import {
   hasRealDestinationCoordinates,
 } from '@/services/destination-authoring';
@@ -38,6 +39,8 @@ export default function ProfileScreen() {
     useState(false);
   const [isRestoring, setIsRestoring] =
     useState(false);
+  const [isProbingCopilot, setIsProbingCopilot] =
+    useState(false);
 
   const completedTrips = trips.filter(
     (trip) => trip.status === 'completed',
@@ -51,6 +54,33 @@ export default function ProfileScreen() {
       ).length,
     0,
   );
+
+  const checkCopilot = () => {
+    if (isProbingCopilot) {
+      return;
+    }
+
+    void (async () => {
+      setIsProbingCopilot(true);
+
+      try {
+        const snapshot = await probeCopilotHealth();
+        const available =
+          snapshot.toolsAvailable.length > 0
+            ? `\nAvailable: ${snapshot.toolsAvailable.join(', ')}`
+            : '';
+
+        Alert.alert(
+          snapshot.status === 'ready'
+            ? 'TravelOS Copilot'
+            : 'Copilot unavailable',
+          `${snapshot.detail}${available}`,
+        );
+      } finally {
+        setIsProbingCopilot(false);
+      }
+    })();
+  };
 
   const exportLocalBackup = () => {
     if (isExporting || isRestoring) {
@@ -275,6 +305,19 @@ export default function ProfileScreen() {
           }
           body="Replace the data on this device with a TravelOS JSON backup. Photo files are not restored. Confirm before continuing."
           onPress={restoreLocalBackup}
+        />
+
+        <View style={styles.rowDivider} />
+
+        <ActiveRow
+          icon="sparkles-outline"
+          title={
+            isProbingCopilot
+              ? 'Checking copilot…'
+              : 'TravelOS Copilot'
+          }
+          body="Local AI for free-time ideas and grounded Discover explanations. Never invents destinations or writes trip truth."
+          onPress={checkCopilot}
         />
 
         <View style={styles.rowDivider} />

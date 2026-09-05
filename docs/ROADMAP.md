@@ -197,7 +197,36 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 
 Exit condition: TravelOS can be built, tested, observed, restored, and released safely on iOS and Android.
 
-## Parked remaining work (2026-09-03)
+## Elevation Program — toward phone-delight 100%
+
+Goal: keep the canonical native core and close the gap with the PWA on **feel** — unique TravelOS design, purposeful motion, and the strongest copilot possible on the **existing** `/ai/*` APIs — without inventing destinations or silent SQLite writes.
+
+### Wave 1 — Home / identity / copilot foundation (in progress)
+- [x] Deeper ink/teal palette refinement (still TravelOS, not a new brand)
+- [x] Shared `motion` timing + `RiseIn` soft enter
+- [x] Editorial Home: brand-first, Create / Help me decide / Import doors, what-matters-now hero
+- [x] Stronger local-dev copilot system prompt
+- [x] Profile → TravelOS Copilot health probe (`GET /ai/tools`)
+- [ ] Device smoke on preview APK after Maps SHA + tab-bar build
+
+### Wave 2 — Create Trip delight
+- Progressive disclosure (destination → dates → intent) matching PWA confidence without AI Architect inventing places
+- Motion on step transitions; clearer empty/error states
+
+### Wave 3 — Companion + Plan copilot density
+- Surface free-time advice entry where verified gaps exist (existing `POST /ai/free-time`)
+- Provenance chips; degrade calmly when loopback AI is down
+- No chat that writes itinerary
+
+### Wave 4 — Discover explain polish
+- Faster retrieve/explain UX on existing endpoints
+- Still no rerank install until measured
+
+### Wave 5 — Release / iOS / sync (unchanged Phase 6)
+- Maps SHA, Play, accounts, iOS last
+
+Hard rules stay in force: AI is not a destination source; suggestions never mutate SQLite; production provider remains `none` until an explicit cloud decision.
+
 
 These stay later. They were not implemented in this pass. iOS rebuild is last.
 
