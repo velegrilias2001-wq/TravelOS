@@ -261,6 +261,13 @@ Goal: borrow motion/hierarchy craft from premium flight UI demos without cloning
 - [x] **5 · Home** — denser hero greeting inside card; hide glance stats when a featured trip exists
 - [x] **6 · Plan** — horizontal day strip from real TripDays (date + assigned city when set)
 
+### Product depth — Plan Assist / seed / theme
+Goal: close the gap from empty trip truth to a viable day-by-day plan without silent SQLite writes or invented destinations.
+
+- [x] **Plan Assist V1** — empty Plan days offer deterministic theme moments (trip intent/pace + Travel DNA + optional catalogue fit by exact city coordinates). Accept → `addStop`. No POI invention. Session-only until accept.
+- [x] **Seed from materials V1** — document/text import → `trip_seed` / `itinerary_line` review claims → Start Create Trip / mark reviewed. No silent Trip/Stop writes. TikTok/video later.
+- [x] **Trip Theme V1** — curated `theme_pack_id` from destination country codes; Home + Companion cosmetic accent/mood. Not a brand clone.
+
 ## Cross-cutting rules
 
 - Preserve one canonical Trip and explicit ID relationships at every phase.

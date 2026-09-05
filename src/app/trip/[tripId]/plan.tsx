@@ -2,12 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
 } from 'react';
 
 import {
+  useFocusEffect,
   useLocalSearchParams,
   useRouter,
 } from 'expo-router';
@@ -28,7 +30,9 @@ import {
   pickLocation,
 } from 'expo-location-picker';
 
+import { PlanAssistCard } from '@/features/copilot/plan-assist-card';
 import { FadeIn } from '@/features/motion/fade-in';
+import { playLightImpact } from '@/features/motion/haptic';
 import { LocalTimeField } from '@/components/ui/native-date-time-fields';
 import {
   Screen,
@@ -37,6 +41,7 @@ import { UtilityScreenHeader } from '@/components/ui/utility-screen';
 import { formatCalendarDateForDisplay } from '@/services/time-truth';
 
 import type {
+  TravelDNA,
   TripDay,
   TripStop,
   TripStopType,
@@ -75,6 +80,14 @@ import {
 import {
   aiContextService,
 } from '@/services/ai-context-runtime';
+import {
+  buildPlanAssistCandidates,
+  buildStopFromPlanAssistCandidate,
+  type PlanAssistCandidate,
+} from '@/services/plan-assist';
+import {
+  travelDNAService,
+} from '@/services/travel-dna-runtime';
 
 import {
   colors,
@@ -426,6 +439,35 @@ export default function PlanScreen() {
     setIsSaving,
   ] =
     useState(false);
+
+  const [travelDNA, setTravelDNA] =
+    useState<TravelDNA | null>(null);
+
+  const [acceptingAssistId, setAcceptingAssistId] =
+    useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      void (async () => {
+        try {
+          const profile = await travelDNAService.get();
+          if (active) {
+            setTravelDNA(profile);
+          }
+        } catch {
+          if (active) {
+            setTravelDNA(null);
+          }
+        }
+      })();
+
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
 
   const [
     loadingFreeTimeKey,
@@ -857,6 +899,47 @@ export default function PlanScreen() {
         setIsSaving(false);
       }
     };
+
+  const acceptPlanAssistCandidate = async (
+    day: TripDay,
+    candidate: PlanAssistCandidate,
+  ) => {
+    if (!workspace || acceptingAssistId) {
+      return;
+    }
+
+    try {
+      setAcceptingAssistId(candidate.id);
+      playLightImpact();
+
+      const dayStops = workspace.stops.filter(
+        (stop) => stop.dayId === day.id,
+      );
+
+      const stop = buildStopFromPlanAssistCandidate({
+        candidate,
+        tripId: workspace.trip.id,
+        dayId: day.id,
+        order: dayStops.length + 1,
+        id: Crypto.randomUUID(),
+        nowIso: new Date().toISOString(),
+      });
+
+      await actions.addStop(stop);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Please try again.';
+
+      Alert.alert(
+        'Could not add moment',
+        message,
+      );
+    } finally {
+      setAcceptingAssistId(null);
+    }
+  };
 
   const deleteStop = (
     stop: TripStop,
@@ -1470,32 +1553,37 @@ export default function PlanScreen() {
                     )}
 
                   {stops.length === 0 ? (
-                    <Pressable
-                      style={
-                        styles.emptyDay
+                    <PlanAssistCard
+                      cityLabel={
+                        assignedCity?.name ?? null
                       }
-                      onPress={() =>
-                        openCreate(
+                      candidates={buildPlanAssistCandidates(
+                        {
+                          dayDestination: assignedCity,
+                          preferences: {
+                            tripIntent:
+                              workspace.trip.intent,
+                            tripPace: workspace.trip.pace,
+                            interests:
+                              travelDNA?.interests,
+                          },
+                          existingTitles: stops.map(
+                            (stop) => stop.title,
+                          ),
+                          limit: 5,
+                        },
+                      )}
+                      acceptingId={acceptingAssistId}
+                      onAccept={(candidate) => {
+                        void acceptPlanAssistCandidate(
                           day,
-                        )
+                          candidate,
+                        );
+                      }}
+                      onAddManually={() =>
+                        openCreate(day)
                       }
-                    >
-                      <Ionicons
-                        name="add-circle-outline"
-                        size={20}
-                        color={
-                          colors.teal
-                        }
-                      />
-
-                      <Text
-                        style={
-                          styles.emptyDayText
-                        }
-                      >
-                        Add a moment
-                      </Text>
-                    </Pressable>
+                    />
                   ) : !collapsed ? (
                     <View
                       style={

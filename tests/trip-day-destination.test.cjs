@@ -528,7 +528,7 @@ test(
         version.user_version,
         DATABASE_VERSION,
       );
-      assert.equal(DATABASE_VERSION, 17);
+      assert.equal(DATABASE_VERSION, 18);
 
       const columns = await database.query(
         'PRAGMA table_info(trip_days);',

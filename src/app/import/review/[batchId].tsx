@@ -25,6 +25,7 @@ import {
 import type {
   ImportClaimListing,
 } from '@/services/import-review-service';
+import { buildImportSeedTripHandoff } from '@/services/import-seed-handoff';
 import { importReviewService } from '@/services/import-review-runtime';
 import { useTripStore } from '@/store/trip-store';
 import {
@@ -158,6 +159,43 @@ export default function ImportReviewScreen() {
     }
   };
 
+  const startCreateTripFromSeed = async (
+    listing: ImportClaimListing,
+  ) => {
+    try {
+      await importReviewService.acknowledgeSeed(
+        listing.claim.id,
+      );
+      const handoff = buildImportSeedTripHandoff(listing.claim);
+      router.push({
+        pathname: '/new-trip',
+        params: handoff,
+      });
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'This seed claim could not open Create Trip.',
+      );
+    }
+  };
+
+  const acknowledgeLine = async (listing: ImportClaimListing) => {
+    try {
+      await importReviewService.acknowledgeSeed(
+        listing.claim.id,
+        selectedTripId,
+      );
+      await reload();
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'This line could not be marked reviewed.',
+      );
+    }
+  };
+
   const dismiss = async (listing: ImportClaimListing) => {
     try {
       await importReviewService.dismiss(listing.claim.id);
@@ -199,7 +237,7 @@ export default function ImportReviewScreen() {
         </Text>
 
         <Text style={styles.subtitle}>
-          Accepting writes one planned booking onto the trip you choose. Location text stays text. Missing times stay missing.
+          Accepting a calendar claim writes one planned booking onto the trip you choose. Seed claims open Create Trip instead — they never invent a destination or write a trip alone.
         </Text>
       </View>
 
@@ -269,6 +307,12 @@ export default function ImportReviewScreen() {
                 onAccept={() => {
                   void accept(listing);
                 }}
+                onStartCreateTrip={() => {
+                  void startCreateTripFromSeed(listing);
+                }}
+                onAcknowledgeLine={() => {
+                  void acknowledgeLine(listing);
+                }}
                 onDismiss={() => {
                   void dismiss(listing);
                 }}
@@ -323,22 +367,33 @@ function ClaimCard({
   listing,
   canAccept,
   onAccept,
+  onStartCreateTrip,
+  onAcknowledgeLine,
   onDismiss,
 }: {
   listing: ImportClaimListing;
   canAccept: boolean;
   onAccept(): void;
+  onStartCreateTrip(): void;
+  onAcknowledgeLine(): void;
   onDismiss(): void;
 }) {
   const { claim, conflicts } = listing;
   const startLabel = formatBookingTemporalValue(claim.startAt);
   const endLabel = formatBookingTemporalValue(claim.endAt);
   const pending = claim.status === 'pending';
+  const kindLabel =
+    claim.kind === 'trip_seed'
+      ? 'TRIP SEED'
+      : claim.kind === 'itinerary_line'
+        ? 'ITINERARY LINE'
+        : 'BOOKING';
 
   return (
     <View style={styles.card}>
       <Text style={styles.cardEyebrow}>
-        {claim.confidence.toUpperCase()} CONFIDENCE · {claim.status.toUpperCase()}
+        {kindLabel} · {claim.confidence.toUpperCase()} ·{' '}
+        {claim.status.toUpperCase()}
       </Text>
 
       <Text style={styles.cardTitle}>
@@ -346,7 +401,10 @@ function ClaimCard({
       </Text>
 
       <Text style={styles.cardDetail}>
-        {startLabel ?? 'Start time unknown'}
+        {startLabel ??
+          (claim.kind === 'itinerary_line'
+            ? 'No fixed time'
+            : 'Start unknown')}
         {endLabel ? ` → ${endLabel}` : ''}
       </Text>
 
@@ -365,47 +423,89 @@ function ClaimCard({
         </Text>
       ))}
 
-      {pending ? (
-        <>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Accept ${claim.title} as a booking`}
-            disabled={!canAccept}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              !canAccept && styles.primaryButtonDisabled,
-              pressed && styles.pressed,
-            ]}
-            onPress={onAccept}
-          >
-            <Text style={styles.primaryButtonText}>
-              Accept as planned booking
-            </Text>
-          </Pressable>
+      {pending && claim.kind === 'trip_seed' ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Start Create Trip from ${claim.title}`}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            pressed && styles.pressed,
+          ]}
+          onPress={onStartCreateTrip}
+        >
+          <Text style={styles.primaryButtonText}>
+            Start Create Trip
+          </Text>
+        </Pressable>
+      ) : null}
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Dismiss ${claim.title}`}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.pressed,
-            ]}
-            onPress={onDismiss}
-          >
-            <Text style={styles.secondaryButtonText}>
-              Dismiss this claim
-            </Text>
-          </Pressable>
-        </>
-      ) : claim.status === 'accepted' ? (
+      {pending && claim.kind === 'itinerary_line' ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Mark ${claim.title} reviewed`}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            pressed && styles.pressed,
+          ]}
+          onPress={onAcknowledgeLine}
+        >
+          <Text style={styles.primaryButtonText}>
+            Mark reviewed (not a stop yet)
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {pending && claim.kind === 'booking' ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Accept ${claim.title} as a booking`}
+          disabled={!canAccept}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            !canAccept && styles.primaryButtonDisabled,
+            pressed && styles.pressed,
+          ]}
+          onPress={onAccept}
+        >
+          <Text style={styles.primaryButtonText}>
+            Accept as planned booking
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {pending ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Dismiss ${claim.title}`}
+          style={({ pressed }) => [
+            styles.secondaryButton,
+            pressed && styles.pressed,
+          ]}
+          onPress={onDismiss}
+        >
+          <Text style={styles.secondaryButtonText}>
+            Dismiss this claim
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {claim.status === 'accepted' && claim.kind === 'booking' ? (
         <Text style={styles.cardDetail}>
           Accepted as a planned booking. It is still not confirmed reservation truth.
         </Text>
-      ) : (
+      ) : null}
+
+      {claim.status === 'accepted' && claim.kind !== 'booking' ? (
         <Text style={styles.cardDetail}>
-          Dismissed. This claim did not become a booking.
+          Reviewed. Canonical trip facts still require Create Trip or Plan.
         </Text>
-      )}
+      ) : null}
+
+      {claim.status === 'dismissed' ? (
+        <Text style={styles.cardDetail}>
+          Dismissed. This claim did not become trip truth.
+        </Text>
+      ) : null}
     </View>
   );
 }

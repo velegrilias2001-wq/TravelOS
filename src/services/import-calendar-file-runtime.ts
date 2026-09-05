@@ -3,15 +3,29 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 import {
   assertImportCalendarFileSize,
+  importCalendarFileLabel,
   prepareImportCalendarFile,
 } from './import-calendar-file';
 import { bytesFromBase64 } from './import-calendar-extract';
 import { decodePickedImportCalendarBytes } from './import-calendar-zip';
+import { extractDocumentTextFromBytes } from './import-document-text';
 
-export async function pickImportCalendarFile(): Promise<{
-  text: string;
-  sourceLabel: string;
-} | null> {
+export type PickedImportMaterial =
+  | {
+      mode: 'ics';
+      text: string;
+      sourceLabel: string;
+    }
+  | {
+      mode: 'seed';
+      text: string;
+      sourceLabel: string;
+    };
+
+/**
+ * Pick a calendar (ICS-embedded) or a prose document for seed review.
+ */
+export async function pickImportMaterialFile(): Promise<PickedImportMaterial | null> {
   let result: DocumentPicker.DocumentPickerResult;
 
   try {
@@ -21,7 +35,7 @@ export async function pickImportCalendarFile(): Promise<{
     });
   } catch {
     throw new Error(
-      'This development build cannot open the file picker yet. Paste an .ics calendar instead.',
+      'This development build cannot open the file picker yet. Paste notes or an .ics calendar instead.',
     );
   }
 
@@ -30,40 +44,74 @@ export async function pickImportCalendarFile(): Promise<{
   }
 
   const asset = result.assets[0];
+  assertImportCalendarFileSize(asset.size);
+
+  const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  const bytes = bytesFromBase64(base64);
+  const sourceLabel = importCalendarFileLabel(asset.name);
 
   try {
-    assertImportCalendarFileSize(asset.size);
+    const text = decodePickedImportCalendarBytes(bytes);
+    return {
+      mode: 'ics',
+      ...prepareImportCalendarFile({
+        name: asset.name,
+        size: asset.size,
+        text,
+      }),
+    };
+  } catch (calendarError) {
+    try {
+      const text = extractDocumentTextFromBytes(bytes);
+      return {
+        mode: 'seed',
+        text,
+        sourceLabel,
+      };
+    } catch {
+      if (
+        calendarError instanceof Error &&
+        isImportPickerError(calendarError)
+      ) {
+        throw calendarError;
+      }
 
-    const base64 = await FileSystem.readAsStringAsync(
-      asset.uri,
-      {
-        encoding: FileSystem.EncodingType.Base64,
-      },
-    );
-    const text = decodePickedImportCalendarBytes(
-      bytesFromBase64(base64),
-    );
-
-    return prepareImportCalendarFile({
-      name: asset.name,
-      size: asset.size,
-      text,
-    });
-  } catch (caught) {
-    if (caught instanceof Error && isImportPickerError(caught)) {
-      throw caught;
+      throw new Error(
+        'This file could not be read as a calendar or trip notes.',
+      );
     }
+  }
+}
 
+/** @deprecated Prefer pickImportMaterialFile */
+export async function pickImportCalendarFile(): Promise<{
+  text: string;
+  sourceLabel: string;
+} | null> {
+  const picked = await pickImportMaterialFile();
+  if (!picked) {
+    return null;
+  }
+
+  if (picked.mode !== 'ics') {
     throw new Error(
-      'This calendar file could not be read.',
+      'This file is trip notes, not an iCalendar. Use Seed from notes.',
     );
   }
+
+  return {
+    text: picked.text,
+    sourceLabel: picked.sourceLabel,
+  };
 }
 
 function isImportPickerError(error: Error): boolean {
   return (
-    error.message === 'This calendar file is too large to import.' ||
-    /iCalendar|This zip|This PDF|This Office|This image|from images|No calendar events/i.test(
+    error.message ===
+      'This calendar file is too large to import.' ||
+    /iCalendar|This zip|This PDF|This Office|This image|from images|No calendar events|readable text|trip notes/i.test(
       error.message,
     )
   );

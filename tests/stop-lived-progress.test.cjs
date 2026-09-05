@@ -163,7 +163,7 @@ test('migration v17 installs lived-stop states without inventing progress', asyn
       'PRAGMA user_version;',
     );
     assert.equal(version.user_version, DATABASE_VERSION);
-    assert.equal(DATABASE_VERSION, 17);
+    assert.equal(DATABASE_VERSION, 18);
 
     const table = await database.queryFirst(
       `
@@ -202,7 +202,7 @@ test('migration v17 recreates lived-stop states from version 16 without touching
     const version = await database.queryFirst(
       'PRAGMA user_version;',
     );
-    assert.equal(version.user_version, 17);
+    assert.equal(version.user_version, 18);
 
     const table = await database.queryFirst(
       `
@@ -433,7 +433,7 @@ test('migration v17 skips lived-stop install when itinerary tables are missing',
     const version = await database.queryFirst(
       'PRAGMA user_version;',
     );
-    assert.equal(version.user_version, 17);
+    assert.equal(version.user_version, 18);
   } finally {
     database.close();
   }

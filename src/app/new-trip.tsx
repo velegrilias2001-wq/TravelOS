@@ -216,6 +216,27 @@ export default function NewTripScreen() {
       }
     });
 
+  const [importSeedPrefill] = useState(() => {
+    const source = Array.isArray(routeParams.source)
+      ? routeParams.source[0]
+      : routeParams.source;
+
+    if (source !== 'import_seed') {
+      return null;
+    }
+
+    const pick = (key: string) => {
+      const value = routeParams[key];
+      return Array.isArray(value) ? value[0] : value;
+    };
+
+    return {
+      title: pick('title')?.trim() || '',
+      startDate: pick('startDate')?.trim() || '',
+      endDate: pick('endDate')?.trim() || '',
+    };
+  });
+
   const saveTrip =
     useTripStore(
       (state) => state.saveTrip,
@@ -224,7 +245,9 @@ export default function NewTripScreen() {
   const [
     title,
     setTitle,
-  ] = useState('');
+  ] = useState(
+    () => importSeedPrefill?.title ?? '',
+  );
 
   const [
     destinations,
@@ -249,8 +272,9 @@ export default function NewTripScreen() {
   ] =
     useState(
       () =>
-        discoverPrefill
-          ?.startDate ?? '',
+        discoverPrefill?.startDate ??
+        importSeedPrefill?.startDate ??
+        '',
     );
 
   const [
@@ -259,8 +283,9 @@ export default function NewTripScreen() {
   ] =
     useState(
       () =>
-        discoverPrefill
-          ?.endDate ?? '',
+        discoverPrefill?.endDate ??
+        importSeedPrefill?.endDate ??
+        '',
     );
 
   const [

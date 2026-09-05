@@ -66,6 +66,11 @@
     "src/services/memory-media-ownership.ts",
     "src/services/trip-creation.ts",
     "src/services/travel-dna-service.ts",
+    "src/services/plan-assist.ts",
+    "src/services/import-seed-extract.ts",
+    "src/services/import-document-text.ts",
+    "src/services/import-seed-handoff.ts",
+    "src/services/trip-theme.ts",
 
     "src/services/ai-context.ts",
     "src/services/ai-context-service.ts",

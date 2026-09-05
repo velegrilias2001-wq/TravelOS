@@ -25,6 +25,7 @@ import {
   selectHomeRuntimeSummary,
 } from '@/services/home-runtime';
 import { tripService } from '@/services/trip-service';
+import { getTripThemePack } from '@/services/trip-theme';
 import {
   formatCalendarDateForDisplay,
   systemRuntimeClock,
@@ -131,6 +132,9 @@ export default function HomeScreen() {
   const featured = runtimeSummary.featured;
   const featuredTrip = featured?.trip;
   const featuredPhase = featured?.runtime.phase;
+  const featuredTheme = getTripThemePack(
+    featuredTrip?.themePackId,
+  );
   const completedTrips =
     runtimeSummary.completedCount;
 
@@ -183,7 +187,10 @@ export default function HomeScreen() {
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel={`Open ${featuredTrip.title}`}
-            style={styles.heroCard}
+            style={[
+              styles.heroCard,
+              { backgroundColor: featuredTheme.accent },
+            ]}
             onPress={() => openTrip(featuredTrip)}
           >
             <View style={styles.heroTopRow}>
@@ -202,6 +209,10 @@ export default function HomeScreen() {
                 color={colors.textInverse}
               />
             </View>
+
+            <Text style={styles.heroMood}>
+              {featuredTheme.moodEyebrow}
+            </Text>
 
             <Text style={styles.heroGreeting}>
               {featuredPhase === 'active'
@@ -654,11 +665,20 @@ const styles = StyleSheet.create({
   },
 
   heroGreeting: {
-    marginTop: spacing[4],
+    marginTop: spacing[2],
     fontFamily: fontFamily.serifSemiBold,
     fontSize: fontSize.titleSmall,
     lineHeight: lineHeight.titleSmall,
     color: colors.textInverse,
+  },
+
+  heroMood: {
+    marginTop: spacing[4],
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: letterSpacing.eyebrow,
+    color: 'rgba(255,253,248,0.72)',
+    textTransform: 'uppercase',
   },
 
   heroDestination: {

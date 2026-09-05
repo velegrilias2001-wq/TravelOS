@@ -19,7 +19,7 @@ import {
 
 import { Screen } from '@/components/ui/screen';
 import type { ImportBatch } from '@/domain/entities';
-import { pickImportCalendarFile } from '@/services/import-calendar-file-runtime';
+import { pickImportMaterialFile } from '@/services/import-calendar-file-runtime';
 import { importReviewService } from '@/services/import-review-runtime';
 import {
   colors,
@@ -87,9 +87,15 @@ export default function ImportScreen() {
     setError(null);
 
     try {
-      const batch = await importReviewService.ingestIcs({
-        text,
-      });
+      const looksLikeCalendar =
+        /BEGIN:VCALENDAR/i.test(text);
+
+      const batch = looksLikeCalendar
+        ? await importReviewService.ingestIcs({ text })
+        : await importReviewService.ingestSeedText({
+            text,
+            sourceKind: 'text',
+          });
 
       setText('');
       await reload();
@@ -98,7 +104,7 @@ export default function ImportScreen() {
       setError(
         caught instanceof Error
           ? caught.message
-          : 'This calendar could not be imported.',
+          : 'This material could not be imported.',
       );
     } finally {
       setBusy(false);
@@ -110,13 +116,20 @@ export default function ImportScreen() {
     setError(null);
 
     try {
-      const picked = await pickImportCalendarFile();
+      const picked = await pickImportMaterialFile();
 
       if (!picked) {
         return;
       }
 
-      const batch = await importReviewService.ingestIcs(picked);
+      const batch =
+        picked.mode === 'ics'
+          ? await importReviewService.ingestIcs(picked)
+          : await importReviewService.ingestSeedText({
+              text: picked.text,
+              sourceLabel: picked.sourceLabel,
+              sourceKind: 'document',
+            });
 
       setText('');
       await reload();
@@ -125,7 +138,7 @@ export default function ImportScreen() {
       setError(
         caught instanceof Error
           ? caught.message
-          : 'This calendar could not be imported.',
+          : 'This file could not be imported.',
       );
     } finally {
       setBusy(false);
@@ -156,11 +169,11 @@ export default function ImportScreen() {
         </Text>
 
         <Text style={styles.title}>
-          Import a calendar
+          Import material
         </Text>
 
         <Text style={styles.subtitle}>
-          Choose or paste an .ics calendar, an email that contains one, a zip of calendars, or a PDF, Office file, or image that embeds one. Nothing becomes a booking on its own.
+          Paste or choose a calendar (.ics / embedded), or trip notes (txt, PDF, Word, Excel). Seed claims open Create Trip for confirmation — nothing writes a trip on its own.
         </Text>
       </View>
 

@@ -16,6 +16,7 @@ import {
 } from './booking-time';
 import { extractImportCalendarText } from './import-calendar-extract';
 import { parseImportCalendar } from './import-ics';
+import { extractImportSeedClaims } from './import-seed-extract';
 
 export interface ImportReviewRepositories {
   imports: ImportRepository;
@@ -103,6 +104,56 @@ export class ImportReviewService {
     return batch;
   }
 
+  async ingestSeedText(input: {
+    text: string;
+    sourceLabel?: string;
+    sourceKind?: 'document' | 'text';
+  }): Promise<ImportBatch> {
+    const extracted = extractImportSeedClaims(input.text);
+    const existing =
+      await this.repos.imports.getBatchByContentHash(
+        extracted.contentHash,
+      );
+
+    if (existing) {
+      return existing;
+    }
+
+    const createdAt = this.now();
+    const batch: ImportBatch = {
+      id: this.createId(),
+      sourceKind: input.sourceKind ?? 'text',
+      sourceLabel:
+        input.sourceLabel?.trim() || 'Pasted trip notes',
+      contentHash: extracted.contentHash,
+      skippedCount: extracted.skippedCount,
+      createdAt,
+    };
+
+    const claims = extracted.claims.map((claim) => {
+      const id = this.createId();
+
+      return {
+        id,
+        batchId: batch.id,
+        kind: claim.kind,
+        status: 'pending' as const,
+        title: claim.title,
+        startAt: claim.startAt,
+        endAt: claim.endAt,
+        locationText: claim.locationText,
+        confidence: claim.confidence,
+        evidence: claim.evidence,
+        createdAt,
+        updatedAt: createdAt,
+      };
+    });
+
+    await this.repos.imports.saveBatch(batch, claims);
+
+    return batch;
+  }
+
   async listBatches(): Promise<ImportBatch[]> {
     return this.repos.imports.listBatches();
   }
@@ -162,6 +213,12 @@ export class ImportReviewService {
 
     if (!claim) {
       throw new Error('Imported claim was not found.');
+    }
+
+    if (claim.kind !== 'booking') {
+      throw new Error(
+        'Only calendar booking claims can become bookings. Use Start Create Trip for seed claims.',
+      );
     }
 
     if (claim.status === 'dismissed') {
@@ -226,6 +283,55 @@ export class ImportReviewService {
     await this.repos.imports.acceptClaim(accepted, booking);
 
     return accepted;
+  }
+
+  /**
+   * Mark a seed/itinerary claim reviewed without writing
+   * a Booking or Trip. Create Trip / Plan remain explicit.
+   */
+  async acknowledgeSeed(
+    claimId: ImportClaimId,
+    tripId?: TripId,
+  ): Promise<ImportClaim> {
+    const claim = await this.repos.imports.getClaim(claimId);
+
+    if (!claim) {
+      throw new Error('Imported claim was not found.');
+    }
+
+    if (claim.kind === 'booking') {
+      throw new Error(
+        'Calendar bookings must be accepted onto a trip.',
+      );
+    }
+
+    if (claim.status === 'dismissed') {
+      throw new Error(
+        'A dismissed claim cannot be acknowledged.',
+      );
+    }
+
+    if (claim.status === 'accepted') {
+      return claim;
+    }
+
+    if (tripId) {
+      const trip = await this.repos.trips.getById(tripId);
+      if (!trip) {
+        throw new Error('Trip was not found.');
+      }
+    }
+
+    const acknowledged: ImportClaim = {
+      ...claim,
+      status: 'accepted',
+      acceptedTripId: tripId,
+      updatedAt: this.now(),
+    };
+
+    await this.repos.imports.saveClaim(acknowledged);
+
+    return acknowledged;
   }
 
   async dismiss(claimId: ImportClaimId): Promise<ImportClaim> {
@@ -312,6 +418,24 @@ function conflictsForClaim(
   acceptedClaims: ImportClaim[],
 ): ImportClaimConflict[] {
   if (claim.status !== 'pending') {
+    return [];
+  }
+
+  if (claim.kind === 'trip_seed') {
+    return [];
+  }
+
+  if (claim.kind === 'itinerary_line') {
+    if (!trip) {
+      return [
+        {
+          kind: 'needs-trip',
+          detail:
+            'Optional: choose a trip to mark this line reviewed against it. It does not become a stop automatically.',
+        },
+      ];
+    }
+
     return [];
   }
 

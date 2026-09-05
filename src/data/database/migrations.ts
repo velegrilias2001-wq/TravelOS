@@ -21,7 +21,7 @@ import {
   reconcileStopDayRelationships,
 } from './stop-day-integrity-migration';
 
-export const DATABASE_VERSION = 17;
+export const DATABASE_VERSION = 18;
 
 interface UserVersionRow {
   user_version: number;
@@ -1414,6 +1414,208 @@ export async function migrateDatabase(
 
         await transaction.execAsync(`
           PRAGMA user_version = 17;
+        `);
+      },
+    );
+  }
+
+  /**
+   * Version 18
+   * Widen import review for document/text seed claims
+   * (trip_seed, itinerary_line) and add optional
+   * trip theme_pack_id for curated visual packs.
+   * Seed claims never write trips silently.
+   *
+   * Fresh installs already receive theme_pack_id and
+   * widened import CHECKs from DATABASE_SCHEMA.
+   */
+  if (currentVersion < 18) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        const tripColumns =
+          await transaction.getAllAsync<TableInfoRow>(
+            'PRAGMA table_info(trips);',
+          );
+
+        const hasThemePackId = tripColumns.some(
+          (column) => column.name === 'theme_pack_id',
+        );
+
+        if (!hasThemePackId && tripColumns.length > 0) {
+          await transaction.execAsync(`
+            ALTER TABLE trips
+            ADD COLUMN theme_pack_id TEXT;
+          `);
+        }
+
+        const batchSqlRow =
+          await transaction.getFirstAsync<{
+            sql: string | null;
+          }>(
+            `
+              SELECT sql
+              FROM sqlite_master
+              WHERE type = 'table'
+                AND name = 'import_batches';
+            `,
+          );
+
+        const bookingsTable =
+          await transaction.getFirstAsync<{
+            name: string;
+          }>(
+            `
+              SELECT name
+              FROM sqlite_master
+              WHERE type = 'table'
+                AND name = 'bookings';
+            `,
+          );
+
+        const batchSql = batchSqlRow?.sql ?? '';
+        const needsImportWiden =
+          batchSql.length > 0 &&
+          Boolean(bookingsTable) &&
+          !batchSql.includes("'document'");
+
+        if (needsImportWiden) {
+          await transaction.execAsync(`
+            CREATE TABLE import_batches_v18 (
+              id TEXT PRIMARY KEY NOT NULL,
+              source_kind TEXT NOT NULL
+                CHECK (
+                  source_kind IN (
+                    'ics',
+                    'document',
+                    'text'
+                  )
+                ),
+              source_label TEXT NOT NULL,
+              content_hash TEXT NOT NULL UNIQUE,
+              skipped_count INTEGER NOT NULL,
+              created_at TEXT NOT NULL
+            );
+
+            INSERT INTO import_batches_v18 (
+              id,
+              source_kind,
+              source_label,
+              content_hash,
+              skipped_count,
+              created_at
+            )
+            SELECT
+              id,
+              source_kind,
+              source_label,
+              content_hash,
+              skipped_count,
+              created_at
+            FROM import_batches;
+
+            CREATE TABLE import_claims_v18 (
+              id TEXT PRIMARY KEY NOT NULL,
+              batch_id TEXT NOT NULL,
+              kind TEXT NOT NULL
+                CHECK (
+                  kind IN (
+                    'booking',
+                    'trip_seed',
+                    'itinerary_line'
+                  )
+                ),
+              status TEXT NOT NULL
+                CHECK (
+                  status IN (
+                    'pending',
+                    'accepted',
+                    'dismissed'
+                  )
+                ),
+              title TEXT NOT NULL,
+              start_at TEXT,
+              end_at TEXT,
+              location_text TEXT,
+              ics_uid TEXT,
+              confidence TEXT NOT NULL
+                CHECK (
+                  confidence IN (
+                    'high',
+                    'medium',
+                    'low'
+                  )
+                ),
+              evidence_json TEXT NOT NULL,
+              accepted_trip_id TEXT,
+              accepted_booking_id TEXT,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL,
+              FOREIGN KEY (batch_id)
+                REFERENCES import_batches_v18(id)
+                ON DELETE CASCADE,
+              FOREIGN KEY (accepted_trip_id)
+                REFERENCES trips(id)
+                ON DELETE SET NULL,
+              FOREIGN KEY (accepted_booking_id)
+                REFERENCES bookings(id)
+                ON DELETE SET NULL
+            );
+
+            INSERT INTO import_claims_v18 (
+              id,
+              batch_id,
+              kind,
+              status,
+              title,
+              start_at,
+              end_at,
+              location_text,
+              ics_uid,
+              confidence,
+              evidence_json,
+              accepted_trip_id,
+              accepted_booking_id,
+              created_at,
+              updated_at
+            )
+            SELECT
+              id,
+              batch_id,
+              kind,
+              status,
+              title,
+              start_at,
+              end_at,
+              location_text,
+              ics_uid,
+              confidence,
+              evidence_json,
+              accepted_trip_id,
+              accepted_booking_id,
+              created_at,
+              updated_at
+            FROM import_claims;
+
+            DROP TABLE import_claims;
+            DROP TABLE import_batches;
+
+            ALTER TABLE import_batches_v18
+              RENAME TO import_batches;
+            ALTER TABLE import_claims_v18
+              RENAME TO import_claims;
+
+            CREATE INDEX IF NOT EXISTS
+              idx_import_claims_batch_id
+              ON import_claims(batch_id);
+
+            CREATE INDEX IF NOT EXISTS
+              idx_import_batches_created_at
+              ON import_batches(created_at);
+          `);
+        }
+
+        await transaction.execAsync(`
+          PRAGMA user_version = 18;
         `);
       },
     );

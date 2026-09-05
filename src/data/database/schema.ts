@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS trips (
 
   accounting_currency TEXT NOT NULL,
 
+  theme_pack_id TEXT,
+
   created_at TEXT NOT NULL,
 
   updated_at TEXT NOT NULL
@@ -776,7 +778,7 @@ CREATE TABLE IF NOT EXISTS import_batches (
 
     CHECK (
 
-      source_kind IN ('ics')
+      source_kind IN ('ics', 'document', 'text')
 
     ),
 
@@ -800,7 +802,7 @@ CREATE TABLE IF NOT EXISTS import_claims (
 
     CHECK (
 
-      kind IN ('booking')
+      kind IN ('booking', 'trip_seed', 'itinerary_line')
 
     ),
 

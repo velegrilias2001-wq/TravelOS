@@ -119,6 +119,12 @@ export interface Trip {
   accountingCurrency: string;
 
   /**
+   * Optional curated visual pack for this trip.
+   * Cosmetic only — never invents destinations.
+   */
+  themePackId?: string;
+
+  /**
    * True ISO instants used only for persistence metadata.
    */
   createdAt: string;

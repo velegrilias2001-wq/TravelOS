@@ -33,6 +33,7 @@ import { playLightImpact } from '@/features/motion/haptic';
 import { RiseIn } from '@/features/motion/rise-in';
 import { useNetworkReachability } from '@/features/offline/use-network-reachability';
 import { SlideNotice } from '@/features/motion/slide-notice';
+import { getTripThemePack } from '@/services/trip-theme';
 import {
   splitAccommodationDateTime,
   type AccommodationDayContext,
@@ -210,6 +211,7 @@ export function CompanionScreen() {
     .map((destination) => destination.name.trim())
     .filter(Boolean)
     .join(' · ');
+  const tripTheme = getTripThemePack(workspace.trip.themePackId);
   const heroPlace =
     selection.mode === 'active'
       ? companionActivePlaceLabel(
@@ -247,6 +249,7 @@ export function CompanionScreen() {
                   : 'DATES NEED REVIEW'}
           </Text>
         </View>
+        <Text style={styles.themeMood}>{tripTheme.moodEyebrow}</Text>
         <Text style={styles.destination}>
           {heroPlace.toUpperCase()}
         </Text>
@@ -1702,6 +1705,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1.8,
     color: colors.brass,
     marginBottom: spacing[3],
+  },
+  themeMood: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing[2],
   },
   tripTitle: {
     fontFamily: fontFamily.serifSemiBold,

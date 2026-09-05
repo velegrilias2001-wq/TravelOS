@@ -13,6 +13,7 @@ import {
   validateCalendarDateRange,
 } from './time-truth';
 import { MAX_TRIP_DESTINATIONS } from './trip-details';
+import { suggestTripThemePackId } from './trip-theme';
 
 export interface NewTripInput {
   title: string;
@@ -125,6 +126,11 @@ export function buildNewTrip(
     endDate: input.endDate,
     travelerIds: [],
     accountingCurrency,
+    themePackId: suggestTripThemePackId(
+      input.destinations.map(
+        (destination) => destination.countryCode,
+      ),
+    ),
     createdAt: timestamp,
     updatedAt: timestamp,
   };
