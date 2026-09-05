@@ -20,6 +20,7 @@ import {
 import { Image } from 'expo-image';
 import MapView, {
   Marker,
+  PROVIDER_GOOGLE,
   type LatLng,
 } from 'react-native-maps';
 import {
@@ -255,7 +256,14 @@ export default function WorldScreen() {
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
+        provider={PROVIDER_GOOGLE}
         initialRegion={WORLD_REGION}
+        mapType="standard"
+        rotateEnabled={false}
+        pitchEnabled={false}
+        zoomEnabled
+        scrollEnabled
+        zoomControlEnabled
         showsCompass={false}
         showsMyLocationButton={false}
         toolbarEnabled={false}

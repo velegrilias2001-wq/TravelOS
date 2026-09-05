@@ -26,6 +26,7 @@ import * as Linking from 'expo-linking';
 
 import MapView, {
   Marker,
+  PROVIDER_GOOGLE,
   type LatLng,
   type Region,
 } from 'react-native-maps';
@@ -401,6 +402,7 @@ export default function TripMapScreen() {
       <MapView
         ref={mapRef}
         style={styles.map}
+        provider={PROVIDER_GOOGLE}
         initialRegion={
           initialRegion
         }
@@ -408,6 +410,12 @@ export default function TripMapScreen() {
           setMapReady(true);
           fitMap();
         }}
+        mapType="standard"
+        rotateEnabled={false}
+        pitchEnabled={false}
+        zoomEnabled
+        scrollEnabled
+        zoomControlEnabled={Platform.OS === 'android'}
         showsCompass
         showsScale
         toolbarEnabled={false}

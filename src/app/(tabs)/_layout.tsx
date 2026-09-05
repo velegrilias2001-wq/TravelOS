@@ -1,14 +1,16 @@
 import { Tabs } from 'expo-router';
 
+import { useTravelOSTabBarStyle } from '@/features/navigation/use-travelos-tab-bar-style';
 import { TabBarIcon } from '@/features/motion/tab-bar-icon';
 import {
   colors,
   fontFamily,
   fontSize,
-  shadows,
 } from '@/theme';
 
 export default function MainTabsLayout() {
+  const tabBarStyle = useTravelOSTabBarStyle();
+
   return (
     <Tabs
       screenOptions={{
@@ -23,18 +25,7 @@ export default function MainTabsLayout() {
           marginTop: 2,
         },
 
-        tabBarStyle: {
-          height: 74,
-          paddingTop: 8,
-          paddingBottom: 9,
-
-          backgroundColor: colors.surface,
-
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-
-          ...shadows.subtle,
-        },
+        tabBarStyle,
       }}
     >
       <Tabs.Screen
