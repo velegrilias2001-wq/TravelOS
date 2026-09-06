@@ -59,6 +59,10 @@ import {
 } from '@/services/trip-creation';
 
 import {
+  budgetService,
+} from '@/services/budget-service';
+
+import {
   MAX_TRIP_DESTINATIONS,
   moveDestinationItems,
 } from '@/services/trip-details';
@@ -182,7 +186,7 @@ const STEP_COPY: Record<
     eyebrow: 'STEP 3 · SHAPE',
     title: 'Make it yours.',
     subtitle:
-      'Optional intent and pace, a name, and the currency for trip totals.',
+      'Optional intent, pace, planned budget, a name, and the currency for trip totals.',
   },
 };
 
@@ -323,6 +327,11 @@ export default function NewTripScreen() {
     currency,
     setCurrency,
   ] = useState('EUR');
+
+  const [
+    plannedBudgetAmount,
+    setPlannedBudgetAmount,
+  ] = useState('');
 
   const [
     isSaving,
@@ -588,6 +597,36 @@ export default function NewTripScreen() {
 
         await saveTrip(trip);
 
+        const plannedRaw = plannedBudgetAmount.trim();
+
+        if (plannedRaw.length > 0) {
+          const parsed = Number(
+            plannedRaw.replace(',', '.'),
+          );
+
+          if (
+            !Number.isFinite(parsed) ||
+            parsed < 0
+          ) {
+            Alert.alert(
+              'Trip created',
+              'The trip was saved, but the planned budget was not set. Open Budget to add an amount of zero or more.',
+            );
+          } else {
+            try {
+              await budgetService.setPlannedBudget(
+                trip.id,
+                parsed,
+              );
+            } catch {
+              Alert.alert(
+                'Trip created',
+                'The trip was saved, but the planned budget could not be written. You can set it under Budget.',
+              );
+            }
+          }
+        }
+
         router.replace({
           pathname:
             '/trip/[tripId]',
@@ -765,10 +804,38 @@ export default function NewTripScreen() {
             {step === 'where' ? (
               <>
                 {destinations.length === 0 ? (
-                  <DestinationPickerField
-                    disabled={isSaving}
-                    onSelect={addDestination}
-                  />
+                  <View style={styles.whereDoors}>
+                    <Text style={styles.fieldLabel}>
+                      HOW DO YOU WANT TO START
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Help me decide where to go"
+                      disabled={isSaving}
+                      style={({ pressed }) => [
+                        styles.whereDoor,
+                        pressed && styles.pressed,
+                        isSaving && styles.inputDisabled,
+                      ]}
+                      onPress={() =>
+                        router.push('/discover/find-destination')
+                      }
+                    >
+                      <Text style={styles.whereDoorTitle}>
+                        Help me decide
+                      </Text>
+                      <Text style={styles.whereDoorBody}>
+                        Open Discover with your brief. Grounded places can return here as Create Trip prefill — nothing saves until you confirm.
+                      </Text>
+                    </Pressable>
+                    <Text style={styles.whereDoorDivider}>
+                      Or pick a place you already know
+                    </Text>
+                    <DestinationPickerField
+                      disabled={isSaving}
+                      onSelect={addDestination}
+                    />
+                  </View>
                 ) : (
                   destinations.map((destination, index) => (
                     <View
@@ -1245,6 +1312,31 @@ export default function NewTripScreen() {
                       Used for your budget and trip totals. Expenses can still use the currency you paid.
                     </Text>
                   </View>
+
+                  <View
+                    style={
+                      styles.currencyField
+                    }
+                  >
+                    <Field
+                      label="PLANNED BUDGET · OPTIONAL"
+                      placeholder="e.g. 1200"
+                      value={plannedBudgetAmount}
+                      disabled={isSaving}
+                      keyboardType="decimal-pad"
+                      onChangeText={
+                        setPlannedBudgetAmount
+                      }
+                    />
+
+                    <Text
+                      style={
+                        styles.helperText
+                      }
+                    >
+                      Saved only when you enter an amount with the trip currency above. Leave blank to skip.
+                    </Text>
+                  </View>
                 </View>
               </>
             ) : null}
@@ -1347,7 +1439,7 @@ export default function NewTripScreen() {
           <Text
             style={styles.ctaHint}
           >
-            Choose a destination to continue.
+            Choose a destination to continue — or Help me decide.
           </Text>
         ) : null}
 
@@ -1386,6 +1478,11 @@ interface FieldProps {
   disabled?: boolean;
 
   maxLength?: number;
+
+  keyboardType?:
+    | 'default'
+    | 'decimal-pad'
+    | 'number-pad';
 }
 
 function Field({
@@ -1396,6 +1493,7 @@ function Field({
   autoCapitalize = 'sentences',
   disabled = false,
   maxLength,
+  keyboardType = 'default',
 }: FieldProps) {
   return (
     <View style={styles.field}>
@@ -1424,6 +1522,7 @@ function Field({
         autoCorrect={false}
         editable={!disabled}
         maxLength={maxLength}
+        keyboardType={keyboardType}
         style={[
           styles.input,
 
@@ -1667,6 +1766,40 @@ const styles =
 
     form: {
       gap: spacing[6],
+    },
+
+    whereDoors: {
+      gap: spacing[3],
+    },
+
+    whereDoor: {
+      gap: spacing[2],
+      padding: spacing[4],
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+
+    whereDoorTitle: {
+      fontFamily: fontFamily.serifSemiBold,
+      fontSize: fontSize.titleSmall,
+      lineHeight: lineHeight.titleSmall,
+      color: colors.textPrimary,
+    },
+
+    whereDoorBody: {
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+      color: colors.textSecondary,
+    },
+
+    whereDoorDivider: {
+      marginTop: spacing[2],
+      fontFamily: fontFamily.sansMedium,
+      fontSize: fontSize.caption,
+      color: colors.textMuted,
     },
 
     destinationAfter: {

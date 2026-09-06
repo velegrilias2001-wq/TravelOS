@@ -1,8 +1,8 @@
 # PWA Parity + Absolute Travel AI — Master Track
 
-Status: **Wave A done · Wave B done (β1+β2) · Waves C–E remaining**
+Status: **Wave A–B done · Wave C in progress (γ3+γ4) · γ1/γ2/γ5 + D–E remaining**
 Draft date: 2026-09-06
-Updated: 2026-09-06 (Wave B β2 import line → Plan stop landed)
+Updated: 2026-09-06 (Wave C: Create unsure-where door + optional planned budget)
 Branch context: `docs/expo-sqlite-rehearsal-7-15`  
 PWA reference: https://travelos3.netlify.app/ (v13.5.1 product memory; vault session observed 2026-09-06)  
 Native authority: `AGENTS.md`, `docs/PRODUCT_VISION.md`, `docs/CURRENT_STATE.md`, `docs/ROADMAP.md`, `docs/WEB_REFERENCE.md`
@@ -159,7 +159,7 @@ Operator reviews this order. Implementation starts only after OK per wave (or OK
 **Exit criteria:**
 
 - [ ] Create Trip can optionally capture origin/party/budget without inventing travelers or FX.
-- [ ] Unsure-where routes through Discover Brief and returns grounded prefill only.
+- [x] Unsure-where routes through Discover Brief and returns grounded prefill only.
 - [ ] Compare shows 2–3 catalogue IDs with fail-closed missing evidence.
 
 ---
