@@ -209,7 +209,7 @@ Goal: keep the canonical native core and close the gap with the PWA on **feel** 
 - [x] Editorial Home: brand-first, Create / Help me decide / Import doors, what-matters-now hero
 - [x] Stronger local-dev copilot system prompt
 - [x] Profile → TravelOS Copilot health probe (`GET /ai/tools`)
-- [ ] Operator: device smoke on preview APK after Maps SHA is restricted (tab-bar safe-area already in native client)
+- [x] Operator: device smoke on preview APK `817e2c05-…` (2026-09-06): location picker Places + Trip Map tiles (Lisboa pin) + World map (1 planned place). Signing SHA-1 confirmed from APK and already present on the Maps Android-app key restriction.
 
 ### Wave 2 — Create Trip delight
 - [x] Progressive disclosure: Where → When → Shape/Create with step pips, RiseIn, Continue CTAs, review card; Discover prefill still skips to When when destinations exist
@@ -231,7 +231,7 @@ Goal: keep the canonical native core and close the gap with the PWA on **feel** 
 
 ### Wave 5 — Release / iOS / sync (Phase 6)
 - [x] In-repo iOS release prep: `bundleIdentifier` `com.travelos.app`, iOS Maps API key wiring, Memory photo/camera usage strings
-- [ ] Operator: add EAS preview SHA-1 `16:CB:EE:C7:E9:A5:6C:DB:7C:B1:A1:BF:2F:0A:8C:1D:9B:7F:52:AA` to Google Cloud Maps key (package `com.travelos.app`), then smoke maps on preview APK
+- [x] Operator: EAS preview SHA-1 `16:CB:EE:C7:E9:A5:6C:DB:7C:B1:A1:BF:2F:0A:8C:1D:9B:7F:52:AA` on Google Cloud Maps key (package `com.travelos.app`) — confirmed already present; preview Maps smoke PASSED 2026-09-06 (picker + Trip Map + World)
 - [ ] Operator: Play Console internal/closed track (AAB via EAS production profile)
 - [ ] Accounts / cloud sync: design only — not implemented; local export/restore stays the backup path
 - [ ] iOS development-client / TestFlight rebuild on macOS (**last**; Windows cannot)
