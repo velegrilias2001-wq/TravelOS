@@ -1,8 +1,8 @@
 # PWA Parity + Absolute Travel AI — Master Track
 
-Status: **Wave A implemented in code — awaiting operator smoke; Waves B–E not started**  
+Status: **Wave A done · Wave B β1 done · β2 and Waves C–E remaining**  
 Draft date: 2026-09-06  
-Updated: 2026-09-06 (Wave A landed)  
+Updated: 2026-09-06 (Wave A + B β1 landed)  
 Branch context: `docs/expo-sqlite-rehearsal-7-15`  
 PWA reference: https://travelos3.netlify.app/ (v13.5.1 product memory; vault session observed 2026-09-06)  
 Native authority: `AGENTS.md`, `docs/PRODUCT_VISION.md`, `docs/CURRENT_STATE.md`, `docs/ROADMAP.md`, `docs/WEB_REFERENCE.md`
