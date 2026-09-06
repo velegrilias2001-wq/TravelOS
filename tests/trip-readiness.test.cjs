@@ -214,6 +214,32 @@ test('trip readiness ignores non-canonical and cross-trip itinerary data', () =>
   assert.equal(result.readiness.accommodationCount, 1);
 });
 
+test('trip readiness builds an explicit checklist and percent from countable facts', () => {
+  const result = selectTripReadiness(workspace());
+
+  assert.equal(result.totalCheckCount, 5);
+  assert.equal(result.readyCount, 4);
+  assert.equal(result.percentReady, 80);
+  assert.equal(
+    result.checklist.some(
+      (item) => item.id === 'plan' && item.ready === false,
+    ),
+    true,
+  );
+  assert.equal(
+    result.checklist.every((item) =>
+      [
+        'plan',
+        'accommodation',
+        'bookings',
+        'travelers',
+        'budget',
+      ].includes(item.id),
+    ),
+    true,
+  );
+});
+
 test('trip readiness stays explicit when preparation data is absent', () => {
   const result = selectTripReadiness(
     workspace({

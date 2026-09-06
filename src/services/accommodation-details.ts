@@ -27,6 +27,8 @@ export interface AccommodationInput {
   name: string;
   type: AccommodationType;
   address?: string;
+  latitude?: number;
+  longitude?: number;
   checkInAt?: string;
   checkOutAt?: string;
   phone?: string;
@@ -128,16 +130,37 @@ export function cleanAccommodationInput(
     );
   }
 
+  const latitude = optionalCoordinate(input.latitude);
+  const longitude = optionalCoordinate(input.longitude);
+
+  if (
+    (latitude === undefined) !== (longitude === undefined)
+  ) {
+    throw new Error(
+      'Map location needs both latitude and longitude from the place picker',
+    );
+  }
+
   return {
     ...input,
     name,
     address: optionalText(input.address),
+    latitude,
+    longitude,
     checkInAt,
     checkOutAt,
     phone: optionalText(input.phone),
     website: optionalText(input.website),
     notes: optionalText(input.notes),
   };
+}
+
+function optionalCoordinate(
+  value: number | undefined,
+): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? value
+    : undefined;
 }
 
 export function validateAccommodationRelationships(

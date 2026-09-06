@@ -23,6 +23,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { pickLocation } from 'expo-location-picker';
 
 import { Screen } from '@/components/ui/screen';
 import {
@@ -157,6 +158,14 @@ export default function AccommodationScreen() {
   const [type, setType] =
     useState<AccommodationType>('hotel');
   const [address, setAddress] = useState('');
+  const [latitude, setLatitude] = useState<
+    number | undefined
+  >();
+  const [longitude, setLongitude] = useState<
+    number | undefined
+  >();
+  const [isPickingMapLocation, setIsPickingMapLocation] =
+    useState(false);
   const [checkInDate, setCheckInDate] =
     useState('');
   const [checkInTime, setCheckInTime] =
@@ -213,6 +222,8 @@ export default function AccommodationScreen() {
     setName('');
     setType('hotel');
     setAddress('');
+    setLatitude(undefined);
+    setLongitude(undefined);
     setCheckInDate('');
     setCheckInTime('');
     setOriginalCheckInAt(undefined);
@@ -248,6 +259,8 @@ export default function AccommodationScreen() {
     setName(accommodation.name);
     setType(accommodation.type);
     setAddress(accommodation.address ?? '');
+    setLatitude(accommodation.latitude);
+    setLongitude(accommodation.longitude);
     setCheckInDate(checkIn?.date ?? '');
     setCheckInTime(checkIn?.time ?? '');
     setOriginalCheckInAt(accommodation.checkInAt);
@@ -383,6 +396,8 @@ export default function AccommodationScreen() {
       name,
       type,
       address,
+      latitude,
+      longitude,
       checkInAt:
         editing && !checkInEdited
           ? originalCheckInAt
@@ -407,6 +422,80 @@ export default function AccommodationScreen() {
       bookingId,
       stopId,
     };
+  };
+
+  const pickStayMapLocation = async () => {
+    try {
+      setIsPickingMapLocation(true);
+
+      const destinationWithCoords =
+        workspace.trip.destinations.find(
+          (destination) =>
+            typeof destination.latitude === 'number' &&
+            typeof destination.longitude === 'number',
+        );
+
+      const result = await pickLocation({
+        title: 'Choose stay location',
+        doneButtonTitle: 'Use location',
+        cancelButtonTitle: 'Cancel',
+        searchPlaceholder: 'Search hotels or addresses…',
+        initialRadiusMeters: 5000,
+        disableCurrentLocation: true,
+        ...(typeof latitude === 'number' &&
+        typeof longitude === 'number'
+          ? {
+              initialLatitude: latitude,
+              initialLongitude: longitude,
+            }
+          : typeof destinationWithCoords?.latitude ===
+                'number' &&
+              typeof destinationWithCoords?.longitude ===
+                'number'
+            ? {
+                initialLatitude:
+                  destinationWithCoords.latitude,
+                initialLongitude:
+                  destinationWithCoords.longitude,
+              }
+            : {}),
+        theme: {
+          primary: colors.brand,
+          pin: colors.coral,
+          colorScheme: 'light',
+        },
+      });
+
+      if (!result) {
+        return;
+      }
+
+      setLatitude(result.latitude);
+      setLongitude(result.longitude);
+
+      const formatted =
+        result.formattedAddress?.trim() ||
+        result.name?.trim();
+
+      if (formatted && !address.trim()) {
+        setAddress(formatted);
+      }
+
+      if (!name.trim() && result.name?.trim()) {
+        setName(result.name.trim());
+      }
+    } catch (error) {
+      console.error(
+        '[Accommodation] Location picker error:',
+        error,
+      );
+      Alert.alert(
+        'Could not open place picker',
+        'Map location was not changed.',
+      );
+    } finally {
+      setIsPickingMapLocation(false);
+    }
   };
 
   const saveAccommodation = async () => {
@@ -602,6 +691,14 @@ export default function AccommodationScreen() {
                             {accommodation.address}
                           </Text>
                         )}
+                        {typeof accommodation.latitude ===
+                          'number' &&
+                          typeof accommodation.longitude ===
+                            'number' && (
+                            <Text style={styles.stayMapped}>
+                              Map pin saved
+                            </Text>
+                          )}
                       </View>
                       <Ionicons
                         name="chevron-forward"
@@ -796,6 +893,64 @@ export default function AccommodationScreen() {
               onChangeText={setAddress}
               placeholder="Address or place name"
             />
+
+            <Text style={styles.fieldLabel}>MAP LOCATION</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                typeof latitude === 'number' &&
+                typeof longitude === 'number'
+                  ? 'Replace stay map location'
+                  : 'Choose stay map location'
+              }
+              disabled={isPickingMapLocation}
+              style={({ pressed }) => [
+                styles.mapLocationRow,
+                pressed && styles.pressed,
+              ]}
+              onPress={() => {
+                void pickStayMapLocation();
+              }}
+            >
+              <View style={styles.mapLocationIcon}>
+                <Ionicons
+                  name="location-outline"
+                  size={19}
+                  color={colors.teal}
+                />
+              </View>
+              <View style={styles.mapLocationCopy}>
+                <Text style={styles.mapLocationLabel}>
+                  {typeof latitude === 'number' &&
+                  typeof longitude === 'number'
+                    ? 'MAP PIN SAVED'
+                    : 'NO MAP PIN'}
+                </Text>
+                <Text style={styles.mapLocationBody}>
+                  {typeof latitude === 'number' &&
+                  typeof longitude === 'number'
+                    ? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
+                    : isPickingMapLocation
+                      ? 'Opening place picker…'
+                      : 'Choose a real place. TravelOS will not guess coordinates from the address.'}
+                </Text>
+              </View>
+            </Pressable>
+            {typeof latitude === 'number' &&
+              typeof longitude === 'number' && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear stay map location"
+                  onPress={() => {
+                    setLatitude(undefined);
+                    setLongitude(undefined);
+                  }}
+                >
+                  <Text style={styles.clearMapLocation}>
+                    Clear map pin
+                  </Text>
+                </Pressable>
+              )}
 
             <StayEditor
               label="CHECK-IN"
@@ -1422,6 +1577,54 @@ const styles = StyleSheet.create({
     fontSize: fontSize.micro,
     letterSpacing: 1.2,
     color: colors.textMuted,
+  },
+  mapLocationRow: {
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  mapLocationIcon: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+    backgroundColor: colors.tealSoft,
+  },
+  mapLocationCopy: {
+    flex: 1,
+  },
+  mapLocationLabel: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.1,
+    color: colors.teal,
+  },
+  mapLocationBody: {
+    marginTop: 2,
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textMuted,
+  },
+  clearMapLocation: {
+    marginTop: spacing[2],
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.coral,
+  },
+  stayMapped: {
+    marginTop: spacing[1],
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.teal,
   },
   input: {
     minHeight: 54,

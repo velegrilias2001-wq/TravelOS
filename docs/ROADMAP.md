@@ -199,6 +199,12 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 
 Exit condition: TravelOS can be built, tested, observed, restored, and released safely on iOS and Android.
 
+## PWA parity + Absolute Travel AI (proposal)
+
+Living analysis track (not yet authorized for implementation): [`docs/PWA_PARITY_AND_TRAVEL_AI_TRACK.md`](./PWA_PARITY_AND_TRAVEL_AI_TRACK.md).
+
+Covers Waves A–D (readiness, stay pins, booking actions, import depth, create/discover gaps, packing, World stats) and Wave E (Travel Chat → Trip Copilot → production brain). Operator OK required before coding.
+
 ## Elevation Program — toward phone-delight 100%
 
 Goal: keep the canonical native core and close the gap with the PWA on **feel** — unique TravelOS design, purposeful motion, and the strongest copilot possible on the **existing** `/ai/*` APIs — without inventing destinations or silent SQLite writes.

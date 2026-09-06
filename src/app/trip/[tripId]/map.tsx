@@ -37,6 +37,7 @@ import {
 } from 'react-native-safe-area-context';
 
 import type {
+  Accommodation,
   TripStop,
 } from '@/domain/entities';
 
@@ -88,6 +89,11 @@ interface MappedStop {
   coordinate: LatLng;
   bookingCount: number;
   accommodationCount: number;
+}
+
+interface MappedStay {
+  accommodation: Accommodation;
+  coordinate: LatLng;
 }
 
 const WORLD_REGION: Region = {
@@ -206,6 +212,28 @@ export default function TripMapScreen() {
     [workspace.trip.destinations],
   );
 
+  const mappedStays = useMemo<MappedStay[]>(() => {
+    return workspace.accommodations
+      .filter(
+        (
+          stay,
+        ): stay is Accommodation & {
+          latitude: number;
+          longitude: number;
+        } =>
+          stay.tripId === workspace.trip.id &&
+          typeof stay.latitude === 'number' &&
+          typeof stay.longitude === 'number',
+      )
+      .map((accommodation) => ({
+        accommodation,
+        coordinate: {
+          latitude: accommodation.latitude,
+          longitude: accommodation.longitude,
+        },
+      }));
+  }, [workspace.accommodations, workspace.trip.id]);
+
   const companion = useMemo(
     () => selectCompanion(workspace),
     [workspace],
@@ -272,11 +300,19 @@ export default function TripMapScreen() {
   const frameCoordinates =
     mapFrame.coordinates;
 
+  const fitCoordinates = useMemo(
+    () => [
+      ...frameCoordinates,
+      ...mappedStays.map((stay) => stay.coordinate),
+    ],
+    [frameCoordinates, mappedStays],
+  );
+
   const initialRegion =
     useMemo<Region>(
       () => {
         const first =
-          frameCoordinates[0];
+          fitCoordinates[0];
 
         if (!first) {
           return WORLD_REGION;
@@ -292,26 +328,26 @@ export default function TripMapScreen() {
             0.15,
         };
       },
-      [frameCoordinates],
+      [fitCoordinates],
     );
 
   const fitMap =
     useCallback(() => {
       if (
         !mapRef.current ||
-        frameCoordinates.length ===
+        fitCoordinates.length ===
           0
       ) {
         return;
       }
 
       if (
-        frameCoordinates.length ===
+        fitCoordinates.length ===
         1
       ) {
         mapRef.current.animateToRegion(
           {
-            ...frameCoordinates[0],
+            ...fitCoordinates[0],
 
             latitudeDelta:
               0.08,
@@ -326,7 +362,7 @@ export default function TripMapScreen() {
       }
 
       mapRef.current.fitToCoordinates(
-        frameCoordinates,
+        fitCoordinates,
         {
           animated: true,
 
@@ -338,7 +374,7 @@ export default function TripMapScreen() {
           },
         },
       );
-    }, [frameCoordinates]);
+    }, [fitCoordinates]);
 
   const openDirections = useCallback(
     (item: MappedStop) => {
@@ -492,6 +528,18 @@ export default function TripMapScreen() {
               title={destination.name}
               description="Trip destination"
               pinColor={colors.brass}
+            />
+          ),
+        )}
+
+        {mappedStays.map(
+          ({ accommodation, coordinate }) => (
+            <Marker
+              key={`stay-${accommodation.id}`}
+              coordinate={coordinate}
+              title={accommodation.name}
+              description="Saved stay"
+              pinColor={colors.brand}
             />
           ),
         )}
@@ -684,9 +732,10 @@ export default function TripMapScreen() {
                     styles.emptyBody
                   }
                 >
-                  {destinationPoints.length > 0
-                    ? 'Your destination is mapped. Itinerary stops will appear here as soon as they have real map coordinates.'
-                    : 'Destinations and itinerary stops will appear here as soon as they have real map coordinates.'}
+                  {destinationPoints.length > 0 ||
+                  mappedStays.length > 0
+                    ? 'Your destination or stays are mapped. Itinerary stops will appear here as soon as they have real map coordinates.'
+                    : 'Destinations, stays, and itinerary stops will appear here as soon as they have real map coordinates.'}
                 </Text>
               </View>
             </View>

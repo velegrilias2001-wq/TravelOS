@@ -17,10 +17,12 @@ import {
   Alert,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Switch,
   Text,
@@ -60,6 +62,9 @@ import { PressableScale } from '@/features/motion/pressable-scale';
 import {
   resolveBookingCurrencyCode,
 } from '@/services/booking-finance';
+import {
+  listBookingQuickActions,
+} from '@/services/booking-actions';
 import {
   buildItineraryStopContexts,
 } from '@/services/booking-stop-relationship';
@@ -353,6 +358,12 @@ export default function BookingsScreen() {
     useState('');
 
   const [
+    externalUrl,
+    setExternalUrl,
+  ] =
+    useState('');
+
+  const [
     stopId,
     setStopId,
   ] = useState<string | undefined>(
@@ -421,6 +432,7 @@ export default function BookingsScreen() {
     setTitle('');
     setProvider('');
     setConfirmationCode('');
+    setExternalUrl('');
     setStopId(undefined);
     setStopPickerOpen(false);
 
@@ -470,6 +482,10 @@ export default function BookingsScreen() {
     setConfirmationCode(
       booking.confirmationCode ??
         '',
+    );
+
+    setExternalUrl(
+      booking.externalUrl ?? '',
     );
 
     setStopId(booking.stopId);
@@ -632,6 +648,10 @@ export default function BookingsScreen() {
                 confirmationCode.trim() ||
                 undefined,
 
+              externalUrl:
+                externalUrl.trim() ||
+                undefined,
+
               stopId,
 
               startAt,
@@ -676,6 +696,10 @@ export default function BookingsScreen() {
 
               confirmationCode:
                 confirmationCode.trim() ||
+                undefined,
+
+              externalUrl:
+                externalUrl.trim() ||
                 undefined,
 
               stopId,
@@ -1069,6 +1093,78 @@ export default function BookingsScreen() {
                           .filter(Boolean)
                           .join(' · ')}
                       </Text>
+
+                      {listBookingQuickActions(
+                        booking,
+                      ).length > 0 && (
+                        <View style={styles.quickActions}>
+                          {listBookingQuickActions(
+                            booking,
+                          ).map((action) => (
+                            <Pressable
+                              key={action.id}
+                              accessibilityRole="button"
+                              accessibilityLabel={
+                                action.accessibilityLabel
+                              }
+                              style={({ pressed }) => [
+                                styles.quickAction,
+                                pressed && styles.pressed,
+                              ]}
+                              onPress={() => {
+                                void (async () => {
+                                  try {
+                                    if (
+                                      action.id ===
+                                      'open_url'
+                                    ) {
+                                      const can =
+                                        await Linking.canOpenURL(
+                                          action.value,
+                                        );
+
+                                      if (!can) {
+                                        Alert.alert(
+                                          'Link unavailable',
+                                          'This saved booking link could not be opened.',
+                                        );
+                                        return;
+                                      }
+
+                                      await Linking.openURL(
+                                        action.value,
+                                      );
+                                      return;
+                                    }
+
+                                    await Share.share({
+                                      message:
+                                        action.value,
+                                    });
+                                  } catch (error) {
+                                    console.error(
+                                      '[Bookings] Quick action failed:',
+                                      error,
+                                    );
+                                    Alert.alert(
+                                      'Action failed',
+                                      'Nothing was changed in this booking.',
+                                    );
+                                  }
+                                })();
+                              }}
+                            >
+                              <Text
+                                style={
+                                  styles.quickActionText
+                                }
+                              >
+                                {action.label}
+                              </Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      )}
 
                       {linkedStopContext && (
                         <Pressable
@@ -1476,6 +1572,14 @@ export default function BookingsScreen() {
                   setConfirmationCode
                 }
                 autoCapitalize="characters"
+              />
+
+              <Field
+                label="BOOKING LINK"
+                placeholder="https://…"
+                value={externalUrl}
+                onChangeText={setExternalUrl}
+                autoCapitalize="none"
               />
 
               <Text style={styles.fieldLabel}>
@@ -2260,6 +2364,28 @@ const styles =
       color: colors.textMuted,
       textTransform: 'capitalize',
       minHeight: 16,
+    },
+
+    quickActions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+      marginTop: spacing[3],
+    },
+
+    quickAction: {
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceWarm,
+    },
+
+    quickActionText: {
+      fontFamily: fontFamily.sansSemiBold,
+      fontSize: fontSize.caption,
+      color: colors.teal,
     },
 
     provider: {

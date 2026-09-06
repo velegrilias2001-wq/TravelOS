@@ -21,6 +21,7 @@ import {
   resolveDisplayLocale,
 } from '@/services/locale-format';
 import { isCanonicalDateKey } from '@/services/trip-details';
+import { selectTripReadiness } from '@/services/trip-readiness';
 import {
   colors,
   fontFamily,
@@ -84,11 +85,15 @@ export default function MoreScreen() {
         }`
       : `Set a budget in ${summary.accountingCurrency}`;
 
+  const readinessSelection = selectTripReadiness(workspace);
+
   const open = (
     pathname:
       | '/trip/[tripId]/details'
       | '/trip/[tripId]/budget'
       | '/trip/[tripId]/accommodation'
+      | '/trip/[tripId]/bookings'
+      | '/trip/[tripId]/plan'
       | '/trip/[tripId]/travelers'
       | '/trip/[tripId]/memories'
       | '/trip/[tripId]/travel-book',
@@ -191,23 +196,69 @@ export default function MoreScreen() {
         />
       </HubSection>
 
-      <View style={styles.plannedSection}>
-        <Text style={styles.groupLabel}>COMING LATER</Text>
-        <View style={styles.plannedRow}>
-          <View style={styles.plannedIcon}>
-            <Ionicons
-              name="checkmark-done-outline"
-              size={18}
-              color={colors.textMuted}
-            />
-          </View>
-          <View style={styles.rowCopy}>
-            <Text style={styles.plannedTitle}>Trip readiness</Text>
+      <View style={styles.group}>
+        <Text style={styles.groupLabel}>BEFORE YOU GO</Text>
+        <View style={styles.readinessHeader}>
+          <View style={styles.readinessHeaderCopy}>
+            <Text style={styles.readinessTitle}>Trip readiness</Text>
             <Text style={styles.rowBody}>
-              A focused pre-departure checklist
+              {readinessSelection.readyCount} of{' '}
+              {readinessSelection.totalCheckCount} checklist items
+              ready · {readinessSelection.percentReady}%
             </Text>
           </View>
-          <Text style={styles.plannedBadge}>PLANNED</Text>
+          <Text
+            accessibilityLabel={`${readinessSelection.percentReady} percent ready`}
+            style={styles.readinessPercent}
+          >
+            {readinessSelection.percentReady}%
+          </Text>
+        </View>
+        <View style={styles.groupSurface}>
+          {readinessSelection.checklist.map((item, index) => (
+            <View key={item.id}>
+              {index > 0 ? <HubDivider /> : null}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${item.actionLabel} ${item.title}. ${item.body}`}
+                style={({ pressed }) => [
+                  styles.hubRow,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => open(item.route)}
+              >
+                <View
+                  style={[
+                    styles.rowIcon,
+                    item.ready
+                      ? styles.rowIconReady
+                      : styles.rowIconBrass,
+                  ]}
+                >
+                  <Ionicons
+                    name={
+                      item.ready
+                        ? 'checkmark'
+                        : 'ellipse-outline'
+                    }
+                    size={19}
+                    color={
+                      item.ready ? colors.teal : colors.brass
+                    }
+                  />
+                </View>
+                <View style={styles.rowCopy}>
+                  <Text style={styles.rowTitle}>{item.title}</Text>
+                  <Text numberOfLines={2} style={styles.rowBody}>
+                    {item.body}
+                  </Text>
+                </View>
+                <Text style={styles.readinessAction}>
+                  {item.actionLabel.toUpperCase()}
+                </Text>
+              </Pressable>
+            </View>
+          ))}
         </View>
       </View>
 
@@ -371,6 +422,9 @@ const styles = StyleSheet.create({
   rowIconBrass: {
     backgroundColor: colors.brassSoft,
   },
+  rowIconReady: {
+    backgroundColor: colors.tealSoft,
+  },
   rowCopy: {
     flex: 1,
   },
@@ -391,42 +445,30 @@ const styles = StyleSheet.create({
     marginLeft: spacing[4] + 38 + spacing[3],
     backgroundColor: colors.border,
   },
-  plannedSection: {
-    marginTop: spacing[7],
-  },
-  plannedRow: {
-    minHeight: 68,
+  readinessHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[3],
-    paddingHorizontal: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surfaceWarm,
+    marginBottom: spacing[2],
+    paddingHorizontal: spacing[1],
   },
-  plannedIcon: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.sm,
-    backgroundColor: colors.backgroundSoft,
+  readinessHeaderCopy: {
+    flex: 1,
   },
-  plannedTitle: {
-    fontFamily: fontFamily.sansSemiBold,
-    fontSize: fontSize.bodySmall,
-    color: colors.textSecondary,
+  readinessTitle: {
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.titleSmall,
+    color: colors.textPrimary,
   },
-  plannedBadge: {
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[1],
-    overflow: 'hidden',
-    borderRadius: radius.pill,
-    backgroundColor: colors.brassSoft,
+  readinessPercent: {
     fontFamily: fontFamily.sansBold,
-    fontSize: 9,
-    letterSpacing: 0.7,
+    fontSize: fontSize.titleSmall,
+    color: colors.teal,
+  },
+  readinessAction: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 10,
+    letterSpacing: 0.8,
     color: colors.brass,
   },
   pressed: {
