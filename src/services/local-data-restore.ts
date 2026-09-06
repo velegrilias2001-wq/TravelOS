@@ -198,4 +198,14 @@ function assertTripBundle(value: unknown): asserts value is LocalDataExportTripB
       'This backup trip has an invalid runtime section.',
     );
   }
+
+  if (
+    bundle.packingItems !== undefined &&
+    !Array.isArray(bundle.packingItems)
+  ) {
+    throw new LocalDataRestoreError(
+      'invalid_document',
+      'This backup trip has an invalid packing section.',
+    );
+  }
 }

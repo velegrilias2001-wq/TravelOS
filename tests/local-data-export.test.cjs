@@ -58,6 +58,7 @@ test('local export document is versioned and read-only', () => {
   assert.equal(document.trips.length, 1);
   assert.equal(document.trips[0].days.length, 1);
   assert.equal(document.trips[0].trip.title, 'Lisbon');
+  assert.deepEqual(document.trips[0].packingItems, []);
   assert.deepEqual(
     document.contract,
     LOCAL_DATA_EXPORT_CONTRACT,
@@ -86,9 +87,63 @@ test('empty local export still carries the contract', () => {
     runtimeByTripId: {},
     livedByTripId: {},
     travelersByTripId: {},
+    packingByTripId: {},
     exportedAt: '2026-09-05T00:00:00.000Z',
   });
 
   assert.equal(document.trips.length, 0);
   assert.equal(document.contract.restoreAvailable, true);
+});
+
+test('local export includes packing items when provided', () => {
+  const document = buildLocalDataExportDocument({
+    travelDNA: null,
+    savedPlaces: [],
+    travelers: [],
+    trips: [
+      {
+        id: 'trip-1',
+        title: 'Lisbon',
+        status: 'planned',
+        destinations: [],
+        startDate: '2026-09-03',
+        endDate: '2026-09-03',
+        accountingCurrency: 'EUR',
+        createdAt: '2026-09-03T10:00:00.000Z',
+        updatedAt: '2026-09-03T10:00:00.000Z',
+      },
+    ],
+    days: [],
+    stops: [],
+    bookingsByTripId: { 'trip-1': [] },
+    accommodationsByTripId: { 'trip-1': [] },
+    budgetsByTripId: { 'trip-1': null },
+    fxRatesByTripId: { 'trip-1': [] },
+    memoriesByTripId: { 'trip-1': [] },
+    travelBooksByTripId: { 'trip-1': null },
+    runtimeByTripId: { 'trip-1': null },
+    livedByTripId: { 'trip-1': [] },
+    travelersByTripId: { 'trip-1': [] },
+    packingByTripId: {
+      'trip-1': [
+        {
+          id: 'pack-1',
+          tripId: 'trip-1',
+          title: 'Passport / ID',
+          packed: true,
+          position: 0,
+          createdAt: '2026-09-03T10:00:00.000Z',
+          updatedAt: '2026-09-03T10:00:00.000Z',
+        },
+      ],
+    },
+    exportedAt: '2026-09-05T00:00:00.000Z',
+    appVersion: '1.0.0',
+  });
+
+  assert.equal(document.trips[0].packingItems.length, 1);
+  assert.equal(
+    document.trips[0].packingItems[0].title,
+    'Passport / ID',
+  );
 });

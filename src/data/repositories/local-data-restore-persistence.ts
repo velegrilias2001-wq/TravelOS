@@ -18,6 +18,7 @@ import {
   upsertBudgetPlan,
 } from './budget-persistence-operations';
 import { upsertTripFxRate } from './fx-rate-persistence-operations';
+import { savePackingItem } from './packing-persistence-operations';
 import { upsertTripStopLivedState } from './stop-lived-persistence-operations';
 import { saveCanonicalTraveler } from './traveler-persistence-operations';
 import { writeCanonicalTrip } from './trip-persistence-operations';
@@ -148,6 +149,10 @@ async function insertExportDocument(
 
     if (bundle.runtimeState) {
       await writeRuntimeState(connection, bundle.runtimeState);
+    }
+
+    for (const item of bundle.packingItems ?? []) {
+      await savePackingItem(connection, item);
     }
   }
 }

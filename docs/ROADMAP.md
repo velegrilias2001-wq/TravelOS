@@ -201,9 +201,9 @@ Exit condition: TravelOS can be built, tested, observed, restored, and released 
 
 ## PWA parity + Absolute Travel AI (proposal)
 
-Living analysis track (not yet authorized for implementation): [`docs/PWA_PARITY_AND_TRAVEL_AI_TRACK.md`](./PWA_PARITY_AND_TRAVEL_AI_TRACK.md).
+Living analysis track: [`docs/PWA_PARITY_AND_TRAVEL_AI_TRACK.md`](./PWA_PARITY_AND_TRAVEL_AI_TRACK.md).
 
-Covers Waves A–D (readiness, stay pins, booking actions, import depth, create/discover gaps, packing, World stats) and Wave E (Travel Chat → Trip Copilot → production brain). Operator OK required before coding.
+T0–T4 Absolute Travel Intelligence and U1–U5 of [`docs/TRAVEL_INTELLIGENCE_10_10_TRACK.md`](./TRAVEL_INTELLIGENCE_10_10_TRACK.md) are implemented on this branch. U6 (hosted AI / Play / iOS / sync) remains operator-owned.
 
 ## Elevation Program — toward phone-delight 100%
 

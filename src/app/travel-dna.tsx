@@ -5,6 +5,7 @@ import {
 } from 'expo-router';
 import {
   useCallback,
+  useMemo,
   useState,
 } from 'react';
 import {
@@ -21,17 +22,26 @@ import { Screen } from '@/components/ui/screen';
 import {
   UtilityScreenHeader,
 } from '@/components/ui/utility-screen';
+import { DnaReflectionCards } from '@/features/copilot/dna-reflection-cards';
 import type {
   BudgetStyle,
   DailyRhythm,
+  TravelDNA,
   TravelInterest,
   TravelPace,
   TravelStyle,
   TypicalTravelParty,
 } from '@/domain/entities';
 import {
+  applyDnaReflectionProposal,
+  selectDnaReflectionProposals,
+  type DnaReflectionProposal,
+} from '@/services/dna-reflection';
+import {
   travelDNAService,
 } from '@/services/travel-dna-runtime';
+import { useDiscoverStore } from '@/store/discover-store';
+import { useTripStore } from '@/store/trip-store';
 import {
   colors,
   fontFamily,
@@ -159,10 +169,20 @@ const PARTY_OPTIONS: Array<{
 ];
 
 export default function TravelDNAScreen() {
+  const brief = useDiscoverStore((state) => state.brief);
+  const trips = useTripStore((state) => state.trips);
   const [status, setStatus] =
     useState<LoadStatus>('loading');
   const [isSaving, setIsSaving] =
     useState(false);
+  const [dnaBusyId, setDnaBusyId] = useState<string | null>(
+    null,
+  );
+  const [dismissedDnaIds, setDismissedDnaIds] = useState<
+    string[]
+  >([]);
+  const [savedProfile, setSavedProfile] =
+    useState<TravelDNA | null>(null);
 
   const [pace, setPace] =
     useState<TravelPace | undefined>();
@@ -185,6 +205,7 @@ export default function TravelDNAScreen() {
         const profile =
           await travelDNAService.get();
 
+        setSavedProfile(profile);
         setPace(profile?.pace);
         setInterests(
           profile
@@ -213,6 +234,63 @@ export default function TravelDNAScreen() {
       void loadProfile();
     }, [loadProfile]),
   );
+
+  const reflectionTrip = useMemo(() => {
+    const completed = trips.find(
+      (trip) => trip.status === 'completed',
+    );
+    return completed ?? trips[0] ?? null;
+  }, [trips]);
+
+  const dnaProposals = useMemo(
+    () =>
+      selectDnaReflectionProposals({
+        travelDNA: savedProfile,
+        brief,
+        trip: reflectionTrip,
+      }).filter(
+        (proposal) => !dismissedDnaIds.includes(proposal.id),
+      ),
+    [savedProfile, brief, reflectionTrip, dismissedDnaIds],
+  );
+
+  const acceptDnaProposal = async (
+    proposal: DnaReflectionProposal,
+  ) => {
+    if (dnaBusyId) {
+      return;
+    }
+
+    setDnaBusyId(proposal.id);
+
+    try {
+      const next = applyDnaReflectionProposal(
+        savedProfile,
+        proposal,
+      );
+      const saved = await travelDNAService.save(next);
+      setSavedProfile(saved);
+      setPace(saved.pace);
+      setInterests([...saved.interests]);
+      setTravelStyle(saved.travelStyle);
+      setBudgetStyle(saved.budgetStyle);
+      setDailyRhythm(saved.dailyRhythm);
+      setTypicalParty(saved.typicalParty);
+      setDismissedDnaIds((current) => [
+        ...current,
+        proposal.id,
+      ]);
+    } catch (error) {
+      Alert.alert(
+        'Δεν αποθηκεύτηκε',
+        error instanceof Error
+          ? error.message
+          : 'Δοκίμασε ξανά.',
+      );
+    } finally {
+      setDnaBusyId(null);
+    }
+  };
 
   const toggleInterest = (
     value: TravelInterest,
@@ -305,9 +383,9 @@ export default function TravelDNAScreen() {
   return (
     <Screen scroll>
       <UtilityScreenHeader
-        eyebrow="YOUR TRAVELOS"
+        eyebrow="ΤΟ TRAVELOS ΣΟΥ"
         title="Travel DNA"
-        subtitle="Tell TravelOS how you prefer to travel. Every choice stays explicit and editable."
+        subtitle="Πες στο TravelOS πώς προτιμάς να ταξιδεύεις. Κάθε επιλογή μένει ρητή και επεξεργάσιμη."
         leading={<BackButton />}
       />
 
@@ -322,14 +400,39 @@ export default function TravelDNAScreen() {
 
         <View style={styles.introCopy}>
           <Text style={styles.introTitle}>
-            Your preferences, chosen by you.
+            Οι προτιμήσεις σου, επιλεγμένες από σένα.
           </Text>
 
           <Text style={styles.introBody}>
-            TravelOS stores these choices on this device and can use them later to tailor planning and discovery. Nothing here is inferred automatically.
+            Το TravelOS τις κρατά στη συσκευή και τις χρησιμοποιεί
+            μόνο όταν το επιτρέψεις. Τίποτα δεν συμπεραίνεται σιωπηλά.
           </Text>
         </View>
       </View>
+
+      {dnaProposals.length > 0 ? (
+        <View style={styles.suggestionBlock}>
+          <Text style={styles.suggestionEyebrow}>
+            ΠΡΟΤΑΣΕΙΣ ΑΠΟ ΕΠΙΛΟΓΕΣ ΣΟΥ
+          </Text>
+          <Text style={styles.suggestionBody}>
+            Επιβεβαίωσε για να γραφτούν στο DNA — αλλιώς άφησέ τις.
+          </Text>
+          <DnaReflectionCards
+            proposals={dnaProposals}
+            busyId={dnaBusyId}
+            onAccept={(proposal) => {
+              void acceptDnaProposal(proposal);
+            }}
+            onDismiss={(proposal) => {
+              setDismissedDnaIds((current) => [
+                ...current,
+                proposal.id,
+              ]);
+            }}
+          />
+        </View>
+      ) : null}
 
       <PreferenceSection
         eyebrow="PACE"
@@ -772,6 +875,24 @@ const styles = StyleSheet.create({
 
   introBody: {
     marginTop: spacing[2],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textSecondary,
+  },
+
+  suggestionBlock: {
+    marginTop: spacing[5],
+    gap: spacing[2],
+  },
+
+  suggestionEyebrow: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
+  },
+
+  suggestionBody: {
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,

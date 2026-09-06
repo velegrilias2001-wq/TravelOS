@@ -15,8 +15,18 @@ import {
 import { Screen } from '@/components/ui/screen';
 import { UtilityScreenHeader } from '@/components/ui/utility-screen';
 import { DnaReflectionCards } from '@/features/copilot/dna-reflection-cards';
-import type { TravelDNA } from '@/domain/entities';
+import type {
+  DiscoverBrief,
+  TravelDNA,
+  TravelInterest,
+  TripPace,
+  TypicalTravelParty,
+} from '@/domain/entities';
 import { getGroundedDiscoverCandidates } from '@/services/discover-catalogue-candidates';
+import {
+  compareDiscoverDestinations,
+  type DiscoverCompareResult,
+} from '@/services/discover-compare';
 import {
   buildDiscoverTripPrefill,
   serializeDiscoverTripPrefill,
@@ -42,10 +52,150 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { MIN_TOUCH_TARGET } from '@/theme/touch';
+
+type ConstraintChip =
+  | {
+      id: 'food';
+      label: string;
+      kind: 'interest';
+      value: TravelInterest;
+    }
+  | {
+      id: 'slow';
+      label: string;
+      kind: 'pace';
+      value: TripPace;
+    }
+  | {
+      id: 'couple';
+      label: string;
+      kind: 'party';
+      value: TypicalTravelParty;
+    }
+  | {
+      id: 'beaches';
+      label: string;
+      kind: 'interest';
+      value: TravelInterest;
+    };
+
+const CONSTRAINT_CHIPS: ConstraintChip[] = [
+  {
+    id: 'food',
+    label: 'Φαγητό',
+    kind: 'interest',
+    value: 'food',
+  },
+  {
+    id: 'slow',
+    label: 'Αργός ρυθμός',
+    kind: 'pace',
+    value: 'slow',
+  },
+  {
+    id: 'couple',
+    label: 'Ζευγάρι',
+    kind: 'party',
+    value: 'couple',
+  },
+  {
+    id: 'beaches',
+    label: 'Παραλία',
+    kind: 'interest',
+    value: 'beaches',
+  },
+];
+
+type CompareThreadState = {
+  result?: DiscoverCompareResult;
+  error?: string;
+};
+
+function emptyFindBrief(): DiscoverBrief {
+  return {
+    mode: 'find_destination',
+    interests: [],
+  };
+}
+
+function chipIsActive(
+  brief: DiscoverBrief | null,
+  chip: ConstraintChip,
+): boolean {
+  if (!brief) {
+    return false;
+  }
+
+  if (chip.kind === 'interest') {
+    return brief.interests.includes(chip.value);
+  }
+
+  if (chip.kind === 'pace') {
+    return brief.pace === chip.value;
+  }
+
+  return brief.party === chip.value;
+}
+
+function mergeConstraintChip(
+  brief: DiscoverBrief | null,
+  chip: ConstraintChip,
+): DiscoverBrief {
+  const base = brief ?? emptyFindBrief();
+
+  if (chip.kind === 'interest') {
+    const has = base.interests.includes(chip.value);
+
+    return {
+      ...base,
+      interests: has
+        ? base.interests.filter(
+            (interest) => interest !== chip.value,
+          )
+        : [...base.interests, chip.value],
+    };
+  }
+
+  if (chip.kind === 'pace') {
+    return {
+      ...base,
+      pace:
+        base.pace === chip.value
+          ? undefined
+          : chip.value,
+    };
+  }
+
+  return {
+    ...base,
+    party:
+      base.party === chip.value
+        ? undefined
+        : chip.value,
+  };
+}
+
+function compareStatusLabel(
+  status: 'match' | 'no_match' | 'unknown',
+): string {
+  if (status === 'match') {
+    return 'ναι';
+  }
+
+  if (status === 'no_match') {
+    return 'όχι';
+  }
+
+  return '?';
+}
 
 export default function TravelChatScreen() {
   const router = useRouter();
   const brief = useDiscoverStore((state) => state.brief);
+  const setBrief = useDiscoverStore(
+    (state) => state.setBrief,
+  );
   const messages = useTravelChatStore(
     (state) => state.messages,
   );
@@ -67,6 +217,8 @@ export default function TravelChatScreen() {
     string[]
   >([]);
   const [error, setError] = useState<string | null>(null);
+  const [compareByMessageId, setCompareByMessageId] =
+    useState<Record<string, CompareThreadState>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -171,10 +323,7 @@ export default function TravelChatScreen() {
     }
 
     const prefill = buildDiscoverTripPrefill(
-      brief ?? {
-        mode: 'find_destination',
-        interests: [],
-      },
+      brief ?? emptyFindBrief(),
       candidate.destination,
     );
 
@@ -182,6 +331,46 @@ export default function TravelChatScreen() {
       pathname: '/new-trip',
       params: serializeDiscoverTripPrefill(prefill),
     });
+  };
+
+  const runCompare = (
+    messageId: string,
+    cards: TravelChatDestinationCard[],
+  ) => {
+    if (!brief) {
+      setCompareByMessageId((current) => ({
+        ...current,
+        [messageId]: {
+          error:
+            'Χρειάζεται Brief (chips παρακάτω) για σύγκριση.',
+        },
+      }));
+      return;
+    }
+
+    try {
+      const identities = cards
+        .slice(0, 3)
+        .map((card) => card.identity);
+      const result = compareDiscoverDestinations({
+        brief,
+        travelDNA,
+        identities,
+      });
+
+      setCompareByMessageId((current) => ({
+        ...current,
+        [messageId]: { result },
+      }));
+    } catch {
+      setCompareByMessageId((current) => ({
+        ...current,
+        [messageId]: {
+          error:
+            'Η σύγκριση δεν ήταν διαθέσιμη για αυτούς τους προορισμούς.',
+        },
+      }));
+    }
   };
 
   const acceptDnaProposal = async (
@@ -250,58 +439,124 @@ export default function TravelChatScreen() {
           </Text>
         ) : null}
 
-        {messages.map((message) => (
-          <View
-            key={message.id}
-            style={[
-              styles.bubble,
-              message.role === 'user'
-                ? styles.userBubble
-                : styles.assistantBubble,
-            ]}
-          >
-            <Text
-              style={
+        {messages.map((message) => {
+          const compareState =
+            compareByMessageId[message.id];
+          const canCompare =
+            message.role === 'assistant' &&
+            (message.cards?.length ?? 0) >= 2;
+
+          return (
+            <View
+              key={message.id}
+              style={[
+                styles.bubble,
                 message.role === 'user'
-                  ? styles.userText
-                  : styles.assistantText
-              }
+                  ? styles.userBubble
+                  : styles.assistantBubble,
+              ]}
             >
-              {message.content}
-            </Text>
-
-            {message.provider && message.model ? (
-              <Text style={styles.provenance}>
-                {message.provider} · {message.model}
+              <Text
+                style={
+                  message.role === 'user'
+                    ? styles.userText
+                    : styles.assistantText
+                }
+              >
+                {message.content}
               </Text>
-            ) : null}
 
-            {message.cards?.map((card) => (
-              <View key={card.identity} style={styles.card}>
-                <View style={styles.cardCopy}>
-                  <Text style={styles.cardTitle}>
-                    {card.name}
-                  </Text>
-                  <Text style={styles.cardMeta}>
-                    {card.countryCode
-                      ? `${card.countryCode} · catalogue`
-                      : 'catalogue'}
-                  </Text>
+              {message.provider && message.model ? (
+                <Text style={styles.provenance}>
+                  {message.provider} · {message.model}
+                </Text>
+              ) : null}
+
+              {message.cards?.map((card) => (
+                <View key={card.identity} style={styles.card}>
+                  <View style={styles.cardCopy}>
+                    <Text style={styles.cardTitle}>
+                      {card.name}
+                    </Text>
+                    <Text style={styles.cardMeta}>
+                      {card.countryCode
+                        ? `${card.countryCode} · catalogue`
+                        : 'catalogue'}
+                    </Text>
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Επιβεβαίωση ${card.name} για Create Trip`}
+                    style={styles.confirmButton}
+                    onPress={() => confirmCard(card)}
+                  >
+                    <Text style={styles.confirmLabel}>
+                      Επιβεβαίωση
+                    </Text>
+                  </Pressable>
                 </View>
+              ))}
+
+              {canCompare ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Επιβεβαίωση ${card.name} για Create Trip`}
-                  style={styles.confirmButton}
-                  onPress={() => confirmCard(card)}
+                  accessibilityLabel="Σύγκριση προορισμών"
+                  style={styles.compareButton}
+                  onPress={() => {
+                    runCompare(
+                      message.id,
+                      message.cards ?? [],
+                    );
+                  }}
                 >
-                  <Text style={styles.confirmLabel}>
-                    Επιβεβαίωση
+                  <Text style={styles.compareLabel}>
+                    Σύγκριση
                   </Text>
                 </Pressable>
-              </View>
-            ))}
-          </View>
-        ))}
+              ) : null}
+
+              {compareState?.error ? (
+                <Text style={styles.compareError}>
+                  {compareState.error}
+                </Text>
+              ) : null}
+
+              {compareState?.result ? (
+                <View style={styles.compareSummary}>
+                  <Text style={styles.compareColumns}>
+                    {compareState.result.columns
+                      .map((column) => column.name)
+                      .join(' · ')}
+                  </Text>
+                  {compareState.result.rows.length === 0 ? (
+                    <Text style={styles.compareEmpty}>
+                      Δεν υπάρχουν ενεργές προτιμήσεις για
+                      σύγκριση.
+                    </Text>
+                  ) : (
+                    compareState.result.rows.map((row) => (
+                      <View
+                        key={row.dimension}
+                        style={styles.compareRow}
+                      >
+                        <Text style={styles.compareDim}>
+                          {row.preferenceLabel}
+                        </Text>
+                        <Text style={styles.compareCells}>
+                          {row.cells
+                            .map((cell) =>
+                              compareStatusLabel(cell.status),
+                            )
+                            .join(' · ')}
+                        </Text>
+                      </View>
+                    ))
+                  )}
+                </View>
+              ) : null}
+            </View>
+          );
+        })}
       </View>
 
       <DnaReflectionCards
@@ -321,6 +576,37 @@ export default function TravelChatScreen() {
       {error ? (
         <Text style={styles.error}>{error}</Text>
       ) : null}
+
+      <View style={styles.constraintRow}>
+        {CONSTRAINT_CHIPS.map((chip) => {
+          const active = chipIsActive(brief, chip);
+
+          return (
+            <Pressable
+              key={chip.id}
+              accessibilityRole="button"
+              accessibilityLabel={chip.label}
+              accessibilityState={{ selected: active }}
+              style={[
+                styles.constraintChip,
+                active && styles.constraintChipActive,
+              ]}
+              onPress={() => {
+                setBrief(mergeConstraintChip(brief, chip));
+              }}
+            >
+              <Text
+                style={[
+                  styles.constraintChipLabel,
+                  active && styles.constraintChipLabelActive,
+                ]}
+              >
+                {chip.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       <View style={styles.composer}>
         <TextInput
@@ -455,11 +741,87 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.textInverse,
   },
+  compareButton: {
+    alignSelf: 'flex-start',
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: radius.md,
+    backgroundColor: colors.backgroundSoft,
+  },
+  compareLabel: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.teal,
+  },
+  compareError: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textMuted,
+  },
+  compareSummary: {
+    gap: spacing[2],
+    padding: spacing[3],
+    borderRadius: radius.md,
+    backgroundColor: colors.backgroundSoft,
+  },
+  compareColumns: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.textPrimary,
+  },
+  compareEmpty: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
+  },
+  compareRow: {
+    gap: 2,
+  },
+  compareDim: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.micro,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  compareCells: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.caption,
+    color: colors.textPrimary,
+  },
   error: {
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.bodySmall,
     color: colors.coral,
     marginBottom: spacing[3],
+  },
+  constraintRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+    marginBottom: spacing[3],
+  },
+  constraintChip: {
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    ...shadows.subtle,
+  },
+  constraintChipActive: {
+    backgroundColor: colors.teal,
+  },
+  constraintChipLabel: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.textPrimary,
+  },
+  constraintChipLabelActive: {
+    color: colors.textInverse,
   },
   composer: {
     flexDirection: 'row',

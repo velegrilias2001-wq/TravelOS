@@ -6,6 +6,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ReactNode,
 } from 'react';
 import {
   ActivityIndicator,
@@ -18,6 +19,7 @@ import {
 
 import { Screen } from '@/components/ui/screen';
 import { UtilityScreenHeader } from '@/components/ui/utility-screen';
+import { DnaReflectionCards } from '@/features/copilot/dna-reflection-cards';
 import { freeTimeAdviceKey } from '@/features/copilot/free-time-activity-copy';
 import { FreeTimeAdviceCard } from '@/features/copilot/free-time-advice-card';
 import { useFreeTimeAdvice } from '@/features/copilot/use-free-time-advice';
@@ -25,17 +27,29 @@ import {
   useTripWorkspace,
   useTripWorkspaceFocusRefresh,
 } from '@/features/trip-workspace/trip-workspace-context';
-import type { TravelInterest } from '@/domain/entities';
+import type {
+  TravelDNA,
+  TravelInterest,
+} from '@/domain/entities';
+import {
+  applyDnaReflectionProposal,
+  interestFromPlanAssistActivity,
+  selectDnaReflectionProposals,
+  type DnaReflectionProposal,
+} from '@/services/dna-reflection';
+import { packingService } from '@/services/packing-service';
+import { packingProgress } from '@/services/packing-progress';
+import { packingTemplateSuggestions } from '@/services/packing-templates';
 import {
   buildStopFromPlanAssistCandidate,
   type PlanAssistCandidate,
 } from '@/services/plan-assist';
+import { repositories } from '@/services/repository-registry';
+import { selectTripCopilotBuildQueue } from '@/services/trip-copilot-build';
 import {
   buildTripEvidencePack,
   summarizeTripEvidencePack,
 } from '@/services/trip-evidence-pack';
-import { packingProgress } from '@/services/packing-progress';
-import { repositories } from '@/services/repository-registry';
 import {
   selectTripCopilotProposals,
   type TripCopilotProposal,
@@ -56,9 +70,18 @@ export default function TripCopilotScreen() {
   const { workspace, actions } = useTripWorkspace();
   useTripWorkspaceFocusRefresh();
 
-  const [interests, setInterests] = useState<
-    readonly TravelInterest[]
+  const [travelDNA, setTravelDNA] = useState<TravelDNA | null>(
+    null,
+  );
+  const [acceptedInterests, setAcceptedInterests] = useState<
+    TravelInterest[]
   >([]);
+  const [dismissedDnaIds, setDismissedDnaIds] = useState<
+    string[]
+  >([]);
+  const [dnaBusyId, setDnaBusyId] = useState<string | null>(
+    null,
+  );
   const [pendingImportCount, setPendingImportCount] =
     useState(0);
   const [packingTotal, setPackingTotal] = useState(0);
@@ -69,52 +92,72 @@ export default function TripCopilotScreen() {
   const [acceptingId, setAcceptingId] = useState<
     string | null
   >(null);
+  const [acceptingStarter, setAcceptingStarter] =
+    useState(false);
 
   const freeTimeAdvice = useFreeTimeAdvice(
     workspace.trip.id,
   );
+
+  const applyLoadedState = useCallback(
+    (input: {
+      dna: TravelDNA | null;
+      pending: number;
+      packingItems: Awaited<
+        ReturnType<typeof repositories.packing.listByTripId>
+      >;
+    }) => {
+      const progress = packingProgress(input.packingItems);
+      const pack = buildTripEvidencePack({
+        workspace,
+        packingItems: input.packingItems,
+        pendingImportClaims: input.pending,
+        travelDNA: input.dna,
+      });
+
+      setTravelDNA(input.dna);
+      setPendingImportCount(input.pending);
+      setPackingTotal(progress.total);
+      setPackingPacked(progress.packed);
+      setEvidenceSummary(summarizeTripEvidencePack(pack));
+    },
+    [workspace],
+  );
+
+  const loadCopilotContext = useCallback(async () => {
+    const [dna, batches, packingItems] = await Promise.all([
+      travelDNAService.get(),
+      repositories.imports.listBatches(),
+      repositories.packing.listByTripId(workspace.trip.id),
+    ]);
+
+    let pending = 0;
+
+    for (const batch of batches) {
+      const claims = await repositories.imports.listClaims(
+        batch.id,
+      );
+      pending += claims.filter(
+        (claim) => claim.status === 'pending',
+      ).length;
+    }
+
+    return { dna, pending, packingItems };
+  }, [workspace.trip.id]);
 
   useEffect(() => {
     let cancelled = false;
 
     void (async () => {
       try {
-        const [dna, batches, packingItems] = await Promise.all([
-          travelDNAService.get(),
-          repositories.imports.listBatches(),
-          repositories.packing.listByTripId(workspace.trip.id),
-        ]);
-
-        let pending = 0;
-
-        for (const batch of batches) {
-          const claims =
-            await repositories.imports.listClaims(
-              batch.id,
-            );
-          pending += claims.filter(
-            (claim) => claim.status === 'pending',
-          ).length;
-        }
-
-        const progress = packingProgress(packingItems);
-        const pack = buildTripEvidencePack({
-          workspace,
-          packingItems,
-          pendingImportClaims: pending,
-          travelDNA: dna,
-        });
+        const loaded = await loadCopilotContext();
 
         if (!cancelled) {
-          setInterests(dna?.interests ?? []);
-          setPendingImportCount(pending);
-          setPackingTotal(progress.total);
-          setPackingPacked(progress.packed);
-          setEvidenceSummary(summarizeTripEvidencePack(pack));
+          applyLoadedState(loaded);
         }
       } catch {
         if (!cancelled) {
-          setInterests([]);
+          setTravelDNA(null);
           setPendingImportCount(0);
           setPackingTotal(0);
           setPackingPacked(0);
@@ -126,7 +169,9 @@ export default function TripCopilotScreen() {
     return () => {
       cancelled = true;
     };
-  }, [workspace]);
+  }, [loadCopilotContext, applyLoadedState]);
+
+  const interests = travelDNA?.interests ?? [];
 
   const proposals = useMemo(
     () =>
@@ -142,6 +187,37 @@ export default function TripCopilotScreen() {
       pendingImportCount,
       packingTotal,
       packingPacked,
+    ],
+  );
+
+  const buildQueue = useMemo(
+    () => selectTripCopilotBuildQueue(proposals, 3),
+    [proposals],
+  );
+
+  const moreProposals = useMemo(() => {
+    if (proposals.length <= buildQueue.length) {
+      return [];
+    }
+
+    const buildIds = new Set(buildQueue.map((item) => item.id));
+    return proposals.filter((item) => !buildIds.has(item.id));
+  }, [proposals, buildQueue]);
+
+  const dnaProposals = useMemo(
+    () =>
+      selectDnaReflectionProposals({
+        travelDNA,
+        trip: workspace.trip,
+        acceptedInterests,
+      }).filter(
+        (proposal) => !dismissedDnaIds.includes(proposal.id),
+      ),
+    [
+      travelDNA,
+      workspace.trip,
+      acceptedInterests,
+      dismissedDnaIds,
     ],
   );
 
@@ -195,16 +271,253 @@ export default function TripCopilotScreen() {
       });
 
       await actions.addStop(stop);
+
+      const interest = interestFromPlanAssistActivity(
+        candidate.activityType,
+      );
+
+      if (interest) {
+        setAcceptedInterests((current) =>
+          current.includes(interest)
+            ? current
+            : [...current, interest],
+        );
+      }
     } catch (error) {
       Alert.alert(
-        'Could not add moment',
+        'Δεν προστέθηκε η στιγμή',
         error instanceof Error
           ? error.message
-          : 'Please try again.',
+          : 'Δοκίμασε ξανά.',
       );
     } finally {
       setAcceptingId(null);
     }
+  };
+
+  const acceptStarterPacking = async () => {
+    if (acceptingStarter || packingTotal > 0) {
+      return;
+    }
+
+    try {
+      setAcceptingStarter(true);
+
+      const titles = packingTemplateSuggestions();
+
+      for (const title of titles) {
+        await packingService.addItem(workspace.trip.id, title);
+      }
+
+      const loaded = await loadCopilotContext();
+      applyLoadedState(loaded);
+    } catch (error) {
+      Alert.alert(
+        'Δεν φορτώθηκε η λίστα',
+        error instanceof Error
+          ? error.message
+          : 'Δοκίμασε ξανά.',
+      );
+    } finally {
+      setAcceptingStarter(false);
+    }
+  };
+
+  const acceptDnaProposal = async (
+    proposal: DnaReflectionProposal,
+  ) => {
+    if (dnaBusyId) {
+      return;
+    }
+
+    setDnaBusyId(proposal.id);
+
+    try {
+      const next = applyDnaReflectionProposal(travelDNA, proposal);
+      const saved = await travelDNAService.save(next);
+      setTravelDNA(saved);
+      setDismissedDnaIds((current) => [...current, proposal.id]);
+    } catch (caught) {
+      Alert.alert(
+        'Δεν αποθηκεύτηκε',
+        caught instanceof Error
+          ? caught.message
+          : 'Δοκίμασε ξανά.',
+      );
+    } finally {
+      setDnaBusyId(null);
+    }
+  };
+
+  const renderProposal = (
+    proposal: TripCopilotProposal,
+  ): ReactNode => {
+    if (proposal.kind === 'readiness') {
+      return (
+        <View key={proposal.id} style={styles.card}>
+          <Text style={styles.eyebrow}>ΕΤΟΙΜΟΤΗΤΑ</Text>
+          <Text style={styles.title}>{proposal.title}</Text>
+          <Text style={styles.body}>{proposal.body}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${proposal.actionLabel} ${proposal.title}`}
+            style={styles.primaryButton}
+            onPress={() => openRoute(proposal.route)}
+          >
+            <Text style={styles.primaryLabel}>
+              {proposal.actionLabel}
+            </Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    if (proposal.kind === 'packing') {
+      return (
+        <View key={proposal.id} style={styles.card}>
+          <Text style={styles.eyebrow}>ΑΠΟΣΚΕΥΕΣ</Text>
+          <Text style={styles.title}>{proposal.title}</Text>
+          <Text style={styles.body}>{proposal.body}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Άνοιγμα αποσκευών"
+            style={styles.primaryButton}
+            onPress={() =>
+              openRoute('/trip/[tripId]/packing')
+            }
+          >
+            <Text style={styles.primaryLabel}>Άνοιγμα</Text>
+          </Pressable>
+          {packingTotal === 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Αποδοχή βασικής λίστας αποσκευών"
+              disabled={acceptingStarter}
+              style={styles.secondaryButton}
+              onPress={() => {
+                void acceptStarterPacking();
+              }}
+            >
+              {acceptingStarter ? (
+                <ActivityIndicator color={colors.brand} />
+              ) : (
+                <Text style={styles.secondaryLabel}>
+                  Αποδοχή βασικής λίστας
+                </Text>
+              )}
+            </Pressable>
+          ) : null}
+        </View>
+      );
+    }
+
+    if (proposal.kind === 'import_review') {
+      return (
+        <View key={proposal.id} style={styles.card}>
+          <Text style={styles.eyebrow}>ΕΙΣΑΓΩΓΗ</Text>
+          <Text style={styles.title}>{proposal.title}</Text>
+          <Text style={styles.body}>{proposal.body}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Άνοιγμα ελέγχου εισαγωγής"
+            style={styles.primaryButton}
+            onPress={() => openRoute('/import')}
+          >
+            <Text style={styles.primaryLabel}>
+              Έλεγχος claims
+            </Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    if (proposal.kind === 'plan_assist') {
+      return (
+        <View key={proposal.id} style={styles.card}>
+          <Text style={styles.eyebrow}>
+            ΒΟΗΘΕΙΑ ΠΛΑΝΟΥ · {proposal.dayLabel}
+          </Text>
+          <Text style={styles.title}>
+            Προτάσεις για κενή μέρα
+          </Text>
+          <Text style={styles.body}>
+            Μόνο theme στιγμές. Η αποδοχή προσθέτει πραγματικό
+            stop μέσω του Plan — χωρίς εφευρεμένα venues.
+          </Text>
+          {proposal.candidates.map((candidate) => (
+            <View
+              key={candidate.id}
+              style={styles.candidateRow}
+            >
+              <View style={styles.candidateCopy}>
+                <Text style={styles.candidateTitle}>
+                  {candidate.title}
+                </Text>
+                <Text style={styles.candidateBody}>
+                  {candidate.reason}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Αποδοχή ${candidate.title}`}
+                disabled={acceptingId === candidate.id}
+                style={styles.acceptButton}
+                onPress={() => {
+                  void acceptCandidate(proposal, candidate);
+                }}
+              >
+                {acceptingId === candidate.id ? (
+                  <ActivityIndicator
+                    color={colors.textInverse}
+                  />
+                ) : (
+                  <Text style={styles.acceptLabel}>
+                    Αποδοχή
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          ))}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Άνοιγμα πλάνου"
+            onPress={() =>
+              openRoute('/trip/[tripId]/plan')
+            }
+          >
+            <Text style={styles.link}>Άνοιγμα πλάνου</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    const day = workspace.days.find(
+      (item) => item.id === proposal.dayId,
+    );
+
+    if (!day) {
+      return null;
+    }
+
+    const adviceKey = freeTimeAdviceKey(day.id, proposal.gap);
+
+    return (
+      <View key={proposal.id}>
+        <FreeTimeAdviceCard
+          day={day}
+          gap={proposal.gap}
+          advice={freeTimeAdvice.adviceByKey[adviceKey]}
+          error={freeTimeAdvice.errorByKey[adviceKey]}
+          loading={freeTimeAdvice.loadingKey === adviceKey}
+          onAsk={() => {
+            void freeTimeAdvice.requestAdvice(day, proposal.gap);
+          }}
+          onOpenPlan={() =>
+            openRoute('/trip/[tripId]/plan')
+          }
+        />
+      </View>
+    );
   };
 
   return (
@@ -245,174 +558,37 @@ export default function TripCopilotScreen() {
         </Text>
       ) : null}
 
-      <View style={styles.list}>
-        {proposals.map((proposal) => {
-          if (proposal.kind === 'readiness') {
-            return (
-              <View key={proposal.id} style={styles.card}>
-                <Text style={styles.eyebrow}>READINESS</Text>
-                <Text style={styles.title}>{proposal.title}</Text>
-                <Text style={styles.body}>{proposal.body}</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${proposal.actionLabel} ${proposal.title}`}
-                  style={styles.primaryButton}
-                  onPress={() => openRoute(proposal.route)}
-                >
-                  <Text style={styles.primaryLabel}>
-                    {proposal.actionLabel}
-                  </Text>
-                </Pressable>
-              </View>
-            );
-          }
+      {buildQueue.length > 0 ? (
+        <View style={styles.list}>
+          <Text style={styles.sectionEyebrow}>
+            BUILD · ΕΠΟΜΕΝΑ 3
+          </Text>
+          {buildQueue.map((proposal) => renderProposal(proposal))}
+        </View>
+      ) : null}
 
-          if (proposal.kind === 'packing') {
-            return (
-              <View key={proposal.id} style={styles.card}>
-                <Text style={styles.eyebrow}>PACKING</Text>
-                <Text style={styles.title}>{proposal.title}</Text>
-                <Text style={styles.body}>{proposal.body}</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Open Packing"
-                  style={styles.primaryButton}
-                  onPress={() =>
-                    openRoute('/trip/[tripId]/packing')
-                  }
-                >
-                  <Text style={styles.primaryLabel}>
-                    Open Packing
-                  </Text>
-                </Pressable>
-              </View>
-            );
-          }
+      {moreProposals.length > 0 ? (
+        <View style={styles.moreList}>
+          <Text style={styles.sectionEyebrow}>ΠΕΡΙΣΣΟΤΕΡΑ</Text>
+          {moreProposals.map((proposal) =>
+            renderProposal(proposal),
+          )}
+        </View>
+      ) : null}
 
-          if (proposal.kind === 'import_review') {
-            return (
-              <View key={proposal.id} style={styles.card}>
-                <Text style={styles.eyebrow}>IMPORT</Text>
-                <Text style={styles.title}>{proposal.title}</Text>
-                <Text style={styles.body}>{proposal.body}</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Open import review"
-                  style={styles.primaryButton}
-                  onPress={() => openRoute('/import')}
-                >
-                  <Text style={styles.primaryLabel}>
-                    Review claims
-                  </Text>
-                </Pressable>
-              </View>
-            );
-          }
-
-          if (proposal.kind === 'plan_assist') {
-            return (
-              <View key={proposal.id} style={styles.card}>
-                <Text style={styles.eyebrow}>
-                  PLAN ASSIST · {proposal.dayLabel}
-                </Text>
-                <Text style={styles.title}>
-                  Empty day suggestions
-                </Text>
-                <Text style={styles.body}>
-                  Theme moments only. Accept adds a real stop
-                  through Plan’s path — no invented venues.
-                </Text>
-                {proposal.candidates.map((candidate) => (
-                  <View
-                    key={candidate.id}
-                    style={styles.candidateRow}
-                  >
-                    <View style={styles.candidateCopy}>
-                      <Text style={styles.candidateTitle}>
-                        {candidate.title}
-                      </Text>
-                      <Text style={styles.candidateBody}>
-                        {candidate.reason}
-                      </Text>
-                    </View>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Accept ${candidate.title}`}
-                      disabled={acceptingId === candidate.id}
-                      style={styles.acceptButton}
-                      onPress={() => {
-                        void acceptCandidate(
-                          proposal,
-                          candidate,
-                        );
-                      }}
-                    >
-                      {acceptingId === candidate.id ? (
-                        <ActivityIndicator
-                          color={colors.textInverse}
-                        />
-                      ) : (
-                        <Text style={styles.acceptLabel}>
-                          Accept
-                        </Text>
-                      )}
-                    </Pressable>
-                  </View>
-                ))}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Open Plan"
-                  onPress={() =>
-                    openRoute('/trip/[tripId]/plan')
-                  }
-                >
-                  <Text style={styles.link}>Open Plan</Text>
-                </Pressable>
-              </View>
-            );
-          }
-
-          const day = workspace.days.find(
-            (item) => item.id === proposal.dayId,
-          );
-
-          if (!day) {
-            return null;
-          }
-
-          const adviceKey = freeTimeAdviceKey(
-            day.id,
-            proposal.gap,
-          );
-
-          return (
-            <View key={proposal.id}>
-              <FreeTimeAdviceCard
-                day={day}
-                gap={proposal.gap}
-                advice={
-                  freeTimeAdvice.adviceByKey[adviceKey]
-                }
-                error={
-                  freeTimeAdvice.errorByKey[adviceKey]
-                }
-                loading={
-                  freeTimeAdvice.loadingKey === adviceKey
-                }
-                onAsk={() => {
-                  void freeTimeAdvice.requestAdvice(
-                    day,
-                    proposal.gap,
-                  );
-                }}
-                onOpenPlan={() =>
-                  openRoute('/trip/[tripId]/plan')
-                }
-              />
-            </View>
-          );
-        })}
-      </View>
+      <DnaReflectionCards
+        proposals={dnaProposals}
+        busyId={dnaBusyId}
+        onAccept={(proposal) => {
+          void acceptDnaProposal(proposal);
+        }}
+        onDismiss={(proposal) => {
+          setDismissedDnaIds((current) => [
+            ...current,
+            proposal.id,
+          ]);
+        }}
+      />
     </Screen>
   );
 }
@@ -449,8 +625,19 @@ const styles = StyleSheet.create({
     lineHeight: lineHeight.bodySmall,
     color: colors.textMuted,
   },
+  sectionEyebrow: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.2,
+    color: colors.teal,
+  },
   list: {
     marginTop: spacing[4],
+    gap: spacing[3],
+    paddingBottom: spacing[4],
+  },
+  moreList: {
+    marginTop: spacing[2],
     gap: spacing[3],
     paddingBottom: spacing[8],
   },
@@ -490,6 +677,23 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.sansSemiBold,
     fontSize: fontSize.bodySmall,
     color: colors.textInverse,
+  },
+  secondaryButton: {
+    alignSelf: 'flex-start',
+    marginTop: spacing[1],
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  secondaryLabel: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.brand,
   },
   candidateRow: {
     flexDirection: 'row',

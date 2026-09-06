@@ -152,6 +152,19 @@ function createDocument() {
         },
       ],
     },
+    packingByTripId: {
+      'trip-1': [
+        {
+          id: 'pack-1',
+          tripId: 'trip-1',
+          title: 'Passport / ID',
+          packed: true,
+          position: 0,
+          createdAt: TIMESTAMP,
+          updatedAt: TIMESTAMP,
+        },
+      ],
+    },
     exportedAt: '2026-09-05T12:00:00.000Z',
     appVersion: '1.0.0',
   });
@@ -275,6 +288,13 @@ test('replaceLocalDataFromExport restores exported IDs atomically', async () => 
       ['curated:pt-porto'],
     );
     assert.equal(saved.id, 'saved-1');
+
+    const packing = await database.queryFirst(
+      'SELECT * FROM packing_items WHERE id = ?;',
+      ['pack-1'],
+    );
+    assert.equal(packing.title, 'Passport / ID');
+    assert.equal(packing.packed, 1);
   } finally {
     database.close();
   }

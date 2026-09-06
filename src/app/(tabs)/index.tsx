@@ -6,10 +6,13 @@ import {
 } from 'expo-router';
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
 import {
+  Modal,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -20,6 +23,10 @@ import { PressableScale } from '@/features/motion/pressable-scale';
 import { RiseIn } from '@/features/motion/rise-in';
 import { motion } from '@/features/motion/timing';
 import type { Trip, TripDay } from '@/domain/entities';
+import {
+  loadFirstRunCompleted,
+  markFirstRunCompleted,
+} from '@/services/first-run-preferences';
 import {
   homeFeaturedPlaceLabel,
   selectHomeReadinessGlances,
@@ -83,6 +90,33 @@ export default function HomeScreen() {
   );
   const [readinessGlances, setReadinessGlances] =
     useState<HomeReadinessGlance[]>([]);
+  const [firstRunReady, setFirstRunReady] = useState(false);
+  const [showFirstRun, setShowFirstRun] = useState(false);
+  const [firstRunStep, setFirstRunStep] = useState<
+    'decide' | 'organize'
+  >('decide');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      const completed = await loadFirstRunCompleted();
+
+      if (!cancelled) {
+        setFirstRunReady(true);
+        setShowFirstRun(!completed);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const finishFirstRun = useCallback(async () => {
+    await markFirstRunCompleted();
+    setShowFirstRun(false);
+  }, []);
 
   const tripIds = useMemo(
     () => trips.map((trip) => trip.id).join('\0'),
@@ -363,37 +397,20 @@ export default function HomeScreen() {
           delayMs={motion.staggerMs}
         >
           <Text style={styles.nowEyebrow}>
-            THE NEXT TRIP STARTS HERE
+            ΤΟ ΕΠΟΜΕΝΟ ΤΑΞΙΔΙ ΞΕΚΙΝΑ ΕΔΩ
           </Text>
           <Text style={styles.heading}>
-            Where do you want{'\n'}to go next?
+            Πού θέλεις{'\n'}να πας μετά;
           </Text>
           <Text style={styles.lead}>
-            Αποφάσισε με grounded ιδέες, ή οργάνωσε από μέρος
-            και αρχεία που έχεις ήδη — το TravelOS κρατά και
-            τα δύο μονοπάτια ειλικρινή.
+            Δύο δρόμοι: απόφαση με grounded ιδέες, ή οργάνωση
+            από μέρος και αρχεία που έχεις ήδη.
           </Text>
-
-          <PressableScale
-            accessibilityRole="button"
-            accessibilityLabel="Create a trip"
-            style={styles.primaryButton}
-            onPress={() => router.push('/new-trip')}
-          >
-            <Ionicons
-              name="add"
-              size={20}
-              color={colors.textInverse}
-            />
-            <Text style={styles.primaryButtonText}>
-              Ξέρω πού πάω — νέο ταξίδι
-            </Text>
-          </PressableScale>
 
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel="Help me decide with TravelOS chat"
-            style={styles.secondaryButton}
+            style={styles.primaryButton}
             onPress={() =>
               router.push('/travel-chat')
             }
@@ -401,28 +418,26 @@ export default function HomeScreen() {
             <Ionicons
               name="chatbubble-ellipses-outline"
               size={20}
-              color={colors.brand}
+              color={colors.textInverse}
             />
-            <Text style={styles.secondaryButtonText}>
+            <Text style={styles.primaryButtonText}>
               Βοήθησέ με να αποφασίσω
             </Text>
           </PressableScale>
 
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Browse Discover catalogue"
+            accessibilityLabel="Create a trip"
             style={styles.secondaryButton}
-            onPress={() =>
-              router.push('/discover/find-destination')
-            }
+            onPress={() => router.push('/new-trip')}
           >
             <Ionicons
-              name="compass-outline"
+              name="add"
               size={20}
               color={colors.brand}
             />
             <Text style={styles.secondaryButtonText}>
-              Περιήγηση Discover
+              Ξέρω πού πάω — νέο ταξίδι
             </Text>
           </PressableScale>
 
@@ -456,6 +471,19 @@ export default function HomeScreen() {
               color={colors.textMuted}
             />
           </PressableScale>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Browse Discover catalogue"
+            style={styles.tertiaryLink}
+            onPress={() =>
+              router.push('/discover/find-destination')
+            }
+          >
+            <Text style={styles.tertiaryLinkText}>
+              Ή περιήγηση Discover
+            </Text>
+          </Pressable>
         </RiseIn>
       )}
 
@@ -467,10 +495,10 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionEyebrow}>
-              YOUR TRAVEL LIFE
+              Η ΤΑΞΙΔΙΩΤΙΚΗ ΣΟΥ ΖΩΗ
             </Text>
             <Text style={styles.sectionTitle}>
-              At a glance
+              Με μια ματιά
             </Text>
           </View>
         </View>
@@ -488,7 +516,7 @@ export default function HomeScreen() {
               {isLoading ? '—' : trips.length}
             </Text>
             <Text style={styles.statLabel}>
-              Trips
+              Ταξίδια
             </Text>
           </View>
 
@@ -509,7 +537,7 @@ export default function HomeScreen() {
               {isLoading ? '—' : completedTrips}
             </Text>
             <Text style={styles.statLabel}>
-              Lived
+              Έζησες
             </Text>
           </View>
 
@@ -531,9 +559,9 @@ export default function HomeScreen() {
                 color={colors.coral}
               />
             </View>
-            <Text style={styles.statValue}>All</Text>
+            <Text style={styles.statValue}>Όλα</Text>
             <Text style={styles.statLabel}>
-              Open trips
+              Άνοιξε ταξίδια
             </Text>
           </PressableScale>
         </View>
@@ -683,7 +711,7 @@ export default function HomeScreen() {
               Discover
             </Text>
             <Text style={styles.actionDescription}>
-              Grounded ideas for what could be next.
+              Grounded ιδέες για το επόμενο ταξίδι.
             </Text>
           </PressableScale>
 
@@ -701,10 +729,10 @@ export default function HomeScreen() {
               />
             </View>
             <Text style={styles.actionTitle}>
-              Ask TravelOS
+              Ρώτα το TravelOS
             </Text>
             <Text style={styles.actionDescription}>
-              Chat for grounded destinations, then Confirm.
+              Chat με grounded προορισμούς, μετά Confirm.
             </Text>
           </PressableScale>
         </View>
@@ -724,16 +752,111 @@ export default function HomeScreen() {
               />
             </View>
             <Text style={styles.actionTitle}>
-              My world
+              Ο κόσμος μου
             </Text>
             <Text style={styles.actionDescription}>
-              Places you have planned or lived.
+              Μέρη που έχεις σχεδιάσει ή ζήσει.
             </Text>
           </PressableScale>
         </View>
       </RiseIn>
 
       <View style={styles.bottomSpace} />
+
+      {firstRunReady ? (
+        <Modal
+          visible={showFirstRun}
+          animationType="fade"
+          transparent
+          onRequestClose={() => {
+            void finishFirstRun();
+          }}
+        >
+          <View style={styles.coachBackdrop}>
+            <View style={styles.coachCard}>
+              {firstRunStep === 'decide' ? (
+                <>
+                  <Text style={styles.coachEyebrow}>
+                    ΓΝΩΡΙΜΙΑ · 1/2
+                  </Text>
+                  <Text style={styles.coachTitle}>
+                    Δεν ξέρεις ακόμα πού;
+                  </Text>
+                  <Text style={styles.coachBody}>
+                    Ξεκίνα από Travel Chat ή Discover. Μόνο
+                    grounded ιδέες — χωρίς εφευρεμένες πόλεις.
+                    Το Confirm ανοίγει Create Trip.
+                  </Text>
+                  <PressableScale
+                    accessibilityRole="button"
+                    accessibilityLabel="Continue to organize path"
+                    style={styles.primaryButton}
+                    onPress={() => setFirstRunStep('organize')}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      Κατάλαβα — συνέχεια
+                    </Text>
+                  </PressableScale>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Open Travel Chat now"
+                    style={styles.tertiaryLink}
+                    onPress={() => {
+                      void finishFirstRun().then(() => {
+                        router.push('/travel-chat');
+                      });
+                    }}
+                  >
+                    <Text style={styles.tertiaryLinkText}>
+                      Άνοιξε Travel Chat τώρα
+                    </Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.coachEyebrow}>
+                    ΓΝΩΡΙΜΙΑ · 2/2
+                  </Text>
+                  <Text style={styles.coachTitle}>
+                    Ξέρεις ήδη πού πας;
+                  </Text>
+                  <Text style={styles.coachBody}>
+                    Δημιούργησε το ταξίδι από Create Trip ή
+                    Import. Μετά το Trip Copilot σε οδηγεί στα
+                    επόμενα Accept — χωρίς δεύτερο create path.
+                  </Text>
+                  <PressableScale
+                    accessibilityRole="button"
+                    accessibilityLabel="Finish first-run coach"
+                    style={styles.primaryButton}
+                    onPress={() => {
+                      void finishFirstRun();
+                    }}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      Έτοιμος — πάμε
+                    </Text>
+                  </PressableScale>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Create a trip now"
+                    style={styles.tertiaryLink}
+                    onPress={() => {
+                      void finishFirstRun().then(() => {
+                        router.push('/new-trip');
+                      });
+                    }}
+                  >
+                    <Text style={styles.tertiaryLinkText}>
+                      Δημιούργησε ταξίδι τώρα
+                    </Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
+          </View>
+        </Modal>
+      ) : null}
     </Screen>
   );
 }
@@ -1191,6 +1314,56 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
     color: colors.textSecondary,
+  },
+
+  tertiaryLink: {
+    alignSelf: 'center',
+    paddingVertical: spacing[3],
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+
+  tertiaryLinkText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.body,
+    color: colors.brand,
+    textAlign: 'center',
+  },
+
+  coachBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(18, 24, 28, 0.55)',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[5],
+  },
+
+  coachCard: {
+    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+    padding: spacing[5],
+    gap: spacing[3],
+    ...shadows.card,
+  },
+
+  coachEyebrow: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    letterSpacing: letterSpacing.wide,
+    color: colors.textMuted,
+  },
+
+  coachTitle: {
+    fontFamily: fontFamily.serifMedium,
+    fontSize: fontSize.title,
+    color: colors.textPrimary,
+  },
+
+  coachBody: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
+    color: colors.textSecondary,
+    marginBottom: spacing[2],
   },
 
   bottomSpace: {

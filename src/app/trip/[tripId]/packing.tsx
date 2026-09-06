@@ -28,6 +28,7 @@ import {
   packingProgress,
   packingService,
 } from '@/services/packing-service';
+import { packingTemplateSuggestions } from '@/services/packing-templates';
 import {
   colors,
   fontFamily,
@@ -74,6 +75,35 @@ export default function PackingScreen() {
   );
 
   const progress = packingProgress(items);
+  const templateSuggestions = packingTemplateSuggestions({
+    alreadyTitles: items.map((item) => item.title),
+    limit: 6,
+  });
+
+  const acceptTemplate = async (title: string) => {
+    if (busy) {
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      await packingService.addItem(
+        workspace.trip.id,
+        title,
+      );
+      await load();
+    } catch (error) {
+      Alert.alert(
+        'Δεν προστέθηκε',
+        error instanceof Error
+          ? error.message
+          : 'Δοκίμασε ξανά.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const addItem = async () => {
     if (busy) {
@@ -164,13 +194,13 @@ export default function PackingScreen() {
   return (
     <Screen scroll>
       <UtilityScreenHeader
-        eyebrow="BEFORE YOU GO"
-        title="Packing"
-        subtitle="Traveler-authored checklist for this trip."
+        eyebrow="ΠΡΙΝ ΦΥΓΕΙΣ"
+        title="Αποσκευές"
+        subtitle="Λίστα που γράφεις εσύ για αυτό το ταξίδι. Οι προτάσεις είναι μόνο suggestions μέχρι Accept."
         leading={(
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Back to More"
+            accessibilityLabel="Πίσω στο More"
             style={styles.backButton}
             onPress={() => router.back()}
           >
@@ -189,16 +219,39 @@ export default function PackingScreen() {
         </Text>
         <Text style={styles.progressBody}>
           {progress.total === 0
-            ? 'Add items you plan to pack. Nothing is invented for you.'
-            : `${progress.packed} of ${progress.total} packed`}
+            ? 'Πρόσθεσε ό,τι θέλεις να πάρεις. Τίποτα δεν εφευρίσκεται αυτόματα.'
+            : `${progress.packed} από ${progress.total} έτοιμα`}
         </Text>
       </View>
+
+      {templateSuggestions.length > 0 ? (
+        <View style={styles.templateBlock}>
+          <Text style={styles.templateEyebrow}>
+            ΠΡΟΤΑΣΕΙΣ · ΟΧΙ ΑΛΗΘΕΙΑ ΜΕΧΡΙ ACCEPT
+          </Text>
+          {templateSuggestions.map((title) => (
+            <Pressable
+              key={title}
+              accessibilityRole="button"
+              accessibilityLabel={`Αποδοχή πρότασης ${title}`}
+              disabled={busy}
+              style={styles.templateRow}
+              onPress={() => {
+                void acceptTemplate(title);
+              }}
+            >
+              <Text style={styles.templateTitle}>{title}</Text>
+              <Text style={styles.templateAction}>Accept</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
 
       <View style={styles.addRow}>
         <TextInput
           value={draft}
           onChangeText={setDraft}
-          placeholder="Add packing item"
+          placeholder="Πρόσθεσε είδος αποσκευής"
           placeholderTextColor={colors.textMuted}
           style={styles.input}
           maxLength={120}
@@ -209,7 +262,7 @@ export default function PackingScreen() {
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Add packing item"
+          accessibilityLabel="Προσθήκη είδους αποσκευής"
           disabled={busy || draft.trim().length === 0}
           style={({ pressed }) => [
             styles.addButton,
@@ -327,6 +380,39 @@ const styles = StyleSheet.create({
     fontSize: fontSize.bodySmall,
     lineHeight: lineHeight.bodySmall,
     color: colors.textMuted,
+  },
+  templateBlock: {
+    gap: spacing[2],
+    marginBottom: spacing[4],
+  },
+  templateEyebrow: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
+    marginBottom: spacing[1],
+  },
+  templateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 48,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceWarm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  templateTitle: {
+    flex: 1,
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.body,
+    color: colors.textPrimary,
+  },
+  templateAction: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.brand,
   },
   addRow: {
     flexDirection: 'row',

@@ -3,6 +3,7 @@ import type { Booking } from '@/domain/entities/booking';
 import type { Budget } from '@/domain/entities/budget';
 import type { TripFxRate } from '@/domain/entities/fx-rate';
 import type { Memory } from '@/domain/entities/memory';
+import type { PackingItem } from '@/domain/entities/packing-item';
 import type { SavedPlace } from '@/domain/entities/saved-place';
 import type { TravelBook } from '@/domain/entities/travel-book';
 import type { TravelDNA } from '@/domain/entities/travel-dna';
@@ -37,6 +38,11 @@ export type LocalDataExportTripBundle = {
   runtimeState: TripRuntimeState | null;
   livedStates: TripStopLivedState[];
   travelers: Traveler[];
+  /**
+   * Optional for older backups. Missing means restore leaves
+   * packing empty for that trip after wipe (no invent).
+   */
+  packingItems?: PackingItem[];
 };
 
 export type LocalDataExportDocument = {
@@ -66,6 +72,7 @@ export type LocalDataExportSnapshot = {
   runtimeByTripId: Record<string, TripRuntimeState | null>;
   livedByTripId: Record<string, TripStopLivedState[]>;
   travelersByTripId: Record<string, Traveler[]>;
+  packingByTripId?: Record<string, PackingItem[]>;
   exportedAt?: string;
   appVersion?: string;
 };
@@ -102,6 +109,7 @@ export function buildLocalDataExportDocument(
       runtimeState: snapshot.runtimeByTripId[trip.id] ?? null,
       livedStates: snapshot.livedByTripId[trip.id] ?? [],
       travelers: snapshot.travelersByTripId[trip.id] ?? [],
+      packingItems: snapshot.packingByTripId?.[trip.id] ?? [],
     })),
   };
 }

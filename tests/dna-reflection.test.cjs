@@ -38,6 +38,34 @@ test('DNA reflection proposes only missing explicit Brief fields', () => {
   assert.deepEqual(interestProposal.value, ['food']);
 });
 
+test('DNA reflection accepts Plan Assist interest without inventing others', () => {
+  const {
+    interestFromPlanAssistActivity,
+  } = require('../.test-build/src/services/dna-reflection.js');
+
+  assert.equal(
+    interestFromPlanAssistActivity('food_browse'),
+    'food',
+  );
+  assert.equal(
+    interestFromPlanAssistActivity('unknown_theme'),
+    null,
+  );
+
+  const proposals = selectDnaReflectionProposals({
+    travelDNA: {
+      id: 'dna-1',
+      interests: [],
+      createdAt: TIMESTAMP,
+      updatedAt: TIMESTAMP,
+    },
+    acceptedInterests: ['food'],
+  });
+
+  assert.equal(proposals.length, 1);
+  assert.deepEqual(proposals[0].value, ['food']);
+});
+
 test('DNA reflection apply merges interests without inventing others', () => {
   const next = applyDnaReflectionProposal(
     {

@@ -6,6 +6,7 @@ import type { Booking } from '@/domain/entities/booking';
 import type { Budget } from '@/domain/entities/budget';
 import type { TripFxRate } from '@/domain/entities/fx-rate';
 import type { Memory } from '@/domain/entities/memory';
+import type { PackingItem } from '@/domain/entities/packing-item';
 import type { TravelBook } from '@/domain/entities/travel-book';
 import type { Traveler } from '@/domain/entities/traveler';
 import type { TripRuntimeState } from '@/domain/entities/trip-runtime-state';
@@ -65,6 +66,7 @@ export async function collectLocalDataExportSnapshot(): Promise<LocalDataExportS
   const travelersByTripId: Record<string, Traveler[]> = {};
   const livedByTripId: Record<string, TripStopLivedState[]> =
     {};
+  const packingByTripId: Record<string, PackingItem[]> = {};
 
   for (const state of livedStates) {
     const list = livedByTripId[state.tripId] ?? [];
@@ -83,6 +85,7 @@ export async function collectLocalDataExportSnapshot(): Promise<LocalDataExportS
         travelBook,
         runtimeState,
         tripTravelers,
+        packingItems,
       ] = await Promise.all([
         repositories.booking.getByTripId(tripId),
         repositories.accommodation.getByTripId(tripId),
@@ -92,6 +95,7 @@ export async function collectLocalDataExportSnapshot(): Promise<LocalDataExportS
         repositories.travelBook.getByTripId(tripId),
         repositories.runtimeState.getByTripId(tripId),
         repositories.traveler.getByTripId(tripId),
+        repositories.packing.listByTripId(tripId),
       ]);
 
       bookingsByTripId[tripId] = bookings;
@@ -102,6 +106,7 @@ export async function collectLocalDataExportSnapshot(): Promise<LocalDataExportS
       travelBooksByTripId[tripId] = travelBook;
       runtimeByTripId[tripId] = runtimeState;
       travelersByTripId[tripId] = tripTravelers;
+      packingByTripId[tripId] = packingItems;
     }),
   );
 
@@ -121,6 +126,7 @@ export async function collectLocalDataExportSnapshot(): Promise<LocalDataExportS
     runtimeByTripId,
     livedByTripId,
     travelersByTripId,
+    packingByTripId,
   };
 }
 

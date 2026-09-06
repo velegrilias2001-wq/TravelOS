@@ -689,9 +689,7 @@ export default function NewTripScreen() {
         }
 
         router.replace({
-          pathname:
-            '/trip/[tripId]',
-
+          pathname: '/trip/[tripId]/copilot',
           params: {
             tripId: trip.id,
           },

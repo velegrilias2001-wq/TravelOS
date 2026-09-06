@@ -54,6 +54,11 @@ export function selectDnaReflectionProposals(input: {
   travelDNA: TravelDNA | null;
   brief?: DiscoverBrief | null;
   trip?: Pick<Trip, 'pace' | 'partyType'> | null;
+  /**
+   * Interests the traveler explicitly accepted (e.g. Plan Assist
+   * theme mapped to TravelInterest). Never inferred from free text.
+   */
+  acceptedInterests?: readonly TravelInterest[];
 }): DnaReflectionProposal[] {
   const proposals: DnaReflectionProposal[] = [];
   const dna = input.travelDNA;
@@ -73,8 +78,13 @@ export function selectDnaReflectionProposals(input: {
     });
   }
 
-  const briefInterests = brief?.interests ?? [];
-  const missingInterests = briefInterests.filter(
+  const candidateInterests = [
+    ...(brief?.interests ?? []),
+    ...(input.acceptedInterests ?? []),
+  ];
+  const missingInterests = [
+    ...new Set(candidateInterests),
+  ].filter(
     (interest) => !(dna?.interests ?? []).includes(interest),
   );
 
@@ -83,7 +93,7 @@ export function selectDnaReflectionProposals(input: {
       id: 'interests',
       field: 'interests',
       title: 'Να αποθηκευτούν αυτά τα ενδιαφέροντα στο Travel DNA;',
-      body: `Πρόσθεσε ${missingInterests.join(', ')} από το Discover Brief. Τίποτα άλλο δεν συμπεραίνεται.`,
+      body: `Πρόσθεσε ${missingInterests.join(', ')} από επιλογές που έκανες ήδη. Τίποτα άλλο δεν συμπεραίνεται.`,
       value: missingInterests,
     });
   }
@@ -131,4 +141,27 @@ export function applyDnaReflectionProposal(
         ? proposal.value
         : current?.typicalParty,
   };
+}
+
+/**
+ * Maps an accepted Plan Assist activity to a TravelInterest only
+ * when the mapping is explicit. Unknown activities return null.
+ */
+export function interestFromPlanAssistActivity(
+  activityType: string,
+): TravelInterest | null {
+  switch (activityType) {
+    case 'food_browse':
+      return 'food';
+    case 'culture_browse':
+      return 'culture';
+    case 'scenic_pause':
+      return 'nature';
+    case 'shopping_browse':
+      return 'shopping';
+    case 'wellness_pause':
+      return 'wellness';
+    default:
+      return null;
+  }
 }
