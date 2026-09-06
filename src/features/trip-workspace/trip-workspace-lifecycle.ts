@@ -92,15 +92,19 @@ export class TripWorkspaceLifecycle {
 
     await this.refreshIfNeeded();
 
-    void import(
-      '../../services/trip-notifications-runtime.js',
-    )
-      .then((module) =>
-        module.reconcileTripNotifications(),
-      )
-      .catch(() => {
-        // Native notification module may be unavailable in Node tests.
-      });
+    // Prefer the same alias path as trip-store. Metro can throw
+    // synchronously on a bad relative dynamic import — catch both.
+    try {
+      void import('@/services/trip-notifications-runtime')
+        .then((module) =>
+          module.reconcileTripNotifications(),
+        )
+        .catch(() => {
+          // Native notification module may be unavailable in Node tests.
+        });
+    } catch {
+      // Metro may throw synchronously if the module cannot resolve.
+    }
 
     return result;
   }
