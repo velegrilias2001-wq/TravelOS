@@ -45,5 +45,6 @@ example
 .env.local
 server/.env
 
-# local design-reference extracts (never commit)
+# local design-reference extracts / emulator smoke scratch (never commit)
 .tmp-ref-frames/
+.tmp-*
