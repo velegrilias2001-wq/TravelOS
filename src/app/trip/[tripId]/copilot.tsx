@@ -30,6 +30,11 @@ import {
   buildStopFromPlanAssistCandidate,
   type PlanAssistCandidate,
 } from '@/services/plan-assist';
+import {
+  buildTripEvidencePack,
+  summarizeTripEvidencePack,
+} from '@/services/trip-evidence-pack';
+import { packingProgress } from '@/services/packing-progress';
 import { repositories } from '@/services/repository-registry';
 import {
   selectTripCopilotProposals,
@@ -56,6 +61,11 @@ export default function TripCopilotScreen() {
   >([]);
   const [pendingImportCount, setPendingImportCount] =
     useState(0);
+  const [packingTotal, setPackingTotal] = useState(0);
+  const [packingPacked, setPackingPacked] = useState(0);
+  const [evidenceSummary, setEvidenceSummary] = useState<
+    string | null
+  >(null);
   const [acceptingId, setAcceptingId] = useState<
     string | null
   >(null);
@@ -69,9 +79,10 @@ export default function TripCopilotScreen() {
 
     void (async () => {
       try {
-        const [dna, batches] = await Promise.all([
+        const [dna, batches, packingItems] = await Promise.all([
           travelDNAService.get(),
           repositories.imports.listBatches(),
+          repositories.packing.listByTripId(workspace.trip.id),
         ]);
 
         let pending = 0;
@@ -86,14 +97,28 @@ export default function TripCopilotScreen() {
           ).length;
         }
 
+        const progress = packingProgress(packingItems);
+        const pack = buildTripEvidencePack({
+          workspace,
+          packingItems,
+          pendingImportClaims: pending,
+          travelDNA: dna,
+        });
+
         if (!cancelled) {
           setInterests(dna?.interests ?? []);
           setPendingImportCount(pending);
+          setPackingTotal(progress.total);
+          setPackingPacked(progress.packed);
+          setEvidenceSummary(summarizeTripEvidencePack(pack));
         }
       } catch {
         if (!cancelled) {
           setInterests([]);
           setPendingImportCount(0);
+          setPackingTotal(0);
+          setPackingPacked(0);
+          setEvidenceSummary(null);
         }
       }
     })();
@@ -101,15 +126,23 @@ export default function TripCopilotScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [workspace]);
 
   const proposals = useMemo(
     () =>
       selectTripCopilotProposals(workspace, {
         interests,
         pendingImportClaimCount: pendingImportCount,
+        packingTotal,
+        packingPacked,
       }),
-    [workspace, interests, pendingImportCount],
+    [
+      workspace,
+      interests,
+      pendingImportCount,
+      packingTotal,
+      packingPacked,
+    ],
   );
 
   const openRoute = useCallback(
@@ -126,6 +159,7 @@ export default function TripCopilotScreen() {
           | '/trip/[tripId]/bookings'
           | '/trip/[tripId]/travelers'
           | '/trip/[tripId]/budget'
+          | '/trip/[tripId]/packing'
           | '/trip/[tripId]/more',
         params: { tripId: workspace.trip.id },
       });
@@ -195,6 +229,15 @@ export default function TripCopilotScreen() {
         )}
       />
 
+      {evidenceSummary ? (
+        <View style={styles.evidenceCard}>
+          <Text style={styles.eyebrow}>SAVED FACTS</Text>
+          <Text style={styles.evidenceBody}>
+            {evidenceSummary}
+          </Text>
+        </View>
+      ) : null}
+
       {proposals.length === 0 ? (
         <Text style={styles.empty}>
           This trip looks prepared from what is saved. Open
@@ -218,6 +261,28 @@ export default function TripCopilotScreen() {
                 >
                   <Text style={styles.primaryLabel}>
                     {proposal.actionLabel}
+                  </Text>
+                </Pressable>
+              </View>
+            );
+          }
+
+          if (proposal.kind === 'packing') {
+            return (
+              <View key={proposal.id} style={styles.card}>
+                <Text style={styles.eyebrow}>PACKING</Text>
+                <Text style={styles.title}>{proposal.title}</Text>
+                <Text style={styles.body}>{proposal.body}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open Packing"
+                  style={styles.primaryButton}
+                  onPress={() =>
+                    openRoute('/trip/[tripId]/packing')
+                  }
+                >
+                  <Text style={styles.primaryLabel}>
+                    Open Packing
                   </Text>
                 </Pressable>
               </View>
@@ -364,6 +429,21 @@ const styles = StyleSheet.create({
   },
   empty: {
     marginTop: spacing[4],
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.bodySmall,
+    lineHeight: lineHeight.bodySmall,
+    color: colors.textMuted,
+  },
+  evidenceCard: {
+    marginTop: spacing[4],
+    padding: spacing[4],
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    gap: spacing[2],
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  evidenceBody: {
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.bodySmall,
     lineHeight: lineHeight.bodySmall,

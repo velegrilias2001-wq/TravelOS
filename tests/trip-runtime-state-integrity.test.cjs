@@ -134,7 +134,7 @@ test(
           'PRAGMA user_version;',
         );
       assert.equal(version.user_version, DATABASE_VERSION);
-      assert.equal(DATABASE_VERSION, 22);
+      assert.equal(DATABASE_VERSION, 23);
 
       const rows = await database.query(
         'SELECT trip_id FROM trip_runtime_states;',
@@ -415,7 +415,7 @@ test(
           'PRAGMA user_version;',
         );
       assert.equal(version.user_version, DATABASE_VERSION);
-      assert.equal(DATABASE_VERSION, 22);
+      assert.equal(DATABASE_VERSION, 23);
 
       const archived = await database.queryFirst(
         `

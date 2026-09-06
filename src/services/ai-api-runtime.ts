@@ -3,25 +3,28 @@ import {
 } from './ai-api-client';
 import {
   LOCAL_DEV_AI_FALLBACK_URL,
-  resolveLocalDevAiBaseUrl,
+  resolveTravelOsAiBaseUrl,
 } from './ai-local-dev-contract';
+import {
+  assertAiEnabledForClient,
+} from './ai-preferences-cache';
 
 /**
- * Local Android development reaches the Windows-hosted
- * backend through:
+ * Android local-dev reaches a host AI proxy through:
+ *   adb reverse tcp:8789 tcp:8789
+ * Prefer http://127.0.0.1:8789.
  *
- * adb reverse tcp:8789 tcp:8789
- *
- * Use the explicit IPv4 loopback address to avoid Android
- * localhost / IPv6 resolution differences.
- *
- * A non-loopback EXPO_PUBLIC_TRAVELOS_AI_URL is ignored.
- * There is no production AI provider yet.
+ * Preview/production may set EXPO_PUBLIC_TRAVELOS_AI_URL to an
+ * HTTPS TravelOS AI proxy. Non-HTTPS remote hosts require
+ * EXPO_PUBLIC_TRAVELOS_AI_ALLOW_CLEARTEXT=true. Provider API
+ * keys never ship in the app — only the proxy base URL.
  */
-export const aiAPIClient =
-  new AIAPIClient(
-    resolveLocalDevAiBaseUrl(
-      process.env.EXPO_PUBLIC_TRAVELOS_AI_URL,
-      LOCAL_DEV_AI_FALLBACK_URL,
-    ),
-  );
+export const aiAPIClient = new AIAPIClient(
+  resolveTravelOsAiBaseUrl(
+    process.env.EXPO_PUBLIC_TRAVELOS_AI_URL,
+    LOCAL_DEV_AI_FALLBACK_URL,
+  ),
+  {
+    beforeRequest: assertAiEnabledForClient,
+  },
+);

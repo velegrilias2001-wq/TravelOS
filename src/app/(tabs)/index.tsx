@@ -242,6 +242,7 @@ export default function HomeScreen() {
           factKey={compositionKey}
           delayMs={motion.staggerMs}
         >
+          <View style={styles.featuredBlock}>
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel={`Open ${featuredTrip.title}`}
@@ -322,6 +323,39 @@ export default function HomeScreen() {
               </View>
             </View>
           </PressableScale>
+
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Open Trip Copilot"
+            style={styles.copilotDoor}
+            onPress={() =>
+              router.push({
+                pathname: '/trip/[tripId]/copilot',
+                params: { tripId: featuredTrip.id },
+              })
+            }
+          >
+            <Ionicons
+              name="sparkles-outline"
+              size={18}
+              color={colors.brand}
+            />
+            <View style={styles.copilotDoorCopy}>
+              <Text style={styles.copilotDoorTitle}>
+                Trip Copilot
+              </Text>
+              <Text style={styles.copilotDoorBody}>
+                Next useful steps from this trip's saved
+                facts — confirm before anything writes.
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={colors.textMuted}
+            />
+          </PressableScale>
+          </View>
         </RiseIn>
       ) : (
         <RiseIn
@@ -335,9 +369,9 @@ export default function HomeScreen() {
             Where do you want{'\n'}to go next?
           </Text>
           <Text style={styles.lead}>
-            Know the place, only a budget, or just
-            need ideas — start from what is already
-            true.
+            Decide with grounded ideas, or organize from a
+            place and files you already have — TravelOS keeps
+            both paths honest.
           </Text>
 
           <PressableScale
@@ -352,31 +386,13 @@ export default function HomeScreen() {
               color={colors.textInverse}
             />
             <Text style={styles.primaryButtonText}>
-              Create a trip
+              I know where — create a trip
             </Text>
           </PressableScale>
 
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Help me decide"
-            style={styles.secondaryButton}
-            onPress={() =>
-              router.push('/discover/find-destination')
-            }
-          >
-            <Ionicons
-              name="compass-outline"
-              size={20}
-              color={colors.brand}
-            />
-            <Text style={styles.secondaryButtonText}>
-              Help me decide
-            </Text>
-          </PressableScale>
-
-          <PressableScale
-            accessibilityRole="button"
-            accessibilityLabel="Ask TravelOS chat"
+            accessibilityLabel="Help me decide with TravelOS chat"
             style={styles.secondaryButton}
             onPress={() =>
               router.push('/travel-chat')
@@ -388,7 +404,25 @@ export default function HomeScreen() {
               color={colors.brand}
             />
             <Text style={styles.secondaryButtonText}>
-              Ask TravelOS
+              Help me decide
+            </Text>
+          </PressableScale>
+
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Browse Discover catalogue"
+            style={styles.secondaryButton}
+            onPress={() =>
+              router.push('/discover/find-destination')
+            }
+          >
+            <Ionicons
+              name="compass-outline"
+              size={20}
+              color={colors.brand}
+            />
+            <Text style={styles.secondaryButtonText}>
+              Browse Discover
             </Text>
           </PressableScale>
 
@@ -409,11 +443,11 @@ export default function HomeScreen() {
             </View>
             <View style={styles.importCopy}>
               <Text style={styles.importTitle}>
-                Already have bookings or files?
+                Organize from bookings or files
               </Text>
               <Text style={styles.importBody}>
-                Bring them in and start from what you
-                already decided.
+                Import claims, review them, then confirm into
+                a trip — nothing writes until you accept.
               </Text>
             </View>
             <Ionicons
@@ -883,6 +917,38 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  featuredBlock: {
+    gap: spacing[3],
+  },
+
+  copilotDoor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    padding: spacing[4],
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+
+  copilotDoorCopy: {
+    flex: 1,
+    gap: 4,
+  },
+
+  copilotDoorTitle: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.body,
+    color: colors.textPrimary,
+  },
+
+  copilotDoorBody: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.bodySmall,
+    color: colors.textMuted,
   },
 
   primaryButton: {

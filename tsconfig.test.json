@@ -71,6 +71,7 @@
     "src/services/offline-trip-context.ts",
     "src/services/world-places.ts",
     "src/services/packing-progress.ts",
+    "src/services/trip-evidence-pack.ts",
     "src/services/memory-media-ownership.ts",
     "src/services/trip-creation.ts",
     "src/services/travel-dna-service.ts",
@@ -88,6 +89,7 @@
     "src/services/ai-context-service.ts",
     "src/services/ai-api-client.ts",
     "src/services/ai-local-dev-contract.ts",
+    "src/services/ai-preferences-cache.ts",
 
     "src/data/discover/index.ts",
     "src/data/discover/curated-western-europe.ts",

@@ -450,19 +450,41 @@ function normalizeBaseUrl(
   );
 }
 
+export type AIAPIClientOptions = {
+  beforeRequest?: () => void | Promise<void>;
+};
+
 export class AIAPIClient {
+  private readonly beforeRequest?:
+    AIAPIClientOptions['beforeRequest'];
+
   constructor(
     private readonly baseUrl: string,
-  ) {}
+    options?: AIAPIClientOptions,
+  ) {
+    this.beforeRequest = options?.beforeRequest;
+  }
+
+  private async request(
+    path: string,
+    init?: RequestInit,
+  ): Promise<Response> {
+    if (this.beforeRequest) {
+      await this.beforeRequest();
+    }
+
+    return fetch(
+      `${normalizeBaseUrl(this.baseUrl)}${path}`,
+      init,
+    );
+  }
 
   async suggestForFreeTime(
     request: FreeTimeAdviceRequest,
     signal?: AbortSignal,
   ): Promise<FreeTimeAdviceResult> {
-    const response = await fetch(
-      `${normalizeBaseUrl(
-        this.baseUrl,
-      )}/ai/free-time`,
+    const response = await this.request(
+      '/ai/free-time',
       {
         method: 'POST',
 
@@ -545,10 +567,8 @@ export class AIAPIClient {
     request: DiscoverRetrieveRequest,
     signal?: AbortSignal,
   ): Promise<DiscoverRetrieveResult> {
-    const response = await fetch(
-      `${normalizeBaseUrl(
-        this.baseUrl,
-      )}/ai/discover-retrieve`,
+    const response = await this.request(
+      '/ai/discover-retrieve',
       {
         method: 'POST',
 
@@ -616,10 +636,8 @@ export class AIAPIClient {
     request: DiscoverExplainRequest,
     signal?: AbortSignal,
   ): Promise<DiscoverExplainResult> {
-    const response = await fetch(
-      `${normalizeBaseUrl(
-        this.baseUrl,
-      )}/ai/discover-explain`,
+    const response = await this.request(
+      '/ai/discover-explain',
       {
         method: 'POST',
 
@@ -692,8 +710,8 @@ export class AIAPIClient {
     request: DiscoverRerankRequest,
     signal?: AbortSignal,
   ): Promise<DiscoverRerankResult> {
-    const response = await fetch(
-      `${normalizeBaseUrl(this.baseUrl)}/ai/discover-rerank`,
+    const response = await this.request(
+      '/ai/discover-rerank',
       {
         method: 'POST',
         headers: {
@@ -755,17 +773,14 @@ export class AIAPIClient {
     request: TravelChatRequest,
     signal?: AbortSignal,
   ): Promise<TravelChatResult> {
-    const response = await fetch(
-      `${normalizeBaseUrl(this.baseUrl)}/ai/chat`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-        signal,
+    const response = await this.request('/ai/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify(request),
+      signal,
+    });
 
     let payload: {
       ok?: unknown;

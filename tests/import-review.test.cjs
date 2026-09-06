@@ -259,7 +259,7 @@ test('sqlite import claims survive migration v11 and stay off the trip graph unt
     );
 
     assert.equal(version.user_version, DATABASE_VERSION);
-    assert.equal(DATABASE_VERSION, 22);
+    assert.equal(DATABASE_VERSION, 23);
 
     await database.execute(
       `

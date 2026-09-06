@@ -34,6 +34,7 @@ import {
 
 import { travelOSDatabase } from '@/data/database/expo-sqlite-database';
 import { runPersistenceSelfTestOnce } from '@/lib/persistence-self-test';
+import { refreshAiPreferencesCache } from '@/services/ai-preferences-runtime';
 import { reconcileTripNotifications } from '@/services/trip-notifications-runtime';
 import { useTripStore } from '@/store/trip-store';
 import {
@@ -96,6 +97,7 @@ export default function RootLayout() {
           .loadTrips();
 
         void reconcileTripNotifications();
+        void refreshAiPreferencesCache();
 
         console.log(
           '[TravelOS] Bootstrap ready',

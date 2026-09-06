@@ -1,7 +1,8 @@
 import {
   LOCAL_DEV_AI_FALLBACK_URL,
-  resolveLocalDevAiBaseUrl,
+  resolveTravelOsAiBaseUrl,
 } from './ai-local-dev-contract';
+import { assertAiEnabledForClient } from './ai-preferences-cache';
 
 export interface ImportOcrTextResult {
   text: string;
@@ -16,7 +17,7 @@ export function resolveOcrBaseUrl(
   configured: string | null | undefined =
     process.env.EXPO_PUBLIC_TRAVELOS_AI_URL,
 ): string {
-  return resolveLocalDevAiBaseUrl(
+  return resolveTravelOsAiBaseUrl(
     configured,
     LOCAL_DEV_AI_FALLBACK_URL,
   );
@@ -60,6 +61,12 @@ export async function extractOcrTextFromImage(input: {
     input.baseUrl ?? resolveOcrBaseUrl(),
   );
   const fetchImpl = input.fetchImpl ?? fetch;
+
+  try {
+    await assertAiEnabledForClient();
+  } catch {
+    return null;
+  }
 
   let response: Response;
 

@@ -72,6 +72,9 @@ test('trip copilot proposes readiness and plan assist without inventing writes',
     proposals.some((item) => item.kind === 'plan_assist'),
   );
   assert.ok(
+    proposals.some((item) => item.kind === 'packing'),
+  );
+  assert.ok(
     !proposals.some((item) => item.kind === 'free_time'),
   );
 });

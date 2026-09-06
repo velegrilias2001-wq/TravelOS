@@ -1,9 +1,11 @@
-import { resolveLocalDevAiBaseUrl } from '@/services/ai-local-dev-contract';
+import { resolveTravelOsAiBaseUrl } from '@/services/ai-local-dev-contract';
+import { getCachedAiEnabled } from '@/services/ai-preferences-cache';
 
 export type CopilotHealthStatus =
   | 'ready'
   | 'unavailable'
-  | 'checking';
+  | 'checking'
+  | 'disabled';
 
 export type CopilotHealthSnapshot = {
   status: CopilotHealthStatus;
@@ -23,15 +25,26 @@ type ToolsPayload = {
 };
 
 /**
- * Probe the local-dev AI copilot without mutating trip truth.
- * Loopback-only; cloud hosts are ignored by resolveLocalDevAiBaseUrl.
+ * Probe the TravelOS AI proxy without mutating trip truth.
+ * Honors the traveler kill-switch and allowed proxy URL policy.
  */
 export async function probeCopilotHealth(
   signal?: AbortSignal,
 ): Promise<CopilotHealthSnapshot> {
-  const baseUrl = resolveLocalDevAiBaseUrl(
+  const baseUrl = resolveTravelOsAiBaseUrl(
     process.env.EXPO_PUBLIC_TRAVELOS_AI_URL,
   );
+
+  if (!getCachedAiEnabled()) {
+    return {
+      status: 'disabled',
+      baseUrl,
+      toolsAvailable: [],
+      toolsNotConfigured: [],
+      detail:
+        'TravelOS AI is off in Profile. Turn it on to use Chat and Copilot.',
+    };
+  }
 
   try {
     const response = await fetch(
@@ -75,7 +88,7 @@ export async function probeCopilotHealth(
       toolsAvailable,
       toolsNotConfigured,
       detail:
-        'Local copilot ready. Suggestions never write trip truth.',
+        'TravelOS AI ready. Suggestions never write trip truth without confirm.',
     };
   } catch {
     return {

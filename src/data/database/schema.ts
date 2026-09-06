@@ -415,6 +415,20 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
 
 );
 
+CREATE TABLE IF NOT EXISTS ai_preferences (
+
+  singleton_key INTEGER PRIMARY KEY NOT NULL
+
+    CHECK (singleton_key = 1),
+
+  enabled INTEGER NOT NULL
+
+    CHECK (enabled IN (0, 1)),
+
+  updated_at TEXT NOT NULL
+
+);
+
 CREATE TABLE IF NOT EXISTS bookings (
 
   id TEXT PRIMARY KEY NOT NULL,

@@ -29,6 +29,14 @@ export type TripCopilotProposal =
       actionLabel: 'Add' | 'Continue' | 'View';
     }
   | {
+      kind: 'packing';
+      id: string;
+      title: string;
+      body: string;
+      packingTotal: number;
+      packingPacked: number;
+    }
+  | {
       kind: 'plan_assist';
       id: string;
       dayId: string;
@@ -83,6 +91,8 @@ export function selectTripCopilotProposals(
   options?: {
     interests?: readonly TravelInterest[];
     pendingImportClaimCount?: number;
+    packingTotal?: number;
+    packingPacked?: number;
   },
 ): TripCopilotProposal[] {
   const proposals: TripCopilotProposal[] = [];
@@ -100,6 +110,29 @@ export function selectTripCopilotProposals(
       body: item.body,
       route: item.route,
       actionLabel: item.actionLabel,
+    });
+  }
+
+  const packingTotal = options?.packingTotal ?? 0;
+  const packingPacked = options?.packingPacked ?? 0;
+
+  if (packingTotal === 0) {
+    proposals.push({
+      kind: 'packing',
+      id: 'packing:empty',
+      title: 'Packing',
+      body: 'Add traveler-authored packing items when you are ready. Nothing is invented for you.',
+      packingTotal: 0,
+      packingPacked: 0,
+    });
+  } else if (packingPacked < packingTotal) {
+    proposals.push({
+      kind: 'packing',
+      id: 'packing:progress',
+      title: 'Packing',
+      body: `${packingPacked} of ${packingTotal} packed`,
+      packingTotal,
+      packingPacked,
     });
   }
 

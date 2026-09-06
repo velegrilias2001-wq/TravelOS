@@ -87,10 +87,10 @@ test(
         DATABASE_VERSION,
       );
 
-      assert.equal(
-        DATABASE_VERSION,
-        22,
-      );
+        assert.equal(
+          DATABASE_VERSION,
+          23,
+        );
 
       const columns =
         await database.query(

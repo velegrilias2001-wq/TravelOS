@@ -72,8 +72,10 @@ export default function ProfileScreen() {
 
         Alert.alert(
           snapshot.status === 'ready'
-            ? 'TravelOS Copilot'
-            : 'Copilot unavailable',
+            ? 'TravelOS AI'
+            : snapshot.status === 'disabled'
+              ? 'TravelOS AI is off'
+              : 'AI unavailable',
           `${snapshot.detail}${available}`,
         );
       } finally {
@@ -311,12 +313,23 @@ export default function ProfileScreen() {
 
         <ActiveRow
           icon="sparkles-outline"
+          title="TravelOS AI"
+          body="Grounded Travel Chat, Trip Copilot, and Discover help. Confirm before anything becomes trip truth. Device kill-switch and privacy notes inside."
+          onPress={() =>
+            router.push('/travelos-ai' as never)
+          }
+        />
+
+        <View style={styles.rowDivider} />
+
+        <ActiveRow
+          icon="pulse-outline"
           title={
             isProbingCopilot
               ? 'Checking copilot…'
-              : 'TravelOS Copilot'
+              : 'Probe AI health'
           }
-          body="Local-dev AI for Travel Chat, Trip Copilot, free-time ideas, and grounded Discover. Never invents destinations or writes trip truth. Kill-switch: AI_ENABLED=false on the AI server."
+          body="Ping the configured TravelOS AI proxy for tool availability. Does not write trip data."
           onPress={checkCopilot}
         />
 
@@ -365,7 +378,7 @@ export default function ProfileScreen() {
           </Text>
 
           <Text style={styles.privacyBody}>
-            Travel data is stored on this device. Export and restore use a local JSON backup. Cloud sync and photo-file backup remain later, explicit options.
+            Travel data is stored on this device. Export and restore use a local JSON backup. TravelOS AI is optional and confirm-gated; cloud sync and photo-file backup remain later, explicit options.
           </Text>
         </View>
       </View>

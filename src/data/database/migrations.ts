@@ -21,7 +21,7 @@ import {
   reconcileStopDayRelationships,
 } from './stop-day-integrity-migration';
 
-export const DATABASE_VERSION = 22;
+export const DATABASE_VERSION = 23;
 
 interface UserVersionRow {
   user_version: number;
@@ -1837,6 +1837,32 @@ export async function migrateDatabase(
 
         await transaction.execAsync(
           'PRAGMA user_version = 22;',
+        );
+      },
+    );
+  }
+
+  /**
+   * Version 23
+   * Traveler kill-switch for TravelOS AI (client-side).
+   * Defaults enabled; server AI_ENABLED remains authoritative
+   * for the proxy.
+   */
+  if (currentVersion < 23) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await transaction.execAsync(`
+          CREATE TABLE IF NOT EXISTS ai_preferences (
+            singleton_key INTEGER PRIMARY KEY NOT NULL
+              CHECK (singleton_key = 1),
+            enabled INTEGER NOT NULL
+              CHECK (enabled IN (0, 1)),
+            updated_at TEXT NOT NULL
+          );
+        `);
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 23;',
         );
       },
     );

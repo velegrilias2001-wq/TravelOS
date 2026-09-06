@@ -45,6 +45,7 @@ const USER_TABLE_DELETE_ORDER = [
   'saved_places',
   'travel_dna',
   'notification_preferences',
+  'ai_preferences',
 ] as const;
 
 /**
