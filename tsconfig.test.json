@@ -56,6 +56,7 @@
     "src/services/time-truth.ts",
     "src/services/home-runtime.ts",
     "src/services/destination-authoring.ts",
+    "src/services/timezone-lookup.ts",
     "src/services/companion.ts",
     "src/services/companion-itinerary-change.ts",
     "src/services/companion-refresh.ts",

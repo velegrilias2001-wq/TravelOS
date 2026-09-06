@@ -82,7 +82,7 @@ Goal: make TravelOS useful and correct while the traveler is moving.
 - [x] Add deterministic Companion selector/boundary tests and Android rehearsal for upcoming, incomplete, active fallback, linked Booking, mapped stop, cold relaunch, tab lifecycle, and completed non-live behavior.
 - [x] **Day clock V1** — when exactly one TripDay is assigned to a destination with a valid IANA timezone and that timezone’s local calendar date matches the day, Companion uses that city as the clock for phase, current day, and NOW/NEXT. Destination order is never a clock. Two cities claiming today, an unassigned day, or a city without a timezone keep the previous trip-level or device fallback. Automated tests exist. An Android Pixel 8 pass on 2026-09-03 opened isolated Lisbon as LISBON with `Europe/Lisbon`.
 - [x] **Home day clock V1** — Home featured-trip phase uses the same assigned-city clock as Companion. TripDays load in one batched query and are not stored in Zustand. Missing days degrade to trip-level timezone. An active featured trip shows today’s assigned city when one exists. Automated tests exist. No device rehearsal.
-- [ ] **Deferred — picker / Time Zone API timezone** — `expo-location-picker` 1.0.2 still does not return an IANA timezone or stable place ID. Do not call Google Time Zone API with the Android Maps key. Traveler, catalogue, and future provider timezones already persist. Create Trip traveler timezone V1 is the unblocked slice.
+- [x] **Picker Time Zone enrichment V1** — after `expo-location-picker` returns coordinates without an IANA timezone, the client calls local-dev `POST /geo/timezone`. The server uses a dedicated `GOOGLE_TIMEZONE_API_KEY` (Time Zone API only; never `GOOGLE_MAPS_API_KEY`). Success persists `timezone` + `timezoneSource: 'provider'`. Missing key, unreachable server, or non-OK Google status fail closed. Traveler/catalogue overrides remain. No schema migration. Automated tests exist. Production cloud proxy remains Phase 6.
 - [x] **Create Trip traveler timezone V1** — Create Trip can set or clear an explicit IANA timezone with `traveler` provenance. Replacing the map pin keeps a traveler timezone when the picker still has none. Coordinates are never used to guess a zone. Automated tests exist. An Android Pixel 8 pass on 2026-09-03 showed Trip Details Porto as saved `Europe/Lisbon` and Coimbra as unknown, not guessed from the pin.
 - [x] **Stop lived phase V1** — explicit done/skipped stop progress without rewriting Plan times. Delayed is derived from the clock. `TripRuntimeState` is written only as a pointer to the last explicit lived stop. Migration version 17. Automated tests exist. An Android Pixel 8 rebuild on 2026-09-03 ran version 17. A later pass marked isolated Lisbon `RehearsalCoffee` Done without rewriting Plan.
 - [x] **Plan lived badges V1** — Plan shows Done/Skipped from those explicit marks without rewriting saved times. Delayed is not a Plan badge. Marks remain Companion actions. Automated tests exist. An Android Pixel 8 pass on 2026-09-03 showed Plan DONE on `RehearsalCoffee` after Companion Done.
@@ -192,7 +192,7 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 - [x] **Android EAS preview build V1** — `GOOGLE_MAPS_API_KEY` stored as EAS env secret for development/preview/production; `eas.json` profiles declare matching `environment`; remote Android keystore created on Expo; preview APKs built 2026-09-05 (`ca98eafd-e956-4e05-9a62-78aeddfdfa94`, then tab-bar `817e2c05-c1b6-4cbd-9160-fe9e2987297f` on commit `a36f2b5`). Play tracks and Maps package/SHA restriction verification remain open.
 - Define accounts, identity, guest conversion, shared-trip permissions, and data ownership (**design still open** — do not invent cloud identity in this pass).
 - Design backend sync and conflict resolution around SQLite-backed canonical IDs (**later**; local export/restore remains the durable backup path).
-- Add notifications after platform permission, timezone, and Companion rules are complete (still parked with Time Zone API).
+- Add notifications after platform permission, timezone, and Companion rules are complete (Time Zone enrichment V1 is in; notifications remain the next parked slice).
 - Add privacy-aware crash reporting, performance monitoring, structured diagnostics, and operational alerts.
 - [x] **CI / migration / rollback procedure V1** — local release gates are `npx tsc --noEmit`, `npm test`, `cd server && npm test`, `npm run lint`, and `git diff --check`. GitHub Actions workflow is committed; this branch still needs `git push -u origin HEAD` before CI runs remotely. Migrations stay forward-only (never edit shipped migrations). Rollback without cloud sync: keep a Profile JSON export before destructive restore; revert native clients by installing a prior APK/AAB; SQLite has no automatic cloud undo.
 
@@ -243,9 +243,9 @@ Hard rules stay in force: AI is not a destination source; suggestions never muta
 
 These stay later. They were not implemented in this pass. iOS rebuild is last.
 
-- Picker or restricted Time Zone API enrichment. Do not use the Android Maps key. Traveler IANA on Create Trip / Trip Details already exists.
+- [x] Picker Time Zone enrichment V1 (local-dev `POST /geo/timezone` + dedicated Time Zone API key). Traveler IANA override remains.
 - Real in-app routes and ETAs. Saved-pin directions stay. Do not invent travel times.
-- Notifications, only after timezone truth is stable on device.
+- Notifications, only after timezone truth is stable on device (Time Zone V1 unblocks product work; device scheduling still open).
 - Discover reranking. Do not install a BGE reranker until a real `/api/rerank` path can be measured.
 - Confirmation-photo OCR, only with an extractor that cannot write bookings.
 - Phase 5 visual/function matrix remainder: closed on Pixel 8 on 2026-09-03. Phase 5 polish V1 closed in code. Android rebuild on 2026-09-05 linked haptics/sharing. iOS last.

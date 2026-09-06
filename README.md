@@ -43,9 +43,9 @@ Create an uncommitted `.env.local` from `.env.example`:
 | Variable | Purpose |
 | --- | --- |
 | GOOGLE_MAPS_API_KEY | Google Maps / Places configuration for Android and (when rebuilt) iOS via `app.config.js` |
-| EXPO_PUBLIC_TRAVELOS_AI_URL | Optional loopback AI server URL. Cloud hosts are ignored. |
+| EXPO_PUBLIC_TRAVELOS_AI_URL | Optional loopback AI / geo server URL. Cloud hosts are ignored. |
 
-Do not commit, print, or share secret values. Restrict the Maps key to the APIs TravelOS uses (Maps SDK for Android, Places API New; Maps SDK for iOS when shipping iOS). Android restriction: package `com.travelos.app` plus the EAS/Play signing SHA-1. iOS restriction: bundle `com.travelos.app`. Local AI server tokens stay in `server/.env` only — never in `EXPO_PUBLIC_*`.
+Do not commit, print, or share secret values. Restrict the Maps key to the APIs TravelOS uses (Maps SDK for Android, Places API New; Maps SDK for iOS when shipping iOS). Android restriction: package `com.travelos.app` plus the EAS/Play signing SHA-1. iOS restriction: bundle `com.travelos.app`. Local AI server tokens stay in `server/.env` only — never in `EXPO_PUBLIC_*`. Optional `GOOGLE_TIMEZONE_API_KEY` in `server/.env` enables picker Time Zone enrichment via `POST /geo/timezone` (restrict that key to Time Zone API only; never reuse the Maps key).
 
 ### Versioning
 

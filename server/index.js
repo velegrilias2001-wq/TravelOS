@@ -39,6 +39,11 @@ const {
   parseDiscoverExplainResponse,
 } = require('./discover-explain');
 
+const {
+  lookupTimezoneFromCoordinates,
+  parseTimezoneLookupRequest,
+} = require('./timezone-lookup');
+
 const ai = createAiProvider();
 
 let discoverEmbeddings = null;
@@ -360,6 +365,60 @@ app.post(
     }
   },
 );
+
+app.post('/geo/timezone', async (req, res) => {
+  try {
+    const request = parseTimezoneLookupRequest(
+      req.body,
+    );
+
+    const result =
+      await lookupTimezoneFromCoordinates(
+        request,
+      );
+
+    res.json({
+      ok: true,
+      timezone: result.timezone,
+      source: result.source,
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        ok: false,
+        error: 'invalid_request',
+      });
+    }
+
+    const code =
+      error &&
+      typeof error === 'object' &&
+      typeof error.code === 'string'
+        ? error.code
+        : 'timezone_provider_unavailable';
+
+    if (code === 'timezone_api_key_missing') {
+      return res.status(503).json({
+        ok: false,
+        error: 'timezone_api_key_missing',
+      });
+    }
+
+    if (code === 'timezone_lookup_failed') {
+      return res.status(502).json({
+        ok: false,
+        error: 'timezone_lookup_failed',
+      });
+    }
+
+    console.error(error);
+
+    return res.status(503).json({
+      ok: false,
+      error: 'timezone_provider_unavailable',
+    });
+  }
+});
 
 app.post(
   '/ai/discover-explain',

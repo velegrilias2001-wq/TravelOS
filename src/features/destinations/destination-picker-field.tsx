@@ -24,6 +24,9 @@ import {
   type DestinationSelection,
 } from '@/services/destination-authoring';
 import {
+  enrichSelectionWithProviderTimezone,
+} from '@/services/timezone-lookup';
+import {
   isValidIanaTimeZone,
 } from '@/services/time-truth';
 import {
@@ -149,27 +152,33 @@ export function DestinationPickerField({
         return;
       }
 
+      const mapped = mapDestinationProviderResult({
+        latitude: result.latitude,
+        longitude: result.longitude,
+        name: result.name,
+        locality: result.locality,
+        administrativeArea:
+          result.administrativeArea,
+        formattedAddress:
+          result.formattedAddress,
+        country: result.country,
+        countryCode: result.countryCode,
+        timezone: optionalProviderString(
+          result,
+          'timezone',
+        ),
+        placeId: optionalProviderString(
+          result,
+          'placeId',
+        ),
+      });
+
+      // Loopback Time Zone enrichment when the picker
+      // has coords but no IANA zone. Fail closed → unknown.
       onSelect(
-        mapDestinationProviderResult({
-          latitude: result.latitude,
-          longitude: result.longitude,
-          name: result.name,
-          locality: result.locality,
-          administrativeArea:
-            result.administrativeArea,
-          formattedAddress:
-            result.formattedAddress,
-          country: result.country,
-          countryCode: result.countryCode,
-          timezone: optionalProviderString(
-            result,
-            'timezone',
-          ),
-          placeId: optionalProviderString(
-            result,
-            'placeId',
-          ),
-        }),
+        await enrichSelectionWithProviderTimezone(
+          mapped,
+        ),
       );
     } catch {
       Alert.alert(
