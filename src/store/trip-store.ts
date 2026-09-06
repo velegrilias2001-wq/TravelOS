@@ -43,11 +43,15 @@ export const useTripStore =
           isLoading: false,
         });
 
-        void import(
-          '@/services/trip-notifications-runtime'
-        ).then((module) =>
-          module.reconcileTripNotifications(),
-        );
+        setTimeout(() => {
+          void import(
+            '@/services/trip-notifications-runtime'
+          )
+            .then((module) =>
+              module.reconcileTripNotifications(),
+            )
+            .catch(() => {});
+        }, 0);
       } catch (error) {
         set({
           isLoading: false,
@@ -73,11 +77,15 @@ export const useTripStore =
           isLoading: false,
         });
 
-        void import(
-          '@/services/trip-notifications-runtime'
-        ).then((module) =>
-          module.reconcileTripNotifications(),
-        );
+        setTimeout(() => {
+          void import(
+            '@/services/trip-notifications-runtime'
+          )
+            .then((module) =>
+              module.reconcileTripNotifications(),
+            )
+            .catch(() => {});
+        }, 0);
       } catch (error) {
         set({
           isLoading: false,
@@ -103,11 +111,15 @@ export const useTripStore =
           isLoading: false,
         });
 
-        void import(
-          '@/services/trip-notifications-runtime'
-        ).then((module) =>
-          module.reconcileTripNotifications(),
-        );
+        setTimeout(() => {
+          void import(
+            '@/services/trip-notifications-runtime'
+          )
+            .then((module) =>
+              module.reconcileTripNotifications(),
+            )
+            .catch(() => {});
+        }, 0);
       } catch (error) {
         set({
           isLoading: false,

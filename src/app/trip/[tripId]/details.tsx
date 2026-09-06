@@ -330,11 +330,18 @@ export default function TripDetailsScreen() {
           'saved budget',
         );
 
+      console.error(
+        '[Trip Details] Save error:',
+        error,
+      );
+
       Alert.alert(
         'Could not save trip details',
         budgetCurrencyBlocked
           ? 'This trip already has a saved budget. Its accounting currency cannot be relabeled or converted here.'
-          : 'Your saved trip remains available. Review the details and try again.',
+          : error instanceof Error && error.message
+            ? error.message
+            : 'Your saved trip remains available. Review the details and try again.',
       );
     } finally {
       setIsSaving(false);

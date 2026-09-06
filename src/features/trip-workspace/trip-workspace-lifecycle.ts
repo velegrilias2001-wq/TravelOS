@@ -92,19 +92,17 @@ export class TripWorkspaceLifecycle {
 
     await this.refreshIfNeeded();
 
-    // Prefer the same alias path as trip-store. Metro can throw
-    // synchronously on a bad relative dynamic import — catch both.
-    try {
+    // Never block trip mutations on notification reconcile.
+    // Metro dynamic import can throw outside a Promise rejection.
+    setTimeout(() => {
       void import('@/services/trip-notifications-runtime')
         .then((module) =>
           module.reconcileTripNotifications(),
         )
         .catch(() => {
-          // Native notification module may be unavailable in Node tests.
+          // Native module may be unavailable in Node tests / Expo Go.
         });
-    } catch {
-      // Metro may throw synchronously if the module cannot resolve.
-    }
+    }, 0);
 
     return result;
   }
