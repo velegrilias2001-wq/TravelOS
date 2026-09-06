@@ -27,6 +27,7 @@ import type {
   ImportBookingAcceptOverrides,
   ImportClaimListing,
 } from '@/services/import-review-service';
+import { buildImportLineStopHandoff } from '@/services/import-line-stop-handoff';
 import { buildImportSeedTripHandoff } from '@/services/import-seed-handoff';
 import { importReviewService } from '@/services/import-review-runtime';
 import { useTripStore } from '@/store/trip-store';
@@ -202,6 +203,30 @@ export default function ImportReviewScreen() {
     }
   };
 
+  const addLineAsStop = (listing: ImportClaimListing) => {
+    if (!selectedTripId) {
+      setError('Choose a trip before adding a line as a stop.');
+      return;
+    }
+
+    try {
+      const handoff = buildImportLineStopHandoff(listing.claim);
+      router.push({
+        pathname: '/trip/[tripId]/plan',
+        params: {
+          tripId: selectedTripId,
+          ...handoff,
+        },
+      });
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'This line could not open Plan.',
+      );
+    }
+  };
+
   const dismiss = async (listing: ImportClaimListing) => {
     try {
       await importReviewService.dismiss(listing.claim.id);
@@ -316,6 +341,9 @@ export default function ImportReviewScreen() {
                 onStartCreateTrip={() => {
                   void startCreateTripFromSeed(listing);
                 }}
+                onAddAsStop={() => {
+                  addLineAsStop(listing);
+                }}
                 onAcknowledgeLine={() => {
                   void acknowledgeLine(listing);
                 }}
@@ -374,6 +402,7 @@ function ClaimCard({
   canAccept,
   onAccept,
   onStartCreateTrip,
+  onAddAsStop,
   onAcknowledgeLine,
   onDismiss,
 }: {
@@ -381,6 +410,7 @@ function ClaimCard({
   canAccept: boolean;
   onAccept(overrides: ImportBookingAcceptOverrides): void;
   onStartCreateTrip(): void;
+  onAddAsStop(): void;
   onAcknowledgeLine(): void;
   onDismiss(): void;
 }) {
@@ -452,19 +482,37 @@ function ClaimCard({
       ) : null}
 
       {pending && claim.kind === 'itinerary_line' ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Mark ${claim.title} reviewed`}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            pressed && styles.pressed,
-          ]}
-          onPress={onAcknowledgeLine}
-        >
-          <Text style={styles.primaryButtonText}>
-            Mark reviewed (not a stop yet)
-          </Text>
-        </Pressable>
+        <View style={styles.lineActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Add ${claim.title} as stop`}
+            accessibilityState={{ disabled: !canAccept }}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              !canAccept && styles.primaryButtonDisabled,
+              pressed && styles.pressed,
+            ]}
+            disabled={!canAccept}
+            onPress={onAddAsStop}
+          >
+            <Text style={styles.primaryButtonText}>
+              Add as stop
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Mark ${claim.title} reviewed`}
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && styles.pressed,
+            ]}
+            onPress={onAcknowledgeLine}
+          >
+            <Text style={styles.secondaryButtonText}>
+              Mark reviewed (not a stop)
+            </Text>
+          </Pressable>
+        </View>
       ) : null}
 
       {pending && claim.kind === 'booking' ? (
@@ -801,6 +849,11 @@ const styles = StyleSheet.create({
     fontSize: fontSize.bodySmall,
     lineHeight: lineHeight.bodySmall,
     color: colors.textSecondary,
+  },
+
+  lineActions: {
+    gap: spacing[1],
+    marginTop: spacing[2],
   },
 
   primaryButton: {

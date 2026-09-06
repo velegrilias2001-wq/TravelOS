@@ -1,8 +1,8 @@
 # PWA Parity + Absolute Travel AI — Master Track
 
-Status: **Wave A done · Wave B β1 done · β2 and Waves C–E remaining**  
-Draft date: 2026-09-06  
-Updated: 2026-09-06 (Wave A + B β1 landed)  
+Status: **Wave A done · Wave B done (β1+β2) · Waves C–E remaining**
+Draft date: 2026-09-06
+Updated: 2026-09-06 (Wave B β2 import line → Plan stop landed)
 Branch context: `docs/expo-sqlite-rehearsal-7-15`  
 PWA reference: https://travelos3.netlify.app/ (v13.5.1 product memory; vault session observed 2026-09-06)  
 Native authority: `AGENTS.md`, `docs/PRODUCT_VISION.md`, `docs/CURRENT_STATE.md`, `docs/ROADMAP.md`, `docs/WEB_REFERENCE.md`
@@ -146,9 +146,9 @@ Operator reviews this order. Implementation starts only after OK per wave (or OK
 
 **Exit criteria:**
 
-- [ ] Review accept path can set structured booking fields before write.
-- [ ] Itinerary-line claim can open prefilled stop editor; save is the only write.
-- [ ] No silent Booking/Stop from OCR text alone (regression preserved).
+- [x] Review accept path can set structured booking fields before write.
+- [x] Itinerary-line claim can open prefilled stop editor; save is the only write.
+- [x] No silent Booking/Stop from OCR text alone (regression preserved).
 
 ---
 

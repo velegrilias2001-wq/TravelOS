@@ -78,6 +78,7 @@
     "src/services/import-ocr.ts",
     "src/services/import-document-text.ts",
     "src/services/import-seed-handoff.ts",
+    "src/services/import-line-stop-handoff.ts",
     "src/services/trip-theme.ts",
 
     "src/services/ai-context.ts",

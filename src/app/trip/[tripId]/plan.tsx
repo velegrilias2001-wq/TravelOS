@@ -88,6 +88,9 @@ import {
 import {
   travelDNAService,
 } from '@/services/travel-dna-runtime';
+import {
+  importReviewService,
+} from '@/services/import-review-runtime';
 
 import {
   colors,
@@ -96,6 +99,16 @@ import {
   radius,
   spacing,
 } from '@/theme';
+
+function firstRouteParam(
+  value: string | string[] | undefined,
+): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return value;
+}
 
 const STOP_TYPES: {
   label: string;
@@ -293,16 +306,48 @@ export default function PlanScreen() {
   const routeParams =
     useLocalSearchParams<{
       stopId?: string | string[];
+      source?: string | string[];
+      importClaimId?: string | string[];
+      importTitle?: string | string[];
+      importStartTime?: string | string[];
+      importEndTime?: string | string[];
+      importDayDate?: string | string[];
+      importLocationName?: string | string[];
     }>();
 
-  const requestedStopId =
-    Array.isArray(
-      routeParams.stopId,
-    )
-      ? routeParams.stopId[0]
-      : routeParams.stopId;
+  const requestedStopId = firstRouteParam(
+    routeParams.stopId,
+  );
+
+  const importSource = firstRouteParam(
+    routeParams.source,
+  );
+  const importClaimId = firstRouteParam(
+    routeParams.importClaimId,
+  );
+  const importTitle = firstRouteParam(
+    routeParams.importTitle,
+  );
+  const importStartTime = firstRouteParam(
+    routeParams.importStartTime,
+  );
+  const importEndTime = firstRouteParam(
+    routeParams.importEndTime,
+  );
+  const importDayDate = firstRouteParam(
+    routeParams.importDayDate,
+  );
+  const importLocationName = firstRouteParam(
+    routeParams.importLocationName,
+  );
 
   const handledStopIdRef =
+    useRef<string | null>(null);
+
+  const handledImportClaimIdRef =
+    useRef<string | null>(null);
+
+  const pendingImportClaimIdRef =
     useRef<string | null>(null);
 
   const {
@@ -502,6 +547,24 @@ export default function PlanScreen() {
     setType('place');
 
     setPickedLocation(null);
+    pendingImportClaimIdRef.current = null;
+  };
+
+  const clearImportLineParams = () => {
+    if (importSource !== 'import_line') {
+      return;
+    }
+
+    router.setParams({
+      source: '',
+      importClaimId: '',
+      importTitle: '',
+      importStartTime: '',
+      importEndTime: '',
+      importDayDate: '',
+      importLocationName: '',
+      importBatchId: '',
+    });
   };
 
   const openCreate = (
@@ -522,6 +585,35 @@ export default function PlanScreen() {
     setType('place');
 
     setPickedLocation(null);
+    pendingImportClaimIdRef.current = null;
+  };
+
+  const openCreateFromImportLine = (
+    day: TripDay,
+    draft: {
+      claimId: string;
+      title: string;
+      startTime?: string;
+      endTime?: string;
+      locationName?: string;
+    },
+  ) => {
+    setEditingStop(null);
+    setSelectedDay(day);
+    setTitle(draft.title);
+    setTime(draft.startTime ?? '');
+    setTimeEdited(false);
+    setOriginalTime(undefined);
+    setEndTime(draft.endTime ?? '');
+    setEndTimeEdited(false);
+    setOriginalEndTime(undefined);
+    setType('place');
+    setPickedLocation(
+      draft.locationName
+        ? { name: draft.locationName }
+        : null,
+    );
+    pendingImportClaimIdRef.current = draft.claimId;
   };
 
   const openEdit = (
@@ -575,6 +667,12 @@ export default function PlanScreen() {
         stopId: '',
       });
     }
+
+    if (importSource === 'import_line') {
+      handledImportClaimIdRef.current =
+        importClaimId ?? null;
+      clearImportLineParams();
+    }
   };
 
   useEffect(() => {
@@ -613,6 +711,51 @@ export default function PlanScreen() {
     requestedStopId,
     workspace.days,
     workspace.stops,
+  ]);
+
+  useEffect(() => {
+    if (
+      importSource !== 'import_line' ||
+      !importClaimId ||
+      !importTitle ||
+      handledImportClaimIdRef.current ===
+        importClaimId ||
+      workspace.days.length === 0
+    ) {
+      return;
+    }
+
+    const matchedDay = importDayDate
+      ? workspace.days.find(
+          (day) => day.date === importDayDate,
+        )
+      : undefined;
+
+    const day = matchedDay ?? workspace.days[0];
+
+    if (!day) {
+      return;
+    }
+
+    handledImportClaimIdRef.current = importClaimId;
+    focusDay(day.id);
+    openCreateFromImportLine(day, {
+      claimId: importClaimId,
+      title: importTitle.trim(),
+      startTime: importStartTime?.trim() || undefined,
+      endTime: importEndTime?.trim() || undefined,
+      locationName:
+        importLocationName?.trim() || undefined,
+    });
+  }, [
+    importSource,
+    importClaimId,
+    importTitle,
+    importStartTime,
+    importEndTime,
+    importDayDate,
+    importLocationName,
+    workspace.days,
   ]);
 
   const chooseLocation =
@@ -855,9 +998,32 @@ export default function PlanScreen() {
           await actions.addStop(
             stop,
           );
+
+          const pendingClaimId =
+            pendingImportClaimIdRef.current;
+
+          if (pendingClaimId) {
+            try {
+              await importReviewService.acknowledgeSeed(
+                pendingClaimId,
+                workspace.trip.id,
+              );
+            } catch (acknowledgeError) {
+              console.error(
+                '[Plan] Import claim acknowledge failed after stop save:',
+                acknowledgeError,
+              );
+
+              Alert.alert(
+                'Moment saved',
+                'The stop is on the plan. The import line could not be marked reviewed — you can finish that in Import Review.',
+              );
+            }
+          }
         }
 
         resetModal();
+        clearImportLineParams();
       } catch (error) {
         const message =
           error instanceof Error
@@ -2276,8 +2442,20 @@ export default function PlanScreen() {
                 >
                   {editingStop
                     ? 'Edit moment'
-                    : 'Add a moment'}
+                    : pendingImportClaimIdRef.current
+                      ? 'Add imported moment'
+                      : 'Add a moment'}
                 </Text>
+                {!editingStop &&
+                  pendingImportClaimIdRef.current ? (
+                    <Text
+                      style={
+                        styles.sheetLivedNote
+                      }
+                    >
+                      Prefill from import. Nothing is saved until you confirm.
+                    </Text>
+                  ) : null}
                 {editingStop &&
                   planStopLivedBadge(
                     editingStop.id,

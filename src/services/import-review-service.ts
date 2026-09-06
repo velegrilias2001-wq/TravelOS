@@ -534,7 +534,7 @@ function conflictsForClaim(
         {
           kind: 'needs-trip',
           detail:
-            'Optional: choose a trip to mark this line reviewed against it. It does not become a stop automatically.',
+            'Choose a trip to Add as stop (opens Plan prefilled) or to mark the line reviewed. Nothing writes a stop until you save in Plan.',
         },
       ];
     }
