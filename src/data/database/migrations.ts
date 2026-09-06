@@ -21,7 +21,7 @@ import {
   reconcileStopDayRelationships,
 } from './stop-day-integrity-migration';
 
-export const DATABASE_VERSION = 20;
+export const DATABASE_VERSION = 21;
 
 interface UserVersionRow {
   user_version: number;
@@ -1711,6 +1711,98 @@ export async function migrateDatabase(
 
         await transaction.execAsync(
           'PRAGMA user_version = 20;',
+        );
+      },
+    );
+  }
+
+  /**
+   * Version 21
+   * Optional trip origin place from picker facts.
+   * Not a destination and never a day clock.
+   */
+  if (currentVersion < 21) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        const tripsTable =
+          await transaction.getFirstAsync<{
+            name: string;
+          }>(
+            `
+              SELECT name
+              FROM sqlite_master
+              WHERE type = 'table'
+                AND name = 'trips';
+            `,
+          );
+
+        if (tripsTable) {
+          const columns =
+            await transaction.getAllAsync<TableInfoRow>(
+              'PRAGMA table_info(trips);',
+            );
+
+          const addColumn = async (
+            name: string,
+            ddl: string,
+          ) => {
+            if (
+              columns.some(
+                (column) => column.name === name,
+              )
+            ) {
+              return;
+            }
+
+            await transaction.execAsync(
+              `ALTER TABLE trips ADD COLUMN ${ddl};`,
+            );
+          };
+
+          await addColumn(
+            'origin_name',
+            'origin_name TEXT',
+          );
+          await addColumn(
+            'origin_country_code',
+            'origin_country_code TEXT',
+          );
+          await addColumn(
+            'origin_latitude',
+            'origin_latitude REAL',
+          );
+          await addColumn(
+            'origin_longitude',
+            'origin_longitude REAL',
+          );
+          await addColumn(
+            'origin_timezone',
+            'origin_timezone TEXT',
+          );
+          await addColumn(
+            'origin_timezone_source',
+            `origin_timezone_source TEXT
+              CHECK (
+                origin_timezone_source IS NULL OR
+                origin_timezone_source IN (
+                  'provider',
+                  'catalogue',
+                  'traveler'
+                )
+              )`,
+          );
+          await addColumn(
+            'origin_place_id',
+            'origin_place_id TEXT',
+          );
+          await addColumn(
+            'origin_currency_code',
+            'origin_currency_code TEXT',
+          );
+        }
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 21;',
         );
       },
     );

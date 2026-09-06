@@ -1,6 +1,7 @@
 import type {
   DestinationTimezoneSource,
   TripDestination,
+  TripOrigin,
 } from '@/domain/entities';
 
 import {
@@ -248,6 +249,16 @@ export function applyDestinationSelection(
     id: destinationId,
     ...normalizeDestinationSelection(selection),
   };
+}
+
+/**
+ * Origin uses the same picker facts as a destination,
+ * but is never given a destination ID or day-clock role.
+ */
+export function buildTripOriginFromSelection(
+  selection: DestinationSelection,
+): TripOrigin {
+  return normalizeDestinationSelection(selection);
 }
 
 export function mergeDestinationReplacement(

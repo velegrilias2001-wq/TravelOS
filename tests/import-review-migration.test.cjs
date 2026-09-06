@@ -55,7 +55,7 @@ test(
       );
 
       assert.equal(version.user_version, DATABASE_VERSION);
-      assert.equal(DATABASE_VERSION, 20);
+      assert.equal(DATABASE_VERSION, 21);
 
       const batches = await database.queryFirst(
         `

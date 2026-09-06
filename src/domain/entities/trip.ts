@@ -70,6 +70,22 @@ export interface TripDestination {
   currencyCode?: string;
 }
 
+/**
+ * Optional departure / home place from picker facts.
+ * Not a TripDestination — never used as day clock
+ * and never listed in destinations.
+ */
+export interface TripOrigin {
+  name: string;
+  countryCode?: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+  timezoneSource?: DestinationTimezoneSource;
+  placeId?: string;
+  currencyCode?: string;
+}
+
 export interface Trip {
   id: TripId;
 
@@ -107,6 +123,12 @@ export interface Trip {
    * Explicit positive integer only when set.
    */
   partySize?: number;
+
+  /**
+   * Optional origin place (picker facts only).
+   * Not a competing destination for clocks or World.
+   */
+  origin?: TripOrigin;
 
   destinations: TripDestination[];
 

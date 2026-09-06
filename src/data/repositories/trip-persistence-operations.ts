@@ -43,10 +43,18 @@ export async function writeCanonicalTrip(
         theme_pack_id,
         party_type,
         party_size,
+        origin_name,
+        origin_country_code,
+        origin_latitude,
+        origin_longitude,
+        origin_timezone,
+        origin_timezone_source,
+        origin_place_id,
+        origin_currency_code,
         created_at,
         updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         title = excluded.title,
         status = excluded.status,
@@ -59,6 +67,17 @@ export async function writeCanonicalTrip(
         theme_pack_id = excluded.theme_pack_id,
         party_type = excluded.party_type,
         party_size = excluded.party_size,
+        origin_name = excluded.origin_name,
+        origin_country_code =
+          excluded.origin_country_code,
+        origin_latitude = excluded.origin_latitude,
+        origin_longitude = excluded.origin_longitude,
+        origin_timezone = excluded.origin_timezone,
+        origin_timezone_source =
+          excluded.origin_timezone_source,
+        origin_place_id = excluded.origin_place_id,
+        origin_currency_code =
+          excluded.origin_currency_code,
         updated_at = excluded.updated_at;
     `,
     [
@@ -73,6 +92,14 @@ export async function writeCanonicalTrip(
       trip.themePackId ?? null,
       trip.partyType ?? null,
       trip.partySize ?? null,
+      trip.origin?.name ?? null,
+      trip.origin?.countryCode ?? null,
+      trip.origin?.latitude ?? null,
+      trip.origin?.longitude ?? null,
+      trip.origin?.timezone ?? null,
+      trip.origin?.timezoneSource ?? null,
+      trip.origin?.placeId ?? null,
+      trip.origin?.currencyCode ?? null,
       trip.createdAt,
       trip.updatedAt,
     ],

@@ -7,6 +7,7 @@ import type {
 
 import {
   applyDestinationSelection,
+  buildTripOriginFromSelection,
   type DestinationSelection,
 } from './destination-authoring';
 
@@ -26,6 +27,7 @@ export interface NewTripInput {
   pace?: TripPace;
   partyType?: TripPartyType;
   partySize?: number;
+  origin?: DestinationSelection;
 }
 
 export interface NewTripIdentityFactory {
@@ -149,6 +151,9 @@ export function buildNewTrip(
     pace: input.pace,
     partyType: input.partyType,
     partySize: input.partySize,
+    origin: input.origin
+      ? buildTripOriginFromSelection(input.origin)
+      : undefined,
     destinations: input.destinations.map((destination) =>
       applyDestinationSelection(
         identities.destinationId(),

@@ -86,6 +86,87 @@ test(
 );
 
 test(
+  'new trip creation accepts an optional origin without adding it as a destination',
+  () => {
+    const trip = buildNewTrip(
+      makeInput({
+        origin: {
+          name: 'Thessaloniki, Greece',
+          countryCode: 'GR',
+          latitude: 40.6401,
+          longitude: 22.9444,
+          placeId: 'thessaloniki-origin',
+        },
+      }),
+      IDENTITIES,
+      TIMESTAMP,
+    );
+
+    assert.equal(
+      trip.origin?.name,
+      'Thessaloniki, Greece',
+    );
+    assert.equal(trip.origin?.countryCode, 'GR');
+    assert.equal(trip.destinations.length, 1);
+    assert.equal(
+      trip.destinations[0]?.name,
+      'Athens, Greece',
+    );
+    assert.equal(
+      trip.destinations.some(
+        (destination) =>
+          destination.name === 'Thessaloniki, Greece',
+      ),
+      false,
+    );
+  },
+);
+
+test(
+  'new trip origin persists through canonical SQLite storage',
+  async () => {
+    const database = new NodeSQLiteDatabase();
+    await migrateDatabase(database);
+
+    const trip = buildNewTrip(
+      makeInput({
+        origin: {
+          name: 'Athens, Greece',
+          countryCode: 'GR',
+          latitude: 37.9838,
+          longitude: 23.7275,
+          placeId: 'athens-origin',
+        },
+      }),
+      IDENTITIES,
+      TIMESTAMP,
+    );
+
+    await saveCanonicalTrip(database, trip);
+
+    const row = await database.queryFirst(
+      `
+        SELECT
+          origin_name,
+          origin_country_code,
+          origin_latitude,
+          origin_longitude,
+          origin_place_id
+        FROM trips
+        WHERE id = ?;
+      `,
+      [trip.id],
+    );
+
+    assert.equal(row.origin_name, 'Athens, Greece');
+    assert.equal(row.origin_country_code, 'GR');
+    assert.equal(row.origin_latitude, 37.9838);
+    assert.equal(row.origin_longitude, 23.7275);
+    assert.equal(row.origin_place_id, 'athens-origin');
+  },
+);
+
+test(
   'new trip creation accepts explicit trip party context',
   () => {
     const trip = buildNewTrip(

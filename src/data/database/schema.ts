@@ -99,6 +99,38 @@ CREATE TABLE IF NOT EXISTS trips (
 
     ),
 
+  origin_name TEXT,
+
+  origin_country_code TEXT,
+
+  origin_latitude REAL,
+
+  origin_longitude REAL,
+
+  origin_timezone TEXT,
+
+  origin_timezone_source TEXT
+
+    CHECK (
+
+      origin_timezone_source IS NULL OR
+
+      origin_timezone_source IN (
+
+        'provider',
+
+        'catalogue',
+
+        'traveler'
+
+      )
+
+    ),
+
+  origin_place_id TEXT,
+
+  origin_currency_code TEXT,
+
   created_at TEXT NOT NULL,
 
   updated_at TEXT NOT NULL

@@ -4,9 +4,11 @@ import type {
   TripDestination,
   TripId,
   TripIntent,
+  TripOrigin,
   TripPace,
   TripPartyType,
   TripStatus,
+  DestinationTimezoneSource,
 } from '../../domain/entities';
 import type {
   DatabaseConnection,
@@ -27,6 +29,14 @@ interface TripRow {
   theme_pack_id: string | null;
   party_type: string | null;
   party_size: number | null;
+  origin_name: string | null;
+  origin_country_code: string | null;
+  origin_latitude: number | null;
+  origin_longitude: number | null;
+  origin_timezone: string | null;
+  origin_timezone_source: string | null;
+  origin_place_id: string | null;
+  origin_currency_code: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -56,6 +66,37 @@ function sqlPlaceholders(
     { length: count },
     () => '?',
   ).join(', ');
+}
+
+function mapTripOrigin(
+  row: TripRow,
+): TripOrigin | undefined {
+  const name = row.origin_name?.trim();
+
+  if (!name) {
+    return undefined;
+  }
+
+  return {
+    name,
+    countryCode: row.origin_country_code ?? undefined,
+    latitude:
+      typeof row.origin_latitude === 'number'
+        ? row.origin_latitude
+        : undefined,
+    longitude:
+      typeof row.origin_longitude === 'number'
+        ? row.origin_longitude
+        : undefined,
+    timezone: row.origin_timezone ?? undefined,
+    timezoneSource:
+      (row.origin_timezone_source as
+        | DestinationTimezoneSource
+        | null) ?? undefined,
+    placeId: row.origin_place_id ?? undefined,
+    currencyCode:
+      row.origin_currency_code ?? undefined,
+  };
 }
 
 function mapTripRow(
@@ -89,6 +130,7 @@ function mapTripRow(
       typeof row.party_size === 'number'
         ? row.party_size
         : undefined,
+    origin: mapTripOrigin(row),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

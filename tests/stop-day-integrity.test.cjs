@@ -125,7 +125,7 @@ test(
       );
       assert.equal(stop.trip_id, 'trip-a');
       assert.equal(stop.day_id, 'day-a');
-      assert.equal(DATABASE_VERSION, 20);
+      assert.equal(DATABASE_VERSION, 21);
     } finally {
       database.close();
     }

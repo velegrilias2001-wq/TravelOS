@@ -280,6 +280,12 @@ export default function NewTripScreen() {
     );
 
   const [
+    origin,
+    setOrigin,
+  ] =
+    useState<DestinationSelection | null>(null);
+
+  const [
     startDate,
     setStartDate,
   ] =
@@ -621,6 +627,8 @@ export default function NewTripScreen() {
               partyType,
 
               partySize,
+
+              origin: origin ?? undefined,
             },
 
             {
@@ -992,6 +1000,54 @@ export default function NewTripScreen() {
                     />
                   </View>
                 ) : null}
+
+                <View style={styles.originBlock}>
+                  <Text style={styles.fieldLabel}>
+                    ORIGIN · OPTIONAL
+                  </Text>
+                  <Text style={styles.helperText}>
+                    Where you leave from. Picker facts only — not a destination on this trip, and never used as the day clock.
+                  </Text>
+                  <DestinationPickerField
+                    label="LEAVING FROM"
+                    destination={origin}
+                    disabled={isSaving}
+                    onSelect={(selection) =>
+                      setOrigin(
+                        preserveSelectionEnrichment(
+                          origin ?? selection,
+                          selection,
+                        ),
+                      )
+                    }
+                    onTimeZoneChange={(timezone) => {
+                      setOrigin((current) =>
+                        current
+                          ? assignTravelerTimeZoneToSelection(
+                              current,
+                              timezone,
+                            )
+                          : current,
+                      );
+                    }}
+                  />
+                  {origin ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Clear origin"
+                      disabled={isSaving}
+                      style={({ pressed }) => [
+                        styles.secondaryTextButton,
+                        pressed && styles.pressed,
+                      ]}
+                      onPress={() => setOrigin(null)}
+                    >
+                      <Text style={styles.secondaryTextButtonLabel}>
+                        Clear origin
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
               </>
             ) : null}
 
@@ -1075,6 +1131,11 @@ export default function NewTripScreen() {
                       .map((item) => item.name)
                       .join(' · ')}
                   </Text>
+                  {origin ? (
+                    <Text style={styles.reviewMeta}>
+                      From {origin.name}
+                    </Text>
+                  ) : null}
                   <Text style={styles.reviewMeta}>
                     {startDate && endDate
                       ? `${startDate} → ${endDate}`
@@ -1952,6 +2013,25 @@ const styles =
 
     destinationAddAfter: {
       paddingTop: spacing[1],
+    },
+
+    originBlock: {
+      gap: spacing[2],
+      paddingTop: spacing[5],
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+
+    secondaryTextButton: {
+      minHeight: 44,
+      alignItems: 'flex-start',
+      justifyContent: 'center',
+    },
+
+    secondaryTextButtonLabel: {
+      fontFamily: fontFamily.sansSemiBold,
+      fontSize: fontSize.bodySmall,
+      color: colors.brand,
     },
 
     destinationActions: {
