@@ -1,4 +1,7 @@
-import type { Booking } from '@/domain/entities/booking';
+import type {
+  Booking,
+  BookingType,
+} from '@/domain/entities/booking';
 import type {
   ImportBatch,
   ImportClaim,
@@ -36,6 +39,20 @@ export interface ImportClaimConflict {
   kind: ImportClaimConflictKind;
   detail: string;
   bookingId?: string;
+}
+
+/**
+ * Traveler-edited fields applied when accepting a booking claim.
+ * Empty strings clear optional fields. Missing keys keep claim defaults.
+ */
+export interface ImportBookingAcceptOverrides {
+  type?: BookingType;
+  title?: string;
+  provider?: string;
+  confirmationCode?: string;
+  externalUrl?: string;
+  startAt?: string;
+  endAt?: string;
 }
 
 export interface ImportClaimListing {
@@ -263,6 +280,7 @@ export class ImportReviewService {
   async accept(
     claimId: ImportClaimId,
     tripId: TripId,
+    overrides: ImportBookingAcceptOverrides = {},
   ): Promise<ImportClaim> {
     const claim = await this.repos.imports.getClaim(claimId);
 
@@ -323,6 +341,7 @@ export class ImportReviewService {
       tripId,
       claim,
       createdAt,
+      overrides,
     });
 
     validateNewBookingTimes(booking);
@@ -436,7 +455,9 @@ function buildImportedBooking(input: {
   tripId: TripId;
   claim: ImportClaim;
   createdAt: string;
+  overrides?: ImportBookingAcceptOverrides;
 }): Booking {
+  const overrides = input.overrides ?? {};
   const notes = [
     'Imported from calendar.',
     input.claim.locationText
@@ -452,18 +473,45 @@ function buildImportedBooking(input: {
     .filter((line): line is string => Boolean(line))
     .join('\n');
 
+  const title =
+    optionalOverrideText(overrides.title) ??
+    input.claim.title;
+  const provider = optionalOverrideText(overrides.provider);
+  const confirmationCode = optionalOverrideText(
+    overrides.confirmationCode,
+  );
+  const externalUrl = optionalOverrideText(overrides.externalUrl);
+
   return {
     id: input.id,
     tripId: input.tripId,
-    type: 'other',
+    type: overrides.type ?? 'other',
     status: 'planned',
-    title: input.claim.title,
-    startAt: input.claim.startAt,
-    endAt: input.claim.endAt,
+    title,
+    provider,
+    confirmationCode,
+    externalUrl,
+    startAt:
+      optionalOverrideText(overrides.startAt) ??
+      input.claim.startAt,
+    endAt:
+      optionalOverrideText(overrides.endAt) ??
+      input.claim.endAt,
     notes,
     createdAt: input.createdAt,
     updatedAt: input.createdAt,
   };
+}
+
+function optionalOverrideText(
+  value: string | undefined,
+): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed || undefined;
 }
 
 function conflictsForClaim(

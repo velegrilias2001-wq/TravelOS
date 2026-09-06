@@ -172,6 +172,28 @@ test('accepting a claim writes a planned booking without inventing confirmation 
   assert.equal('latitude' in booking, false);
 });
 
+test('accept overrides apply traveler-edited booking fields without inventing missing ones', async () => {
+  const { service, bookings } = createMemoryService();
+
+  const batch = await service.ingestIcs({ text: FLIGHT });
+  const [flight] = (await service.listClaimReviews(batch.id)).listings;
+
+  await service.accept(flight.claim.id, 'trip-1', {
+    type: 'flight',
+    provider: 'TAP',
+    confirmationCode: 'ABC123',
+    externalUrl: 'https://example.com/booking',
+  });
+
+  const booking = [...bookings.values()][0];
+
+  assert.equal(booking.type, 'flight');
+  assert.equal(booking.provider, 'TAP');
+  assert.equal(booking.confirmationCode, 'ABC123');
+  assert.equal(booking.externalUrl, 'https://example.com/booking');
+  assert.equal(booking.startAt, '2026-09-15T08:00:00');
+});
+
 test('the same calendar is ingested once and unknown trips fail closed', async () => {
   const { service } = createMemoryService();
 

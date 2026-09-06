@@ -13,16 +13,18 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
-import type { Trip } from '@/domain/entities';
+import type { BookingType, Trip } from '@/domain/entities';
 import { formatBookingTemporalValue } from '@/services/booking-time';
 import {
   tripDestinationLabel,
 } from '@/services/destination-authoring';
 import type {
+  ImportBookingAcceptOverrides,
   ImportClaimListing,
 } from '@/services/import-review-service';
 import { buildImportSeedTripHandoff } from '@/services/import-seed-handoff';
@@ -138,7 +140,10 @@ export default function ImportReviewScreen() {
     }, [batchId, selectedTripId]),
   );
 
-  const accept = async (listing: ImportClaimListing) => {
+  const accept = async (
+    listing: ImportClaimListing,
+    overrides: ImportBookingAcceptOverrides = {},
+  ) => {
     if (!selectedTripId) {
       setError('Choose a trip before accepting a claim.');
       return;
@@ -148,6 +153,7 @@ export default function ImportReviewScreen() {
       await importReviewService.accept(
         listing.claim.id,
         selectedTripId,
+        overrides,
       );
       await reload();
     } catch (caught) {
@@ -304,8 +310,8 @@ export default function ImportReviewScreen() {
                 key={listing.claim.id}
                 listing={listing}
                 canAccept={Boolean(selectedTrip)}
-                onAccept={() => {
-                  void accept(listing);
+                onAccept={(overrides) => {
+                  void accept(listing, overrides);
                 }}
                 onStartCreateTrip={() => {
                   void startCreateTripFromSeed(listing);
@@ -373,7 +379,7 @@ function ClaimCard({
 }: {
   listing: ImportClaimListing;
   canAccept: boolean;
-  onAccept(): void;
+  onAccept(overrides: ImportBookingAcceptOverrides): void;
   onStartCreateTrip(): void;
   onAcknowledgeLine(): void;
   onDismiss(): void;
@@ -388,6 +394,12 @@ function ClaimCard({
       : claim.kind === 'itinerary_line'
         ? 'ITINERARY LINE'
         : 'BOOKING';
+
+  const [bookingType, setBookingType] =
+    useState<BookingType>('other');
+  const [provider, setProvider] = useState('');
+  const [confirmationCode, setConfirmationCode] = useState('');
+  const [externalUrl, setExternalUrl] = useState('');
 
   return (
     <View style={styles.card}>
@@ -456,21 +468,97 @@ function ClaimCard({
       ) : null}
 
       {pending && claim.kind === 'booking' ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Accept ${claim.title} as a booking`}
-          disabled={!canAccept}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            !canAccept && styles.primaryButtonDisabled,
-            pressed && styles.pressed,
-          ]}
-          onPress={onAccept}
-        >
-          <Text style={styles.primaryButtonText}>
-            Accept as planned booking
+        <View style={styles.acceptEditor}>
+          <Text style={styles.acceptEditorLabel}>
+            EDIT BEFORE ACCEPT
           </Text>
-        </Pressable>
+          <Text style={styles.cardDetail}>
+            Optional fields stay empty when blank. Nothing is invented.
+          </Text>
+          <View style={styles.typeRow}>
+            {(
+              [
+                'flight',
+                'train',
+                'ferry',
+                'accommodation',
+                'other',
+              ] as BookingType[]
+            ).map((type) => {
+              const selected = bookingType === type;
+
+              return (
+                <Pressable
+                  key={type}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected }}
+                  style={[
+                    styles.typeChip,
+                    selected && styles.typeChipSelected,
+                  ]}
+                  onPress={() => setBookingType(type)}
+                >
+                  <Text
+                    style={[
+                      styles.typeChipText,
+                      selected && styles.typeChipTextSelected,
+                    ]}
+                  >
+                    {type}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <TextInput
+            accessibilityLabel="Provider"
+            placeholder="Provider"
+            placeholderTextColor={colors.textMuted}
+            value={provider}
+            onChangeText={setProvider}
+            style={styles.input}
+          />
+          <TextInput
+            accessibilityLabel="Confirmation code"
+            placeholder="Confirmation code"
+            placeholderTextColor={colors.textMuted}
+            value={confirmationCode}
+            onChangeText={setConfirmationCode}
+            autoCapitalize="characters"
+            style={styles.input}
+          />
+          <TextInput
+            accessibilityLabel="Booking link"
+            placeholder="Booking link (https://…)"
+            placeholderTextColor={colors.textMuted}
+            value={externalUrl}
+            onChangeText={setExternalUrl}
+            autoCapitalize="none"
+            style={styles.input}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Accept ${claim.title} as a booking`}
+            disabled={!canAccept}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              !canAccept && styles.primaryButtonDisabled,
+              pressed && styles.pressed,
+            ]}
+            onPress={() =>
+              onAccept({
+                type: bookingType,
+                provider,
+                confirmationCode,
+                externalUrl,
+              })
+            }
+          >
+            <Text style={styles.primaryButtonText}>
+              Accept as planned booking
+            </Text>
+          </Pressable>
+        </View>
       ) : null}
 
       {pending ? (
@@ -621,6 +709,61 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
     color: colors.textSecondary,
+  },
+
+  acceptEditor: {
+    gap: spacing[2],
+    marginTop: spacing[2],
+  },
+
+  acceptEditorLabel: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.2,
+    color: colors.brass,
+  },
+
+  typeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+  },
+
+  typeChip: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  typeChipSelected: {
+    borderColor: colors.teal,
+    backgroundColor: colors.tealSoft,
+  },
+
+  typeChipText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.textSecondary,
+    textTransform: 'capitalize',
+  },
+
+  typeChipTextSelected: {
+    color: colors.teal,
+  },
+
+  input: {
+    minHeight: 48,
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
   },
 
   conflict: {
