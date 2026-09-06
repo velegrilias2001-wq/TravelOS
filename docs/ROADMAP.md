@@ -87,10 +87,11 @@ Goal: make TravelOS useful and correct while the traveler is moving.
 - [x] **Stop lived phase V1** — explicit done/skipped stop progress without rewriting Plan times. Delayed is derived from the clock. `TripRuntimeState` is written only as a pointer to the last explicit lived stop. Migration version 17. Automated tests exist. An Android Pixel 8 rebuild on 2026-09-03 ran version 17. A later pass marked isolated Lisbon `RehearsalCoffee` Done without rewriting Plan.
 - [x] **Plan lived badges V1** — Plan shows Done/Skipped from those explicit marks without rewriting saved times. Delayed is not a Plan badge. Marks remain Companion actions. Automated tests exist. An Android Pixel 8 pass on 2026-09-03 showed Plan DONE on `RehearsalCoffee` after Companion Done.
 - [x] **Map day framing + directions V1** — Map frames the assigned Day → Destination city and that day’s mapped stops when Companion has a display day. Unassigned days do not borrow another city’s coordinates. View all still fits every saved destination and stop. Directions open Apple Maps or Google Maps on the saved pin only. No route, ETA, or accommodation coordinates. Automated tests exist. No device rehearsal.
+- [x] **Trip notifications V1** — Profile opt-in local reminders via `expo-notifications` (migration 19). Schedules 15 minutes before canonical timed stop starts when a destination IANA timezone is known. Fail closed without timezone, permission, or for settled/completed trips. No push provider. Native rebuild required.
 - [ ] **Deferred — real routes and ETAs** — Directions still hand a saved pin to Apple Maps or Google Maps. Do not invent travel times. A real routing provider is later work.
 - [x] **Companion plan-change notice V1** — when saved dates, day city assignment, stops, bookings, or stays change while Companion is already showing that trip, a dismissible notice states that NOW/NEXT follow SQLite. First load, trip switch, done/skipped marks, and clock refresh stay silent. Lived phases are not auto-rewritten. Session-only. Automated tests exist. No device rehearsal.
 - [x] **Offline essential context V1** — SQLite is the durable cache for trip, booking, stay, and saved map-pin facts. `expo-network` observes reachability; unknown does not invent online or offline. Companion and Map name on-device facts, missing coordinates, and that live tiles/lookup need a network. Directions still use a saved pin; there is no cached route and no offline tile pack. Automated tests exist. An Android Pixel 8 native rebuild on 2026-09-03 linked `expo-network` 57.0.1; Companion and Map opened. Airplane-mode offline copy was not rehearsed.
-- [ ] **Deferred — notifications** — only after picker/API timezone and Companion truth rules are stable on device.
+- [x] ~~Deferred — notifications~~ → **Trip notifications V1** (above).
 
 Exit condition: Companion presents the correct travel context and remains trustworthy during connectivity, timing, and plan changes.
 
@@ -192,7 +193,7 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 - [x] **Android EAS preview build V1** — `GOOGLE_MAPS_API_KEY` stored as EAS env secret for development/preview/production; `eas.json` profiles declare matching `environment`; remote Android keystore created on Expo; preview APKs built 2026-09-05 (`ca98eafd-e956-4e05-9a62-78aeddfdfa94`, then tab-bar `817e2c05-c1b6-4cbd-9160-fe9e2987297f` on commit `a36f2b5`). Play tracks and Maps package/SHA restriction verification remain open.
 - Define accounts, identity, guest conversion, shared-trip permissions, and data ownership (**design still open** — do not invent cloud identity in this pass).
 - Design backend sync and conflict resolution around SQLite-backed canonical IDs (**later**; local export/restore remains the durable backup path).
-- Add notifications after platform permission, timezone, and Companion rules are complete (Time Zone enrichment V1 is in; notifications remain the next parked slice).
+- Add notifications after platform permission, timezone, and Companion rules are complete — **Trip notifications V1 done** (local stop-start reminders).
 - Add privacy-aware crash reporting, performance monitoring, structured diagnostics, and operational alerts.
 - [x] **CI / migration / rollback procedure V1** — local release gates are `npx tsc --noEmit`, `npm test`, `cd server && npm test`, `npm run lint`, and `git diff --check`. GitHub Actions workflow is committed; this branch still needs `git push -u origin HEAD` before CI runs remotely. Migrations stay forward-only (never edit shipped migrations). Rollback without cloud sync: keep a Profile JSON export before destructive restore; revert native clients by installing a prior APK/AAB; SQLite has no automatic cloud undo.
 
@@ -245,7 +246,7 @@ These stay later. They were not implemented in this pass. iOS rebuild is last.
 
 - [x] Picker Time Zone enrichment V1 (local-dev `POST /geo/timezone` + dedicated Time Zone API key). Traveler IANA override remains.
 - Real in-app routes and ETAs. Saved-pin directions stay. Do not invent travel times.
-- Notifications, only after timezone truth is stable on device (Time Zone V1 unblocks product work; device scheduling still open).
+- [x] Trip notifications V1 (local stop-start reminders; opt-in; canonical timezone required).
 - Discover reranking. Do not install a BGE reranker until a real `/api/rerank` path can be measured.
 - Confirmation-photo OCR, only with an extractor that cannot write bookings.
 - Phase 5 visual/function matrix remainder: closed on Pixel 8 on 2026-09-03. Phase 5 polish V1 closed in code. Android rebuild on 2026-09-05 linked haptics/sharing. iOS last.

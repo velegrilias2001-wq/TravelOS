@@ -92,6 +92,16 @@ export class TripWorkspaceLifecycle {
 
     await this.refreshIfNeeded();
 
+    void import(
+      '../../services/trip-notifications-runtime.js',
+    )
+      .then((module) =>
+        module.reconcileTripNotifications(),
+      )
+      .catch(() => {
+        // Native notification module may be unavailable in Node tests.
+      });
+
     return result;
   }
 

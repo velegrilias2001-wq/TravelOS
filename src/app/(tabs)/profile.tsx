@@ -322,10 +322,13 @@ export default function ProfileScreen() {
 
         <View style={styles.rowDivider} />
 
-        <FutureRow
+        <ActiveRow
           icon="notifications-outline"
           title="Trip notifications"
-          body="Useful reminders and live-trip alerts when they matter."
+          body="Local reminders before timed stops when a destination timezone is saved."
+          onPress={() =>
+            router.push('/trip-notifications' as never)
+          }
         />
 
         <View style={styles.rowDivider} />

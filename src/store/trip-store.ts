@@ -42,6 +42,12 @@ export const useTripStore =
           trips,
           isLoading: false,
         });
+
+        void import(
+          '@/services/trip-notifications-runtime'
+        ).then((module) =>
+          module.reconcileTripNotifications(),
+        );
       } catch (error) {
         set({
           isLoading: false,
@@ -66,6 +72,12 @@ export const useTripStore =
           trips,
           isLoading: false,
         });
+
+        void import(
+          '@/services/trip-notifications-runtime'
+        ).then((module) =>
+          module.reconcileTripNotifications(),
+        );
       } catch (error) {
         set({
           isLoading: false,
@@ -90,6 +102,12 @@ export const useTripStore =
           trips,
           isLoading: false,
         });
+
+        void import(
+          '@/services/trip-notifications-runtime'
+        ).then((module) =>
+          module.reconcileTripNotifications(),
+        );
       } catch (error) {
         set({
           isLoading: false,

@@ -24,6 +24,7 @@ import {
 
 import { useEffect, useState } from 'react';
 import {
+  AppState,
   Pressable,
   StyleSheet,
   Text,
@@ -33,6 +34,7 @@ import {
 
 import { travelOSDatabase } from '@/data/database/expo-sqlite-database';
 import { runPersistenceSelfTestOnce } from '@/lib/persistence-self-test';
+import { reconcileTripNotifications } from '@/services/trip-notifications-runtime';
 import { useTripStore } from '@/store/trip-store';
 import {
   colors,
@@ -93,6 +95,8 @@ export default function RootLayout() {
           .getState()
           .loadTrips();
 
+        void reconcileTripNotifications();
+
         console.log(
           '[TravelOS] Bootstrap ready',
         );
@@ -131,6 +135,25 @@ export default function RootLayout() {
     fontsLoaded,
     fontError,
   ]);
+
+  useEffect(() => {
+    if (bootstrapStatus !== 'ready') {
+      return;
+    }
+
+    const subscription = AppState.addEventListener(
+      'change',
+      (nextState) => {
+        if (nextState === 'active') {
+          void reconcileTripNotifications();
+        }
+      },
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, [bootstrapStatus]);
 
   if (
     bootstrapStatus === 'loading' ||

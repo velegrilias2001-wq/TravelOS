@@ -324,6 +324,30 @@ CREATE TABLE IF NOT EXISTS travel_dna (
 
 );
 
+CREATE TABLE IF NOT EXISTS notification_preferences (
+
+  singleton_key INTEGER PRIMARY KEY NOT NULL
+
+    CHECK (singleton_key = 1),
+
+  enabled INTEGER NOT NULL
+
+    CHECK (enabled IN (0, 1)),
+
+  lead_minutes INTEGER NOT NULL
+
+    CHECK (
+
+      lead_minutes >= 5 AND
+
+      lead_minutes <= 180
+
+    ),
+
+  updated_at TEXT NOT NULL
+
+);
+
 CREATE TABLE IF NOT EXISTS bookings (
 
   id TEXT PRIMARY KEY NOT NULL,

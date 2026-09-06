@@ -33,6 +33,7 @@
     "src/data/repositories/trip-persistence-operations.ts",
     "src/data/repositories/trip-destination-persistence.ts",
     "src/data/repositories/trip-list-persistence.ts",
+    "src/data/repositories/notification-preferences-persistence.ts",
 
     "src/domain/entities/**/*.ts",
 
@@ -57,6 +58,7 @@
     "src/services/home-runtime.ts",
     "src/services/destination-authoring.ts",
     "src/services/timezone-lookup.ts",
+    "src/services/trip-notifications.ts",
     "src/services/companion.ts",
     "src/services/companion-itinerary-change.ts",
     "src/services/companion-refresh.ts",

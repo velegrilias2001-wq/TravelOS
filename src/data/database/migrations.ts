@@ -21,7 +21,7 @@ import {
   reconcileStopDayRelationships,
 } from './stop-day-integrity-migration';
 
-export const DATABASE_VERSION = 18;
+export const DATABASE_VERSION = 19;
 
 interface UserVersionRow {
   user_version: number;
@@ -1619,5 +1619,28 @@ export async function migrateDatabase(
         `);
       },
     );
+  }
+
+  /**
+   * Version 19
+   * Local trip notification preferences (opt-in master toggle).
+   */
+  if (currentVersion < 19) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS notification_preferences (
+        singleton_key INTEGER PRIMARY KEY NOT NULL
+          CHECK (singleton_key = 1),
+        enabled INTEGER NOT NULL
+          CHECK (enabled IN (0, 1)),
+        lead_minutes INTEGER NOT NULL
+          CHECK (
+            lead_minutes >= 5 AND
+            lead_minutes <= 180
+          ),
+        updated_at TEXT NOT NULL
+      );
+
+      PRAGMA user_version = 19;
+    `);
   }
 }

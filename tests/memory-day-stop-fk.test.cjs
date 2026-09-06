@@ -143,8 +143,8 @@ test(
         await database.queryFirst(
           'PRAGMA user_version;',
         );
-      assert.equal(version.user_version, 18);
-      assert.equal(DATABASE_VERSION, 18);
+      assert.equal(version.user_version, DATABASE_VERSION);
+      assert.equal(DATABASE_VERSION, 19);
 
       const foreignKeys = await database.query(
         'PRAGMA foreign_key_list(memories);',
@@ -525,8 +525,8 @@ test(
         await database.queryFirst(
           'PRAGMA user_version;',
         );
-      assert.equal(version.user_version, 18);
-      assert.equal(DATABASE_VERSION, 18);
+      assert.equal(version.user_version, DATABASE_VERSION);
+      assert.equal(DATABASE_VERSION, 19);
 
       const afterKeys = await database.query(
         'PRAGMA foreign_key_list(memories);',

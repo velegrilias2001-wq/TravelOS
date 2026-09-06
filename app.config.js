@@ -73,6 +73,14 @@ module.exports = ({ config }) => {
         },
       ],
       [
+        'expo-notifications',
+        {
+          icon: './assets/images/icon.png',
+          color: '#1F4B45',
+          defaultChannel: 'trip-reminders',
+        },
+      ],
+      [
         'react-native-maps',
         {
           androidGoogleMapsApiKey:
