@@ -102,6 +102,7 @@
     "src/services/discover-semantic.ts",
     "src/services/discover-rerank.ts",
     "src/services/discover-explain.ts",
+    "src/services/discover-compare.ts",
     "src/services/discover-best-time.ts",
     "src/data/discover/curated-journeys.ts",
     "src/services/discover-journeys.ts",

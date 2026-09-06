@@ -14,7 +14,9 @@ import {
 
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -76,6 +78,11 @@ import {
   assertGroundedDiscoverExplanation,
   prepareDiscoverExplanationRequest,
 } from '@/services/discover-explain';
+
+import {
+  compareDiscoverDestinations,
+  type DiscoverCompareResult,
+} from '@/services/discover-compare';
 
 import {
   buildDiscoverTripPrefill,
@@ -349,6 +356,21 @@ export default function DiscoverResultsScreen() {
     setSavedIdentities,
   ] = useState<string[]>([]);
 
+  const [
+    compareIdentities,
+    setCompareIdentities,
+  ] = useState<string[]>([]);
+
+  const [
+    compareOpen,
+    setCompareOpen,
+  ] = useState(false);
+
+  const [
+    compareError,
+    setCompareError,
+  ] = useState<string | null>(null);
+
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -430,6 +452,78 @@ export default function DiscoverResultsScreen() {
       travelDNALoaded,
     ],
   );
+
+  const compareResult = useMemo(():
+    | DiscoverCompareResult
+    | null => {
+    if (
+      !brief ||
+      !travelDNALoaded ||
+      compareIdentities.length < 2
+    ) {
+      return null;
+    }
+
+    try {
+      return compareDiscoverDestinations({
+        brief,
+        travelDNA: effectiveTravelDNA,
+        identities: compareIdentities,
+      });
+    } catch {
+      return null;
+    }
+  }, [
+    brief,
+    compareIdentities,
+    effectiveTravelDNA,
+    travelDNALoaded,
+  ]);
+
+  const toggleCompareIdentity = (
+    identity: string,
+  ) => {
+    setCompareError(null);
+    setCompareIdentities((current) => {
+      if (current.includes(identity)) {
+        return current.filter((id) => id !== identity);
+      }
+
+      if (current.length >= 3) {
+        setCompareError(
+          'Compare up to three grounded destinations.',
+        );
+        return current;
+      }
+
+      return [...current, identity];
+    });
+  };
+
+  const openCompare = () => {
+    if (!brief || compareIdentities.length < 2) {
+      setCompareError(
+        'Select 2 or 3 destinations to compare.',
+      );
+      return;
+    }
+
+    try {
+      compareDiscoverDestinations({
+        brief,
+        travelDNA: effectiveTravelDNA,
+        identities: compareIdentities,
+      });
+      setCompareError(null);
+      setCompareOpen(true);
+    } catch (error) {
+      setCompareError(
+        error instanceof Error
+          ? error.message
+          : 'Those destinations could not be compared.',
+      );
+    }
+  };
 
   useEffect(() => {
     if (!brief || !travelDNALoaded) {
@@ -959,6 +1053,14 @@ export default function DiscoverResultsScreen() {
                       match.candidate.id,
                     )
                   }
+                  compareSelected={compareIdentities.includes(
+                    match.candidate.id,
+                  )}
+                  onToggleCompare={() =>
+                    toggleCompareIdentity(
+                      match.candidate.id,
+                    )
+                  }
                   onChoose={() =>
                     chooseDestination(
                       match.candidate
@@ -1084,6 +1186,14 @@ export default function DiscoverResultsScreen() {
                       )}
                       onToggleSaved={() =>
                         toggleSaved(
+                          match.candidate.id,
+                        )
+                      }
+                      compareSelected={compareIdentities.includes(
+                        match.candidate.id,
+                      )}
+                      onToggleCompare={() =>
+                        toggleCompareIdentity(
                           match.candidate.id,
                         )
                       }
@@ -1297,6 +1407,124 @@ export default function DiscoverResultsScreen() {
         </View>
       </View>
 
+      {compareError ? (
+        <Text style={styles.compareError}>
+          {compareError}
+        </Text>
+      ) : null}
+
+      {compareIdentities.length > 0 ? (
+        <View style={styles.compareBar}>
+          <Text style={styles.compareBarCopy}>
+            {compareIdentities.length}/3 selected for compare
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Compare selected destinations"
+            disabled={compareIdentities.length < 2}
+            style={({ pressed }) => [
+              styles.compareBarButton,
+              compareIdentities.length < 2 &&
+                styles.compareBarButtonDisabled,
+              pressed && styles.destinationCardPressed,
+            ]}
+            onPress={openCompare}
+          >
+            <Text style={styles.compareBarButtonText}>
+              Compare
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      <Modal
+        visible={compareOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setCompareOpen(false)}
+      >
+        <View style={styles.compareModalBackdrop}>
+          <View style={styles.compareModalSheet}>
+            <Text style={styles.compareModalEyebrow}>
+              TRADEOFF COMPARE
+            </Text>
+            <Text style={styles.compareModalTitle}>
+              Grounded catalogue only
+            </Text>
+            <Text style={styles.compareModalBody}>
+              Rows use your brief or Travel DNA. Empty catalogue evidence stays Unknown — nothing is invented.
+            </Text>
+
+            {compareResult ? (
+              <ScrollView
+                horizontal
+                style={styles.compareScroll}
+              >
+                <View>
+                  <View style={styles.compareHeaderRow}>
+                    <Text style={styles.compareDimCell}>
+                      Dimension
+                    </Text>
+                    {compareResult.columns.map((column) => (
+                      <Text
+                        key={column.identity}
+                        style={styles.comparePlaceCell}
+                      >
+                        {column.name}
+                      </Text>
+                    ))}
+                  </View>
+                  {compareResult.rows.length === 0 ? (
+                    <Text style={styles.compareModalBody}>
+                      No active preference dimensions to compare.
+                    </Text>
+                  ) : (
+                    compareResult.rows.map((row) => (
+                      <View
+                        key={row.dimension}
+                        style={styles.compareHeaderRow}
+                      >
+                        <View style={styles.compareDimCell}>
+                          <Text style={styles.compareDimLabel}>
+                            {row.dimension.replace('_', ' ')}
+                          </Text>
+                          <Text style={styles.compareDimPref}>
+                            {row.preferenceLabel}
+                          </Text>
+                        </View>
+                        {row.cells.map((cell) => (
+                          <Text
+                            key={`${row.dimension}-${cell.identity}`}
+                            style={styles.comparePlaceCell}
+                          >
+                            {cell.status === 'match'
+                              ? 'Match'
+                              : cell.status === 'no_match'
+                                ? 'No match'
+                                : 'Unknown'}
+                          </Text>
+                        ))}
+                      </View>
+                    ))
+                  )}
+                </View>
+              </ScrollView>
+            ) : null}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close compare"
+              style={styles.compareCloseButton}
+              onPress={() => setCompareOpen(false)}
+            >
+              <Text style={styles.compareBarButtonText}>
+                Close
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
       <View
         style={styles.bottomSpace}
       />
@@ -1310,8 +1538,10 @@ function DestinationMatchCard({
   match,
   explanation,
   saved,
+  compareSelected,
   onAskExplanation,
   onToggleSaved,
+  onToggleCompare,
   onChoose,
 }: {
   rank?: number;
@@ -1319,8 +1549,10 @@ function DestinationMatchCard({
   match: DiscoverMatch;
   explanation?: DiscoverExplanationState;
   saved: boolean;
+  compareSelected: boolean;
   onAskExplanation(): void;
   onToggleSaved(): void;
+  onToggleCompare(): void;
   onChoose(): void;
 }) {
   const destination =
@@ -1615,6 +1847,24 @@ function DestinationMatchCard({
           </Text>
         </Pressable>
       )}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          compareSelected
+            ? `Remove ${destination.name} from compare`
+            : `Add ${destination.name} to compare`
+        }
+        accessibilityState={{ selected: compareSelected }}
+        onPress={onToggleCompare}
+        style={styles.explainButton}
+      >
+        <Text style={styles.explainButtonText}>
+          {compareSelected
+            ? 'Selected for compare'
+            : 'Add to compare'}
+        </Text>
+      </Pressable>
 
       <Pressable
         accessibilityRole="button"
@@ -2412,6 +2662,132 @@ const styles =
         colors.textInverse,
     },
 
+    compareError: {
+      marginTop: spacing[4],
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      color: colors.danger,
+    },
+
+    compareBar: {
+      marginTop: spacing[5],
+      padding: spacing[4],
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing[3],
+    },
+
+    compareBarCopy: {
+      flex: 1,
+      fontFamily: fontFamily.sansMedium,
+      fontSize: fontSize.caption,
+      color: colors.textSecondary,
+    },
+
+    compareBarButton: {
+      minHeight: 44,
+      paddingHorizontal: spacing[4],
+      borderRadius: radius.md,
+      backgroundColor: colors.brand,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    compareBarButtonDisabled: {
+      opacity: 0.45,
+    },
+
+    compareBarButtonText: {
+      fontFamily: fontFamily.sansSemiBold,
+      fontSize: fontSize.bodySmall,
+      color: colors.textInverse,
+    },
+
+    compareModalBackdrop: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      backgroundColor: 'rgba(0,0,0,0.4)',
+    },
+
+    compareModalSheet: {
+      maxHeight: '80%',
+      gap: spacing[3],
+      padding: spacing[5],
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      backgroundColor: colors.background,
+    },
+
+    compareModalEyebrow: {
+      fontFamily: fontFamily.sansBold,
+      fontSize: fontSize.micro,
+      letterSpacing: 1.4,
+      color: colors.brass,
+    },
+
+    compareModalTitle: {
+      fontFamily: fontFamily.serifSemiBold,
+      fontSize: fontSize.titleSmall,
+      color: colors.textPrimary,
+    },
+
+    compareModalBody: {
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      color: colors.textSecondary,
+    },
+
+    compareScroll: {
+      maxHeight: 320,
+    },
+
+    compareHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing[3],
+      paddingVertical: spacing[2],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+
+    compareDimCell: {
+      width: 120,
+    },
+
+    compareDimLabel: {
+      fontFamily: fontFamily.sansBold,
+      fontSize: fontSize.micro,
+      color: colors.teal,
+      textTransform: 'uppercase',
+    },
+
+    compareDimPref: {
+      marginTop: spacing[1],
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      color: colors.textSecondary,
+    },
+
+    comparePlaceCell: {
+      width: 110,
+      fontFamily: fontFamily.sansMedium,
+      fontSize: fontSize.caption,
+      color: colors.textPrimary,
+    },
+
+    compareCloseButton: {
+      minHeight: 48,
+      marginTop: spacing[2],
+      borderRadius: radius.lg,
+      backgroundColor: colors.brand,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     bottomSpace: {
       height: spacing[12],
     },
