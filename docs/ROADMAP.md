@@ -152,7 +152,7 @@ These steps are ordered. Grounded destination data must exist before semantic re
 - [ ] **Deferred — iOS rebuild** — last. Rehearse migration 3, ICS file picker, and the rest of native import on an iOS development build. Windows cannot do this.
 - [x] **Import and AI confirmation gates** — OCR and calendar extractors feed the review queue only. Import claims still require explicit review before a booking is written. Plan ideas and Discover explanations cannot become stops or destinations on their own.
 - [x] **No silent canonical facts** — Discover, import claims, and AI suggestions remain visibly separate from trip truth until the traveler confirms through the existing Create Trip, import-accept, or stop-editor paths.
-- [x] **Local-dev AI boundary V1** — production provider is none. The native client uses a loopback AI URL only; a cloud host in `EXPO_PUBLIC_TRAVELOS_AI_URL` is ignored. No cloud retention, no billed cost, unreachable AI degrades, and advice cannot write SQLite. Automated tests exist. No device rehearsal.
+- [x] **Local-dev AI boundary V1** — advice cannot write SQLite; unreachable AI degrades; no provider keys in the client. Originally loopback-only; later Absolute Travel Intelligence T0 allows HTTPS TravelOS proxy URLs for preview/production (`resolveTravelOsAiBaseUrl`). Automated tests exist.
 - [x] **Local-dev AI provider abstraction V1** — `server/ai-provider.js` + env model IDs, copilot prompt file, tool registry (available vs not_configured), feature flags including `AI_RERANK_ENABLED` and `AI_VISION_ENABLED`. Free-time / retrieve / explain / rerank / OCR routes stay fail-closed. No HF production token in the client, no chat UI, no Whisper, no BGE reranker install.
 
 Exit condition: discovery and import reduce planning effort while every unconfirmed claim remains visibly separate from trip truth.
@@ -203,7 +203,7 @@ Exit condition: TravelOS can be built, tested, observed, restored, and released 
 
 Living analysis track: [`docs/PWA_PARITY_AND_TRAVEL_AI_TRACK.md`](./PWA_PARITY_AND_TRAVEL_AI_TRACK.md).
 
-T0–T4 Absolute Travel Intelligence and U1–U5 of [`docs/TRAVEL_INTELLIGENCE_10_10_TRACK.md`](./TRAVEL_INTELLIGENCE_10_10_TRACK.md) are implemented on this branch. U6 (hosted AI / Play / iOS / sync) remains operator-owned.
+T0–T4 Absolute Travel Intelligence and U1–U5 of [`docs/TRAVEL_INTELLIGENCE_10_10_TRACK.md`](./TRAVEL_INTELLIGENCE_10_10_TRACK.md) are implemented on this branch. U2 hosted Android smoke (Render + EAS preview APK) passed 2026-09-06. Remaining U6: Play AAB, iOS, optional hosted geo/OCR keys, accounts/sync.
 
 ## Elevation Program — toward phone-delight 100%
 
