@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -13,12 +14,18 @@ import {
 
 import { Screen } from '@/components/ui/screen';
 import { UtilityScreenHeader } from '@/components/ui/utility-screen';
+import { DnaReflectionCards } from '@/features/copilot/dna-reflection-cards';
 import type { TravelDNA } from '@/domain/entities';
 import { getGroundedDiscoverCandidates } from '@/services/discover-catalogue-candidates';
 import {
   buildDiscoverTripPrefill,
   serializeDiscoverTripPrefill,
 } from '@/services/discover-trip-handoff';
+import {
+  applyDnaReflectionProposal,
+  selectDnaReflectionProposals,
+  type DnaReflectionProposal,
+} from '@/services/dna-reflection';
 import { sendTravelChatTurn } from '@/services/travel-chat-service';
 import { travelDNAService } from '@/services/travel-dna-runtime';
 import { useDiscoverStore } from '@/store/discover-store';
@@ -53,6 +60,12 @@ export default function TravelChatScreen() {
   const [travelDNA, setTravelDNA] =
     useState<TravelDNA | null>(null);
   const [busy, setBusy] = useState(false);
+  const [dnaBusyId, setDnaBusyId] = useState<string | null>(
+    null,
+  );
+  const [dismissedDnaIds, setDismissedDnaIds] = useState<
+    string[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -75,6 +88,17 @@ export default function TravelChatScreen() {
       cancelled = true;
     };
   }, []);
+
+  const dnaProposals = useMemo(
+    () =>
+      selectDnaReflectionProposals({
+        travelDNA,
+        brief,
+      }).filter(
+        (proposal) => !dismissedDnaIds.includes(proposal.id),
+      ),
+    [travelDNA, brief, dismissedDnaIds],
+  );
 
   const send = async () => {
     const content = draft.trim();
@@ -125,10 +149,11 @@ export default function TravelChatScreen() {
         caught instanceof Error
           ? caught.message === 'embeddings_unavailable' ||
             caught.message === 'ai_disabled' ||
+            caught.message === 'ai_disabled_by_traveler' ||
             caught.message === 'ai_provider_unavailable'
-            ? 'Travel Chat needs the local AI server with embeddings.'
+            ? 'Το Travel Chat χρειάζεται ενεργό TravelOS AI (Profile → TravelOS AI).'
             : caught.message
-          : 'Travel Chat could not answer.',
+          : 'Το Travel Chat δεν μπόρεσε να απαντήσει.',
       );
     } finally {
       setBusy(false);
@@ -141,7 +166,7 @@ export default function TravelChatScreen() {
     );
 
     if (!candidate) {
-      setError('That destination is no longer in the catalogue.');
+      setError('Αυτός ο προορισμός δεν είναι πλέον στον κατάλογο.');
       return;
     }
 
@@ -159,16 +184,42 @@ export default function TravelChatScreen() {
     });
   };
 
+  const acceptDnaProposal = async (
+    proposal: DnaReflectionProposal,
+  ) => {
+    if (dnaBusyId) {
+      return;
+    }
+
+    setDnaBusyId(proposal.id);
+
+    try {
+      const next = applyDnaReflectionProposal(travelDNA, proposal);
+      const saved = await travelDNAService.save(next);
+      setTravelDNA(saved);
+      setDismissedDnaIds((current) => [...current, proposal.id]);
+    } catch (caught) {
+      Alert.alert(
+        'Δεν αποθηκεύτηκε',
+        caught instanceof Error
+          ? caught.message
+          : 'Δοκίμασε ξανά.',
+      );
+    } finally {
+      setDnaBusyId(null);
+    }
+  };
+
   return (
     <Screen scroll>
       <UtilityScreenHeader
         eyebrow="TRAVEL CHAT"
-        title="Ask TravelOS"
-        subtitle="Grounded ideas only. Confirm opens Create Trip — nothing is written until you save."
+        title="Ρώτα το TravelOS"
+        subtitle="Μόνο grounded ιδέες. Το Confirm ανοίγει Create Trip — τίποτα δεν γράφεται πριν το αποθηκεύσεις."
         leading={(
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel="Πίσω"
             style={styles.backButton}
             onPress={() => router.back()}
           >
@@ -182,11 +233,11 @@ export default function TravelChatScreen() {
         action={(
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Clear chat"
+            accessibilityLabel="Καθαρισμός συνομιλίας"
             style={styles.clearButton}
             onPress={clearChat}
           >
-            <Text style={styles.clearLabel}>Clear</Text>
+            <Text style={styles.clearLabel}>Καθαρισμός</Text>
           </Pressable>
         )}
       />
@@ -194,8 +245,8 @@ export default function TravelChatScreen() {
       <View style={styles.thread}>
         {messages.length === 0 ? (
           <Text style={styles.empty}>
-            Ask for a kind of trip. Cards come only from the
-            grounded catalogue. No invented cities.
+            Πες τι ταξίδι ψάχνεις. Οι κάρτες βγαίνουν μόνο από
+            τον grounded κατάλογο — χωρίς εφευρεμένες πόλεις.
           </Text>
         ) : null}
 
@@ -239,12 +290,12 @@ export default function TravelChatScreen() {
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Confirm ${card.name} for Create Trip`}
+                  accessibilityLabel={`Επιβεβαίωση ${card.name} για Create Trip`}
                   style={styles.confirmButton}
                   onPress={() => confirmCard(card)}
                 >
                   <Text style={styles.confirmLabel}>
-                    Confirm
+                    Επιβεβαίωση
                   </Text>
                 </Pressable>
               </View>
@@ -252,6 +303,20 @@ export default function TravelChatScreen() {
           </View>
         ))}
       </View>
+
+      <DnaReflectionCards
+        proposals={dnaProposals}
+        busyId={dnaBusyId}
+        onAccept={(proposal) => {
+          void acceptDnaProposal(proposal);
+        }}
+        onDismiss={(proposal) => {
+          setDismissedDnaIds((current) => [
+            ...current,
+            proposal.id,
+          ]);
+        }}
+      />
 
       {error ? (
         <Text style={styles.error}>{error}</Text>
@@ -261,7 +326,7 @@ export default function TravelChatScreen() {
         <TextInput
           value={draft}
           onChangeText={setDraft}
-          placeholder="Describe the trip you want…"
+          placeholder="Περίγραψε το ταξίδι που θέλεις…"
           placeholderTextColor={colors.textMuted}
           style={styles.input}
           multiline
@@ -269,7 +334,7 @@ export default function TravelChatScreen() {
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Send message"
+          accessibilityLabel="Αποστολή"
           disabled={busy || draft.trim().length === 0}
           style={[
             styles.sendButton,

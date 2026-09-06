@@ -345,8 +345,8 @@ export default function HomeScreen() {
                 Trip Copilot
               </Text>
               <Text style={styles.copilotDoorBody}>
-                Next useful steps from this trip's saved
-                facts — confirm before anything writes.
+                Επόμενα χρήσιμα βήματα από τα αποθηκευμένα
+                facts — επιβεβαίωση πριν οποιαδήποτε εγγραφή.
               </Text>
             </View>
             <Ionicons
@@ -369,9 +369,9 @@ export default function HomeScreen() {
             Where do you want{'\n'}to go next?
           </Text>
           <Text style={styles.lead}>
-            Decide with grounded ideas, or organize from a
-            place and files you already have — TravelOS keeps
-            both paths honest.
+            Αποφάσισε με grounded ιδέες, ή οργάνωσε από μέρος
+            και αρχεία που έχεις ήδη — το TravelOS κρατά και
+            τα δύο μονοπάτια ειλικρινή.
           </Text>
 
           <PressableScale
@@ -386,7 +386,7 @@ export default function HomeScreen() {
               color={colors.textInverse}
             />
             <Text style={styles.primaryButtonText}>
-              I know where — create a trip
+              Ξέρω πού πάω — νέο ταξίδι
             </Text>
           </PressableScale>
 
@@ -404,7 +404,7 @@ export default function HomeScreen() {
               color={colors.brand}
             />
             <Text style={styles.secondaryButtonText}>
-              Help me decide
+              Βοήθησέ με να αποφασίσω
             </Text>
           </PressableScale>
 
@@ -422,7 +422,7 @@ export default function HomeScreen() {
               color={colors.brand}
             />
             <Text style={styles.secondaryButtonText}>
-              Browse Discover
+              Περιήγηση Discover
             </Text>
           </PressableScale>
 
@@ -443,11 +443,11 @@ export default function HomeScreen() {
             </View>
             <View style={styles.importCopy}>
               <Text style={styles.importTitle}>
-                Organize from bookings or files
+                Οργάνωση από κρατήσεις ή αρχεία
               </Text>
               <Text style={styles.importBody}>
-                Import claims, review them, then confirm into
-                a trip — nothing writes until you accept.
+                Εισαγωγή claims, έλεγχος, και μετά επιβεβαίωση
+                στο ταξίδι — τίποτα δεν γράφεται πριν το Accept.
               </Text>
             </View>
             <Ionicons

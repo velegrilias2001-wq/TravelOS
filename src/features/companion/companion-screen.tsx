@@ -259,6 +259,42 @@ export function CompanionScreen() {
           {formatTripDate(workspace.trip.endDate)}
         </Text>
 
+        {selection.mode === 'active' &&
+        heroPlace === 'City not set for today' &&
+        selection.displayDay &&
+        workspace.trip.destinations.length > 0 ? (
+          <View style={styles.cityAssignCard}>
+            <Text style={styles.cityAssignTitle}>
+              Όρισε πόλη για σήμερα
+            </Text>
+            <Text style={styles.cityAssignBody}>
+              Το Companion χρειάζεται Day → Destination για
+              σωστό ρολόι. Επίλεξε από τα αποθηκευμένα μέρη —
+              χωρίς εικασίες από συντεταγμένες.
+            </Text>
+            <View style={styles.cityAssignActions}>
+              {workspace.trip.destinations.map((destination) => (
+                <Pressable
+                  key={destination.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Assign ${destination.name} to today`}
+                  style={styles.cityAssignButton}
+                  onPress={() => {
+                    void actions.assignDayDestination(
+                      selection.displayDay!.id,
+                      destination.id,
+                    );
+                  }}
+                >
+                  <Text style={styles.cityAssignButtonLabel}>
+                    {destination.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
         {selection.runtime.statusConflict && (
           <TruthNotice
             icon="shield-checkmark-outline"
@@ -1723,6 +1759,39 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.bodySmall,
     color: colors.textSecondary,
+  },
+  cityAssignCard: {
+    marginTop: spacing[4],
+    padding: spacing[4],
+    borderRadius: radius.lg,
+    backgroundColor: colors.brassSoft,
+    gap: spacing[2],
+  },
+  cityAssignTitle: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.body,
+    color: colors.textPrimary,
+  },
+  cityAssignBody: {
+    fontFamily: fontFamily.sansRegular,
+    fontSize: fontSize.bodySmall,
+    lineHeight: lineHeight.bodySmall,
+    color: colors.textSecondary,
+  },
+  cityAssignActions: {
+    marginTop: spacing[2],
+    gap: spacing[2],
+  },
+  cityAssignButton: {
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    borderRadius: radius.md,
+    backgroundColor: colors.brand,
+  },
+  cityAssignButtonLabel: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.bodySmall,
+    color: colors.textInverse,
   },
   notice: {
     marginTop: spacing[4],

@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import {
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -20,8 +22,11 @@ import {
   formatCurrencyAmount,
   resolveDisplayLocale,
 } from '@/services/locale-format';
+import { packingProgress } from '@/services/packing-progress';
+import { repositories } from '@/services/repository-registry';
 import { isCanonicalDateKey } from '@/services/trip-details';
 import { selectTripReadiness } from '@/services/trip-readiness';
+import { shareTripSnapshot } from '@/services/trip-share-runtime';
 import {
   colors,
   fontFamily,
@@ -86,6 +91,7 @@ export default function MoreScreen() {
       : `Set a budget in ${summary.accountingCurrency}`;
 
   const readinessSelection = selectTripReadiness(workspace);
+  const [isSharing, setIsSharing] = useState(false);
 
   const open = (
     pathname:
@@ -101,6 +107,47 @@ export default function MoreScreen() {
       | '/trip/[tripId]/travel-book',
   ) => {
     router.push({ pathname, params: { tripId } });
+  };
+
+  const shareSnapshot = () => {
+    if (isSharing) {
+      return;
+    }
+
+    void (async () => {
+      setIsSharing(true);
+
+      try {
+        const packingItems =
+          await repositories.packing.listByTripId(trip.id);
+        const progress = packingProgress(packingItems);
+        const result = await shareTripSnapshot({
+          trip,
+          days: workspace.days,
+          stops: workspace.stops,
+          bookings: workspace.bookings,
+          accommodations: workspace.accommodations,
+          packingTotal: progress.total,
+          packingPacked: progress.packed,
+        });
+
+        if (result === 'saved') {
+          Alert.alert(
+            'Αποθηκεύτηκε στη συσκευή',
+            'Το system share δεν είναι διαθέσιμο. Το μη-μυστικό snapshot γράφτηκε τοπικά.',
+          );
+        }
+      } catch (error) {
+        Alert.alert(
+          'Δεν έγινε share',
+          error instanceof Error
+            ? error.message
+            : 'Δοκίμασε ξανά.',
+        );
+      } finally {
+        setIsSharing(false);
+      }
+    })();
   };
 
   return (
@@ -185,6 +232,13 @@ export default function MoreScreen() {
           title="Packing"
           body="Checklist you author for this trip"
           onPress={() => open('/trip/[tripId]/packing')}
+        />
+        <HubDivider />
+        <HubRow
+          icon="share-outline"
+          title={isSharing ? 'Preparing share…' : 'Share trip snapshot'}
+          body="System share of a non-secret summary. Codes and private contacts stay off."
+          onPress={shareSnapshot}
         />
       </HubSection>
 

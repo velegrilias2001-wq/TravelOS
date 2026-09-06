@@ -172,7 +172,7 @@ Operator reviews this order. Implementation starts only after OK per wave (or OK
 
 - [x] Packing items are traveler-owned SQLite rows; progress % = packed/total.
 - [x] World stats never use destination title as visit evidence.
-- [ ] Share uses system sheet; no Vault protocol.
+- [x] Share uses system sheet; no Vault protocol.
 
 ---
 

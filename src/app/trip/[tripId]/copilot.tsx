@@ -211,12 +211,12 @@ export default function TripCopilotScreen() {
     <Screen scroll>
       <UtilityScreenHeader
         eyebrow="TRIP COPILOT"
-        title="Next useful steps"
-        subtitle="Suggestions from this trip’s saved facts. Nothing writes until you confirm."
+        title="Επόμενα χρήσιμα βήματα"
+        subtitle="Προτάσεις από τα αποθηκευμένα facts του ταξιδιού. Τίποτα δεν γράφεται πριν την επιβεβαίωση."
         leading={(
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Back to More"
+            accessibilityLabel="Πίσω στο More"
             style={styles.backButton}
             onPress={() => router.back()}
           >
@@ -231,7 +231,7 @@ export default function TripCopilotScreen() {
 
       {evidenceSummary ? (
         <View style={styles.evidenceCard}>
-          <Text style={styles.eyebrow}>SAVED FACTS</Text>
+          <Text style={styles.eyebrow}>ΑΠΟΘΗΚΕΥΜΕΝΑ FACTS</Text>
           <Text style={styles.evidenceBody}>
             {evidenceSummary}
           </Text>
@@ -240,8 +240,8 @@ export default function TripCopilotScreen() {
 
       {proposals.length === 0 ? (
         <Text style={styles.empty}>
-          This trip looks prepared from what is saved. Open
-          Plan or Companion when you need free-time ideas.
+          Το ταξίδι φαίνεται έτοιμο από όσα έχουν αποθηκευτεί.
+          Άνοιξε Plan ή Companion για free-time ιδέες.
         </Text>
       ) : null}
 
