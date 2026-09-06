@@ -58,10 +58,19 @@ import {
 } from '@/services/discover-personalization';
 
 import {
+  buildDiscoverEmbeddingDocuments,
   prepareDiscoverSemanticQuery,
   resolveSemanticDiscoverMatches,
   type DiscoverSemanticMatch,
 } from '@/services/discover-semantic';
+
+import {
+  reorderSemanticHitsByIdentities,
+} from '@/services/discover-rerank';
+
+import {
+  loadGroundedDiscoverCorpus,
+} from '@/services/discover-corpus';
 
 import {
   assertGroundedDiscoverExplanation,
@@ -463,16 +472,84 @@ export default function DiscoverResultsScreen() {
             return;
           }
 
+          let rankedHits = result.matches;
+          let provenance = {
+            provider: result.provider,
+            model: result.model,
+          };
+
+          if (rankedHits.length > 1) {
+            try {
+              const documents =
+                buildDiscoverEmbeddingDocuments(
+                  loadGroundedDiscoverCorpus().records,
+                );
+              const textByIdentity = new Map(
+                documents.map((document) => [
+                  document.identity,
+                  document.text,
+                ]),
+              );
+              const candidates = rankedHits
+                .map((hit) => {
+                  const text = textByIdentity.get(
+                    hit.identity,
+                  );
+
+                  if (!text) {
+                    return null;
+                  }
+
+                  return {
+                    identity: hit.identity,
+                    text,
+                  };
+                })
+                .filter(
+                  (
+                    candidate,
+                  ): candidate is {
+                    identity: string;
+                    text: string;
+                  } => candidate != null,
+                );
+
+              if (candidates.length > 1) {
+                const reranked =
+                  await aiAPIClient.rerankDiscoverMatches(
+                    {
+                      query: request.query,
+                      candidates,
+                    },
+                    controller.signal,
+                  );
+
+                if (controller.signal.aborted) {
+                  return;
+                }
+
+                rankedHits =
+                  reorderSemanticHitsByIdentities(
+                    rankedHits,
+                    reranked.identities,
+                  );
+                provenance = {
+                  provider: `${result.provider}+rerank`,
+                  model: `${result.model} · ${reranked.model}`,
+                };
+              }
+            } catch {
+              // Fail closed: keep unreordered retrieve hits.
+            }
+          }
+
           setSemanticMatches(
             resolveSemanticDiscoverMatches(
               matches,
-              result.matches,
+              rankedHits,
             ),
           );
-          setSemanticProvenance({
-            provider: result.provider,
-            model: result.model,
-          });
+          setSemanticProvenance(provenance);
           setSemanticStatus('ready');
         } catch (error) {
           if (

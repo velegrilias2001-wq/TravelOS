@@ -54,9 +54,9 @@ const AI_TOOLS = [
   },
   {
     name: 'getDirections',
-    status: 'not_configured',
+    status: 'available',
     description:
-      'In-app routes/ETAs are parked. Saved-pin deep links to system maps remain outside AI tools.',
+      'Local-dev Directions proxy for Map polyline/ETA legs. Fail-closed without a provider key. System Maps deep links remain for turn-by-turn.',
   },
   {
     name: 'searchEvents',
@@ -70,9 +70,15 @@ const AI_TOOLS = [
   },
   {
     name: 'analyzeTravelImage',
-    status: 'not_configured',
+    status: 'available',
     description:
-      'Vision / confirmation OCR stays parked. Import only extracts embedded iCalendar.',
+      'Confirmation-photo OCR via local-dev Vision proxy. Returns text for import review claims only — never writes bookings.',
+  },
+  {
+    name: 'rerankGroundedDiscoverCandidates',
+    status: 'available',
+    description:
+      'Optional listwise reorder of already-retrieved grounded identities (qwen). Fail-closed; no BGE install.',
   },
 ];
 

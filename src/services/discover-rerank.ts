@@ -46,3 +46,32 @@ export function applyRerankedIdentities(
 
   return [...head, ...tail];
 }
+
+/**
+ * Reorder semantic hits by a fail-closed identity list.
+ * Unknown or partial responses leave the original order.
+ */
+export function reorderSemanticHitsByIdentities<
+  T extends { identity: string },
+>(
+  hits: readonly T[],
+  proposedIdentities: unknown,
+): T[] {
+  const originalIdentities = hits.map((hit) => hit.identity);
+
+  try {
+    const ordered = applyRerankedIdentities(
+      originalIdentities,
+      proposedIdentities,
+    );
+    const byIdentity = new Map(
+      hits.map((hit) => [hit.identity, hit]),
+    );
+
+    return ordered
+      .map((identity) => byIdentity.get(identity))
+      .filter((hit): hit is T => hit != null);
+  } catch {
+    return [...hits];
+  }
+}

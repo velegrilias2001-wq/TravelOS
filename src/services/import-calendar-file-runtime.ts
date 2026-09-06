@@ -9,6 +9,7 @@ import {
 import { bytesFromBase64 } from './import-calendar-extract';
 import { decodePickedImportCalendarBytes } from './import-calendar-zip';
 import { extractDocumentTextFromBytes } from './import-document-text';
+import { extractOcrTextFromImage } from './import-ocr';
 
 export type PickedImportMaterial =
   | {
@@ -18,6 +19,11 @@ export type PickedImportMaterial =
     }
   | {
       mode: 'seed';
+      text: string;
+      sourceLabel: string;
+    }
+  | {
+      mode: 'ocr';
       text: string;
       sourceLabel: string;
     };
@@ -71,6 +77,25 @@ export async function pickImportMaterialFile(): Promise<PickedImportMaterial | n
         sourceLabel,
       };
     } catch {
+      if (looksLikeImportImage(asset.name, asset.mimeType)) {
+        const ocr = await extractOcrTextFromImage({
+          imageBase64: base64,
+          mimeType: guessImageMimeType(asset.name, asset.mimeType),
+        });
+
+        if (ocr?.text) {
+          return {
+            mode: 'ocr',
+            text: ocr.text,
+            sourceLabel,
+          };
+        }
+
+        throw new Error(
+          'This confirmation photo could not be read. Ticket photos without readable text still fail closed.',
+        );
+      }
+
       if (
         calendarError instanceof Error &&
         isImportPickerError(calendarError)
@@ -79,10 +104,55 @@ export async function pickImportMaterialFile(): Promise<PickedImportMaterial | n
       }
 
       throw new Error(
-        'This file could not be read as a calendar or trip notes.',
+        'This file could not be read as a calendar, trip notes, or confirmation photo.',
       );
     }
   }
+}
+
+function looksLikeImportImage(
+  name?: string | null,
+  mimeType?: string | null,
+): boolean {
+  const lowerName = (name || '').toLowerCase();
+  const lowerMime = (mimeType || '').toLowerCase();
+
+  return (
+    lowerMime.startsWith('image/') ||
+    /\.(jpe?g|png|webp|gif)$/i.test(lowerName)
+  );
+}
+
+function guessImageMimeType(
+  name?: string | null,
+  mimeType?: string | null,
+): 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' {
+  const lowerMime = (mimeType || '').toLowerCase();
+
+  if (
+    lowerMime === 'image/jpeg' ||
+    lowerMime === 'image/png' ||
+    lowerMime === 'image/webp' ||
+    lowerMime === 'image/gif'
+  ) {
+    return lowerMime;
+  }
+
+  const lowerName = (name || '').toLowerCase();
+
+  if (lowerName.endsWith('.png')) {
+    return 'image/png';
+  }
+
+  if (lowerName.endsWith('.webp')) {
+    return 'image/webp';
+  }
+
+  if (lowerName.endsWith('.gif')) {
+    return 'image/gif';
+  }
+
+  return 'image/jpeg';
 }
 
 /** @deprecated Prefer pickImportMaterialFile */

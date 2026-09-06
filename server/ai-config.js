@@ -7,7 +7,8 @@
  *   AI_BASE_URL=
  *   AI_CHAT_MODEL=
  *   AI_EMBEDDING_MODEL=
- *   AI_RERANKER_MODEL=   (documented only; Discover rerank stays deferred)
+ *   AI_RERANKER_MODEL=   (documented only; no BGE install)
+ *   AI_RERANK_ENABLED=false
  *   AI_ENABLED=true|false
  *   AI_SEMANTIC_SEARCH_ENABLED=true|false
  *   AI_VISION_ENABLED=false
@@ -91,6 +92,11 @@ function loadAiConfig(env = process.env) {
     voiceEnabled: readFlagFrom(
       env,
       'AI_VOICE_ENABLED',
+      false,
+    ),
+    rerankEnabled: readFlagFrom(
+      env,
+      'AI_RERANK_ENABLED',
       false,
     ),
     productionProvider: 'none',

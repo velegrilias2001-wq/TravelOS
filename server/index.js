@@ -44,6 +44,27 @@ const {
   parseTimezoneLookupRequest,
 } = require('./timezone-lookup');
 
+const {
+  lookupDirections,
+  parseDirectionsLookupRequest,
+} = require('./directions-lookup');
+
+const {
+  extractOcrText,
+  parseOcrExtractRequest,
+} = require('./ocr-extract');
+
+const {
+  buildDiscoverRerankPrompt,
+  parseDiscoverRerankRequest,
+  parseDiscoverRerankResponse,
+  rerankResponseFormat,
+} = require('./discover-rerank');
+
+const {
+  loadAiConfig,
+} = require('./ai-config');
+
 const ai = createAiProvider();
 
 let discoverEmbeddings = null;
@@ -65,7 +86,7 @@ app.use(cors());
 
 app.use(
   express.json({
-    limit: '1mb',
+    limit: '8mb',
   }),
 );
 
@@ -416,6 +437,186 @@ app.post('/geo/timezone', async (req, res) => {
     return res.status(503).json({
       ok: false,
       error: 'timezone_provider_unavailable',
+    });
+  }
+});
+
+app.post('/geo/directions', async (req, res) => {
+  try {
+    const request = parseDirectionsLookupRequest(
+      req.body,
+    );
+
+    const result = await lookupDirections(request);
+
+    res.json({
+      ok: true,
+      mode: result.mode,
+      source: result.source,
+      durationSeconds: result.durationSeconds,
+      distanceMeters: result.distanceMeters,
+      durationText: result.durationText,
+      distanceText: result.distanceText,
+      coordinates: result.coordinates,
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        ok: false,
+        error: 'invalid_request',
+      });
+    }
+
+    const code =
+      error &&
+      typeof error === 'object' &&
+      typeof error.code === 'string'
+        ? error.code
+        : 'directions_provider_unavailable';
+
+    if (code === 'directions_api_key_missing') {
+      return res.status(503).json({
+        ok: false,
+        error: 'directions_api_key_missing',
+      });
+    }
+
+    if (code === 'directions_lookup_failed') {
+      return res.status(502).json({
+        ok: false,
+        error: 'directions_lookup_failed',
+      });
+    }
+
+    console.error(error);
+
+    return res.status(503).json({
+      ok: false,
+      error: 'directions_provider_unavailable',
+    });
+  }
+});
+
+app.post('/import/ocr-extract', async (req, res) => {
+  try {
+    const request = parseOcrExtractRequest(req.body);
+    const result = await extractOcrText(request);
+
+    res.json({
+      ok: true,
+      source: result.source,
+      text: result.text,
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        ok: false,
+        error: 'invalid_request',
+      });
+    }
+
+    const code =
+      error &&
+      typeof error === 'object' &&
+      typeof error.code === 'string'
+        ? error.code
+        : 'ocr_provider_unavailable';
+
+    if (
+      code === 'ocr_api_key_missing' ||
+      code === 'ocr_vision_disabled'
+    ) {
+      return res.status(503).json({
+        ok: false,
+        error: code,
+      });
+    }
+
+    if (code === 'ocr_extract_failed') {
+      return res.status(502).json({
+        ok: false,
+        error: 'ocr_extract_failed',
+      });
+    }
+
+    console.error(error);
+
+    return res.status(503).json({
+      ok: false,
+      error: 'ocr_provider_unavailable',
+    });
+  }
+});
+
+app.post('/ai/discover-rerank', async (req, res) => {
+  const config = loadAiConfig();
+
+  if (!config.rerankEnabled) {
+    return res.status(503).json({
+      ok: false,
+      error: 'rerank_disabled',
+    });
+  }
+
+  try {
+    const request = parseDiscoverRerankRequest(req.body);
+
+    const result = await ai.chat({
+      messages: [
+        {
+          role: 'system',
+          content: TRAVELOS_COPILOT_SYSTEM_PROMPT,
+        },
+        {
+          role: 'user',
+          content: buildDiscoverRerankPrompt(request),
+        },
+      ],
+      format: rerankResponseFormat,
+    });
+
+    const identities = parseDiscoverRerankResponse(
+      result.content,
+    );
+
+    res.json({
+      ok: true,
+      provider: result.provider,
+      model: result.model,
+      identities,
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        ok: false,
+        error: 'invalid_request',
+      });
+    }
+
+    const message =
+      error instanceof Error ? error.message : '';
+
+    if (
+      message === 'AI returned invalid JSON' ||
+      (error instanceof AiProviderError &&
+        error.code === 'invalid_ai_response')
+    ) {
+      console.error(error);
+
+      return res.status(502).json({
+        ok: false,
+        error: 'invalid_ai_response',
+      });
+    }
+
+    console.error(error);
+
+    return res.status(503).json({
+      ok: false,
+      error:
+        error instanceof AiProviderError
+          ? error.code
+          : 'ai_provider_unavailable',
     });
   }
 });

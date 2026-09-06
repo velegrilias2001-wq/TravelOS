@@ -109,6 +109,22 @@ export interface DiscoverExplainResult {
   sentences: string[];
 }
 
+export interface DiscoverRerankCandidate {
+  identity: string;
+  text: string;
+}
+
+export interface DiscoverRerankRequest {
+  query: string;
+  candidates: DiscoverRerankCandidate[];
+}
+
+export interface DiscoverRerankResult {
+  provider: string;
+  model: string;
+  identities: string[];
+}
+
 interface DiscoverRetrieveResponse {
   ok: boolean;
 
@@ -126,6 +142,16 @@ interface DiscoverExplainResponse {
   model?: unknown;
   identity?: unknown;
   sentences?: unknown;
+
+  error?: unknown;
+}
+
+interface DiscoverRerankResponse {
+  ok: boolean;
+
+  provider?: unknown;
+  model?: unknown;
+  identities?: unknown;
 
   error?: unknown;
 }
@@ -628,6 +654,69 @@ export class AIAPIClient {
       model: payload.model,
       identity: explanation.identity,
       sentences: explanation.sentences,
+    };
+  }
+
+  async rerankDiscoverMatches(
+    request: DiscoverRerankRequest,
+    signal?: AbortSignal,
+  ): Promise<DiscoverRerankResult> {
+    const response = await fetch(
+      `${normalizeBaseUrl(this.baseUrl)}/ai/discover-rerank`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+        signal,
+      },
+    );
+
+    let payload: DiscoverRerankResponse;
+
+    try {
+      payload = await response.json();
+    } catch {
+      throw new Error(
+        'AI backend returned an unreadable response',
+      );
+    }
+
+    if (!response.ok || payload.ok !== true) {
+      const errorCode =
+        typeof payload.error === 'string'
+          ? payload.error
+          : 'ai_request_failed';
+
+      throw new Error(errorCode);
+    }
+
+    if (
+      typeof payload.provider !== 'string' ||
+      typeof payload.model !== 'string' ||
+      !Array.isArray(payload.identities)
+    ) {
+      throw new Error(
+        'AI backend returned invalid rerank payload',
+      );
+    }
+
+    const identities = payload.identities.filter(
+      (value): value is string =>
+        typeof value === 'string' && value.length > 0,
+    );
+
+    if (identities.length !== payload.identities.length) {
+      throw new Error(
+        'AI backend returned invalid rerank identities',
+      );
+    }
+
+    return {
+      provider: payload.provider,
+      model: payload.model,
+      identities,
     };
   }
 }

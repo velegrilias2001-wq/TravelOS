@@ -125,11 +125,13 @@ export default function ImportScreen() {
       const batch =
         picked.mode === 'ics'
           ? await importReviewService.ingestIcs(picked)
-          : await importReviewService.ingestSeedText({
-              text: picked.text,
-              sourceLabel: picked.sourceLabel,
-              sourceKind: 'document',
-            });
+          : picked.mode === 'ocr'
+            ? await importReviewService.ingestOcrText(picked)
+            : await importReviewService.ingestSeedText({
+                text: picked.text,
+                sourceLabel: picked.sourceLabel,
+                sourceKind: 'document',
+              });
 
       setText('');
       await reload();
@@ -173,7 +175,7 @@ export default function ImportScreen() {
         </Text>
 
         <Text style={styles.subtitle}>
-          Paste or choose a calendar (.ics / embedded), or trip notes (txt, PDF, Word, Excel). Seed claims open Create Trip for confirmation — nothing writes a trip on its own.
+          Paste or choose a calendar (.ics / embedded), trip notes (txt, PDF, Word, Excel), or a confirmation photo for OCR review. Claims stay pending — nothing writes a trip or booking on its own.
         </Text>
       </View>
 
@@ -197,7 +199,7 @@ export default function ImportScreen() {
           </Text>
 
           <Text style={styles.primaryButtonText}>
-            Review an .ics, zip, PDF, Office, or image file
+            Review an .ics, zip, PDF, Office, or confirmation photo
           </Text>
         </View>
 

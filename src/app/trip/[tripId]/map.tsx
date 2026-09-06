@@ -26,6 +26,7 @@ import * as Linking from 'expo-linking';
 
 import MapView, {
   Marker,
+  Polyline,
   PROVIDER_GOOGLE,
   type LatLng,
   type Region,
@@ -66,6 +67,12 @@ import {
   selectTripMapFrame,
   systemDirectionsUrl,
 } from '@/services/trip-map-context';
+import {
+  buildMappedStopRouteRequests,
+  formatRouteLegSummary,
+  lookupTripRouteLeg,
+  type TripRouteLeg,
+} from '@/services/trip-directions';
 
 import {
   colors,
@@ -105,6 +112,12 @@ export default function TripMapScreen() {
     useState(false);
   const [focusedStopId, setFocusedStopId] =
     useState<string | null>(null);
+  const [routeLegs, setRouteLegs] = useState<
+    TripRouteLeg[]
+  >([]);
+  const [routesStatus, setRoutesStatus] = useState<
+    'idle' | 'loading' | 'ready' | 'unavailable'
+  >('idle');
   const { workspace } =
     useTripWorkspace();
 
@@ -361,6 +374,56 @@ export default function TripMapScreen() {
   }, [fitMap]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    if (
+      mappedStops.length < 2 ||
+      reachability === 'offline'
+    ) {
+      setRouteLegs([]);
+      setRoutesStatus(
+        mappedStops.length < 2 ? 'idle' : 'unavailable',
+      );
+      return;
+    }
+
+    const requests = buildMappedStopRouteRequests(
+      mappedStops.map((item) => ({
+        id: item.stop.id,
+        coordinate: item.coordinate,
+      })),
+      'walking',
+    ).slice(0, 6);
+
+    setRoutesStatus('loading');
+
+    void (async () => {
+      const legs: TripRouteLeg[] = [];
+
+      for (const request of requests) {
+        const leg = await lookupTripRouteLeg(request);
+
+        if (leg) {
+          legs.push(leg);
+        }
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      setRouteLegs(legs);
+      setRoutesStatus(
+        legs.length > 0 ? 'ready' : 'unavailable',
+      );
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mappedStops, reachability]);
+
+  useEffect(() => {
     if (!requestedStopId) {
       handledStopId.current = null;
       return;
@@ -478,6 +541,15 @@ export default function TripMapScreen() {
             />
           ),
         )}
+
+        {routeLegs.map((leg, index) => (
+          <Polyline
+            key={`route-${index}`}
+            coordinates={leg.coordinates}
+            strokeColor={colors.teal}
+            strokeWidth={4}
+          />
+        ))}
       </MapView>
 
       <View
@@ -673,6 +745,28 @@ export default function TripMapScreen() {
                     ? 'place'
                     : 'places'}
                 </Text>
+
+                {routesStatus === 'loading' ? (
+                  <Text style={styles.routeEtaText}>
+                    Loading walking routes…
+                  </Text>
+                ) : null}
+
+                {routesStatus === 'ready' &&
+                routeLegs.length > 0 ? (
+                  <Text style={styles.routeEtaText}>
+                    {routeLegs
+                      .map((leg) => formatRouteLegSummary(leg))
+                      .join(' · ')}
+                  </Text>
+                ) : null}
+
+                {routesStatus === 'unavailable' &&
+                mappedStops.length >= 2 ? (
+                  <Text style={styles.routeEtaText}>
+                    Walking routes unavailable
+                  </Text>
+                ) : null}
               </View>
 
               <Pressable
@@ -1138,6 +1232,13 @@ const styles =
         colors.brass,
     },
 
+    routeEtaText: {
+      marginTop: spacing[1],
+      color: colors.textSecondary,
+      fontFamily: fontFamily.sansRegular,
+      fontSize: fontSize.caption,
+      maxWidth: 220,
+    },
     summaryValue: {
       fontFamily:
         fontFamily.serifSemiBold,

@@ -16,6 +16,7 @@ import {
 } from './booking-time';
 import { extractImportCalendarText } from './import-calendar-extract';
 import { parseImportCalendar } from './import-ics';
+import { extractImportOcrClaims } from './import-ocr-extract';
 import { extractImportSeedClaims } from './import-seed-extract';
 
 export interface ImportReviewRepositories {
@@ -142,6 +143,60 @@ export class ImportReviewService {
         startAt: claim.startAt,
         endAt: claim.endAt,
         locationText: claim.locationText,
+        confidence: claim.confidence,
+        evidence: claim.evidence,
+        createdAt,
+        updatedAt: createdAt,
+      };
+    });
+
+    await this.repos.imports.saveBatch(batch, claims);
+
+    return batch;
+  }
+
+  /**
+   * OCR confirmation-photo text → review claims only.
+   * Never writes a Booking or Trip.
+   */
+  async ingestOcrText(input: {
+    text: string;
+    sourceLabel?: string;
+  }): Promise<ImportBatch> {
+    const extracted = extractImportOcrClaims(input.text);
+    const existing =
+      await this.repos.imports.getBatchByContentHash(
+        extracted.contentHash,
+      );
+
+    if (existing) {
+      return existing;
+    }
+
+    const createdAt = this.now();
+    const batch: ImportBatch = {
+      id: this.createId(),
+      sourceKind: 'document',
+      sourceLabel:
+        input.sourceLabel?.trim() || 'Confirmation photo',
+      contentHash: extracted.contentHash,
+      skippedCount: extracted.skippedCount,
+      createdAt,
+    };
+
+    const claims = extracted.claims.map((claim) => {
+      const id = this.createId();
+
+      return {
+        id,
+        batchId: batch.id,
+        kind: claim.kind,
+        status: 'pending' as const,
+        title: claim.title,
+        startAt: claim.startAt,
+        endAt: claim.endAt,
+        locationText: claim.locationText,
+        icsUid: claim.evidence.icsUid,
         confidence: claim.confidence,
         evidence: claim.evidence,
         createdAt,

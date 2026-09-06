@@ -3,6 +3,7 @@ const test = require('node:test');
 
 const {
   applyRerankedIdentities,
+  reorderSemanticHitsByIdentities,
 } = require('../.test-build/src/services/discover-rerank.js');
 
 test(
@@ -66,6 +67,28 @@ test(
           { identities: ['curated:pt-lisbon'] },
         ),
       /not an identity list/,
+    );
+  },
+);
+
+test(
+  'reorderSemanticHitsByIdentities keeps original order on invalid proposal',
+  () => {
+    const hits = [
+      { identity: 'a', score: 0.9 },
+      { identity: 'b', score: 0.8 },
+    ];
+
+    assert.deepEqual(
+      reorderSemanticHitsByIdentities(hits, ['invented']),
+      hits,
+    );
+
+    assert.deepEqual(
+      reorderSemanticHitsByIdentities(hits, ['b', 'a']).map(
+        (hit) => hit.identity,
+      ),
+      ['b', 'a'],
     );
   },
 );
