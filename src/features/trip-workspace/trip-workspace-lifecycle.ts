@@ -95,10 +95,12 @@ export class TripWorkspaceLifecycle {
     // Never block trip mutations on notification reconcile.
     // Metro dynamic import can throw outside a Promise rejection.
     setTimeout(() => {
+      // Not in the Node test graph (expo-notifications). Metro resolves at bundle time.
+      // @ts-expect-error optional native reconcile module
       void import('@/services/trip-notifications-runtime')
-        .then((module) =>
-          module.reconcileTripNotifications(),
-        )
+        .then((module: {
+          reconcileTripNotifications: () => Promise<void>;
+        }) => module.reconcileTripNotifications())
         .catch(() => {
           // Native module may be unavailable in Node tests / Expo Go.
         });
