@@ -1,8 +1,8 @@
 # PWA Parity + Absolute Travel AI — Master Track
 
-Status: **Wave A–C done · Waves D–E remaining**
+Status: **Wave A–E complete (δ2 share optional deferred; Android smokes pending)**
 Draft date: 2026-09-06
-Updated: 2026-09-06 (Wave C complete: origin + Discover compare)
+Updated: 2026-09-06 (Wave E ε2 Trip Copilot + ε3 production-brain docs)
 Branch context: `docs/expo-sqlite-rehearsal-7-15`  
 PWA reference: https://travelos3.netlify.app/ (v13.5.1 product memory; vault session observed 2026-09-06)  
 Native authority: `AGENTS.md`, `docs/PRODUCT_VISION.md`, `docs/CURRENT_STATE.md`, `docs/ROADMAP.md`, `docs/WEB_REFERENCE.md`
@@ -170,8 +170,8 @@ Operator reviews this order. Implementation starts only after OK per wave (or OK
 
 **Exit criteria:**
 
-- [ ] Packing items are traveler-owned SQLite rows; progress % = packed/total.
-- [ ] World stats never use destination title as visit evidence.
+- [x] Packing items are traveler-owned SQLite rows; progress % = packed/total.
+- [x] World stats never use destination title as visit evidence.
 - [ ] Share uses system sheet; no Vault protocol.
 
 ---
@@ -182,21 +182,21 @@ Operator reviews this order. Implementation starts only after OK per wave (or OK
 
 **Exit criteria (ε1):**
 
-- [ ] Chat UI on Home (or dedicated route) with session transcript (Zustand or ephemeral).
-- [ ] Server chat endpoint with tool allow-list; invented identities rejected.
-- [ ] Destination cards only from grounded retrieve/catalogue.
-- [ ] Confirm opens `/new-trip` with prefill; cancel leaves no trip.
-- [ ] Profile/copilot health shows chat tool as available/unavailable honestly.
-- [ ] Automated tests for tool allow-list + identity guards; Android smoke with local Ollama.
+- [x] Chat UI on Home (or dedicated route) with session transcript (Zustand or ephemeral).
+- [x] Server chat endpoint with tool allow-list; invented identities rejected.
+- [x] Destination cards only from grounded retrieve/catalogue.
+- [x] Confirm opens `/new-trip` with prefill; cancel leaves no trip.
+- [x] Profile/copilot health shows chat tool as available/unavailable honestly.
+- [x] Automated tests for tool allow-list + identity guards; Android smoke with local Ollama. *(server allow-list tests; Android smoke pending)*
 
 **Exit criteria (ε2):**
 
-- [ ] Trip-scoped copilot can propose free-time / Plan Assist / readiness next steps.
-- [ ] Every write requires an existing editor/accept path.
+- [x] Trip-scoped copilot can propose free-time / Plan Assist / readiness next steps.
+- [x] Every write requires an existing editor/accept path.
 
 **Exit criteria (ε3):**
 
-- [ ] Production provider selectable via env; same tools; documented privacy; local-dev still works offline-loopback.
+- [x] Production provider selectable via env; same tools; documented privacy; local-dev still works offline-loopback. *(openai_compatible + AI_ENABLED kill-switch documented; native remains loopback-gated)*
 
 ---
 

@@ -861,6 +861,36 @@ CREATE INDEX IF NOT EXISTS idx_trip_stop_lived_states_trip_id
 
 ON trip_stop_lived_states(trip_id);
 
+CREATE TABLE IF NOT EXISTS packing_items (
+
+  id TEXT PRIMARY KEY NOT NULL,
+
+  trip_id TEXT NOT NULL,
+
+  title TEXT NOT NULL,
+
+  packed INTEGER NOT NULL
+
+    CHECK (packed IN (0, 1)),
+
+  position INTEGER NOT NULL,
+
+  created_at TEXT NOT NULL,
+
+  updated_at TEXT NOT NULL,
+
+  FOREIGN KEY (trip_id)
+
+    REFERENCES trips(id)
+
+    ON DELETE CASCADE
+
+);
+
+CREATE INDEX IF NOT EXISTS idx_packing_items_trip_id
+
+ON packing_items(trip_id);
+
 CREATE TABLE IF NOT EXISTS import_batches (
 
   id TEXT PRIMARY KEY NOT NULL,

@@ -210,6 +210,24 @@ export function prepareDiscoverSemanticQuery(
 }
 
 /**
+ * Content hash for the live grounded embedding corpus.
+ * Used by Travel Chat so retrieve stays lockstep without
+ * requiring a Discover Brief query.
+ */
+export function getDiscoverEmbeddingContentHash(
+  model: string = DISCOVER_EMBEDDING_MODEL_CANDIDATE,
+): string {
+  const corpus = loadGroundedDiscoverCorpus();
+  const documents =
+    buildDiscoverEmbeddingDocuments(corpus.records);
+
+  return hashDiscoverEmbeddingDocuments(
+    model,
+    documents,
+  );
+}
+
+/**
  * Keep deterministic matches primary. Attach only extra
  * grounded identities from semantic retrieval.
  *

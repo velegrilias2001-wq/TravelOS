@@ -248,3 +248,40 @@ export function worldPlaceCounts(
     ),
   };
 }
+
+/**
+ * Footprint from lived evidence only.
+ * Countries require an explicit destination countryCode —
+ * missing codes stay unknown and are not invented.
+ */
+export function selectWorldFootprintStats(
+  places: readonly WorldPlace[],
+): {
+  livedCountries: number;
+  livedPlaces: number;
+  plannedPlaces: number;
+} {
+  const lived = places.filter(
+    (place) => place.kind === 'lived',
+  );
+  const countries = new Set<string>();
+
+  for (const place of lived) {
+    const code = place.destination.countryCode;
+
+    if (
+      typeof code === 'string' &&
+      /^[A-Z]{2}$/.test(code)
+    ) {
+      countries.add(code);
+    }
+  }
+
+  return {
+    livedCountries: countries.size,
+    livedPlaces: lived.length,
+    plannedPlaces: places.filter(
+      (place) => place.kind === 'planned',
+    ).length,
+  };
+}

@@ -90,6 +90,8 @@ export default function MoreScreen() {
   const open = (
     pathname:
       | '/trip/[tripId]/details'
+      | '/trip/[tripId]/packing'
+      | '/trip/[tripId]/copilot'
       | '/trip/[tripId]/budget'
       | '/trip/[tripId]/accommodation'
       | '/trip/[tripId]/bookings'
@@ -154,6 +156,14 @@ export default function MoreScreen() {
 
       <HubSection title="Planning">
         <HubRow
+          icon="sparkles-outline"
+          title="Trip Copilot"
+          body="Readiness, Plan Assist, and free-time next steps"
+          accent="brass"
+          onPress={() => open('/trip/[tripId]/copilot')}
+        />
+        <HubDivider />
+        <HubRow
           icon="wallet-outline"
           title="Budget & expenses"
           body={budgetSummary}
@@ -168,6 +178,13 @@ export default function MoreScreen() {
             workspace.accommodations.length === 1 ? 'stay' : 'stays'
           }`}
           onPress={() => open('/trip/[tripId]/accommodation')}
+        />
+        <HubDivider />
+        <HubRow
+          icon="bag-handle-outline"
+          title="Packing"
+          body="Checklist you author for this trip"
+          onPress={() => open('/trip/[tripId]/packing')}
         />
       </HubSection>
 

@@ -36,6 +36,18 @@ const AI_TOOLS = [
       'Structured free-time ideas for a verified Plan gap. Does not insert stops.',
   },
   {
+    name: 'travelChat',
+    status: 'available',
+    description:
+      'Session Travel Chat: grounded retrieve + reply. Destination cards only from catalogue identities. No SQLite writes.',
+  },
+  {
+    name: 'tripCopilot',
+    status: 'available',
+    description:
+      'Trip-scoped proposals: readiness links, Plan Assist accept→addStop, free-time ideas display-only, import review door.',
+  },
+  {
     name: 'getSavedPlaces',
     status: 'available',
     description:

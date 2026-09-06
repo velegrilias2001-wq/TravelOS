@@ -6,7 +6,11 @@ import type {
 import {
   tripDestinationLabel,
 } from './destination-authoring';
+import {
+  selectTripReadiness,
+} from './trip-readiness';
 import { tripDayDestination } from './trip-day-destination';
+import type { TripWorkspace } from './trip-service';
 import {
   resolveTripRuntime,
   systemRuntimeClock,
@@ -22,6 +26,15 @@ export interface HomeFeaturedTrip {
 export interface HomeRuntimeSummary {
   featured: HomeFeaturedTrip | undefined;
   completedCount: number;
+  upcomingTrips: Trip[];
+}
+
+export interface HomeReadinessGlance {
+  tripId: TripId;
+  title: string;
+  readyCount: number;
+  totalCheckCount: number;
+  percentReady: number;
 }
 
 export function selectHomeRuntimeSummary(
@@ -55,12 +68,43 @@ export function selectHomeRuntimeSummary(
         ),
       )[0];
 
+  const upcomingTrips = records
+    .filter(
+      ({ runtime }) => runtime.phase === 'upcoming',
+    )
+    .sort((a, b) =>
+      a.trip.startDate.localeCompare(
+        b.trip.startDate,
+      ),
+    )
+    .map(({ trip }) => trip);
+
   return {
     featured,
     completedCount: trips.filter(
       (trip) => trip.status === 'completed',
     ).length,
+    upcomingTrips,
   };
+}
+
+/**
+ * Readiness glance chips from countable checklist facts only.
+ */
+export function selectHomeReadinessGlances(
+  workspaces: readonly TripWorkspace[],
+): HomeReadinessGlance[] {
+  return workspaces.map((workspace) => {
+    const selection = selectTripReadiness(workspace);
+
+    return {
+      tripId: workspace.trip.id,
+      title: workspace.trip.title,
+      readyCount: selection.readyCount,
+      totalCheckCount: selection.totalCheckCount,
+      percentReady: selection.percentReady,
+    };
+  });
 }
 
 export function homeFeaturedPlaceLabel(

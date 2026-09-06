@@ -62,6 +62,12 @@ const {
 } = require('./discover-rerank');
 
 const {
+  parseTravelChatRequest,
+  runTravelChatTurn,
+  TRAVEL_CHAT_ALLOWED_TOOLS,
+} = require('./travel-chat');
+
+const {
   loadAiConfig,
 } = require('./ai-config');
 
@@ -716,6 +722,71 @@ app.post(
               ? error.code
               : 'ai_provider_unavailable',
         });
+    }
+  },
+);
+
+app.post(
+  '/ai/chat',
+  async (req, res) => {
+    try {
+      const request =
+        parseTravelChatRequest(req.body);
+
+      const result = await runTravelChatTurn({
+        ai,
+        embeddings: discoverEmbeddings,
+        request,
+      });
+
+      return res.json({
+        ok: true,
+        provider: result.provider,
+        model: result.model,
+        reply: result.reply,
+        matches: result.matches,
+        toolsUsed: result.toolsUsed,
+        allowedTools: TRAVEL_CHAT_ALLOWED_TOOLS,
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          ok: false,
+          error: 'invalid_request',
+        });
+      }
+
+      if (
+        error instanceof SyntaxError ||
+        error?.message === 'invalid_ai_response'
+      ) {
+        return res.status(502).json({
+          ok: false,
+          error: 'invalid_ai_response',
+        });
+      }
+
+      const code =
+        error instanceof AiProviderError
+          ? error.code
+          : typeof error?.code === 'string'
+            ? error.code
+            : 'ai_provider_unavailable';
+
+      const status =
+        code === 'stale_embeddings'
+          ? 409
+          : code === 'embeddings_unavailable' ||
+              code === 'ai_disabled'
+            ? 503
+            : 503;
+
+      console.error(error);
+
+      return res.status(status).json({
+        ok: false,
+        error: code,
+      });
     }
   },
 );

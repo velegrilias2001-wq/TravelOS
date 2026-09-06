@@ -38,6 +38,7 @@ import {
 import { tripService } from '@/services/trip-service';
 import {
   filterWorldPlaces,
+  selectWorldFootprintStats,
   selectWorldPlaces,
   worldPlaceCounts,
   type WorldPlace,
@@ -140,6 +141,11 @@ export default function WorldScreen() {
 
   const counts = useMemo(
     () => worldPlaceCounts(destinations),
+    [destinations],
+  );
+
+  const footprint = useMemo(
+    () => selectWorldFootprintStats(destinations),
     [destinations],
   );
 
@@ -348,6 +354,17 @@ export default function WorldScreen() {
                 trips.length === 1
                   ? 'trip'
                   : 'trips'
+              }
+            />
+
+            <View style={styles.statDivider} />
+
+            <Stat
+              value={footprint.livedCountries}
+              label={
+                footprint.livedCountries === 1
+                  ? 'country'
+                  : 'countries'
               }
             />
 

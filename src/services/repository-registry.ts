@@ -4,6 +4,7 @@ import {
   budgetRepository,
   fxRateRepository,
   memoryRepository,
+  packingRepository,
   travelBookRepository,
   travelDNARepository,
   importRepository,
@@ -28,6 +29,7 @@ export const repositories = {
   savedPlaces: savedPlaceRepository,
   runtimeState: tripRuntimeStateRepository,
   stopLivedStates: tripStopLivedStateRepository,
+  packing: packingRepository,
 } as const;
 
 export type RepositoryRegistry = typeof repositories;

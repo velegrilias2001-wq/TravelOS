@@ -195,6 +195,20 @@ function TripSpaceTabs({
       />
 
       <Tabs.Screen
+        name="packing"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="copilot"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
         name="accommodation"
         options={{
           href: null,

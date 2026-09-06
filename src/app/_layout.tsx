@@ -218,6 +218,13 @@ export default function RootLayout() {
           />
 
           <Stack.Screen
+            name="travel-chat"
+            options={{
+              presentation: 'card',
+            }}
+          />
+
+          <Stack.Screen
             name="trip/[tripId]"
             options={{
               presentation: 'card',

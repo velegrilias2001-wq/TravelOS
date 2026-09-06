@@ -11,4 +11,5 @@ export * from './sqlite-traveler-repository';
 export * from './sqlite-trip-repository';
 export * from './sqlite-trip-runtime-state-repository';
 export * from './sqlite-trip-stop-lived-state-repository';
+export * from './sqlite-packing-repository';
 export * from './booking-persistence-operations';

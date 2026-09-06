@@ -22,7 +22,9 @@ import { motion } from '@/features/motion/timing';
 import type { Trip, TripDay } from '@/domain/entities';
 import {
   homeFeaturedPlaceLabel,
+  selectHomeReadinessGlances,
   selectHomeRuntimeSummary,
+  type HomeReadinessGlance,
 } from '@/services/home-runtime';
 import { tripService } from '@/services/trip-service';
 import { getTripThemePack } from '@/services/trip-theme';
@@ -79,6 +81,8 @@ export default function HomeScreen() {
   const [days, setDays] = useState<TripDay[]>(
     [],
   );
+  const [readinessGlances, setReadinessGlances] =
+    useState<HomeReadinessGlance[]>([]);
 
   const tripIds = useMemo(
     () => trips.map((trip) => trip.id).join('\0'),
@@ -128,6 +132,60 @@ export default function HomeScreen() {
       clock,
     );
   }, [runtimeRevision, trips, days]);
+
+  const upcomingTripIds = useMemo(
+    () =>
+      runtimeSummary.upcomingTrips
+        .slice(0, 3)
+        .map((trip) => trip.id)
+        .join('\0'),
+    [runtimeSummary.upcomingTrips],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      const upcoming =
+        runtimeSummary.upcomingTrips.slice(0, 3);
+
+      if (upcoming.length === 0) {
+        setReadinessGlances([]);
+        return () => {
+          cancelled = true;
+        };
+      }
+
+      void (async () => {
+        try {
+          const workspaces = (
+            await Promise.all(
+              upcoming.map((trip) =>
+                tripService.getWorkspace(trip.id),
+              ),
+            )
+          ).filter(
+            (workspace): workspace is NonNullable<
+              typeof workspace
+            > => workspace !== null,
+          );
+
+          if (!cancelled) {
+            setReadinessGlances(
+              selectHomeReadinessGlances(workspaces),
+            );
+          }
+        } catch {
+          if (!cancelled) {
+            setReadinessGlances([]);
+          }
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [upcomingTripIds, runtimeSummary.upcomingTrips]),
+  );
 
   const featured = runtimeSummary.featured;
   const featuredTrip = featured?.trip;
@@ -318,6 +376,24 @@ export default function HomeScreen() {
 
           <PressableScale
             accessibilityRole="button"
+            accessibilityLabel="Ask TravelOS chat"
+            style={styles.secondaryButton}
+            onPress={() =>
+              router.push('/travel-chat')
+            }
+          >
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={20}
+              color={colors.brand}
+            />
+            <Text style={styles.secondaryButtonText}>
+              Ask TravelOS
+            </Text>
+          </PressableScale>
+
+          <PressableScale
+            accessibilityRole="button"
             accessibilityLabel="Import bookings or files"
             style={styles.importRow}
             onPress={() =>
@@ -430,6 +506,59 @@ export default function HomeScreen() {
       </RiseIn>
       ) : null}
 
+      {readinessGlances.length > 0 ? (
+        <RiseIn
+          factKey={`ready:${compositionKey}:${upcomingTripIds}`}
+          delayMs={motion.staggerMs * 3.5}
+        >
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionEyebrow}>
+                BEFORE YOU GO
+              </Text>
+              <Text style={styles.sectionTitle}>
+                Trip readiness
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.glanceList}>
+            {readinessGlances.map((glance) => (
+              <PressableScale
+                key={glance.tripId}
+                accessibilityRole="button"
+                accessibilityLabel={`${glance.title} ${glance.percentReady} percent ready`}
+                style={styles.glanceRow}
+                onPress={() =>
+                  router.push({
+                    pathname: '/trip/[tripId]/more',
+                    params: {
+                      tripId: glance.tripId,
+                    },
+                  })
+                }
+              >
+                <View style={styles.glanceCopy}>
+                  <Text
+                    style={styles.tripTitle}
+                    numberOfLines={1}
+                  >
+                    {glance.title}
+                  </Text>
+                  <Text style={styles.tripMeta}>
+                    {glance.readyCount} of{' '}
+                    {glance.totalCheckCount} ready
+                  </Text>
+                </View>
+                <Text style={styles.glancePercent}>
+                  {glance.percentReady}%
+                </Text>
+              </PressableScale>
+            ))}
+          </View>
+        </RiseIn>
+      ) : null}
+
       {trips.length > 0 ? (
         <RiseIn
           factKey={`trips:${compositionKey}`}
@@ -524,6 +653,29 @@ export default function HomeScreen() {
             </Text>
           </PressableScale>
 
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Ask TravelOS chat"
+            style={styles.actionCard}
+            onPress={() => router.push('/travel-chat')}
+          >
+            <View style={styles.actionIcon}>
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={23}
+                color={colors.brand}
+              />
+            </View>
+            <Text style={styles.actionTitle}>
+              Ask TravelOS
+            </Text>
+            <Text style={styles.actionDescription}>
+              Chat for grounded destinations, then Confirm.
+            </Text>
+          </PressableScale>
+        </View>
+
+        <View style={[styles.actionGrid, { marginTop: spacing[3] }]}>
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel="Open World"
@@ -877,6 +1029,34 @@ const styles = StyleSheet.create({
 
   tripList: {
     gap: spacing[2],
+  },
+
+  glanceList: {
+    gap: spacing[2],
+    marginBottom: spacing[2],
+  },
+
+  glanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[3],
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    ...shadows.subtle,
+  },
+
+  glanceCopy: {
+    flex: 1,
+    gap: spacing[1],
+  },
+
+  glancePercent: {
+    fontFamily: fontFamily.serifSemiBold,
+    fontSize: fontSize.bodyLarge,
+    color: colors.teal,
   },
 
   tripRow: {

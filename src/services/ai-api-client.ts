@@ -76,6 +76,37 @@ export interface DiscoverRetrieveResult {
   matches: DiscoverRetrieveHit[];
 }
 
+export interface TravelChatRequest {
+  messages: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+  }>;
+  contentHash: string;
+  travelDNA?: {
+    pace?: string;
+    interests?: string[];
+    travelStyle?: string;
+    budgetStyle?: string;
+    dailyRhythm?: string;
+    typicalParty?: string;
+  } | null;
+  brief?: {
+    intent?: string;
+    pace?: string;
+    interests?: string[];
+    party?: string;
+  } | null;
+  limit?: number;
+}
+
+export interface TravelChatResult {
+  provider: string;
+  model: string;
+  reply: string;
+  matches: DiscoverRetrieveHit[];
+  toolsUsed: string[];
+}
+
 export interface DiscoverExplainRequest {
   identity: string;
   brief: {
@@ -717,6 +748,76 @@ export class AIAPIClient {
       provider: payload.provider,
       model: payload.model,
       identities,
+    };
+  }
+
+  async travelChat(
+    request: TravelChatRequest,
+    signal?: AbortSignal,
+  ): Promise<TravelChatResult> {
+    const response = await fetch(
+      `${normalizeBaseUrl(this.baseUrl)}/ai/chat`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+        signal,
+      },
+    );
+
+    let payload: {
+      ok?: unknown;
+      provider?: unknown;
+      model?: unknown;
+      reply?: unknown;
+      matches?: unknown;
+      toolsUsed?: unknown;
+      error?: unknown;
+    };
+
+    try {
+      payload = await response.json();
+    } catch {
+      throw new Error(
+        'AI backend returned an unreadable response',
+      );
+    }
+
+    if (!response.ok || payload.ok !== true) {
+      const errorCode =
+        typeof payload.error === 'string'
+          ? payload.error
+          : 'ai_request_failed';
+
+      throw new Error(errorCode);
+    }
+
+    if (
+      typeof payload.provider !== 'string' ||
+      typeof payload.model !== 'string' ||
+      typeof payload.reply !== 'string' ||
+      !payload.reply.trim()
+    ) {
+      throw new Error(
+        'AI backend returned invalid travel chat payload',
+      );
+    }
+
+    const toolsUsed = Array.isArray(payload.toolsUsed)
+      ? payload.toolsUsed.filter(
+          (value): value is string =>
+            typeof value === 'string',
+        )
+      : [];
+
+    return {
+      provider: payload.provider,
+      model: payload.model,
+      reply: payload.reply.trim(),
+      matches: parseDiscoverHits(payload.matches),
+      toolsUsed,
     };
   }
 }

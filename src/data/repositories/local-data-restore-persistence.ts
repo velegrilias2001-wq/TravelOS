@@ -28,6 +28,7 @@ const USER_TABLE_DELETE_ORDER = [
   'travel_book_memories',
   'travel_books',
   'memories',
+  'packing_items',
   'trip_stop_lived_states',
   'trip_runtime_states',
   'budget_items',

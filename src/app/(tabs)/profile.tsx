@@ -316,7 +316,7 @@ export default function ProfileScreen() {
               ? 'Checking copilot…'
               : 'TravelOS Copilot'
           }
-          body="Local AI for free-time ideas and grounded Discover explanations. Never invents destinations or writes trip truth."
+          body="Local-dev AI for Travel Chat, Trip Copilot, free-time ideas, and grounded Discover. Never invents destinations or writes trip truth. Kill-switch: AI_ENABLED=false on the AI server."
           onPress={checkCopilot}
         />
 

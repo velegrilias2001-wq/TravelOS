@@ -11,3 +11,4 @@ export * from './traveler-repository';
 export * from './trip-repository';
 export * from './trip-runtime-state-repository';
 export * from './trip-stop-lived-state-repository';
+export * from './packing-repository';

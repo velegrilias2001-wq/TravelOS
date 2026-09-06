@@ -192,7 +192,7 @@ test(
       );
 
       assert.equal(version.user_version, DATABASE_VERSION);
-      assert.equal(DATABASE_VERSION, 21);
+      assert.equal(DATABASE_VERSION, 22);
 
       await database.execute(
         `

@@ -29,3 +29,4 @@ export * from './trip-runtime-state';
 export * from './trip-stop';
 
 export * from './trip-stop-lived-state';
+export * from './packing-item';

@@ -21,7 +21,7 @@ import {
   reconcileStopDayRelationships,
 } from './stop-day-integrity-migration';
 
-export const DATABASE_VERSION = 21;
+export const DATABASE_VERSION = 22;
 
 interface UserVersionRow {
   user_version: number;
@@ -1803,6 +1803,40 @@ export async function migrateDatabase(
 
         await transaction.execAsync(
           'PRAGMA user_version = 21;',
+        );
+      },
+    );
+  }
+
+  /**
+   * Version 22
+   * Trip-owned packing checklist. Traveler-authored only.
+   */
+  if (currentVersion < 22) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await transaction.execAsync(`
+          CREATE TABLE IF NOT EXISTS packing_items (
+            id TEXT PRIMARY KEY NOT NULL,
+            trip_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            packed INTEGER NOT NULL
+              CHECK (packed IN (0, 1)),
+            position INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (trip_id)
+              REFERENCES trips(id)
+              ON DELETE CASCADE
+          );
+
+          CREATE INDEX IF NOT EXISTS
+            idx_packing_items_trip_id
+          ON packing_items(trip_id);
+        `);
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 22;',
         );
       },
     );
