@@ -8,17 +8,36 @@
  *
  * Usage:
  *   npx tsc --project tsconfig.test.json
- *   node scripts/generate-discover-embeddings.cjs [--model=bge-m3]
+ *   node scripts/generate-discover-embeddings.cjs [--model=…]
  *
- * Requires a running local Ollama with the embedding model pulled.
+ * Providers (pick one):
+ *   Ollama (local-dev default):
+ *     OLLAMA_BASE_URL=http://127.0.0.1:11434
+ *   OpenAI-compatible (hosted / OpenAI API):
+ *     AI_BASE_URL=https://api.openai.com/v1
+ *     AI_API_KEY=…   (or HF_TOKEN)
  */
 
 const fs = require('node:fs');
 const path = require('node:path');
 
-const OLLAMA_BASE_URL =
+const OLLAMA_BASE_URL = (
   process.env.OLLAMA_BASE_URL ||
-  'http://127.0.0.1:11434';
+  'http://127.0.0.1:11434'
+).replace(/\/+$/, '');
+
+const OPENAI_BASE_URL = (
+  process.env.AI_BASE_URL ||
+  ''
+)
+  .trim()
+  .replace(/\/+$/, '');
+
+const OPENAI_API_KEY = (
+  process.env.AI_API_KEY ||
+  process.env.HF_TOKEN ||
+  ''
+).trim();
 
 const CORPUS_MODULE = path.join(
   __dirname,
@@ -58,6 +77,14 @@ function parseModel() {
   return flag.slice('--model='.length).trim() || null;
 }
 
+function resolveEmbedBackend() {
+  if (OPENAI_BASE_URL && OPENAI_API_KEY) {
+    return 'openai_compatible';
+  }
+
+  return 'ollama';
+}
+
 function loadModules() {
   if (
     !fs.existsSync(CORPUS_MODULE) ||
@@ -80,11 +107,12 @@ function loadModules() {
   };
 }
 
-async function postJson(url, body) {
+async function postJson(url, body, headers = {}) {
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...headers,
     },
     body: JSON.stringify(body),
   });
@@ -92,7 +120,7 @@ async function postJson(url, body) {
   return response;
 }
 
-async function embed(model, inputs) {
+async function embedWithOllama(model, inputs) {
   const response = await postJson(
     `${OLLAMA_BASE_URL}/api/embed`,
     { model, input: inputs },
@@ -143,11 +171,53 @@ async function embed(model, inputs) {
   return { model, vectors };
 }
 
+async function embedWithOpenAiCompatible(model, inputs) {
+  const response = await postJson(
+    `${OPENAI_BASE_URL}/embeddings`,
+    { model, input: inputs },
+    { Authorization: `Bearer ${OPENAI_API_KEY}` },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `OpenAI-compatible /embeddings failed: ${response.status} ${await response.text()}`,
+    );
+  }
+
+  const payload = await response.json();
+  const rows = Array.isArray(payload.data)
+    ? payload.data
+        .slice()
+        .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+    : null;
+
+  if (!rows || rows.length !== inputs.length) {
+    throw new Error(
+      `OpenAI-compatible /embeddings returned ${rows?.length ?? 0} vectors for ${inputs.length} inputs`,
+    );
+  }
+
+  return {
+    model: payload.model || model,
+    vectors: rows.map((row) => row.embedding),
+  };
+}
+
+async function embed(model, inputs) {
+  const backend = resolveEmbedBackend();
+
+  if (backend === 'openai_compatible') {
+    return embedWithOpenAiCompatible(model, inputs);
+  }
+
+  return embedWithOllama(model, inputs);
+}
+
 function roundVector(vector) {
   return vector.map((value) => {
     if (!Number.isFinite(value)) {
       throw new Error(
-        'Ollama returned a non-finite embedding value',
+        'Embedding provider returned a non-finite value',
       );
     }
 
@@ -163,8 +233,12 @@ async function main() {
 
   const model =
     parseModel() ||
+    process.env.AI_EMBEDDING_MODEL ||
     process.env.OLLAMA_EMBED_MODEL ||
     semantic.DISCOVER_EMBEDDING_MODEL_CANDIDATE;
+
+  const backend = resolveEmbedBackend();
+  console.log(`Embedding via ${backend} (${model})`);
 
   const corpus = loadGroundedDiscoverCorpus();
   const documents =
@@ -193,7 +267,7 @@ async function main() {
 
   if (!dimension) {
     throw new Error(
-      'Ollama returned an empty embedding vector',
+      'Embedding provider returned an empty vector',
     );
   }
 

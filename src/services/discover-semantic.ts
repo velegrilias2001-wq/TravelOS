@@ -30,7 +30,7 @@ import {
  * production architecture choice.
  */
 export const DISCOVER_EMBEDDING_MODEL_CANDIDATE =
-  'bge-m3';
+  'text-embedding-3-small';
 
 export const DISCOVER_EMBEDDING_ARTIFACT_VERSION = 1;
 

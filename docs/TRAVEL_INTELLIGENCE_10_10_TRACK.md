@@ -22,6 +22,27 @@ Hard rules stay in force (`AGENTS.md`, `PRODUCT_VISION.md`): AI is not a destina
 - [x] Compare-in-thread when ≥2 grounded cards
 - [ ] Operator: hosted `openai_compatible` + HTTPS `EXPO_PUBLIC_TRAVELOS_AI_URL` in EAS
 - [ ] Production geo/OCR through same proxy
+- [ ] Preview APK Decide→Confirm + Organize ≥3 Accept on device/emulator with **hosted** AI
+
+#### Operator activation (Android first; iOS parked until Mac)
+
+Client already accepts HTTPS TravelOS AI proxy URLs (`resolveTravelOsAiBaseUrl`). Keys stay on `server/` only.
+
+1. Deploy `server/` behind HTTPS (Fly / Railway / Render / your VPS). Do not expose Ollama publicly without auth.
+2. On that host `server/.env`:
+   - `AI_PROVIDER=openai_compatible`
+   - `AI_BASE_URL=https://…/v1` (HF Inference Endpoint or OpenAI-compatible)
+   - `AI_API_KEY=` / `HF_TOKEN=` (server only)
+   - `AI_CHAT_MODEL=` / `AI_EMBEDDING_MODEL=`
+   - `AI_ENABLED=true`
+   - Optional: `GOOGLE_TIMEZONE_API_KEY`, `GOOGLE_DIRECTIONS_API_KEY`, `GOOGLE_VISION_API_KEY` for geo/OCR
+3. EAS Preview env (Expo dashboard or `npx eas-cli env:create`):
+   - `EXPO_PUBLIC_TRAVELOS_AI_URL=https://YOUR_PROXY` (no credentials in URL)
+4. Build: `npx eas-cli build --platform android --profile preview`
+5. Smoke: Profile → TravelOS AI shows Ready; Chat Confirm → Create Trip; Copilot ≥3 Accept greens.
+6. Until hosted is live, local-dev remains `AI_PROVIDER=ollama` + `adb reverse tcp:8789` + loopback URL.
+
+Reply with the HTTPS proxy URL when ready (never paste API keys into chat).
 
 ### Wave U3 — Guided build — **done**
 
