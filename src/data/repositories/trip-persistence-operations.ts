@@ -41,10 +41,12 @@ export async function writeCanonicalTrip(
         end_date,
         accounting_currency,
         theme_pack_id,
+        party_type,
+        party_size,
         created_at,
         updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         title = excluded.title,
         status = excluded.status,
@@ -55,6 +57,8 @@ export async function writeCanonicalTrip(
         accounting_currency =
           excluded.accounting_currency,
         theme_pack_id = excluded.theme_pack_id,
+        party_type = excluded.party_type,
+        party_size = excluded.party_size,
         updated_at = excluded.updated_at;
     `,
     [
@@ -67,6 +71,8 @@ export async function writeCanonicalTrip(
       trip.endDate,
       trip.accountingCurrency,
       trip.themePackId ?? null,
+      trip.partyType ?? null,
+      trip.partySize ?? null,
       trip.createdAt,
       trip.updatedAt,
     ],

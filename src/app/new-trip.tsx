@@ -35,6 +35,7 @@ import {
 import type {
   TripIntent,
   TripPace,
+  TripPartyType,
 } from '@/domain/entities';
 
 import {
@@ -153,6 +154,14 @@ const PACE_OPTIONS:
       description:
         'Make the most of each day.',
     },
+  ];
+
+const PARTY_OPTIONS:
+  ChoiceOption<TripPartyType>[] = [
+    { value: 'solo', label: 'Solo' },
+    { value: 'couple', label: 'Couple' },
+    { value: 'friends', label: 'Friends' },
+    { value: 'family', label: 'Family' },
   ];
 
 type CreateTripStep =
@@ -316,6 +325,17 @@ export default function NewTripScreen() {
           ?.pace,
     );
 
+  const [
+    partyType,
+    setPartyType,
+  ] =
+    useState<TripPartyType | undefined>();
+
+  const [
+    partySizeText,
+    setPartySizeText,
+  ] = useState('');
+
   /**
    * Accounting currency is deliberately not inferred from
    * destination currency or Discover.
@@ -438,6 +458,14 @@ export default function NewTripScreen() {
     );
   };
 
+  const togglePartyType = (
+    value: TripPartyType,
+  ) => {
+    setPartyType((current) =>
+      current === value ? undefined : value,
+    );
+  };
+
   const addDestination = (
     selection: DestinationSelection,
   ) => {
@@ -550,6 +578,27 @@ export default function NewTripScreen() {
       let trip;
 
       try {
+        const partySizeRaw = partySizeText.trim();
+        let partySize: number | undefined;
+
+        if (partySizeRaw.length > 0) {
+          const parsed = Number(partySizeRaw);
+
+          if (
+            !Number.isInteger(parsed) ||
+            parsed < 1 ||
+            parsed > 99
+          ) {
+            Alert.alert(
+              'Check party size',
+              'Party size must be a whole number from 1 to 99, or leave it blank.',
+            );
+            return;
+          }
+
+          partySize = parsed;
+        }
+
         trip =
           buildNewTrip(
             {
@@ -568,6 +617,10 @@ export default function NewTripScreen() {
               intent,
 
               pace,
+
+              partyType,
+
+              partySize,
             },
 
             {
@@ -1247,6 +1300,95 @@ export default function NewTripScreen() {
                         },
                       )}
                     </View>
+                  </View>
+
+                  <View
+                    style={
+                      styles.choiceGroup
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.fieldLabel
+                      }
+                    >
+                      PARTY · OPTIONAL
+                    </Text>
+                    <Text
+                      style={
+                        styles.helperText
+                      }
+                    >
+                      Planning context only. Does not create traveler profiles.
+                    </Text>
+                    <View
+                      style={
+                        styles.intentGrid
+                      }
+                    >
+                      {PARTY_OPTIONS.map(
+                        (option) => {
+                          const selected =
+                            partyType ===
+                            option.value;
+
+                          return (
+                            <Pressable
+                              key={
+                                option.value
+                              }
+                              accessibilityRole="button"
+                              accessibilityState={{
+                                selected,
+                              }}
+                              accessibilityLabel={`Party: ${option.label}`}
+                              disabled={
+                                isSaving
+                              }
+                              onPress={() =>
+                                togglePartyType(
+                                  option.value,
+                                )
+                              }
+                              style={({
+                                pressed,
+                              }) => [
+                                styles.intentChip,
+                                selected &&
+                                  styles.choiceSelected,
+                                pressed &&
+                                  styles.pressed,
+                                isSaving &&
+                                  styles.inputDisabled,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.intentChipText,
+                                  selected &&
+                                    styles.choiceSelectedText,
+                                ]}
+                              >
+                                {
+                                  option.label
+                                }
+                              </Text>
+                            </Pressable>
+                          );
+                        },
+                      )}
+                    </View>
+                    <Field
+                      label="PARTY SIZE · OPTIONAL"
+                      placeholder="e.g. 2"
+                      value={partySizeText}
+                      disabled={isSaving}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      onChangeText={
+                        setPartySizeText
+                      }
+                    />
                   </View>
                 </View>
 

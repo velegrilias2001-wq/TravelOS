@@ -5,6 +5,7 @@ import type {
   TripId,
   TripIntent,
   TripPace,
+  TripPartyType,
   TripStatus,
 } from '../../domain/entities';
 import type {
@@ -24,6 +25,8 @@ interface TripRow {
   end_date: string;
   accounting_currency: string;
   theme_pack_id: string | null;
+  party_type: string | null;
+  party_size: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -79,6 +82,13 @@ function mapTripRow(
     accountingCurrency:
       row.accounting_currency,
     themePackId: row.theme_pack_id ?? undefined,
+    partyType:
+      (row.party_type as TripPartyType | null) ??
+      undefined,
+    partySize:
+      typeof row.party_size === 'number'
+        ? row.party_size
+        : undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

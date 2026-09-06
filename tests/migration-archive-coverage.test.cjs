@@ -341,7 +341,7 @@ test(
           `,
         );
       assert.equal(archiveCount.count, 1);
-      assert.equal(DATABASE_VERSION, 19);
+      assert.equal(DATABASE_VERSION, 20);
     } finally {
       database.close();
     }

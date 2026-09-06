@@ -21,7 +21,7 @@ import {
   reconcileStopDayRelationships,
 } from './stop-day-integrity-migration';
 
-export const DATABASE_VERSION = 19;
+export const DATABASE_VERSION = 20;
 
 interface UserVersionRow {
   user_version: number;
@@ -1642,5 +1642,77 @@ export async function migrateDatabase(
 
       PRAGMA user_version = 19;
     `);
+  }
+
+  /**
+   * Version 20
+   * Optional trip party planning context.
+   * Does not invent Traveler rows.
+   */
+  if (currentVersion < 20) {
+    await db.withExclusiveTransactionAsync(
+      async (transaction) => {
+        const tripsTable =
+          await transaction.getFirstAsync<{
+            name: string;
+          }>(
+            `
+              SELECT name
+              FROM sqlite_master
+              WHERE type = 'table'
+                AND name = 'trips';
+            `,
+          );
+
+        if (tripsTable) {
+          const columns =
+            await transaction.getAllAsync<TableInfoRow>(
+              'PRAGMA table_info(trips);',
+            );
+
+          const hasPartyType = columns.some(
+            (column) => column.name === 'party_type',
+          );
+
+          if (!hasPartyType) {
+            await transaction.execAsync(`
+              ALTER TABLE trips
+              ADD COLUMN party_type TEXT
+                CHECK (
+                  party_type IS NULL OR
+                  party_type IN (
+                    'solo',
+                    'couple',
+                    'friends',
+                    'family'
+                  )
+                );
+            `);
+          }
+
+          const hasPartySize = columns.some(
+            (column) => column.name === 'party_size',
+          );
+
+          if (!hasPartySize) {
+            await transaction.execAsync(`
+              ALTER TABLE trips
+              ADD COLUMN party_size INTEGER
+                CHECK (
+                  party_size IS NULL OR
+                  (
+                    party_size >= 1 AND
+                    party_size <= 99
+                  )
+                );
+            `);
+          }
+        }
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 20;',
+        );
+      },
+    );
   }
 }

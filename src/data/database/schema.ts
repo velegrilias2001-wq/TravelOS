@@ -64,6 +64,41 @@ CREATE TABLE IF NOT EXISTS trips (
 
   theme_pack_id TEXT,
 
+  party_type TEXT
+
+    CHECK (
+
+      party_type IS NULL OR
+
+      party_type IN (
+
+        'solo',
+
+        'couple',
+
+        'friends',
+
+        'family'
+
+      )
+
+    ),
+
+  party_size INTEGER
+
+    CHECK (
+
+      party_size IS NULL OR
+
+      (
+        party_size >= 1 AND
+
+        party_size <= 99
+
+      )
+
+    ),
+
   created_at TEXT NOT NULL,
 
   updated_at TEXT NOT NULL

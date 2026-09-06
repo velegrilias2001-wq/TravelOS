@@ -2,6 +2,7 @@ import type {
   Trip,
   TripIntent,
   TripPace,
+  TripPartyType,
 } from '@/domain/entities';
 
 import {
@@ -23,6 +24,8 @@ export interface NewTripInput {
   accountingCurrency: string;
   intent?: TripIntent;
   pace?: TripPace;
+  partyType?: TripPartyType;
+  partySize?: number;
 }
 
 export interface NewTripIdentityFactory {
@@ -47,6 +50,13 @@ const TRIP_PACES: TripPace[] = [
   'slow',
   'balanced',
   'full',
+];
+
+const TRIP_PARTY_TYPES: TripPartyType[] = [
+  'solo',
+  'couple',
+  'friends',
+  'family',
 ];
 
 export function buildNewTrip(
@@ -98,6 +108,27 @@ export function buildNewTrip(
     );
   }
 
+  if (
+    input.partyType !== undefined &&
+    !TRIP_PARTY_TYPES.includes(input.partyType)
+  ) {
+    throw new Error(
+      'Trip party type is not supported',
+    );
+  }
+
+  if (input.partySize !== undefined) {
+    if (
+      !Number.isInteger(input.partySize) ||
+      input.partySize < 1 ||
+      input.partySize > 99
+    ) {
+      throw new Error(
+        'Party size must be a whole number from 1 to 99',
+      );
+    }
+  }
+
   if (input.destinations.length === 0) {
     throw new Error(
       'Choose a destination from the map',
@@ -116,6 +147,8 @@ export function buildNewTrip(
     status: 'planned',
     intent: input.intent,
     pace: input.pace,
+    partyType: input.partyType,
+    partySize: input.partySize,
     destinations: input.destinations.map((destination) =>
       applyDestinationSelection(
         identities.destinationId(),

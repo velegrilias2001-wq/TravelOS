@@ -89,7 +89,7 @@ test(
 
       assert.equal(
         DATABASE_VERSION,
-        19,
+        20,
       );
 
       const columns =

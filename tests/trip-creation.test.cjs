@@ -86,6 +86,84 @@ test(
 );
 
 test(
+  'new trip creation accepts explicit trip party context',
+  () => {
+    const trip = buildNewTrip(
+      makeInput({
+        partyType: 'friends',
+        partySize: 3,
+      }),
+      IDENTITIES,
+      TIMESTAMP,
+    );
+
+    assert.equal(trip.partyType, 'friends');
+    assert.equal(trip.partySize, 3);
+    assert.deepEqual(trip.travelerIds, []);
+  },
+);
+
+test(
+  'new trip creation rejects invalid party size without inventing travelers',
+  () => {
+    assert.throws(
+      () =>
+        buildNewTrip(
+          makeInput({
+            partySize: 0,
+          }),
+          IDENTITIES,
+          TIMESTAMP,
+        ),
+      /party size must be a whole number/i,
+    );
+
+    assert.throws(
+      () =>
+        buildNewTrip(
+          makeInput({
+            partyType: 'crowd',
+          }),
+          IDENTITIES,
+          TIMESTAMP,
+        ),
+      /trip party type is not supported/i,
+    );
+  },
+);
+
+test(
+  'new trip party persists through canonical SQLite storage',
+  async () => {
+    const database = new NodeSQLiteDatabase();
+    await migrateDatabase(database);
+
+    const trip = buildNewTrip(
+      makeInput({
+        partyType: 'couple',
+        partySize: 2,
+      }),
+      IDENTITIES,
+      TIMESTAMP,
+    );
+
+    await saveCanonicalTrip(database, trip);
+
+    const row = await database.queryFirst(
+      `
+        SELECT party_type, party_size
+        FROM trips
+        WHERE id = ?;
+      `,
+      [trip.id],
+    );
+
+    assert.equal(row.party_type, 'couple');
+    assert.equal(row.party_size, 2);
+  },
+);
+
+test(
   'new trip creation rejects unsupported trip intent and pace',
   () => {
     assert.throws(

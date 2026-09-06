@@ -53,7 +53,7 @@ test(
       );
 
       assert.equal(version.user_version, DATABASE_VERSION);
-      assert.equal(DATABASE_VERSION, 19);
+      assert.equal(DATABASE_VERSION, 20);
 
       const table = await database.queryFirst(
         `

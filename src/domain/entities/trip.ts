@@ -24,6 +24,16 @@ export type TripPace =
   | 'balanced'
   | 'full';
 
+/**
+ * Planning context for who is traveling.
+ * Does not create Traveler rows by itself.
+ */
+export type TripPartyType =
+  | 'solo'
+  | 'couple'
+  | 'friends'
+  | 'family';
+
 export type DestinationTimezoneSource =
   | 'provider'
   | 'catalogue'
@@ -85,6 +95,18 @@ export interface Trip {
    * global Travel DNA pace.
    */
   pace?: TripPace;
+
+  /**
+   * Optional planning party type. Explicit only.
+   * Never auto-creates Traveler memberships.
+   */
+  partyType?: TripPartyType;
+
+  /**
+   * Optional headcount for planning context.
+   * Explicit positive integer only when set.
+   */
+  partySize?: number;
 
   destinations: TripDestination[];
 
