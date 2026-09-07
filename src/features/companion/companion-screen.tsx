@@ -221,7 +221,7 @@ export function CompanionScreen() {
       : destinations || 'Destination not yet set';
 
   return (
-    <Screen scroll contentStyle={styles.screenContent}>
+    <Screen scroll clearTabBar contentStyle={styles.screenContent}>
       <View style={styles.topBar}>
         <RoundButton
           icon="arrow-back"

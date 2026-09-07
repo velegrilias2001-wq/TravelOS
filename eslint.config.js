@@ -15,6 +15,10 @@ module.exports = defineConfig([
   ]),
   expoConfig,
   {
+    files: ['app.config.js'],
+    languageOptions: { globals: { __dirname: 'readonly' } },
+  },
+  {
     rules: {
       /*
        * Expo's React Compiler lint rules flag existing

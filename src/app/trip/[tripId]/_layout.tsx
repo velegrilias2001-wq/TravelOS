@@ -5,15 +5,14 @@ import {
   useLocalSearchParams,
 } from 'expo-router';
 
-import { useTravelOSTabBarStyle } from '@/features/navigation/use-travelos-tab-bar-style';
+import {
+  useTravelOSTabBarLabelStyle,
+  useTravelOSTabBarStyle,
+} from '@/features/navigation/use-travelos-tab-bar-style';
 import {
   TripWorkspaceProvider,
 } from '@/features/trip-workspace/trip-workspace-context';
-import {
-  colors,
-  fontFamily,
-  fontSize,
-} from '@/theme';
+import { colors } from '@/theme';
 
 export default function TripSpaceLayout() {
   const { tripId: routeTripId } =
@@ -42,6 +41,7 @@ function TripSpaceTabs({
   tripId: string;
 }) {
   const tabBarStyle = useTravelOSTabBarStyle();
+  const tabBarLabelStyle = useTravelOSTabBarLabelStyle();
 
   return (
     <Tabs
@@ -51,12 +51,10 @@ function TripSpaceTabs({
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.textMuted,
 
-        tabBarLabelStyle: {
-          fontFamily: fontFamily.sansMedium,
-          fontSize: fontSize.micro,
-          marginTop: 2,
+        tabBarLabelStyle,
+        tabBarItemStyle: {
+          paddingVertical: 0,
         },
-
         tabBarStyle,
       }}
     >

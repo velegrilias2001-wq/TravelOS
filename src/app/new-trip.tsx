@@ -1637,10 +1637,18 @@ export default function NewTripScreen() {
         {step === 'where' &&
         !canAdvanceWhere &&
         !isSaving ? (
-          <Text
-            style={styles.ctaHint}
-          >
-            Choose a destination to continue — or Help me decide.
+          <Text style={styles.ctaHint}>
+            Choose a destination to continue — or{' '}
+            <Text
+              accessibilityRole="link"
+              style={styles.ctaHintLink}
+              onPress={() =>
+                router.push('/travel-chat')
+              }
+            >
+              Help me decide
+            </Text>
+            .
           </Text>
         ) : null}
 
@@ -2311,6 +2319,12 @@ const styles =
       textAlign: 'center',
       color:
         colors.textMuted,
+    },
+
+    ctaHintLink: {
+      fontFamily: fontFamily.sansSemiBold,
+      color: colors.brand,
+      textDecorationLine: 'underline',
     },
 
     pressed: {

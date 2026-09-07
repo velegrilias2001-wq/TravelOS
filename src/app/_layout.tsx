@@ -97,7 +97,7 @@ export default function RootLayout() {
           .loadTrips();
 
         void reconcileTripNotifications();
-        void refreshAiPreferencesCache();
+        await refreshAiPreferencesCache();
 
         console.log(
           '[TravelOS] Bootstrap ready',

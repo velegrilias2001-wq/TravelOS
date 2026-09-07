@@ -150,7 +150,7 @@ export default function TripsScreen() {
   };
 
   return (
-    <Screen scroll>
+    <Screen scroll clearTabBar>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
           <Text style={styles.eyebrow}>

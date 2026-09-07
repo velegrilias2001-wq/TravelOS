@@ -299,7 +299,7 @@ export default function TravelersScreen() {
 
   return (
     <>
-      <Screen scroll>
+      <Screen scroll clearTabBar>
         <UtilityScreenHeader
           eyebrow={tripDestinationLabel(
             workspace.trip.destinations,

@@ -69,7 +69,7 @@ import {
   systemDirectionsUrl,
 } from '@/services/trip-map-context';
 import {
-  buildMappedStopRouteRequests,
+  buildTripRoutePlan,
   formatRouteLegSummary,
   lookupTripRouteLeg,
   type TripRouteLeg,
@@ -118,12 +118,6 @@ export default function TripMapScreen() {
     useState(false);
   const [focusedStopId, setFocusedStopId] =
     useState<string | null>(null);
-  const [routeLegs, setRouteLegs] = useState<
-    TripRouteLeg[]
-  >([]);
-  const [routesStatus, setRoutesStatus] = useState<
-    'idle' | 'loading' | 'ready' | 'unavailable'
-  >('idle');
   const { workspace } =
     useTripWorkspace();
 
@@ -271,6 +265,22 @@ export default function TripMapScreen() {
     dayFrame.kind === 'display-day' ||
     dayFrame.kind === 'assigned-destination';
 
+  const routePlan = useMemo(() => buildTripRoutePlan(workspace.stops, {
+    tripId: workspace.trip.id,
+    dayId: viewAll ? null : companion.displayDay?.id,
+  }), [workspace.stops, workspace.trip.id, companion.displayDay?.id, viewAll]);
+  const [routeResult, setRouteResult] = useState<{
+    plan: typeof routePlan;
+    legs: TripRouteLeg[];
+  } | null>(null);
+  // Never render old legs after a day change or a workspace mutation.
+  const currentRouteResult = routeResult?.plan === routePlan ? routeResult : null;
+  const routeLegs = reachability === 'offline' ? [] : currentRouteResult?.legs ?? [];
+  const routesStatus = routePlan.totalLegs === 0 ? 'idle'
+    : reachability === 'offline' ? 'unavailable'
+    : !currentRouteResult ? 'loading'
+    : routeLegs.length > 0 ? 'ready' : 'unavailable';
+
   const visibleStops = useMemo(
     () => {
       if (
@@ -411,33 +421,15 @@ export default function TripMapScreen() {
 
   useEffect(() => {
     let cancelled = false;
-
-    if (
-      mappedStops.length < 2 ||
-      reachability === 'offline'
-    ) {
-      setRouteLegs([]);
-      setRoutesStatus(
-        mappedStops.length < 2 ? 'idle' : 'unavailable',
-      );
-      return;
-    }
-
-    const requests = buildMappedStopRouteRequests(
-      mappedStops.map((item) => ({
-        id: item.stop.id,
-        coordinate: item.coordinate,
-      })),
-      'walking',
-    ).slice(0, 6);
-
-    setRoutesStatus('loading');
+    const controller = new AbortController();
+    if (routePlan.requests.length === 0 || reachability === 'offline') return;
 
     void (async () => {
       const legs: TripRouteLeg[] = [];
 
-      for (const request of requests) {
-        const leg = await lookupTripRouteLeg(request);
+      for (const request of routePlan.requests) {
+        if (cancelled) break;
+        const leg = await lookupTripRouteLeg(request, { signal: controller.signal });
 
         if (leg) {
           legs.push(leg);
@@ -448,16 +440,14 @@ export default function TripMapScreen() {
         return;
       }
 
-      setRouteLegs(legs);
-      setRoutesStatus(
-        legs.length > 0 ? 'ready' : 'unavailable',
-      );
+      setRouteResult({ plan: routePlan, legs });
     })();
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [mappedStops, reachability]);
+  }, [routePlan, reachability]);
 
   useEffect(() => {
     if (!requestedStopId) {
@@ -801,6 +791,16 @@ export default function TripMapScreen() {
                   </Text>
                 ) : null}
 
+                {routePlan.totalLegs > 0 ? (
+                  <Text style={styles.routeEtaText}>
+                    Walking estimates within {viewAll || !companion.displayDay ? 'each day' : 'this day'} only.
+                    {routePlan.omittedLegs > 0
+                      ? ` First ${routePlan.requests.length} of ${routePlan.totalLegs} legs requested.` : ''}
+                    {routesStatus === 'ready' && routeLegs.length < routePlan.totalLegs
+                      ? ` ${routeLegs.length} of ${routePlan.totalLegs} legs available.` : ''}
+                  </Text>
+                ) : null}
+
                 {routesStatus === 'ready' &&
                 routeLegs.length > 0 ? (
                   <Text style={styles.routeEtaText}>
@@ -811,7 +811,7 @@ export default function TripMapScreen() {
                 ) : null}
 
                 {routesStatus === 'unavailable' &&
-                mappedStops.length >= 2 ? (
+                routePlan.totalLegs > 0 ? (
                   <Text style={styles.routeEtaText}>
                     Walking routes unavailable
                   </Text>

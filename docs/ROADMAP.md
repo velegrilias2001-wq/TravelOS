@@ -1,5 +1,14 @@
 # TravelOS Development Roadmap
 
+## Trust follow-up — verified 2026-09-08
+
+- [x] Implement bounded corrections: unlocated Plan Assist themes; same-day adjacent-stop routes with explicit partial coverage; restore preserves AI-off; fail-closed serialized AI preferences; truthful scrollable privacy settings.
+- [x] Preserve P0 layout changes and repair Home card widths. App 402 tests, server 61 tests, TypeScript/whitespace pass; lint has 0 errors / 49 warnings. Isolated Android build/bootstrap, Home and AI-off cold-relaunch smoke passed.
+- [x] Focused Android restore-runtime and Plan/Map regression rehearsal using isolated data: repeated restore, AI-off, day generation, reorder/content integrity, unlocated themes and per-day route boundaries passed. Native Plan-to-Map reorder reflected correctly; test trip cleaned and temporary harness removed. Live-provider routes and the system restore picker remain separate checks.
+- [ ] Before public release: proxy access/abuse/cost controls, draft safety, recovery/backup validation, accessibility/localization and traveler trials from `PRODUCT_EXPERIENCE_AUDIT_2026-09-06.md`.
+
+Historical P1 checkmarks describe mixed code/test/visible-control evidence, not complete Android mutation coverage or production readiness. No provider/key change or release deployment is part of this follow-up.
+
 This sequence protects the canonical trip truth before adding product breadth. A phase may be refined as evidence changes, but later surface area should not outrun the integrity work in P0.
 
 ## Phase 0 — Foundation Hardening Sprint
@@ -208,6 +217,12 @@ T0–T4 Absolute Travel Intelligence and U1–U5 of [`docs/TRAVEL_INTELLIGENCE_1
 ## Elevation Program — toward phone-delight 100%
 
 Goal: keep the canonical native core and close the gap with the PWA on **feel** — unique TravelOS design, purposeful motion, and the strongest copilot possible on the **existing** `/ai/*` APIs — without inventing destinations or silent SQLite writes.
+
+### UX Fix Wave — device layout stability
+
+- [x] **P0 layout / safe area (development build)** — shared tab-bar metrics and label styling, explicit scroll clearance across main and Trip Space screens, Home glance width repair, compact Plan time fields, World empty-state separation, and one-line Discover timing chips. Pixel 8 development-build smoke passed with Android 3-button navigation on 2026-09-06.
+- [x] **P0 preview gate** — EAS preview APK `78a537ed-22cd-40b0-bfe4-a5112c498057` built and passed a focused Pixel 8 standalone smoke without Metro on 2026-09-06: cold bootstrap, persisted onboarding completion, Home layout/tab clearance, Discover one-line `Flexible`, and World inline empty state. Play stays paused for P1.
+- [x] **P1 hybrid audit** — the 10-scenario handoff matrix is recorded in `TRAVEL_INTELLIGENCE_10_10_TRACK.md`. Standalone preview evidence confirms empty-app doors, AI-off direct native creation, empty-Plan Assist plus manual Add moment, Packing Accept plus manual add, More manual tools, and Companion Day→Destination assignment. Existing code/tests cover unavailable-AI and import-review boundaries not destructively repeated on this preview. No blocking UI/flow gap required new architecture. Play remains operator-paused.
 
 ### Wave 1 — Home / identity / copilot foundation
 - [x] Deeper ink/teal palette refinement (still TravelOS, not a new brand)

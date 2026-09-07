@@ -1058,6 +1058,9 @@ function TimingChoice({
       onPress={onPress}
     >
       <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
         style={[
           styles.timingChoiceText,
 
@@ -1258,11 +1261,11 @@ const styles =
 
     timingChoice: {
       flex: 1,
+      minWidth: 0,
       minHeight: 44,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal:
-        spacing[2],
+      paddingHorizontal: spacing[2],
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: radius.pill,
@@ -1280,6 +1283,8 @@ const styles =
       fontFamily:
         fontFamily.sansMedium,
       fontSize: fontSize.caption,
+      lineHeight: 16,
+      textAlign: 'center',
       color:
         colors.textSecondary,
     },

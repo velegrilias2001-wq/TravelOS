@@ -6,6 +6,25 @@ After U1–U5 + hosted Render/`openai_compatible` preview APK smoke (2026-09-06)
 
 Hard rules stay in force (`AGENTS.md`, `PRODUCT_VISION.md`): AI is not a destination source; no silent SQLite; DNA is explicit and confirm-gated; `/new-trip` creates trips.
 
+UX Fix Wave note (2026-09-06): P0 layout/safe-area repairs passed Pixel 8 Android development-build and standalone EAS preview (`78a537ed-22cd-40b0-bfe4-a5112c498057`) smoke with 3-button navigation. Play remains paused pending the P1 hybrid/manual-path audit.
+
+### UX Fix Wave P1 — hybrid audit (2026-09-06)
+
+| Scenario | Manual lane | Suggestion / AI lane | Evidence | Result |
+| --- | --- | --- | --- | --- |
+| Empty app, no DNA or trips | Create Trip picker and Import remain available | Home Decide opens Travel Chat; Discover remains grounded | Standalone preview | Pass |
+| AI disabled in Profile | Create Trip native picker, Plan, More and Packing remain available | Client request boundary rejects AI calls with explicit disabled copy | Standalone preview + client contract | Pass |
+| Hosted AI cold or unavailable | Deterministic Discover and all manual trip tools remain usable | Health probe loads, then reports Ready or Unavailable; request failures do not write SQLite | Cold Render preview probe + automated failure tests | Pass; fully offline device toggle not repeated |
+| Mid-trip destination with empty Plan | Manual `Add a moment` opens the complete editor | Plan Assist offers theme-only candidates; Accept is required | Standalone preview | Pass |
+| Packing | Free-text add remains present | Curated starter rows require Accept | Standalone preview + persistence tests | Pass |
+| Discover or direct creation | `/new-trip` accepts a real native picker result directly | Grounded Discover / Chat Confirm only prefills `/new-trip` | Standalone direct-picker preview + prior hosted preview smoke + handoff tests | Pass |
+| Copilot and More | More exposes Trip Details, Travelers, Budget, Accommodation, Packing, Memories and Travel Book | Copilot proposals remain capped and confirm-gated; free-time advice is display-only | Standalone preview + copilot tests | Pass |
+| Import review | Pending claims can be edited/accepted through Import Review without AI | OCR is optional extraction only and cannot accept a claim | Import review implementation + persistence tests | Pass; not repeated on this preview |
+| Companion without Day→Destination | Plan/Companion offer explicit assignment by saved destination ID | No AI or coordinate inference assigns the city | Standalone preview | Pass |
+| Greek and English surfaces | Mixed copy remains usable without blocking controls | Suggestion provenance/confirmation language remains visible | Standalone preview | Pass; localization unification remains later |
+
+No new architecture or product feature was required by this audit. Play remains explicitly paused until the operator chooses to reopen Part C.
+
 ---
 
 ## Waves

@@ -18,8 +18,8 @@ test('AI contract keeps confirm-only writes and openai_compatible production pat
   assert.equal(AI_LOCAL_DEV_CONTRACT.shipping, 'proxy-gated');
   assert.equal(AI_LOCAL_DEV_CONTRACT.canMutateSqlite, false);
   assert.equal(AI_LOCAL_DEV_CONTRACT.canWriteBookings, false);
-  assert.equal(AI_LOCAL_DEV_CONTRACT.cloudRetention, 'none');
-  assert.equal(AI_LOCAL_DEV_CONTRACT.billedCost, 'none');
+  assert.equal(AI_LOCAL_DEV_CONTRACT.cloudRetention, 'provider-dependent');
+  assert.equal(AI_LOCAL_DEV_CONTRACT.billedCost, 'provider-dependent');
   assert.equal(AI_LOCAL_DEV_CONTRACT.unreachableFallback, 'degrade');
 });
 

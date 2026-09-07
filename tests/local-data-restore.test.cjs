@@ -27,6 +27,21 @@ const {
 
 const TIMESTAMP = '2026-09-05T10:00:00.000Z';
 
+test('restore preserves explicit device AI-off and notification preferences on repeated restore', async () => {
+  const db = new NodeSQLiteDatabase();
+  try {
+    await migrateDatabase(db);
+    await db.execute('INSERT INTO ai_preferences (singleton_key, enabled, updated_at) VALUES (1, 0, ?)', [TIMESTAMP]);
+    await db.execute('INSERT INTO notification_preferences (singleton_key, enabled, lead_minutes, updated_at) VALUES (1, 1, 30, ?)', [TIMESTAMP]);
+    for (let i = 0; i < 2; i += 1) {
+      await replaceLocalDataFromExport(db, createDocument());
+      assert.deepEqual({ ...await db.queryFirst('SELECT enabled, updated_at FROM ai_preferences') }, { enabled: 0, updated_at: TIMESTAMP });
+      assert.deepEqual({ ...await db.queryFirst('SELECT enabled, lead_minutes, updated_at FROM notification_preferences') }, { enabled: 1, lead_minutes: 30, updated_at: TIMESTAMP });
+      assert.equal((await loadTripById(db, 'trip-1')).id, 'trip-1');
+    }
+  } finally { await db.close(); }
+});
+
 function createDocument() {
   return buildLocalDataExportDocument({
     travelDNA: {

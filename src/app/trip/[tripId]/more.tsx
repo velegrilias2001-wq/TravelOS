@@ -151,7 +151,7 @@ export default function MoreScreen() {
   };
 
   return (
-    <Screen scroll>
+    <Screen scroll clearTabBar>
       <UtilityScreenHeader
         eyebrow={destinationLabel.toUpperCase()}
         title="Trip hub"

@@ -182,7 +182,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <Screen scroll>
+    <Screen scroll clearTabBar>
       <View style={styles.header}>
         <Text style={styles.eyebrow}>
           YOUR TRAVELOS
@@ -197,7 +197,15 @@ export default function ProfileScreen() {
         </Text>
       </View>
 
-      <View style={styles.identityCard}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Open Travel DNA"
+        style={({ pressed }) => [
+          styles.identityCard,
+          pressed && styles.pressed,
+        ]}
+        onPress={() => router.push('/travel-dna')}
+      >
         <View style={styles.identityIcon}>
           <Ionicons
             name="person-outline"
@@ -218,8 +226,12 @@ export default function ProfileScreen() {
           <Text style={styles.identityBody}>
             Your Travel DNA keeps the preferences you explicitly choose for how you like to travel.
           </Text>
+
+          <Text style={styles.identityCta}>
+            Open Travel DNA
+          </Text>
         </View>
-      </View>
+      </Pressable>
 
       <View style={styles.sectionHeading}>
         <Text style={styles.sectionEyebrow}>
@@ -569,6 +581,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
     color: colors.textSecondary,
+  },
+
+  identityCta: {
+    marginTop: spacing[3],
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: fontSize.caption,
+    color: colors.brand,
   },
 
   sectionHeading: {

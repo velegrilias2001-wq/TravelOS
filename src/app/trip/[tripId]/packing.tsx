@@ -192,7 +192,7 @@ export default function PackingScreen() {
   };
 
   return (
-    <Screen scroll>
+    <Screen scroll clearTabBar>
       <UtilityScreenHeader
         eyebrow="ΠΡΙΝ ΦΥΓΕΙΣ"
         title="Αποσκευές"

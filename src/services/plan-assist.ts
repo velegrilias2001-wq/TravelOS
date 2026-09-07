@@ -275,17 +275,6 @@ export function buildPlanAssistCandidates(input: {
     pushUniqueActivity(ordered, seen, 'wellness_pause');
   }
 
-  const cityLocation =
-    catalogue &&
-    input.dayDestination?.latitude != null &&
-    input.dayDestination.longitude != null
-      ? {
-          name: catalogue.destination.name,
-          latitude: catalogue.destination.latitude,
-          longitude: catalogue.destination.longitude,
-        }
-      : undefined;
-
   const candidates: PlanAssistCandidate[] = [];
 
   for (const activityType of ordered) {
@@ -322,7 +311,6 @@ export function buildPlanAssistCandidates(input: {
       stopType: ACTIVITY_TO_STOP_TYPE[activityType],
       reason,
       provenance,
-      location: cityLocation,
     });
 
     if (candidates.length >= limit) {
@@ -400,13 +388,9 @@ export function buildStopFromPlanAssistCandidate(input: {
     title: candidate.title,
     type: candidate.stopType,
     order: input.order,
-    location: candidate.location
-      ? {
-          name: candidate.location.name,
-          latitude: candidate.location.latitude,
-          longitude: candidate.location.longitude,
-        }
-      : undefined,
+    // These are activity themes, never verified venues. This also rejects
+    // city coordinates carried by a stale session candidate after an update.
+    location: undefined,
     notes: provenanceNote,
     createdAt: input.nowIso,
     updatedAt: input.nowIso,

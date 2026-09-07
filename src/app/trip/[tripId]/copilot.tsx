@@ -521,7 +521,7 @@ export default function TripCopilotScreen() {
   };
 
   return (
-    <Screen scroll>
+    <Screen scroll clearTabBar>
       <UtilityScreenHeader
         eyebrow="TRIP COPILOT"
         title="Επόμενα χρήσιμα βήματα"

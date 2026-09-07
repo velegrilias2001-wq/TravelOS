@@ -689,7 +689,7 @@ export default function MemoriesScreen() {
 
   return (
     <>
-      <Screen scroll>
+      <Screen scroll clearTabBar>
         <UtilityScreenHeader
           eyebrow={destinationLabel.toUpperCase()}
           title="Memories"

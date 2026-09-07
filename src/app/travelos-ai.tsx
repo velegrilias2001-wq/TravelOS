@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -31,7 +31,7 @@ type LoadStatus = 'loading' | 'ready' | 'error';
 
 export default function TravelOsAiScreen() {
   const [status, setStatus] = useState<LoadStatus>('loading');
-  const [enabled, setEnabled] = useState(true);
+  const [enabled, setEnabled] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [healthDetail, setHealthDetail] = useState<string | null>(
     null,
@@ -44,17 +44,6 @@ export default function TravelOsAiScreen() {
       const prefs = await refreshAiPreferencesCache();
       setEnabled(prefs.enabled);
 
-      if (prefs.enabled) {
-        const health = await probeCopilotHealth();
-        setHealthDetail(
-          `${health.status === 'ready' ? 'Ready' : 'Unavailable'} · ${health.detail}`,
-        );
-      } else {
-        setHealthDetail(
-          'TravelOS AI is off on this device. Plan, Map, and trips still work.',
-        );
-      }
-
       setStatus('ready');
     } catch {
       setStatus('error');
@@ -66,6 +55,28 @@ export default function TravelOsAiScreen() {
       void reload();
     }, [reload]),
   );
+
+  // Local privacy controls must not wait for a cold or unreachable server.
+  useEffect(() => {
+    if (status !== 'ready' || !enabled) {
+      setHealthDetail('TravelOS AI is off on this device. Your saved trips still work.');
+      return;
+    }
+    let active = true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    setHealthDetail('Checking availability…');
+    void probeCopilotHealth(controller.signal).then((health) => {
+      if (active) {
+        setHealthDetail(`${health.status === 'ready' ? 'Ready' : 'Unavailable'} · ${health.detail}`);
+      }
+    }).finally(() => clearTimeout(timeout));
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [enabled, status]);
 
   const persistEnabled = async (nextEnabled: boolean) => {
     setIsSaving(true);
@@ -83,7 +94,7 @@ export default function TravelOsAiScreen() {
   };
 
   return (
-    <Screen>
+    <Screen scroll>
       <UtilityScreenHeader
         eyebrow="YOUR TRAVELOS"
         title="TravelOS AI"
@@ -126,10 +137,9 @@ export default function TravelOsAiScreen() {
                 Use TravelOS AI
               </Text>
               <Text style={styles.rowBody}>
-                Chat, Trip Copilot ideas, Discover explain,
-                and free-time suggestions. Never invents
-                destinations or writes trip truth without
-                your confirm.
+                Chat, Discover AI explanations and free-time advice.
+                Suggestions need your confirmation before they become
+                saved trip facts. Manual planning remains available.
               </Text>
             </View>
             <Switch
@@ -151,11 +161,26 @@ export default function TravelOsAiScreen() {
           ) : null}
 
           <Text style={styles.privacy}>
-            When on, this device may send Travel DNA summary,
-            Discover Brief, grounded catalogue identities, and
-            trip readiness counts to your TravelOS AI proxy.
-            Provider API keys stay on the server. Retention:
-            none by TravelOS. Server kill-switch: AI_ENABLED=false.
+            When you use AI, relevant context is sent to the TravelOS
+            server and its configured AI provider. Chat includes the
+            messages you enter. Discover may include your Travel DNA,
+            discovery preferences and catalogue places.
+          </Text>
+          <Text style={styles.privacy}>
+            Free-time advice may also include trip dates, itinerary
+            names, times and precise locations, booking titles, providers,
+            amounts and payment status, stay names, addresses and
+            check-in/out times, traveler counts and budget summaries.
+            Structured trip context excludes confirmation codes,
+            contact details and free-form notes. Avoid typing sensitive
+            information into chat.
+          </Text>
+          <Text style={styles.privacy}>
+            Provider retention and processing depend on the configured
+            service; zero retention is not guaranteed. Turning AI off
+            blocks new AI requests, but cannot recall data already sent.
+            Online place lookup and directions are separate services.
+            Provider API keys stay on the server.
           </Text>
         </View>
       ) : null}

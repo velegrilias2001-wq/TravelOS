@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import {
   Pressable,
+  StyleSheet,
   type PressableProps,
   type StyleProp,
   type ViewStyle,
@@ -19,6 +20,7 @@ type PressableScaleProps = Omit<
   'style'
 > & {
   children: ReactNode;
+  containerStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
   pressedStyle?: StyleProp<ViewStyle>;
 };
@@ -26,9 +28,11 @@ type PressableScaleProps = Omit<
 /**
  * Primary CTA press: opacity plus a tiny scale (0.98).
  * Reduce Motion keeps opacity-only feedback.
+ * Outer wrapper owns layout styles (flex/width) so row children do not collapse.
  */
 export function PressableScale({
   children,
+  containerStyle,
   style,
   pressedStyle,
   disabled,
@@ -40,27 +44,29 @@ export function PressableScale({
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: scale.get() }],
   }));
 
   return (
-    <Animated.View style={[{ alignSelf: 'stretch' }, animatedStyle]}>
+    <Animated.View
+      style={[styles.container, containerStyle, animatedStyle]}
+    >
       <Pressable
         disabled={disabled}
         onPressIn={(event) => {
           if (!disabled && !reduceMotion) {
             playLightImpact();
-            scale.value = withTiming(0.98, {
+            scale.set(withTiming(0.98, {
               duration: 90,
-            });
+            }));
           }
           onPressIn?.(event);
         }}
         onPressOut={(event) => {
           if (!reduceMotion) {
-            scale.value = withTiming(1, {
+            scale.set(withTiming(1, {
               duration: 120,
-            });
+            }));
           }
           onPressOut?.(event);
         }}
@@ -75,3 +81,7 @@ export function PressableScale({
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { alignSelf: 'stretch' },
+});

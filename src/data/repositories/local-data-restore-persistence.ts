@@ -45,14 +45,13 @@ const USER_TABLE_DELETE_ORDER = [
   'travelers',
   'saved_places',
   'travel_dna',
-  'notification_preferences',
-  'ai_preferences',
 ] as const;
 
 /**
  * Atomically replace canonical local TravelOS data with an export document.
  * Preserves exported IDs. Does not invent facts or restore photo bytes.
  * Import review queues are wiped (not part of the export contract).
+ * Device AI/privacy and notification choices are not trip data and survive.
  */
 export async function replaceLocalDataFromExport(
   database: Database,

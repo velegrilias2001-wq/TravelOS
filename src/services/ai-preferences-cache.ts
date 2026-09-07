@@ -3,7 +3,8 @@
  * Kept free of SQLite imports so Node unit tests can load AI clients.
  */
 
-let cachedEnabled = true;
+// No network AI until the canonical device preference has loaded successfully.
+let cachedEnabled = false;
 
 export function getCachedAiEnabled(): boolean {
   return cachedEnabled;

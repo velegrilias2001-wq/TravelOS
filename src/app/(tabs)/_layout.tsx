@@ -1,15 +1,15 @@
 import { Tabs } from 'expo-router';
 
-import { useTravelOSTabBarStyle } from '@/features/navigation/use-travelos-tab-bar-style';
-import { TabBarIcon } from '@/features/motion/tab-bar-icon';
 import {
-  colors,
-  fontFamily,
-  fontSize,
-} from '@/theme';
+  useTravelOSTabBarLabelStyle,
+  useTravelOSTabBarStyle,
+} from '@/features/navigation/use-travelos-tab-bar-style';
+import { TabBarIcon } from '@/features/motion/tab-bar-icon';
+import { colors } from '@/theme';
 
 export default function MainTabsLayout() {
   const tabBarStyle = useTravelOSTabBarStyle();
+  const tabBarLabelStyle = useTravelOSTabBarLabelStyle();
 
   return (
     <Tabs
@@ -19,12 +19,10 @@ export default function MainTabsLayout() {
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.textMuted,
 
-        tabBarLabelStyle: {
-          fontFamily: fontFamily.sansMedium,
-          fontSize: fontSize.micro,
-          marginTop: 2,
+        tabBarLabelStyle,
+        tabBarItemStyle: {
+          paddingVertical: 0,
         },
-
         tabBarStyle,
       }}
     >

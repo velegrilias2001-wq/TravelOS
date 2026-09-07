@@ -393,7 +393,7 @@ export default function TripDetailsScreen() {
           : undefined
       }
     >
-      <Screen scroll>
+      <Screen scroll clearTabBar>
         <View style={styles.topBar}>
           <Pressable
             accessibilityRole="button"

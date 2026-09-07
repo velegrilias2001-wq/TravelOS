@@ -2,7 +2,8 @@ import {
   LOCAL_DEV_AI_FALLBACK_URL,
   resolveLocalDevAiBaseUrl,
 } from './ai-local-dev-contract';
-import type { TripMapCoordinate } from './trip-map-context';
+import { mappedStopCoordinate, type TripMapCoordinate } from './trip-map-context';
+import type { TripStop } from '../domain/entities/trip-stop';
 
 export type TripDirectionsMode =
   | 'driving'
@@ -121,34 +122,39 @@ export function parseDirectionsResponse(
 }
 
 /**
- * Consecutive mapped stops become route legs. Untimed or unmapped
- * stops are skipped — never invent a path.
+ * Build walking estimates only between adjacent saved stops within each day.
+ * Include unmapped stops in the input: a missing location breaks the chain.
+ * Scope is explicit; a day with no usable pair never borrows another day.
  */
-export function buildMappedStopRouteRequests(
-  stops: readonly {
-    id: string;
-    coordinate: TripMapCoordinate;
-  }[],
-  mode: TripDirectionsMode = 'walking',
-): Array<TripRouteLegRequest & { fromStopId: string; toStopId: string }> {
-  const requests: Array<
-    TripRouteLegRequest & { fromStopId: string; toStopId: string }
-  > = [];
-
-  for (let index = 0; index < stops.length - 1; index += 1) {
-    const from = stops[index];
-    const to = stops[index + 1];
-
-    requests.push({
-      fromStopId: from.id,
-      toStopId: to.id,
-      origin: from.coordinate,
-      destination: to.coordinate,
-      mode,
-    });
+export function buildTripRoutePlan(
+  stops: readonly TripStop[],
+  scope: { tripId: string; dayId?: string | null },
+) {
+  const byDay = new Map<string, TripStop[]>();
+  for (const stop of stops) {
+    if (stop.tripId !== scope.tripId || !stop.dayId ||
+        (scope.dayId != null && stop.dayId !== scope.dayId)) continue;
+    const dayStops = byDay.get(stop.dayId) ?? [];
+    dayStops.push(stop);
+    byDay.set(stop.dayId, dayStops);
   }
-
-  return requests;
+  const all: (TripRouteLegRequest & { fromStopId: string; toStopId: string; dayId: string })[] = [];
+  for (const [dayId, dayStops] of byDay) {
+    dayStops.sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+    for (let index = 0; index < dayStops.length - 1; index += 1) {
+      const from = dayStops[index];
+      const to = dayStops[index + 1];
+      const origin = mappedStopCoordinate(from);
+      const destination = mappedStopCoordinate(to);
+      if (!origin || !destination || from.id === to.id ||
+          !Number.isInteger(from.order) || !Number.isInteger(to.order) ||
+          to.order <= from.order) continue;
+      all.push({ fromStopId: from.id, toStopId: to.id, dayId,
+        origin, destination, mode: 'walking' });
+    }
+  }
+  const requests = all.slice(0, 6);
+  return { requests, totalLegs: all.length, omittedLegs: all.length - requests.length };
 }
 
 export async function lookupTripRouteLeg(

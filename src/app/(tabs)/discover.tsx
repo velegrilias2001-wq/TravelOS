@@ -27,7 +27,7 @@ export default function DiscoverScreen() {
   const router = useRouter();
 
   return (
-    <Screen scroll>
+    <Screen scroll clearTabBar>
       <RiseIn factKey="discover-home">
         <View style={styles.header}>
           <Text style={styles.eyebrow}>

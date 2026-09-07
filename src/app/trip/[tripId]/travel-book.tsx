@@ -364,7 +364,7 @@ export default function TravelBookScreen() {
   };
 
   return (
-    <Screen scroll>
+    <Screen scroll clearTabBar>
       <UtilityScreenHeader
         eyebrow={destinationLabel.toUpperCase()}
         title="Travel Book"

@@ -459,7 +459,7 @@ export default function BudgetScreen() {
 
   return (
     <>
-      <Screen scroll>
+      <Screen scroll clearTabBar>
         <UtilityScreenHeader
           eyebrow={`TRIP MONEY · ${accountingCurrency}`}
           title="Budget"

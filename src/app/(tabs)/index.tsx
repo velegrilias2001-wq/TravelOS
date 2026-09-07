@@ -244,7 +244,7 @@ export default function HomeScreen() {
     : `empty:${trips.length}`;
 
   return (
-    <Screen scroll>
+    <Screen scroll clearTabBar>
       <RiseIn factKey={`brand:${compositionKey}`}>
         <View style={styles.header}>
           <View style={styles.brandBlock}>
@@ -515,7 +515,7 @@ export default function HomeScreen() {
             <Text style={styles.statValue}>
               {isLoading ? '—' : trips.length}
             </Text>
-            <Text style={styles.statLabel}>
+            <Text style={styles.statLabel} numberOfLines={2}>
               Ταξίδια
             </Text>
           </View>
@@ -536,7 +536,7 @@ export default function HomeScreen() {
             <Text style={styles.statValue}>
               {isLoading ? '—' : completedTrips}
             </Text>
-            <Text style={styles.statLabel}>
+            <Text style={styles.statLabel} numberOfLines={2}>
               Έζησες
             </Text>
           </View>
@@ -544,6 +544,7 @@ export default function HomeScreen() {
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel="Open trips"
+            containerStyle={styles.statCardContainer}
             style={styles.statCard}
             onPress={() => router.push('/trips')}
           >
@@ -560,7 +561,7 @@ export default function HomeScreen() {
               />
             </View>
             <Text style={styles.statValue}>Όλα</Text>
-            <Text style={styles.statLabel}>
+            <Text style={styles.statLabel} numberOfLines={2}>
               Άνοιξε ταξίδια
             </Text>
           </PressableScale>
@@ -697,6 +698,7 @@ export default function HomeScreen() {
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel="Open Discover"
+            containerStyle={styles.actionCardContainer}
             style={styles.actionCard}
             onPress={() => router.push('/discover')}
           >
@@ -718,6 +720,7 @@ export default function HomeScreen() {
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel="Ask TravelOS chat"
+            containerStyle={styles.actionCardContainer}
             style={styles.actionCard}
             onPress={() => router.push('/travel-chat')}
           >
@@ -741,6 +744,7 @@ export default function HomeScreen() {
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel="Open World"
+            containerStyle={styles.actionCardContainer}
             style={styles.actionCard}
             onPress={() => router.push('/world')}
           >
@@ -1179,18 +1183,25 @@ const styles = StyleSheet.create({
 
   statsRow: {
     flexDirection: 'row',
+    alignItems: 'stretch',
     gap: spacing[3],
   },
 
   statCard: {
     flex: 1,
+    minWidth: 0,
     minHeight: 124,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing[4],
+    padding: spacing[3],
     justifyContent: 'space-between',
+  },
+
+  statCardContainer: {
+    flex: 1,
+    minWidth: 0,
   },
 
   statIcon: {
@@ -1206,14 +1217,16 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.serifSemiBold,
     fontSize: fontSize.titleSmall,
     color: colors.textPrimary,
-    marginTop: spacing[4],
+    marginTop: spacing[3],
   },
 
   statLabel: {
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.caption,
+    lineHeight: 16,
     color: colors.textMuted,
     marginTop: spacing[1],
+    flexShrink: 1,
   },
 
   tripList: {
@@ -1280,6 +1293,11 @@ const styles = StyleSheet.create({
   actionGrid: {
     flexDirection: 'row',
     gap: spacing[3],
+  },
+
+  actionCardContainer: {
+    flex: 1,
+    minWidth: 0,
   },
 
   actionCard: {

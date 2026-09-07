@@ -1348,7 +1348,7 @@ export default function PlanScreen() {
 
   return (
     <>
-      <Screen scroll>
+      <Screen scroll clearTabBar>
         <UtilityScreenHeader
           eyebrow={tripDestinationLabel(
             workspace.trip.destinations,
@@ -2815,6 +2815,7 @@ export default function PlanScreen() {
                 <View style={styles.timeRow}>
                   <View style={styles.timeColumn}>
                     <LocalTimeField
+                      compact
                       label="START TIME"
                       value={time}
                       onChange={(value) => {
@@ -2830,6 +2831,7 @@ export default function PlanScreen() {
 
                   <View style={styles.timeColumn}>
                     <LocalTimeField
+                      compact
                       label="END TIME"
                       value={endTime}
                       onChange={(value) => {
@@ -3816,6 +3818,7 @@ const styles =
 
     timeColumn: {
       flex: 1,
+      minWidth: 0,
     },
 
     timeHelp: {

@@ -815,7 +815,7 @@ export default function BookingsScreen() {
 
   return (
     <>
-      <Screen scroll>
+      <Screen scroll clearTabBar>
         <UtilityScreenHeader
           eyebrow={tripDestinationLabel(
             workspace.trip.destinations,

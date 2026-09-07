@@ -25,9 +25,9 @@ import MapView, {
 } from 'react-native-maps';
 import {
   SafeAreaView,
-  useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 
+import { useTravelOSTabBarClearance } from '@/features/navigation/use-travelos-tab-bar-style';
 import { FadeIn } from '@/features/motion/fade-in';
 import type {
   Trip,
@@ -71,7 +71,7 @@ const WORLD_REGION = {
 
 export default function WorldScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const tabBarClearance = useTravelOSTabBarClearance();
   const mapRef = useRef<MapView>(null);
 
   const trips = useTripStore(
@@ -313,9 +313,7 @@ export default function WorldScreen() {
           style={[
             styles.headerCard,
             {
-              marginTop:
-                Math.max(insets.top, 0) +
-                spacing[2],
+              marginTop: spacing[2],
             },
           ]}
         >
@@ -406,50 +404,48 @@ export default function WorldScreen() {
               }
             />
           </View>
+
+          {filteredDestinations.length === 0 ? (
+            <View style={styles.emptyStateInline}>
+              <View style={styles.emptyIcon}>
+                <Ionicons
+                  name="earth-outline"
+                  size={23}
+                  color={colors.brand}
+                />
+              </View>
+
+              <View style={styles.emptyCopy}>
+                <Text style={styles.emptyTitle}>
+                  {filter === 'lived'
+                    ? 'No lived places yet.'
+                    : filter === 'planned'
+                      ? 'No planned places in this list.'
+                      : 'Your world starts with a trip.'}
+                </Text>
+
+                <Text style={styles.emptyBody}>
+                  {filter === 'lived'
+                    ? 'Mark a planned stop done in Companion after you are there. A completed trip is not a visit.'
+                    : filter === 'planned'
+                      ? 'Every saved destination on these trips already has a done stop on an assigned day.'
+                      : 'Plan somewhere new and your travel world will grow from there.'}
+                </Text>
+              </View>
+            </View>
+          ) : null}
         </View>
       </SafeAreaView>
 
+      {filteredDestinations.length > 0 ? (
       <View
         style={[
           styles.bottomPanel,
           {
-            bottom: Math.max(
-              insets.bottom + 72,
-              88,
-            ),
+            bottom: tabBarClearance,
           },
         ]}
       >
-        {filteredDestinations.length ===
-        0 ? (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
-              <Ionicons
-                name="earth-outline"
-                size={23}
-                color={colors.brand}
-              />
-            </View>
-
-            <View style={styles.emptyCopy}>
-              <Text style={styles.emptyTitle}>
-                {filter === 'lived'
-                  ? 'No lived places yet.'
-                  : filter === 'planned'
-                    ? 'No planned places in this list.'
-                    : 'Your world starts with a trip.'}
-              </Text>
-
-              <Text style={styles.emptyBody}>
-                {filter === 'lived'
-                  ? 'Mark a planned stop done in Companion after you are there. A completed trip is not a visit.'
-                  : filter === 'planned'
-                    ? 'Every saved destination on these trips already has a done stop on an assigned day.'
-                    : 'Plan somewhere new and your travel world will grow from there.'}
-              </Text>
-            </View>
-          </View>
-        ) : (
           <>
             <View style={styles.panelHeader}>
               <View>
@@ -504,8 +500,8 @@ export default function WorldScreen() {
               </ScrollView>
             </FadeIn>
           </>
-        )}
       </View>
+      ) : null}
     </View>
   );
 }
@@ -935,6 +931,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing[3],
+  },
+
+  emptyStateInline: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[3],
+    marginTop: spacing[4],
+    paddingTop: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
 
   emptyIcon: {

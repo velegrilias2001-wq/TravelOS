@@ -13,6 +13,8 @@ import {
     type Edge,
 } from 'react-native-safe-area-context';
 
+import { useTravelOSTabBarClearance } from '@/features/navigation/use-travelos-tab-bar-style';
+
 import {
     colors,
     spacing,
@@ -22,6 +24,8 @@ interface ScreenProps extends PropsWithChildren {
   scroll?: boolean;
   edges?: Edge[];
   padded?: boolean;
+  /** Extra bottom padding so content clears the main/trip tab bar. */
+  clearTabBar?: boolean;
 
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
@@ -32,12 +36,16 @@ export function Screen({
   scroll = false,
   edges = ['top', 'left', 'right'],
   padded = true,
+  clearTabBar = false,
   style,
   contentStyle,
 }: ScreenProps) {
+  const tabBarClearance = useTravelOSTabBarClearance();
+
   const contentStyles = [
     styles.content,
     padded && styles.padded,
+    clearTabBar && { paddingBottom: tabBarClearance },
     contentStyle,
   ];
 

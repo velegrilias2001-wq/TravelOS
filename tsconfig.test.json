@@ -94,6 +94,7 @@
     "src/services/ai-api-client.ts",
     "src/services/ai-local-dev-contract.ts",
     "src/services/ai-preferences-cache.ts",
+    "src/services/ai-preferences-lifecycle.ts",
 
     "src/data/discover/index.ts",
     "src/data/discover/curated-western-europe.ts",

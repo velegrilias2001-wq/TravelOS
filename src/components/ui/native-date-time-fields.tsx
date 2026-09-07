@@ -346,12 +346,14 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.sansSemiBold,
     fontSize: fontSize.bodySmall,
     color: colors.textPrimary,
+    flexShrink: 1,
   },
   valueCompact: { fontSize: fontSize.caption },
   raw: {
     fontFamily: fontFamily.sansRegular,
     fontSize: fontSize.caption,
     color: colors.textMuted,
+    flexShrink: 1,
   },
   review: { color: colors.warning },
   clear: {

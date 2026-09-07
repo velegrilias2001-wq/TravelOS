@@ -59,10 +59,7 @@ test(
         candidate.provenance.label,
         /curated ·/,
       );
-      assert.equal(
-        candidate.location?.name,
-        'Lisbon',
-      );
+      assert.equal(candidate.location, undefined);
       assert.doesNotMatch(
         candidate.title,
         /Alfama|Belém|restaurant|museum|ticket/i,
@@ -124,10 +121,25 @@ test(
     assert.equal(stop.dayId, 'day-1');
     assert.equal(stop.order, 1);
     assert.match(stop.notes ?? '', /Plan Assist · curated:pt-lisbon/);
-    assert.equal(stop.location?.latitude, 38.7223);
+    assert.equal(stop.location, undefined);
     assert.equal(stop.startTime, undefined);
   },
 );
+
+test('accepting a stale theme candidate never persists its city-center pin', () => {
+  const [candidate] = buildPlanAssistCandidates({
+    dayDestination: LISBON, preferences: {}, limit: 1,
+  });
+  const stop = buildStopFromPlanAssistCandidate({
+    candidate: { ...candidate, location: { name: 'Lisbon', latitude: 38.7223, longitude: -9.1393 } },
+    tripId: 'trip-1', dayId: 'day-1', id: 'accepted', order: 2,
+    nowIso: '2026-09-07T10:00:00.000Z',
+  });
+  assert.equal(stop.location, undefined);
+  assert.equal(stop.id, 'accepted');
+  assert.equal(stop.dayId, 'day-1');
+  assert.match(stop.notes, /curated:pt-lisbon/);
+});
 
 test(
   'existing titles are skipped',

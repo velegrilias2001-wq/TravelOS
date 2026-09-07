@@ -13,8 +13,8 @@ export const AI_LOCAL_DEV_CONTRACT = {
   shipping: 'proxy-gated',
   canMutateSqlite: false,
   canWriteBookings: false,
-  cloudRetention: 'none',
-  billedCost: 'none',
+  cloudRetention: 'provider-dependent',
+  billedCost: 'provider-dependent',
   unreachableFallback: 'degrade',
 } as const;
 

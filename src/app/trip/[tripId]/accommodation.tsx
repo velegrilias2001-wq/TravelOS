@@ -563,7 +563,7 @@ export default function AccommodationScreen() {
 
   return (
     <>
-      <Screen scroll>
+      <Screen scroll clearTabBar>
         <UtilityScreenHeader
           eyebrow={tripDestinationLabel(
             workspace.trip.destinations,

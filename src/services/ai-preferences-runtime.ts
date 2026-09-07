@@ -8,6 +8,7 @@ import {
   getCachedAiEnabled,
   setCachedAiEnabled,
 } from './ai-preferences-cache';
+import { createAiPreferencesLifecycle } from './ai-preferences-lifecycle';
 
 export {
   assertAiEnabledForClient,
@@ -15,16 +16,18 @@ export {
   setCachedAiEnabled,
 };
 
-export async function refreshAiPreferencesCache(): Promise<AiPreferences> {
-  const prefs = await loadAiPreferences();
-  setCachedAiEnabled(prefs.enabled);
-  return prefs;
+const lifecycle = createAiPreferencesLifecycle({
+  load: loadAiPreferences,
+  save: saveAiPreferences,
+  publishEnabled: setCachedAiEnabled,
+});
+
+export function refreshAiPreferencesCache(): Promise<AiPreferences> {
+  return lifecycle.refresh();
 }
 
 export async function persistAiPreferences(input: {
   enabled: boolean;
 }): Promise<AiPreferences> {
-  const prefs = await saveAiPreferences(input);
-  setCachedAiEnabled(prefs.enabled);
-  return prefs;
+  return lifecycle.persist(input);
 }
