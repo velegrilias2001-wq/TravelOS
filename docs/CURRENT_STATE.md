@@ -4,11 +4,19 @@ Snapshot date: 2026-09-08
 
 This file describes verified implementation, not intended behavior. Unknown or unverified capabilities are called out explicitly.
 
-Planning checkpoint (2026-09-08): `ROADMAP.md` now starts with the active R1–R6 delivery plan: recovery/data ownership, safe editing, accessibility/consistency, release safety, traveler pilot, then evidence-led expansion. These are planned work, not completed capabilities. R1 backup/restore inventory and hardening is next; hosted proxy safety remains a gate before public exposure, not deferred release permission.
+Planning checkpoint (2026-09-08): `ROADMAP.md` starts with the active R1–R6 delivery plan: recovery/data ownership, safe editing, accessibility/consistency, release safety, traveler pilot, then evidence-led expansion. R1 is in progress as detailed below; later phases are planned work, not completed capabilities. Hosted proxy safety remains a gate before public exposure, not deferred release permission.
+
+## R1B.1 — Consistent export snapshot (2026-09-08)
+
+Export collection now uses one transaction-scoped SQLite connection, including repository hydration of destinations, traveler memberships, budget items and Travel Book memory links. Existing repository mappers are reused through a read-only adapter; global repositories and file/share operations are outside the snapshot. No schema, dependency, UI or format change.
+
+Verification: **418 app tests passed**, TypeScript and diff checks passed; lint **0 errors / 49 existing warnings**. New tests cover empty/read-only collection, linked-entity round-trip including foreign-currency expense/explicit FX and media URI metadata, a second SQLite connection committing changes during a WAL snapshot, and read failure/retry. The restore fixture is shared between test suites rather than duplicated. Android development-build rehearsal used a separately named temporary database with Expo SQLite transaction connections: concurrent writer committed without mixing the exported revision, two bookings retained one stop link, injected read failure/retry and restore round-trip passed. Bootstrap/self-test passed. Temporary database and test route were removed; original app/user data untouched. This was not a full successful Profile share/file-picker workflow or an iOS rehearsal.
+
+Next R1B.2: exhaustive semantic/legacy compatibility and output-size symmetry, successful Profile export/share/picker/confirmation restore, post-restore session/notification behavior and explicit plaintext/media portability disclosure. Large-archive latency and memory remain unbenchmarked; R1 is not complete.
 
 ## R1A — Recovery preflight and rollback safeguards (2026-09-08)
 
-Implemented input/identity validation before the restore transaction, detached queued input, native file-size and UTF-8 checks, plus negative-graph and real late-SQL rollback tests. App tests: **413 passing**; TypeScript and diff checks passed. No migration, dependency, media-byte recovery or provider change. Android isolated round-trip/rejection/rollback/retry passed; the real file picker rejected a synthetic malformed document. Test trip and Downloads fixture were cleaned; temporary route removed. See `RECOVERY_CONTRACT.md` for the coverage inventory, precise evidence and remaining R1B gates. R1 as a whole is still open: consistent export snapshot, exhaustive semantic compatibility, rich round-trip and full successful Profile file-picker restore remain unverified/unimplemented.
+Implemented input/identity validation before the restore transaction, detached queued input, native file-size and UTF-8 checks, plus negative-graph and real late-SQL rollback tests. At the initial R1A checkpoint, **413 app tests passed**; TypeScript and diff checks passed. No migration, dependency, media-byte recovery or provider change. Android isolated round-trip/rejection/rollback/retry passed; the real file picker rejected a synthetic malformed document. Test trip and Downloads fixture were cleaned; temporary route removed. See `RECOVERY_CONTRACT.md` and the newer R1B.1 checkpoint above for current coverage and remaining gates. R1 as a whole is still open.
 
 ## Trust and UX follow-up — verified 2026-09-08
 

@@ -1,6 +1,6 @@
 # Local recovery contract — R1 inventory, 2026-09-08
 
-Status: R1A input/identity safeguards and rollback verification implemented; R1 is not complete. Format remains `travelos.local-export.v1`, schema remains 23. This is a logical JSON export, not an encrypted database image or a full media backup.
+Status: R1A input/identity safeguards and rollback verification plus R1B.1 consistent export snapshot implemented; R1 is not complete. Format remains `travelos.local-export.v1`, schema remains 23. This is a logical JSON export, not an encrypted database image or a full media backup.
 
 ## Coverage observed in code
 
@@ -38,9 +38,17 @@ Node tests cover malformed/duplicate graphs, scalar corruption, direct-call pref
 
 Android: an isolated `com.travelos.app.hardening` fixture exercised successful round-trip, duplicate rejection, injected failure after replacement began, AI-off preservation and successful retry through Expo SQLite. The native file picker rejected a synthetic document containing a null traveler before restore. The fixture trip was cleaned, the synthetic Downloads file deleted, and the temporary route removed. The original app/database was untouched.
 
-## Remaining R1B work / release gates
+## R1B.1 snapshot boundary and evidence
 
-1. Replace multi-query export collection with a consistent repository-owned read snapshot; add a concurrent-mutation test. Current export can still mix revisions.
+The export collector instantiates the existing repository classes on one transaction-scoped reader, never the global repository registry. The read-only adapter rejects write/initialization/nested-transaction methods. All hydration queries share that connection. File serialization, filesystem writes and sharing occur after the transaction closes. Sequential per-trip collection avoids launching unbounded concurrent work; it does not establish large-archive performance readiness. The connection-scoped behavior follows [Expo SQLite SDK 57 transaction guidance](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/#withexclusivetransactionasynctask).
+
+Node tests use real repository classes and SQLite (only the native singleton is replaced by a fail-on-use sentinel). A second WAL connection commits trip/traveler/day/booking changes after the first trip read; the export retains the earlier coherent graph, and the next collection sees the new one. Empty export writes no records. A linked-entity fixture including budget/foreign expense/explicit FX, stays, runtime, media URI and Travel Book links survives export/restore without field loss. Injected late read failure returns no snapshot and the next attempt succeeds.
+
+Android rehearsal used actual Expo SQLite scoped transactions and a separate temporary database: concurrent committed trip/booking changes, two bookings for one stop, failure/retry and restore round-trip passed. That database was closed/deleted and the temporary route removed. No original user database was replaced. Full Profile successful file picking/sharing remains a separate gate.
+
+## Remaining R1B.2 work / release gates
+
+1. Benchmark large-archive collection time/memory and extend edge-case fixtures; consistency is now covered, not unlimited size/performance.
 2. Complete semantic validation coverage (all enums, currency/time policies, unsupported additional fields and compatibility fixtures) while preserving supported legacy wall/absolute-time strings. Current checks are not a complete schema for every field.
 3. Add rich round-trip fixtures covering all optional entities and media metadata, plus full Profile export/share → native picker → confirmation → replacement rehearsal. The R1A picker test covers rejection, not that whole successful workflow.
 4. Resolve oversize export behavior: current exporter has no matching 8 MiB output guard or chunk/package strategy. Do not claim every generated file is restorable until this is closed.

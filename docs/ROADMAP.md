@@ -7,7 +7,8 @@ This is the current execution order. It supersedes older next-step ordering belo
 ### R1 — Recovery and data ownership (in progress)
 
 - [x] **R1A:** coverage inventory, restore preflight for record identity/types/relationships, detached queued input, file-byte limits, injected-SQL rollback tests and isolated Android regression including malformed file-picker rejection. See `RECOVERY_CONTRACT.md`. No migration or media recovery is implied.
-- [ ] **R1B (next):** consistent export snapshot and concurrent mutation tests; complete semantic/legacy compatibility fixtures; export-size symmetry; rich round-trip; successful Profile export/share/picker/confirmation restore; post-restore workspace/notification refresh and media disclosure. R1 remains incomplete until these gates close.
+- [x] **R1B.1:** consistent transaction-scoped export through existing repository mappers; empty/read-only and linked-entity round-trip tests; concurrent committed WAL writer and read failure/retry tests. Isolated Android Expo SQLite snapshot/round-trip/retry passed; temporary database and route cleaned. App 418 tests, TypeScript/diff passed; lint 0 errors / 49 existing warnings. Includes the R1A one-to-many booking-link compatibility correction.
+- [ ] **R1B.2 (next):** complete semantic/legacy compatibility fixtures; export-size symmetry; broaden edge-case/large-archive coverage; successful Profile export/share/picker/confirmation restore; post-restore workspace/notification refresh and plaintext/media disclosure. R1 remains incomplete until these gates close.
 
 Goal: a traveler can understand what a backup contains and recover supported data without damaging the current database.
 
@@ -60,7 +61,7 @@ Choose the next investment from pilot evidence: deeper Companion usefulness, bro
 ### Working cadence and decisions
 
 - One bounded package at a time; review the diff, run applicable tests/TypeScript/lint/whitespace/native checks, update CURRENT_STATE, and checkpoint by commit when authorized. Do not combine unverified later phases into a passing earlier milestone.
-- Reassess after R1, after R3 and after the pilot: what works, remaining release gates, product value and next priority. The immediate next task is **R1 inventory plus failure-safe backup/restore hardening**, not new product breadth.
+- Reassess after R1, after R3 and after the pilot: what works, remaining release gates, product value and next priority. The immediate next task is **R1B.2 recovery compatibility and the full native file workflow**, not new product breadth.
 - Open decisions: backup/media recovery contract, first supported languages/platforms, proxy access model and retention, pilot participants/tasks, and later sync/monetization. No delivery dates, external purchases or production deployments are assumed.
 
 ## Trust follow-up — verified 2026-09-08

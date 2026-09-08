@@ -120,6 +120,7 @@
     "src/data/repositories/saved-place-persistence-operations.ts",
     "src/data/repositories/import-persistence-operations.ts",
     "src/data/repositories/local-data-restore-persistence.ts",
+    "src/data/repositories/local-data-export-persistence.ts",
     "src/services/saved-place-service.ts",
     "src/services/import-ics.ts",
     "src/services/import-calendar-file.ts",
