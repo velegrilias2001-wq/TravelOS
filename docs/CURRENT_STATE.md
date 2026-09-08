@@ -6,6 +6,10 @@ This file describes verified implementation, not intended behavior. Unknown or u
 
 Planning checkpoint (2026-09-08): `ROADMAP.md` now starts with the active R1–R6 delivery plan: recovery/data ownership, safe editing, accessibility/consistency, release safety, traveler pilot, then evidence-led expansion. These are planned work, not completed capabilities. R1 backup/restore inventory and hardening is next; hosted proxy safety remains a gate before public exposure, not deferred release permission.
 
+## R1A — Recovery preflight and rollback safeguards (2026-09-08)
+
+Implemented input/identity validation before the restore transaction, detached queued input, native file-size and UTF-8 checks, plus negative-graph and real late-SQL rollback tests. App tests: **413 passing**; TypeScript and diff checks passed. No migration, dependency, media-byte recovery or provider change. Android isolated round-trip/rejection/rollback/retry passed; the real file picker rejected a synthetic malformed document. Test trip and Downloads fixture were cleaned; temporary route removed. See `RECOVERY_CONTRACT.md` for the coverage inventory, precise evidence and remaining R1B gates. R1 as a whole is still open: consistent export snapshot, exhaustive semantic compatibility, rich round-trip and full successful Profile file-picker restore remain unverified/unimplemented.
+
 ## Trust and UX follow-up — verified 2026-09-08
 
 ### Plan editor draft safety — 2026-09-08

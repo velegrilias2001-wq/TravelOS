@@ -10,6 +10,7 @@ import type { TripDay } from '../../domain/entities/trip-day';
 import type { TripRuntimeState } from '../../domain/entities/trip-runtime-state';
 import type { TripStop } from '../../domain/entities/trip-stop';
 import type { LocalDataExportDocument } from '../../services/local-data-export';
+import { assertRestoreTextSize, parseLocalDataExportDocument } from '../../services/local-data-restore';
 
 import { writeCanonicalAccommodation } from './accommodation-persistence-operations';
 import { writeCanonicalBooking } from './booking-persistence-operations';
@@ -57,9 +58,14 @@ export async function replaceLocalDataFromExport(
   database: Database,
   document: LocalDataExportDocument,
 ): Promise<void> {
+  // Enforce preflight at the persistence boundary, not just the file picker.
+  // Own a detached copy before waiting for the transaction queue.
+  const serialized = JSON.stringify(document);
+  assertRestoreTextSize(serialized);
+  const validated = parseLocalDataExportDocument(JSON.parse(serialized));
   await database.transaction(async (connection) => {
     await wipeCanonicalUserTables(connection);
-    await insertExportDocument(connection, document);
+    await insertExportDocument(connection, validated);
   });
 }
 

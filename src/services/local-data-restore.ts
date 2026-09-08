@@ -3,6 +3,21 @@ import {
   type LocalDataExportDocument,
   type LocalDataExportTripBundle,
 } from './local-data-export';
+import { validateRestoreGraph } from './local-data-restore-validation';
+
+export const MAX_RESTORE_BYTES = 8 * 1024 * 1024;
+
+/** UTF-8 size without allocating another full byte buffer on native. */
+export function assertRestoreTextSize(text: string): void {
+  let bytes = 0;
+  for (const character of text) {
+    const code = character.codePointAt(0)!;
+    bytes += code <= 0x7f ? 1 : code <= 0x7ff ? 2 : code <= 0xffff ? 3 : 4;
+    if (bytes > MAX_RESTORE_BYTES) {
+      throw new LocalDataRestoreError('invalid_document', 'This backup exceeds the 8 MiB restore limit.');
+    }
+  }
+}
 
 export class LocalDataRestoreError extends Error {
   readonly code:
@@ -36,7 +51,7 @@ export type LocalDataRestoreSummary = {
 export function parseLocalDataExportDocument(
   raw: unknown,
 ): LocalDataExportDocument {
-  if (!raw || typeof raw !== 'object') {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new LocalDataRestoreError(
       'invalid_document',
       'This file is not a TravelOS backup.',
@@ -107,6 +122,10 @@ export function parseLocalDataExportDocument(
   for (const bundle of candidate.trips) {
     assertTripBundle(bundle);
   }
+
+  validateRestoreGraph(candidate as LocalDataExportDocument, (reason) => {
+    throw new LocalDataRestoreError('invalid_document', `This backup cannot be restored safely. ${reason}`);
+  });
 
   return candidate as LocalDataExportDocument;
 }

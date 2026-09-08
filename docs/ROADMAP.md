@@ -4,7 +4,10 @@
 
 This is the current execution order. It supersedes older next-step ordering below without erasing historical milestones. Starting point: a broad native local-first prototype, not a public-release-ready product. The trust package and Plan close protection are implemented; open risks must not be hidden behind the older phase checkmarks.
 
-### R1 — Recovery and data ownership (next implementation)
+### R1 — Recovery and data ownership (in progress)
+
+- [x] **R1A:** coverage inventory, restore preflight for record identity/types/relationships, detached queued input, file-byte limits, injected-SQL rollback tests and isolated Android regression including malformed file-picker rejection. See `RECOVERY_CONTRACT.md`. No migration or media recovery is implied.
+- [ ] **R1B (next):** consistent export snapshot and concurrent mutation tests; complete semantic/legacy compatibility fixtures; export-size symmetry; rich round-trip; successful Profile export/share/picker/confirmation restore; post-restore workspace/notification refresh and media disclosure. R1 remains incomplete until these gates close.
 
 Goal: a traveler can understand what a backup contains and recover supported data without damaging the current database.
 

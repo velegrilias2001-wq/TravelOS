@@ -321,3 +321,93 @@ test('failed restore leaves prior data when validation never reaches persistence
     LocalDataRestoreError,
   );
 });
+
+test('restore preflight rejects duplicate IDs, mismatched parents and dangling relationships', () => {
+  const mutations = [
+    d => d.trips.push(structuredClone(d.trips[0])),
+    d => d.trips[0].stops.push({ ...d.trips[0].stops[0] }),
+    d => { d.trips[0].stops[0].tripId = 'foreign'; },
+    d => { d.trips[0].stops[0].dayId = 'missing'; },
+    d => { d.trips[0].days[0].destinationId = 'missing'; },
+    d => { d.trips[0].bookings[0].stopId = 'missing'; },
+    d => { d.trips[0].travelers[0].firstName = 'Conflicting copy'; },
+    d => { d.trips[0].trip.travelerIds.push('missing'); },
+    d => { d.trips[0].trip.ownerTravelerId = 'missing'; },
+    d => { d.savedPlaces.push({ ...d.savedPlaces[0], id: 'different' }); },
+  ];
+  for (const mutate of mutations) {
+    const document = structuredClone(createDocument());
+    mutate(document);
+    assert.throws(() => parseLocalDataExportDocument(document), LocalDataRestoreError);
+  }
+});
+
+test('restore preflight rejects primitive corruption and invalid calendar/order values', () => {
+  const mutations = [
+    d => { d.trips[0].trip.startDate = '2026-02-30'; },
+    d => { d.trips[0].stops[0].title = { text: 'not a string' }; },
+    d => { d.trips[0].stops[0].order = '1'; },
+    d => { d.trips[0].stops[0].location = { name: 'bad', latitude: 91 }; },
+    d => { d.trips[0].bookings[0].isPaid = 'false'; },
+    d => { d.trips[0].packingItems[0].packed = 0; },
+    d => { d.trips[0].days[0].dayNumber = 0; },
+    d => { d.trips[0].days[0].notes = { nested: true }; },
+    d => { d.travelDNA.interests = 'food'; },
+  ];
+  for (const mutate of mutations) {
+    const document = structuredClone(createDocument());
+    mutate(document);
+    assert.throws(() => parseLocalDataExportDocument(document), LocalDataRestoreError);
+  }
+});
+
+test('direct restore calls validate before starting any database transaction', async () => {
+  const document = structuredClone(createDocument());
+  document.trips[0].bookings[0].stopId = 'missing';
+  let started = false;
+  await assert.rejects(replaceLocalDataFromExport({ transaction: async () => { started = true; } }, document), LocalDataRestoreError);
+  assert.equal(started, false);
+});
+
+test('late SQL failure rolls back the entire prior graph and privacy preferences', async () => {
+  const db = new NodeSQLiteDatabase();
+  try {
+    await migrateDatabase(db);
+    await replaceLocalDataFromExport(db, createDocument());
+    await db.execute('INSERT INTO ai_preferences (singleton_key, enabled, updated_at) VALUES (1, 0, ?)', [TIMESTAMP]);
+    const tables = (await db.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")).map(r => r.name);
+    const snapshot = async () => Promise.all(tables.map(name => db.query(`SELECT * FROM "${name}"`)));
+    const before = await snapshot();
+    const incoming = structuredClone(createDocument());
+    incoming.trips[0].trip.title = 'Replacement';
+    const failingDb = { transaction: operation => db.transaction(connection => operation({
+      query: connection.query.bind(connection), queryFirst: connection.queryFirst.bind(connection),
+      execute: async (sql, params) => {
+        if (/INSERT INTO packing_items/.test(sql)) throw new Error('injected late failure');
+        await connection.execute(sql, params);
+      },
+    })) };
+    await assert.rejects(replaceLocalDataFromExport(failingDb, incoming), /injected late failure/);
+    assert.deepEqual(await snapshot(), before);
+    await replaceLocalDataFromExport(db, incoming);
+    assert.equal((await loadTripById(db, 'trip-1')).title, 'Replacement');
+  } finally { db.close(); }
+});
+
+test('queued restore owns its validated document even if the caller mutates the input', async () => {
+  const db = new NodeSQLiteDatabase();
+  try {
+    await migrateDatabase(db);
+    const document = structuredClone(createDocument());
+    const restoring = replaceLocalDataFromExport(db, document);
+    document.trips[0].trip.title = 'Changed after request';
+    await restoring;
+    assert.equal((await loadTripById(db, 'trip-1')).title, 'Lisbon');
+  } finally { db.close(); }
+});
+
+test('backup text limit counts UTF-8 bytes, not just JavaScript characters', () => {
+  const { assertRestoreTextSize, MAX_RESTORE_BYTES } = require('../.test-build/src/services/local-data-restore.js');
+  assert.doesNotThrow(() => assertRestoreTextSize('a'.repeat(MAX_RESTORE_BYTES)));
+  assert.throws(() => assertRestoreTextSize('é'.repeat(MAX_RESTORE_BYTES / 2 + 1)), LocalDataRestoreError);
+});

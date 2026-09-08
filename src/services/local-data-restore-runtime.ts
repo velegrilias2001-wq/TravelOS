@@ -6,13 +6,13 @@ import { replaceLocalDataFromExport } from '@/data/repositories/local-data-resto
 import type { LocalDataExportDocument } from '@/services/local-data-export';
 import {
   LocalDataRestoreError,
+  MAX_RESTORE_BYTES,
+  assertRestoreTextSize,
   parseLocalDataExportDocument,
   summarizeLocalDataExport,
   type LocalDataRestoreSummary,
 } from '@/services/local-data-restore';
 import { useTripStore } from '@/store/trip-store';
-
-const MAX_RESTORE_BYTES = 8 * 1024 * 1024;
 
 export async function pickLocalDataExportDocument(): Promise<{
   document: LocalDataExportDocument;
@@ -38,10 +38,11 @@ export async function pickLocalDataExportDocument(): Promise<{
   }
 
   const asset = result.assets[0];
+  const info = await FileSystem.getInfoAsync(asset.uri);
 
   if (
-    typeof asset.size === 'number' &&
-    asset.size > MAX_RESTORE_BYTES
+    (typeof asset.size === 'number' && asset.size > MAX_RESTORE_BYTES) ||
+    (info.exists && typeof info.size === 'number' && info.size > MAX_RESTORE_BYTES)
   ) {
     throw new Error(
       'This backup file is too large to restore.',
@@ -51,6 +52,7 @@ export async function pickLocalDataExportDocument(): Promise<{
   const text = await FileSystem.readAsStringAsync(asset.uri, {
     encoding: FileSystem.EncodingType.UTF8,
   });
+  assertRestoreTextSize(text);
 
   let parsed: unknown;
 
