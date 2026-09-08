@@ -4,7 +4,18 @@ Snapshot date: 2026-09-08
 
 This file describes verified implementation, not intended behavior. Unknown or unverified capabilities are called out explicitly.
 
+Planning checkpoint (2026-09-08): `ROADMAP.md` now starts with the active R1–R6 delivery plan: recovery/data ownership, safe editing, accessibility/consistency, release safety, traveler pilot, then evidence-led expansion. These are planned work, not completed capabilities. R1 backup/restore inventory and hardening is next; hosted proxy safety remains a gate before public exposure, not deferred release permission.
+
 ## Trust and UX follow-up — verified 2026-09-08
+
+### Plan editor draft safety — 2026-09-08
+
+- Native Android Back and the editor close button now require explicit discard for changed title, type, start/end time or location facts. Keep editing retains the draft. Blank create and unchanged edit close immediately; successful save follows the existing SQLite/workspace path without prompting. Imported prefills are treated as unsaved, not confirmed facts.
+- This is session-only close protection, not autosave. No schema, dependency, provider, or global-state change. Forced process termination, external route replacement, and other forms are not protected by this change.
+- Automated evidence: five new draft-comparison tests cover independent fields, removing values/pins, unchanged or reverted edits, imported prefill, legacy time strings and changed coordinates/place IDs under the same label. App suite: **407 passing**; TypeScript and diff checks passed; lint **0 errors / 49 existing warnings**.
+- Android evidence on the separate `com.travelos.app.hardening` build: blank Back dismiss; dirty Back prompt; Keep editing retains title; X prompts; explicit discard leaves zero moments; normal save succeeds; unchanged edit dismisses; discarding an edited title preserves the saved title and stop count. The exact synthetic trip `draft-only-20260908` and its stop were deleted, cleanup confirmed, and the temporary setup route removed. Original app data was not touched. iOS, location-picker cancellation and failure-injected saves were not device-rehearsed in this pass.
+
+### Earlier trust package
 
 This checkpoint supersedes conflicting historical readiness/schema statements below; it is not production-release approval.
 

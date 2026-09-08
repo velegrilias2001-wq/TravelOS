@@ -1,6 +1,69 @@
 # TravelOS Development Roadmap
 
+## Active delivery plan — 2026-09-08
+
+This is the current execution order. It supersedes older next-step ordering below without erasing historical milestones. Starting point: a broad native local-first prototype, not a public-release-ready product. The trust package and Plan close protection are implemented; open risks must not be hidden behind the older phase checkmarks.
+
+### R1 — Recovery and data ownership (next implementation)
+
+Goal: a traveler can understand what a backup contains and recover supported data without damaging the current database.
+
+- Inventory export coverage against the canonical trip graph and current schema, including settings, pending import claims, relationships and media. Record intentional exclusions explicitly.
+- Validate imported structure, field types, IDs, same-trip relationships, duplicates and supported format versions before any destructive replacement. Set file-size/resource limits without inventing missing data.
+- Check snapshot consistency during concurrent mutations and define one repository-owned read snapshot where required.
+- Keep replacement atomic; exercise failure rollback and preservation of device privacy choices. Never test replacement against real user data.
+- Resolve photo portability explicitly: either a supported recoverable media package, or clear disclosure that JSON is not a complete photo backup. Do not silently claim an unavailable guarantee.
+- Exit gate: automated round-trip, malformed/unsupported input and injected-failure tests; Android file-picker export/restore rehearsal on isolated data; original IDs/content/privacy choices survive; unsupported media behavior is visible. Any migration must be forward-only.
+
+### R2 — Safe editing across the existing product
+
+Goal: ordinary navigation does not silently discard user work.
+
+- Inventory Create Trip, Bookings, Budget, Accommodation, Travelers, Trip Details and Memories editors. Reuse the Plan pattern where appropriate without forcing unlike forms into one model.
+- Protect Back/close and applicable navigation exits; keep unchanged forms unobstructed and preserve failed-save input. Verify nested picker cancellation and repeat taps.
+- Decide separately whether process-death recovery warrants durable drafts. Close confirmation is not autosave, and drafts must never appear as confirmed trip facts.
+- Exit gate: a documented editor matrix covering create/edit, keep/discard, save failure, picker return and tab/navigation behavior, with focused automated tests and Android smoke. No existing saved data is modified by cancellation.
+
+### R3 — Consistent, accessible native experience
+
+Goal: refine the existing TravelOS identity rather than start another global redesign.
+
+- Choose the first supported UI language(s) explicitly; consolidate visible copy and terminology, empty/error states and action labels accordingly.
+- Audit contrast, readable type, large font settings, screen-reader labels/focus, touch targets, keyboard obstruction, safe areas and reduced-motion behavior.
+- Prioritize Home, Create Trip, Companion, Plan, Map and the common sheets before secondary surfaces. Keep unknown/suggested/saved facts distinguishable.
+- Exit gate: no blocking clipping or inaccessible core action in the agreed Android device/font matrix; TalkBack and reduced-motion checks recorded; iOS evidence recorded separately, never inferred from Android.
+
+### R4 — Release safety and real-device reliability
+
+This is a public-release gate, not permission to expose the current proxy while R1–R3 proceed. Inspect the hosted boundary read-only before selecting or deploying changes; credential rotation, accounts, provider retention and paid-service choices require explicit decisions.
+
+- Define and implement proxy access controls, abuse/request limits, bounded concurrency/timeouts and cost safeguards appropriate to the chosen deployment. Do not embed a shared server secret in the app or invent an account architecture.
+- Document what reaches providers, verify deployed ingress behavior and privacy controls, and keep secrets/private travel data out of logs. Cover unauthorized, overloaded and unavailable service behavior with tests.
+- Rehearse realistic historical database upgrades, cold relaunch, airplane-mode essential trip access, reconnect, authorized live Maps/directions and notification delivery on supported native builds.
+- Measure cold start, tab responsiveness, representative long itineraries and AI latency on a physical Android device/release build. Set acceptance budgets from a recorded baseline, not arbitrary performance claims.
+- Exit gate: security/deployment checklist resolved, relevant failure tests pass, and a device/build matrix distinguishes verified capabilities from outstanding iOS or provider-dependent checks. No public release while a critical data-loss, privacy or core-flow blocker remains.
+
+### R5 — Traveler pilot and usefulness validation
+
+- Use synthetic/private-by-consent tasks with different traveler profiles: solo/couple/family, multi-city, bookings-first versus spontaneous planning, foreign currency, weak network and post-trip memories.
+- Observe create/import, planning changes, retrieving a reservation, finding the next action, recording an expense and recovering a memory. Include actual short-trip use where possible.
+- Record completion without help, confusion/backtracking, time to useful outcome, saved-versus-suggested understanding and any loss of work. Establish a baseline before choosing success targets.
+- Exit gate: findings prioritized by severity/frequency, critical usability failures resolved and rechecked, and an explicit supported-pilot scope. Do not claim coverage of every traveler from one emulator or a small pilot.
+
+### R6 — Product expansion only after evidence
+
+Choose the next investment from pilot evidence: deeper Companion usefulness, broader grounded destination coverage, richer Travel Book, or collaboration/sync. None is pre-authorized as the next implementation. Define one user need, source-of-truth impact, privacy/cost implications and acceptance tests before adding it.
+
+### Working cadence and decisions
+
+- One bounded package at a time; review the diff, run applicable tests/TypeScript/lint/whitespace/native checks, update CURRENT_STATE, and checkpoint by commit when authorized. Do not combine unverified later phases into a passing earlier milestone.
+- Reassess after R1, after R3 and after the pilot: what works, remaining release gates, product value and next priority. The immediate next task is **R1 inventory plus failure-safe backup/restore hardening**, not new product breadth.
+- Open decisions: backup/media recovery contract, first supported languages/platforms, proxy access model and retention, pilot participants/tasks, and later sync/monetization. No delivery dates, external purchases or production deployments are assumed.
+
 ## Trust follow-up — verified 2026-09-08
+
+- [x] Plan editor close protection: Back/X warn for unsaved fields, Keep editing retains the draft, explicit discard does not change SQLite. Blank/unchanged editors and successful saving remain unobstructed. Five new tests and focused Android create/edit/discard smoke passed; test data cleaned. No process-death draft recovery or protection for other forms is implied.
+- [ ] Next recovery work: define backup completeness/validation and failure-safe restore tests before expanding product breadth; assess other editors for accidental-dismiss loss. Accessibility/localization and representative traveler trials follow. Hosted proxy access/abuse/cost controls remain a separate public-release gate, not an inferred account/auth architecture.
 
 - [x] Implement bounded corrections: unlocated Plan Assist themes; same-day adjacent-stop routes with explicit partial coverage; restore preserves AI-off; fail-closed serialized AI preferences; truthful scrollable privacy settings.
 - [x] Preserve P0 layout changes and repair Home card widths. App 402 tests, server 61 tests, TypeScript/whitespace pass; lint has 0 errors / 49 warnings. Isolated Android build/bootstrap, Home and AI-off cold-relaunch smoke passed.

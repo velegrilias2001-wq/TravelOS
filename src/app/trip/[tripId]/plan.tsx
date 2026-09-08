@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/screen';
 import { UtilityScreenHeader } from '@/components/ui/utility-screen';
 import { formatCalendarDateForDisplay } from '@/services/time-truth';
+import { hasUnsavedStopDraft } from '@/services/stop-editor-draft';
 
 import type {
   TravelDNA,
@@ -649,14 +650,9 @@ export default function PlanScreen() {
     );
   };
 
-  const closeModal = () => {
-    if (
-      isSaving ||
-      isPickingLocation
-    ) {
-      return;
-    }
+  const discardPromptOpen = useRef(false);
 
+  const discardModal = () => {
     resetModal();
 
     if (requestedStopId) {
@@ -673,6 +669,41 @@ export default function PlanScreen() {
         importClaimId ?? null;
       clearImportLineParams();
     }
+  };
+
+  const closeModal = () => {
+    if (isSaving || isPickingLocation || discardPromptOpen.current) {
+      return;
+    }
+
+    if (!hasUnsavedStopDraft({
+      title, type, startTime: time, endTime, location: pickedLocation,
+    }, editingStop)) {
+      discardModal();
+      return;
+    }
+
+    discardPromptOpen.current = true;
+    Alert.alert(
+      'Discard unsaved changes?',
+      'Your changes have not been saved. Keep editing to finish, or discard your changes.',
+      [
+        {
+          text: 'Keep editing',
+          style: 'cancel',
+          onPress: () => { discardPromptOpen.current = false; },
+        },
+        {
+          text: 'Discard',
+          style: 'destructive',
+          onPress: () => {
+            discardPromptOpen.current = false;
+            discardModal();
+          },
+        },
+      ],
+      { cancelable: true, onDismiss: () => { discardPromptOpen.current = false; } },
+    );
   };
 
   useEffect(() => {
@@ -2485,6 +2516,8 @@ export default function PlanScreen() {
               </View>
 
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close moment editor"
                 style={
                   styles.closeButton
                 }
