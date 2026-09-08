@@ -12,6 +12,8 @@ Implemented input/identity validation before the restore transaction, detached q
 
 ## Trust and UX follow-up — verified 2026-09-08
 
+R1A compatibility correction: backups containing multiple bookings for one stop are supported. The initial preflight's unnecessary stop-link uniqueness check was removed; a dedicated SQLite regression test and isolated Android round-trip passed. No database migration or user-data rewrite was required.
+
 ### Plan editor draft safety — 2026-09-08
 
 - Native Android Back and the editor close button now require explicit discard for changed title, type, start/end time or location facts. Keep editing retains the draft. Blank create and unchanged edit close immediately; successful save follows the existing SQLite/workspace path without prompting. Imported prefills are treated as unsaved, not confirmed facts.

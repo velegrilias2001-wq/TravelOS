@@ -129,7 +129,6 @@ export function validateRestoreGraph(document: LocalDataExportDocument, fail: Fa
     const bookings = new Set<string>();
     for (const value of bundle.bookings) {
       const row = own(value, 'booking', ['title', 'type', 'status']); link(row.stopId, stops);
-      if (row.stopId !== undefined) unique(`booking stop:${tripId}`, row.stopId);
       if (row.amount !== undefined) number(row.amount);
       if (row.isPaid !== undefined) bool(row.isPaid);
       bookings.add(row.id as string);
