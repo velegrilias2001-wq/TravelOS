@@ -1,3 +1,5 @@
+import { useEditorCloseGuard } from '@/features/forms/use-editor-close-guard';
+import { useRouteEditorGuard } from '@/features/forms/use-route-editor-guard';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, {
   DateTimePickerAndroid,
@@ -217,6 +219,8 @@ export default function BudgetScreen() {
     useState('');
   const [fxRate, setFxRate] = useState('');
   const [fxAsOf, setFxAsOf] = useState('');
+  const [isSavingFx, setIsSavingFx] = useState(false);
+  const fxEditor = useRouteEditorGuard({ fxFromCurrency, fxRate, fxAsOf }, isSavingFx);
 
   const openPlan = () => {
     setPlannedAmount(
@@ -274,6 +278,10 @@ export default function BudgetScreen() {
     setExpenseModalVisible(false);
     resetExpenseForm();
   };
+
+  const requestCloseExpense = useEditorCloseGuard(expenseModalVisible, { title, amount, currency, category, expenseDate, notes, bookingId, stopId }, isSaving, closeExpense);
+  const requestClosePlan = useEditorCloseGuard(planModalVisible, { plannedAmount }, isSaving, () => setPlanModalVisible(false));
+  const requestPlanCurrencyChange = useEditorCloseGuard(planModalVisible, { plannedAmount }, isSaving, openTripCurrencySettings);
 
   const savePlannedBudget = async () => {
     const parsed = Number(
@@ -730,10 +738,12 @@ export default function BudgetScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Save FX rate"
+                    disabled={isSavingFx}
                     style={styles.fxSave}
                     onPress={() => {
                       void (async () => {
                         try {
+                          setIsSavingFx(true);
                           await actions.saveFxRate({
                             fromCurrency: fxFromCurrency,
                             rate: Number(
@@ -744,6 +754,7 @@ export default function BudgetScreen() {
                           setFxFromCurrency('');
                           setFxRate('');
                           setFxAsOf('');
+                          fxEditor.markSaved({ fxFromCurrency: '', fxRate: '', fxAsOf: '' });
                         } catch (error) {
                           Alert.alert(
                             'Could not save FX rate',
@@ -751,6 +762,8 @@ export default function BudgetScreen() {
                               ? error.message
                               : 'Check the currencies, rate, and as-of date.',
                           );
+                        } finally {
+                          setIsSavingFx(false);
                         }
                       })();
                     }}
@@ -953,9 +966,7 @@ export default function BudgetScreen() {
         visible={planModalVisible}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() =>
-          setPlanModalVisible(false)
-        }
+        onRequestClose={requestClosePlan}
       >
         <SafeAreaView style={styles.sheetSafeArea}>
           <View style={styles.sheetHeader}>
@@ -969,9 +980,9 @@ export default function BudgetScreen() {
             </View>
             <Pressable
               style={styles.closeButton}
-              onPress={() =>
-                setPlanModalVisible(false)
-              }
+              accessibilityRole="button"
+              accessibilityLabel="Close planned budget editor"
+              onPress={requestClosePlan}
             >
               <Ionicons
                 name="close"
@@ -1022,7 +1033,7 @@ export default function BudgetScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={`Change trip currency from ${accountingCurrency}`}
                   style={styles.currencyChangeButton}
-                  onPress={openTripCurrencySettings}
+                  onPress={requestPlanCurrencyChange}
                 >
                   <Text style={styles.currencyChangeButtonText}>
                     Change
@@ -1062,7 +1073,7 @@ export default function BudgetScreen() {
         visible={expenseModalVisible}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={closeExpense}
+        onRequestClose={requestCloseExpense}
       >
         <SafeAreaView style={styles.sheetSafeArea}>
           <View style={styles.sheetHeader}>
@@ -1078,7 +1089,9 @@ export default function BudgetScreen() {
             </View>
             <Pressable
               style={styles.closeButton}
-              onPress={closeExpense}
+              accessibilityRole="button"
+              accessibilityLabel="Close expense editor"
+              onPress={requestCloseExpense}
             >
               <Ionicons
                 name="close"

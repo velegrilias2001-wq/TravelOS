@@ -22,7 +22,8 @@ import {
   PlayfairDisplay_700Bold,
 } from '@expo-google-fonts/playfair-display';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { getLocalDataGeneration, subscribeLocalDataGeneration } from '@/services/local-data-session';
 import {
   AppState,
   Pressable,
@@ -49,6 +50,7 @@ import {
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const dataGeneration = useSyncExternalStore(subscribeLocalDataGeneration, getLocalDataGeneration, getLocalDataGeneration);
   const colorScheme = useColorScheme();
 
   const [
@@ -182,6 +184,7 @@ export default function RootLayout() {
         />
       ) : (
         <Stack
+          key={dataGeneration}
           screenOptions={{
             headerShown: false,
           }}

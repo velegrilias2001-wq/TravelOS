@@ -1,3 +1,5 @@
+import { useEditorCloseGuard } from '@/features/forms/use-editor-close-guard';
+import { ModalSafeArea } from '@/components/ui/modal-safe-area';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, {
   DateTimePickerAndroid,
@@ -290,6 +292,8 @@ export default function AccommodationScreen() {
 
     handledAccommodationId.current = null;
   };
+
+  const requestCloseModal = useEditorCloseGuard(modalVisible, { name, type, address, latitude, longitude, checkInDate, checkInTime, checkInEdited, checkOutDate, checkOutTime, checkOutEdited, phone, website, notes, bookingId, stopId }, isSaving, closeModal);
 
   useEffect(() => {
     if (
@@ -816,9 +820,9 @@ export default function AccommodationScreen() {
         visible={modalVisible}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={closeModal}
+        onRequestClose={requestCloseModal}
       >
-        <View style={styles.modalRoot}>
+        <ModalSafeArea style={styles.modalRoot}>
           <ScrollView
             contentContainerStyle={styles.modalContent}
             keyboardShouldPersistTaps="handled"
@@ -836,7 +840,7 @@ export default function AccommodationScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Close accommodation editor"
                 style={styles.closeButton}
-                onPress={closeModal}
+                onPress={requestCloseModal}
               >
                 <Ionicons
                   name="close"
@@ -1180,7 +1184,7 @@ export default function AccommodationScreen() {
               </Pressable>
             </View>
           )}
-        </View>
+        </ModalSafeArea>
       </Modal>
     </>
   );

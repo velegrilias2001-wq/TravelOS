@@ -13,6 +13,11 @@ import {
   type LocalDataRestoreSummary,
 } from '@/services/local-data-restore';
 import { useTripStore } from '@/store/trip-store';
+import { restoreWithRefresh } from './local-data-restore-effects';
+import { advanceLocalDataGeneration } from './local-data-session';
+import { useDiscoverStore } from '@/store/discover-store';
+import { useTravelChatStore } from '@/store/travel-chat-store';
+import { reconcileTripNotifications } from './trip-notifications-runtime';
 
 export async function pickLocalDataExportDocument(): Promise<{
   document: LocalDataExportDocument;
@@ -76,11 +81,23 @@ export async function pickLocalDataExportDocument(): Promise<{
 
 export async function restoreLocalDataExportDocument(
   document: LocalDataExportDocument,
-): Promise<LocalDataRestoreSummary> {
-  await replaceLocalDataFromExport(
-    travelOSDatabase,
-    document,
+): Promise<LocalDataRestoreSummary & { refreshFailed: boolean }> {
+  const result = await restoreWithRefresh(
+    () => replaceLocalDataFromExport(travelOSDatabase, document),
+    async () => {
+      useTripStore.getState().clearTrips();
+      useDiscoverStore.getState().clearBrief();
+      useTravelChatStore.getState().clear();
+      // Remount retained routes: old drafts/queries cannot own the restored graph.
+      advanceLocalDataGeneration();
+      const results = await Promise.allSettled([
+        useTripStore.getState().loadTrips(),
+        reconcileTripNotifications(new Date(), { throwOnError: true }),
+      ]);
+      if (results.some(result => result.status === 'rejected')) {
+        throw new Error('Restored data needs a refresh.');
+      }
+    },
   );
-  await useTripStore.getState().loadTrips();
-  return summarizeLocalDataExport(document);
+  return { ...summarizeLocalDataExport(document), ...result };
 }

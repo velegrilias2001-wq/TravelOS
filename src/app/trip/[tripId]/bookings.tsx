@@ -1,3 +1,4 @@
+import { useEditorCloseGuard } from '@/features/forms/use-editor-close-guard';
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 
@@ -538,6 +539,8 @@ export default function BookingsScreen() {
 
     handledBookingId.current = null;
   };
+
+  const requestCloseModal = useEditorCloseGuard(modalVisible, { type, status, title, provider, confirmationCode, externalUrl, stopId, startDraft, endDraft, amount, currency, isPaid, notes }, isSaving, closeModal);
 
   useEffect(() => {
     if (
@@ -1344,7 +1347,7 @@ export default function BookingsScreen() {
         animationType="slide"
         onRequestClose={() => {
           Keyboard.dismiss();
-          closeModal();
+          requestCloseModal();
         }}
       >
         <View
@@ -1390,11 +1393,13 @@ export default function BookingsScreen() {
               </View>
 
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close booking editor"
                 style={
                   styles.closeButton
                 }
                 onPress={
-                  closeModal
+                  requestCloseModal
                 }
               >
                 <Ionicons

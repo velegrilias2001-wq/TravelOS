@@ -6,6 +6,10 @@ const path = require('path');
  * Expo/EAS config evaluation does not always load that file automatically.
  */
 function loadEnvLocal() {
+  // Match Expo CLI's explicit opt-out, including secret-free verification runs.
+  if (process.env.EXPO_NO_DOTENV === '1') {
+    return;
+  }
   const envPath = path.join(__dirname, '.env.local');
 
   if (!fs.existsSync(envPath)) {

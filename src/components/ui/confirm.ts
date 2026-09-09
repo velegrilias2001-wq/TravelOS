@@ -27,3 +27,15 @@ export function confirmDestructive({
     },
   ]);
 }
+
+/** Awaitable variant keeps an operation locked through confirmation/cancel. */
+export function confirmDestructiveAsync(
+  options: Omit<ConfirmDestructiveOptions, 'onConfirm'>,
+): Promise<boolean> {
+  return new Promise(resolve => {
+    Alert.alert(options.title, options.message, [
+      { text: options.cancelLabel ?? 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+      { text: options.confirmLabel ?? 'Delete', style: 'destructive', onPress: () => resolve(true) },
+    ], { cancelable: true, onDismiss: () => resolve(false) });
+  });
+}

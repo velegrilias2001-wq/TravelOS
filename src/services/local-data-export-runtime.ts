@@ -5,10 +5,10 @@ import { travelOSDatabase } from '@/data/database/expo-sqlite-database';
 import { collectLocalDataExportSnapshotFromDatabase } from '@/data/repositories/local-data-export-persistence';
 import {
   buildLocalDataExportDocument,
-  serializeLocalDataExport,
   type LocalDataExportDocument,
   type LocalDataExportSnapshot,
 } from '@/services/local-data-export';
+import { prepareLocalDataBackupText } from '@/services/local-data-backup-file';
 
 export function resolveTravelOSAppVersion(): string {
   return (
@@ -25,6 +25,7 @@ export async function collectLocalDataExportSnapshot(): Promise<LocalDataExportS
 export async function writeLocalDataExportFile(
   document: LocalDataExportDocument,
 ): Promise<string> {
+  const text = prepareLocalDataBackupText(document);
   if (!FileSystem.documentDirectory) {
     throw new Error(
       'Persistent app storage is unavailable.',
@@ -36,13 +37,14 @@ export async function writeLocalDataExportFile(
     intermediates: true,
   });
 
-  const stamp = document.exportedAt
+  // The filename is generated locally, never derived from imported metadata.
+  const stamp = new Date().toISOString()
     .replace(/[:.]/g, '-')
     .replace(/Z$/, 'Z');
   const path = `${directory}travelos-export-${stamp}.json`;
   await FileSystem.writeAsStringAsync(
     path,
-    serializeLocalDataExport(document),
+    text,
     { encoding: FileSystem.EncodingType.UTF8 },
   );
 

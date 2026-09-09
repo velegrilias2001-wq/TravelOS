@@ -1,3 +1,4 @@
+import { useRouteEditorGuard } from '@/features/forms/use-route-editor-guard';
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
@@ -162,6 +163,8 @@ export default function TripDetailsScreen() {
   const [showSavedNotice, setShowSavedNotice] =
     useState(false);
 
+  const editor = useRouteEditorGuard({ title, destinations, startDate, endDate, accountingCurrency, status, intent, pace }, isSaving || isDeleting);
+
   const replaceDestination = (
     id: string,
     replacement: DestinationSelection,
@@ -323,6 +326,11 @@ export default function TripDetailsScreen() {
         })),
       );
       setShowSavedNotice(true);
+      editor.markSaved({
+        title: cleanTitle,
+        destinations: destinations.map(destination => ({ id: destination.id, name: destination.replacement?.name ?? destination.name.trim() })),
+        startDate, endDate, accountingCurrency: cleanCurrency, status, intent, pace,
+      });
     } catch (error) {
       const budgetCurrencyBlocked =
         error instanceof Error &&
@@ -351,7 +359,7 @@ export default function TripDetailsScreen() {
   const deleteTrip = () => {
       Alert.alert(
         `Delete “${trip.title}”?`,
-        'This permanently removes this trip and its related local plan, moments, bookings, stays, budget, expenses, memories, Travel Book, and photo copies in app storage from this device. Gallery originals are left untouched. There is no backup or export yet, so deletion cannot be undone. To keep the trip hidden instead, choose Archived in Status and save.',
+        'This permanently removes this trip and its related local plan, moments, bookings, stays, budget, expenses, memories, Travel Book, and photo copies in app storage from this device. Gallery originals are left untouched. There is no undo. Profile offers a JSON backup of data, but not photo files. To keep the trip hidden instead, choose Archived in Status and save.',
       [
         {
           text: 'Cancel',
@@ -947,7 +955,7 @@ export default function TripDetailsScreen() {
                 Delete trip
               </Text>
               <Text style={styles.dangerBody}>
-                Permanently remove this trip from this device. Archive it in Status if you might still need it. There is no backup yet.
+                Permanently remove this trip from this device. Archive it in Status if you might still need it. JSON backups do not include photo files.
               </Text>
             </View>
             <Pressable

@@ -1,131 +1,39 @@
 import { create } from 'zustand';
-
-import type {
-  Trip,
-  TripId,
-} from '@/domain/entities';
-
+import type { Trip, TripId } from '@/domain/entities';
 import { tripService } from '@/services/trip-service';
+import { createLatestListLoader } from '@/services/latest-list-loader';
 
 interface TripStoreState {
   trips: Trip[];
-
   isLoading: boolean;
-
   loadTrips(): Promise<void>;
-
-  saveTrip(
-    trip: Trip,
-  ): Promise<void>;
-
-  deleteTrip(
-    id: TripId,
-  ): Promise<void>;
+  clearTrips(): void;
+  saveTrip(trip: Trip): Promise<void>;
+  deleteTrip(id: TripId): Promise<void>;
 }
 
-export const useTripStore =
-  create<TripStoreState>((set) => ({
+export const useTripStore = create<TripStoreState>((set, get) => {
+  const loader = createLatestListLoader(
+    () => tripService.listTrips(),
+    set,
+    () => {
+      void import('@/services/trip-notifications-runtime')
+        .then(module => module.reconcileTripNotifications())
+        .catch(() => {});
+    },
+  );
+  return {
     trips: [],
-
     isLoading: false,
-
-    loadTrips: async () => {
-      set({
-        isLoading: true,
-      });
-
-      try {
-        const trips =
-          await tripService.listTrips();
-
-        set({
-          trips,
-          isLoading: false,
-        });
-
-        setTimeout(() => {
-          void import(
-            '@/services/trip-notifications-runtime'
-          )
-            .then((module) =>
-              module.reconcileTripNotifications(),
-            )
-            .catch(() => {});
-        }, 0);
-      } catch (error) {
-        set({
-          isLoading: false,
-        });
-
-        throw error;
-      }
+    loadTrips: loader.load,
+    clearTrips: loader.clear,
+    saveTrip: async trip => {
+      await tripService.saveTrip(trip);
+      await get().loadTrips();
     },
-
-    saveTrip: async (trip) => {
-      set({
-        isLoading: true,
-      });
-
-      try {
-        await tripService.saveTrip(trip);
-
-        const trips =
-          await tripService.listTrips();
-
-        set({
-          trips,
-          isLoading: false,
-        });
-
-        setTimeout(() => {
-          void import(
-            '@/services/trip-notifications-runtime'
-          )
-            .then((module) =>
-              module.reconcileTripNotifications(),
-            )
-            .catch(() => {});
-        }, 0);
-      } catch (error) {
-        set({
-          isLoading: false,
-        });
-
-        throw error;
-      }
+    deleteTrip: async id => {
+      await tripService.deleteTrip(id);
+      await get().loadTrips();
     },
-
-    deleteTrip: async (id) => {
-      set({
-        isLoading: true,
-      });
-
-      try {
-        await tripService.deleteTrip(id);
-
-        const trips =
-          await tripService.listTrips();
-
-        set({
-          trips,
-          isLoading: false,
-        });
-
-        setTimeout(() => {
-          void import(
-            '@/services/trip-notifications-runtime'
-          )
-            .then((module) =>
-              module.reconcileTripNotifications(),
-            )
-            .catch(() => {});
-        }, 0);
-      } catch (error) {
-        set({
-          isLoading: false,
-        });
-
-        throw error;
-      }
-    },
-  }));
+  };
+});

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { getLocalDataGeneration } from '@/services/local-data-session';
 import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -253,6 +254,7 @@ export default function TravelChatScreen() {
   );
 
   const send = async () => {
+    const sessionGeneration = getLocalDataGeneration();
     const content = draft.trim();
 
     if (!content || busy) {
@@ -288,6 +290,8 @@ export default function TravelChatScreen() {
         travelDNA,
       });
 
+      // A reply started before backup replacement must not repopulate its cleared session.
+      if (sessionGeneration !== getLocalDataGeneration()) return;
       appendMessage({
         id: Crypto.randomUUID(),
         role: 'assistant',

@@ -8,7 +8,12 @@ This is the current execution order. It supersedes older next-step ordering belo
 
 - [x] **R1A:** coverage inventory, restore preflight for record identity/types/relationships, detached queued input, file-byte limits, injected-SQL rollback tests and isolated Android regression including malformed file-picker rejection. See `RECOVERY_CONTRACT.md`. No migration or media recovery is implied.
 - [x] **R1B.1:** consistent transaction-scoped export through existing repository mappers; empty/read-only and linked-entity round-trip tests; concurrent committed WAL writer and read failure/retry tests. Isolated Android Expo SQLite snapshot/round-trip/retry passed; temporary database and route cleaned. App 418 tests, TypeScript/diff passed; lint 0 errors / 49 existing warnings. Includes the R1A one-to-many booking-link compatibility correction.
-- [ ] **R1B.2 (next):** complete semantic/legacy compatibility fixtures; export-size symmetry; broaden edge-case/large-archive coverage; successful Profile export/share/picker/confirmation restore; post-restore workspace/notification refresh and plaintext/media disclosure. R1 remains incomplete until these gates close.
+- [ ] **R1B.2 (in progress):** complete semantic/legacy compatibility fixtures; broaden edge-case/large-archive coverage; successful Profile export/share/picker/confirmation restore; post-restore workspace/notification refresh and missing-media behavior. R1 remains incomplete until these gates close.
+  - [x] Exact serialized export passes restore preflight and the same 8 MiB byte limit before writing; no truncation. Profile plaintext/privacy/size/photo-reference disclosure. Legacy no-packing and wall/absolute booking-time fixtures; unsupported durable fields/enums and malformed currency/time values fail closed. Post-commit refresh failure is distinguished from replacement failure.
+  - [x] Android Profile export opens share UI; native picker confirmation/replacement and cold-relaunch graph verification passed using only synthetic data. Share was cancelled, and the exact file was transferred to Downloads for the picker: cloud/share-target round-trip is not verified. Test trip/files/route cleaned. App 434 tests pass; TypeScript/diff pass; lint 0 errors / 49 existing warnings.
+  - [x] Post-restore list/session reset and retained-route remount; stale list/chat results rejected; notification requests coalesced with a fresh pass; post-commit failures reported separately. Profile file-operation gate and Android picker cancellation verified. Missing-photo fallback verified without altering stored URI. Isolated production-runtime restore and cold bootstrap passed.
+  - [x] Representative 1,000-additional-stop / 1,428,459-byte SQLite round-trip retains order and notes. App suite now 442 tests. Node timing is diagnostic, not a native RAM/performance guarantee. Custom Expo config now respects the secret-free `EXPO_NO_DOTENV` opt-out, covered by a no-filesystem-access sentinel test.
+  - [ ] Broaden historical/domain fixtures, Android large-archive time/peak-memory measurements, real notification delivery and explicitly selected share-target round-trip. Do not infer complete recovery from bounded fixtures or cancellation tests.
 
 Goal: a traveler can understand what a backup contains and recover supported data without damaging the current database.
 
@@ -19,9 +24,14 @@ Goal: a traveler can understand what a backup contains and recover supported dat
 - Resolve photo portability explicitly: either a supported recoverable media package, or clear disclosure that JSON is not a complete photo backup. Do not silently claim an unavailable guarantee.
 - Exit gate: automated round-trip, malformed/unsupported input and injected-failure tests; Android file-picker export/restore rehearsal on isolated data; original IDs/content/privacy choices survive; unsupported media behavior is visible. Any migration must be forward-only.
 
-### R2 — Safe editing across the existing product
+### R2 — Safe editing across the existing product (in progress)
 
 Goal: ordinary navigation does not silently discard user work.
+
+- [x] Shared local-draft modal close policy wired to Bookings, Accommodation, planned Budget/expenses, Travelers and Memories; successful saves bypass discard confirmation. Planned-budget currency-settings navigation also guarded. Android focused evidence and outstanding cases are recorded in `EDITOR_SAFETY_MATRIX.md`.
+- [x] Correct the observed Accommodation status-bar/X overlap with reusable modal-local safe areas, also applied to Travelers/Memories. Accommodation, Memories and final Travelers X follow-up verified on Android. Add missing Booking/Budget close labels.
+- [x] Shared route-removal guard for Create Trip, Trip Details, Travel Book and inline FX. Dirty Travel Book hydration is protected from workspace refresh. Android Details/Travel Book parent Back, Travel Book retained-tab draft, expense validation/discard and planned-budget save checked.
+- [ ] Complete native Create Trip successful creation and inline FX guard checks, nested pickers, database-save failures, rapid-action cases, iOS sheet gestures and Android navigation variants. No process-death draft guarantee; modal protection is not full external route-unmount protection. See the editor matrix instead of inferring blanket coverage.
 
 - Inventory Create Trip, Bookings, Budget, Accommodation, Travelers, Trip Details and Memories editors. Reuse the Plan pattern where appropriate without forcing unlike forms into one model.
 - Protect Back/close and applicable navigation exits; keep unchanged forms unobstructed and preserve failed-save input. Verify nested picker cancellation and repeat taps.
@@ -61,7 +71,7 @@ Choose the next investment from pilot evidence: deeper Companion usefulness, bro
 ### Working cadence and decisions
 
 - One bounded package at a time; review the diff, run applicable tests/TypeScript/lint/whitespace/native checks, update CURRENT_STATE, and checkpoint by commit when authorized. Do not combine unverified later phases into a passing earlier milestone.
-- Reassess after R1, after R3 and after the pilot: what works, remaining release gates, product value and next priority. The immediate next task is **R1B.2 recovery compatibility and the full native file workflow**, not new product breadth.
+- Reassess after R1, after R3 and after the pilot: what works, remaining release gates, product value and next priority. The immediate next task is **closing the recorded R1/R2 native acceptance gaps and measuring archive limits**, not new product breadth.
 - Open decisions: backup/media recovery contract, first supported languages/platforms, proxy access model and retention, pilot participants/tasks, and later sync/monetization. No delivery dates, external purchases or production deployments are assumed.
 
 ## Trust follow-up — verified 2026-09-08

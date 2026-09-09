@@ -4,6 +4,7 @@ import {
   type LocalDataExportTripBundle,
 } from './local-data-export';
 import { validateRestoreGraph } from './local-data-restore-validation';
+import { validateBackupSemantics } from './local-data-backup-semantics';
 
 export const MAX_RESTORE_BYTES = 8 * 1024 * 1024;
 
@@ -124,6 +125,9 @@ export function parseLocalDataExportDocument(
   }
 
   validateRestoreGraph(candidate as LocalDataExportDocument, (reason) => {
+    throw new LocalDataRestoreError('invalid_document', `This backup cannot be restored safely. ${reason}`);
+  });
+  validateBackupSemantics(candidate as LocalDataExportDocument, (reason) => {
     throw new LocalDataRestoreError('invalid_document', `This backup cannot be restored safely. ${reason}`);
   });
 

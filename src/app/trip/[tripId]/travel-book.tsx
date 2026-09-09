@@ -1,3 +1,4 @@
+import { useRouteEditorGuard } from '@/features/forms/use-route-editor-guard';
 import { Ionicons } from '@expo/vector-icons';
 import {
   useEffect,
@@ -168,13 +169,18 @@ export default function TravelBookScreen() {
   const [isSaving, setIsSaving] =
     useState(false);
 
+  const { dirty, markSaved } = useRouteEditorGuard({ title, summary, selectedIds, coverImageUri, isPublished }, isSaving);
+
   useEffect(() => {
+    // Workspace refresh must not overwrite an in-progress book draft.
+    if (dirty || isSaving) return;
     if (!book) {
       setTitle(trip.title);
       setSummary('');
       setSelectedIds([]);
       setCoverImageUri(undefined);
       setIsPublished(false);
+      markSaved({ title: trip.title, summary: '', selectedIds: [], coverImageUri: undefined, isPublished: false });
       return;
     }
 
@@ -194,7 +200,8 @@ export default function TravelBookScreen() {
       ),
     );
     setIsPublished(book.isPublished);
-  }, [book, memories, trip.title]);
+    markSaved({ title: book.title, summary: book.summary ?? '', selectedIds: nextSelected, coverImageUri: coverFromMemories(memories, book.memoryIds, book.coverImageUri), isPublished: book.isPublished });
+  }, [book, memories, trip.title, dirty, isSaving, markSaved]);
 
   const selectedSet = useMemo(
     () => new Set(selectedIds),
@@ -302,6 +309,7 @@ export default function TravelBookScreen() {
       setSelectedIds(saved.memoryIds);
       setCoverImageUri(saved.coverImageUri);
       setIsPublished(saved.isPublished);
+      markSaved({ title: saved.title, summary: saved.summary ?? '', selectedIds: saved.memoryIds, coverImageUri: saved.coverImageUri, isPublished: saved.isPublished });
 
       Alert.alert(
         'Travel Book saved',
@@ -342,6 +350,12 @@ export default function TravelBookScreen() {
             void (async () => {
               try {
                 await actions.deleteTravelBook(book.id);
+                setTitle(trip.title);
+                setSummary('');
+                setSelectedIds([]);
+                setCoverImageUri(undefined);
+                setIsPublished(false);
+                markSaved({ title: trip.title, summary: '', selectedIds: [], coverImageUri: undefined, isPublished: false });
                 Alert.alert(
                   'Travel Book deleted',
                   'The book was removed. Your Memories are still saved.',

@@ -1,3 +1,5 @@
+import { useEditorCloseGuard } from '@/features/forms/use-editor-close-guard';
+import { ModalSafeArea } from '@/components/ui/modal-safe-area';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -389,6 +391,8 @@ export default function MemoriesScreen() {
     resetEditor();
   };
 
+  const requestCloseEditor = useEditorCloseGuard(modalVisible, { type, title, caption, dayId, stopId, pendingImage, removeExistingImage }, isSaving, closeEditor);
+
   const openCreate = (
     nextType:
       EditableMemoryType =
@@ -693,7 +697,7 @@ export default function MemoriesScreen() {
         <UtilityScreenHeader
           eyebrow={destinationLabel.toUpperCase()}
           title="Memories"
-          subtitle="Keep the small moments that made this journey yours. Photo copies stay on this device — there is no backup or export yet."
+          subtitle="Keep the small moments that made this journey yours. Photo files stay on this device and are not included in JSON backups."
           leading={(
             <Pressable
               accessibilityRole="button"
@@ -909,7 +913,7 @@ export default function MemoriesScreen() {
             color={colors.brass}
           />
           <Text style={styles.localNoteText}>
-            Photo copies stay in TravelOS on this device and work offline. Gallery originals are left untouched. There is no backup or export yet.
+            Photo copies stay in TravelOS on this device and work offline. Gallery originals are left untouched. JSON backups include memory details, not photo files.
           </Text>
         </View>
 
@@ -920,9 +924,9 @@ export default function MemoriesScreen() {
         visible={modalVisible}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={closeEditor}
+        onRequestClose={requestCloseEditor}
       >
-        <View style={styles.modalRoot}>
+        <ModalSafeArea style={styles.modalRoot}>
           <ScrollView
             contentContainerStyle={styles.modalContent}
             keyboardShouldPersistTaps="handled"
@@ -946,7 +950,7 @@ export default function MemoriesScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Close memory editor"
                 style={styles.closeButton}
-                onPress={closeEditor}
+                onPress={requestCloseEditor}
               >
                 <Ionicons
                   name="close"
@@ -1293,7 +1297,7 @@ export default function MemoriesScreen() {
 
             <View style={styles.modalBottomSpace} />
           </ScrollView>
-        </View>
+        </ModalSafeArea>
       </Modal>
     </>
   );

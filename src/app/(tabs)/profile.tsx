@@ -3,6 +3,8 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import {
   Alert,
+  ActivityIndicator,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -10,7 +12,8 @@ import {
 } from 'react-native';
 import * as Sharing from 'expo-sharing';
 
-import { confirmDestructive } from '@/components/ui/confirm';
+import { confirmDestructiveAsync } from '@/components/ui/confirm';
+import { localDataFileGate } from '@/services/local-data-session';
 import { Screen } from '@/components/ui/screen';
 import { probeCopilotHealth } from '@/features/copilot/probe-copilot-health';
 import {
@@ -89,6 +92,9 @@ export default function ProfileScreen() {
       return;
     }
 
+    const release = localDataFileGate.acquire();
+    if (!release) return;
+
     void (async () => {
       setIsExporting(true);
 
@@ -118,71 +124,53 @@ export default function ProfileScreen() {
             : 'Something went wrong while preparing the backup.',
         );
       } finally {
+        release();
         setIsExporting(false);
       }
     })();
   };
 
   const restoreLocalBackup = () => {
-    if (isExporting || isRestoring) {
-      return;
-    }
-
+    const release = localDataFileGate.acquire();
+    if (!release) return;
+    setIsRestoring(true);
     void (async () => {
       try {
         const picked = await pickLocalDataExportDocument();
-
-        if (!picked) {
-          return;
-        }
-
+        if (!picked) return;
         const { document, summary, sourceLabel } = picked;
-
-        confirmDestructive({
+        const confirmed = await confirmDestructiveAsync({
           title: 'Replace local TravelOS data?',
-          message:
-            `This replaces every trip, Travel DNA, traveler, and saved idea on this device with “${sourceLabel}” (${summary.tripCount} trip${summary.tripCount === 1 ? '' : 's'}, exported ${summary.exportedAt}). Photo files are not restored. Import review queues are cleared. This cannot be undone.`,
+          message: `This replaces every trip, Travel DNA, traveler, and saved idea on this device with “${sourceLabel}” (${summary.tripCount} trips, exported ${summary.exportedAt}). Open editors and discovery/chat sessions will reset. Photo files are not restored. Import review queues are cleared. This cannot be undone.`,
           confirmLabel: 'Replace data',
-          onConfirm: () => {
-            void (async () => {
-              setIsRestoring(true);
-
-              try {
-                const restored =
-                  await restoreLocalDataExportDocument(
-                    document,
-                  );
-
-                Alert.alert(
-                  'Local backup restored',
-                  `Loaded ${restored.tripCount} trip${restored.tripCount === 1 ? '' : 's'} from the backup onto this device.`,
-                );
-              } catch (error) {
-                Alert.alert(
-                  'Restore could not finish',
-                  error instanceof Error
-                    ? error.message
-                    : 'Something went wrong while restoring the backup.',
-                );
-              } finally {
-                setIsRestoring(false);
-              }
-            })();
-          },
         });
-      } catch (error) {
+        if (!confirmed) return;
+        const restored = await restoreLocalDataExportDocument(document);
         Alert.alert(
-          'Restore could not start',
-          error instanceof Error
-            ? error.message
-            : 'Something went wrong while reading the backup.',
+          'Local backup restored',
+          restored.refreshFailed
+            ? 'Your data was restored, but screens or reminders could not refresh. Close and reopen TravelOS. Do not repeat the restore.'
+            : `Loaded ${restored.tripCount} trip${restored.tripCount === 1 ? '' : 's'} from the backup onto this device. Photo files are not restored.`,
         );
+      } catch (error) {
+        Alert.alert('Restore could not finish', error instanceof Error ? error.message : 'The backup could not be restored.');
+      } finally {
+        release();
+        setIsRestoring(false);
       }
     })();
   };
 
   return (
     <Screen scroll clearTabBar>
+      <Modal visible={isRestoring} transparent onRequestClose={() => {}}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.overlay }}>
+          <View style={{ padding: spacing[6], borderRadius: radius.md, backgroundColor: colors.surface }}>
+            <ActivityIndicator color={colors.brand} />
+            <Text accessibilityRole="alert" style={{ color: colors.textPrimary, marginTop: spacing[3] }}>Backup recovery in progress…</Text>
+          </View>
+        </View>
+      </Modal>
       <View style={styles.header}>
         <Text style={styles.eyebrow}>
           YOUR TRAVELOS
@@ -304,7 +292,7 @@ export default function ProfileScreen() {
               ? 'Preparing export…'
               : 'Export local backup'
           }
-          body="Save a JSON copy of your trips, Travel DNA, and related facts from this device. Photo files are not included."
+          body="Save an unencrypted JSON backup (up to 8 MiB). It may contain private travel details: share only somewhere you trust. Photo files are not included."
           onPress={exportLocalBackup}
         />
 
@@ -317,7 +305,7 @@ export default function ProfileScreen() {
               ? 'Restoring backup…'
               : 'Restore local backup'
           }
-          body="Replace the data on this device with a TravelOS JSON backup. Photo files are not restored. Confirm before continuing."
+          body="Replace local data with a TravelOS JSON backup (up to 8 MiB). Photo files are not restored; photo references may not work on another device. Confirm before continuing."
           onPress={restoreLocalBackup}
         />
 

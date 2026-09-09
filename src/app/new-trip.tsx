@@ -1,3 +1,4 @@
+import { useRouteEditorGuard } from '@/features/forms/use-route-editor-guard';
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 
@@ -381,6 +382,8 @@ export default function NewTripScreen() {
       currency.length === 3,
   );
 
+  const editor = useRouteEditorGuard({ title, destinations, origin, startDate, endDate, intent, pace, partyType, partySizeText, currency, plannedBudgetAmount }, isSaving);
+
   const stepIndex = CREATE_TRIP_STEPS.indexOf(step);
 
   const canAdvanceWhere = destinations.length > 0;
@@ -688,12 +691,12 @@ export default function NewTripScreen() {
           }
         }
 
-        router.replace({
+        editor.finish(() => router.replace({
           pathname: '/trip/[tripId]/copilot',
           params: {
             tripId: trip.id,
           },
-        });
+        }));
       } catch {
         Alert.alert(
           'Could not create trip',

@@ -1,3 +1,5 @@
+import { useEditorCloseGuard } from '@/features/forms/use-editor-close-guard';
+import { ModalSafeArea } from '@/components/ui/modal-safe-area';
 import { Ionicons } from '@expo/vector-icons';
 import {
   useFocusEffect,
@@ -186,6 +188,8 @@ export default function TravelersScreen() {
     resetForm();
     setEditorMode('choose');
   };
+
+  const requestCloseModal = useEditorCloseGuard(modalVisible, { firstName, lastName, type, email, phone }, isSaving, closeModal);
 
   const buildInput = (): TravelerInput => ({
     firstName,
@@ -504,9 +508,9 @@ export default function TravelersScreen() {
         visible={modalVisible}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={closeModal}
+        onRequestClose={requestCloseModal}
       >
-        <View style={styles.modalRoot}>
+        <ModalSafeArea style={styles.modalRoot}>
           <ScrollView
             contentContainerStyle={styles.modalContent}
             keyboardShouldPersistTaps="handled"
@@ -530,7 +534,7 @@ export default function TravelersScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Close traveler editor"
                 style={styles.closeButton}
-                onPress={closeModal}
+                onPress={requestCloseModal}
               >
                 <Ionicons
                   name="close"
@@ -683,7 +687,7 @@ export default function TravelersScreen() {
               </>
             )}
           </ScrollView>
-        </View>
+        </ModalSafeArea>
       </Modal>
     </>
   );

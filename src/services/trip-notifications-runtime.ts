@@ -5,6 +5,7 @@ import {
   loadNotificationPreferences,
 } from '@/data/repositories/notification-preferences-persistence';
 import { tripService } from '@/services/trip-service';
+import { createCoalescedTask } from './coalesced-task';
 import {
   planStopStartReminders,
   STOP_REMINDER_IDENTIFIER_PREFIX,
@@ -14,8 +15,7 @@ import {
 const ANDROID_CHANNEL_ID = 'trip-reminders';
 
 let handlerConfigured = false;
-let reconcileInFlight: Promise<void> | null =
-  null;
+let requestedNow = new Date();
 
 function ensureNotificationHandler(): void {
   if (handlerConfigured) {
@@ -126,85 +126,78 @@ async function scheduleReminders(
  */
 export async function reconcileTripNotifications(
   now: Date = new Date(),
+  options: { throwOnError?: boolean } = {},
 ): Promise<void> {
-  if (reconcileInFlight) {
-    return reconcileInFlight;
+  requestedNow = now;
+  try {
+    await runReconcile();
+  } catch (error) {
+    if (options.throwOnError) throw error;
+    if (__DEV__) console.warn('[TravelOS] Notification reconcile unavailable');
+  }
+}
+
+const runReconcile = createCoalescedTask(async () => {
+  const now = requestedNow;
+  ensureNotificationHandler();
+
+  const preferences =
+    await loadNotificationPreferences();
+
+  if (!preferences.enabled) {
+    await cancelTravelOSStopReminders();
+    return;
   }
 
-  reconcileInFlight = (async () => {
-    try {
-      ensureNotificationHandler();
+  const permission =
+    await Notifications.getPermissionsAsync();
 
-      const preferences =
-        await loadNotificationPreferences();
+  if (!permission.granted) {
+    await cancelTravelOSStopReminders();
+    return;
+  }
 
-      if (!preferences.enabled) {
-        await cancelTravelOSStopReminders();
-        return;
-      }
+  await ensureAndroidChannel();
+  await cancelTravelOSStopReminders();
 
-      const permission =
-        await Notifications.getPermissionsAsync();
+  const trips = await tripService.listTrips();
+  const schedulableTrips = trips.filter(
+    (trip) =>
+      trip.status !== 'completed' &&
+      trip.status !== 'archived',
+  );
 
-      if (!permission.granted) {
-        await cancelTravelOSStopReminders();
-        return;
-      }
+  const planned: PlannedStopReminder[] = [];
 
-      await ensureAndroidChannel();
-      await cancelTravelOSStopReminders();
+  for (const trip of schedulableTrips) {
+    const workspace =
+      await tripService.getWorkspace(trip.id);
 
-      const trips = await tripService.listTrips();
-      const schedulableTrips = trips.filter(
-        (trip) =>
-          trip.status !== 'completed' &&
-          trip.status !== 'archived',
-      );
-
-      const planned: PlannedStopReminder[] = [];
-
-      for (const trip of schedulableTrips) {
-        const workspace =
-          await tripService.getWorkspace(trip.id);
-
-        if (!workspace) {
-          continue;
-        }
-
-        planned.push(
-          ...planStopStartReminders({
-            trip: workspace.trip,
-            days: workspace.days,
-            destinations:
-              workspace.trip.destinations,
-            stops: workspace.stops,
-            livedStates: workspace.stopLivedStates,
-            now,
-            leadMinutes: preferences.leadMinutes,
-          }),
-        );
-      }
-
-      planned.sort(
-        (left, right) =>
-          left.fireAt.getTime() -
-          right.fireAt.getTime(),
-      );
-
-      await scheduleReminders(
-        planned.slice(0, 40),
-      );
-    } catch (error) {
-      if (__DEV__) {
-        console.warn(
-          '[TravelOS] Notification reconcile failed',
-          error,
-        );
-      }
-    } finally {
-      reconcileInFlight = null;
+    if (!workspace) {
+      continue;
     }
-  })();
 
-  return reconcileInFlight;
-}
+    planned.push(
+      ...planStopStartReminders({
+        trip: workspace.trip,
+        days: workspace.days,
+        destinations:
+          workspace.trip.destinations,
+        stops: workspace.stops,
+        livedStates: workspace.stopLivedStates,
+        now,
+        leadMinutes: preferences.leadMinutes,
+      }),
+    );
+  }
+
+  planned.sort(
+    (left, right) =>
+      left.fireAt.getTime() -
+      right.fireAt.getTime(),
+  );
+
+  await scheduleReminders(
+    planned.slice(0, 40),
+  );
+});
