@@ -771,6 +771,15 @@ Platform state:
 - Extracted regions were diffed against the previous commit ignoring indentation and confirmed identical.
 - **Verification limit:** typecheck, 446 tests, lint and `git diff --check` pass, but no test renders `plan.tsx`. These prove the code compiles and nothing else regressed — not that the screen still behaves correctly. A native Plan smoke test (stop create/edit/delete/reorder, location picker, free-time request, editor close guard) remains an open gate.
 
+### Bookings screen split — 2026-09-16
+
+- `bookings.tsx` went from **3242 to 1188 lines** in four verbatim extractions under `src/features/trip-bookings/`: `bookings-styles.ts` (1138), `booking-editor-modal.tsx` (703), `booking-form-model.ts` (198), `booking-time-editor.tsx` (153) and `booking-field.tsx` (83).
+- `booking-form-model.ts` holds the type/status catalogues and the `BookingTimeDraft` model, which preserves an absolute or unparseable stored timestamp instead of rewriting it as local date/time. That rule now lives in one named module rather than inline in the screen.
+- **The editor sheet takes 36 props.** That is the honest shape of the existing coupling, not a design choice: `BookingsScreen` still owns every draft field, its setters and the close guard. Setters keep their `Dispatch<SetStateAction<T>>` signatures because two of them are called with updater functions. A `use-booking-editor` hook would collapse this, and is recorded as open work.
+- The styles and the editor JSX were diffed against the previous commit ignoring indentation and confirmed identical.
+- **Verification limit:** typecheck, 446 tests, lint (48 warnings, unchanged) and `git diff --check` pass; no test renders `bookings.tsx`. A native Bookings smoke test remains an open gate.
+- Unrelated observation, not changed: `bookings.tsx` and `accommodation.tsx` each define a different `formatStopDate`. Bookings uses `formatCalendarDateForDisplay`; Accommodation strips the year with a regex. Both render the same kind of "Day N · date" label, so the two surfaces can disagree on format.
+
 ### Platform and appearance decisions — 2026-09-16
 
 - **Web is no longer a target.** `app.json` no longer declares an `expo.web` block, the `npm run web` script is gone, and `react-dom` / `react-native-web` are uninstalled. The web target was never viable: `react-native-maps` is native-only and Expo SQLite on web needs WASM/Metro and cross-origin-isolation configuration this project does not have, so declaring it invited a build that could not run the product. The PWA at https://travelos3.netlify.app/ remains a UX reference and is unaffected. Reversible by restoring the config block, the script and the two dependencies.

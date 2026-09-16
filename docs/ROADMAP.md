@@ -282,7 +282,11 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 - [x] **Drop the web target and pin light appearance** — `expo.web` config, the `web` script and `react-dom` / `react-native-web` removed; `userInterfaceStyle` pinned to `light` with the root navigation theme fixed to `DefaultTheme`. Native-only maps and SQLite made web unshippable, and the theme has no dark palette. Verified by typecheck, 446 tests, lint and `expo config`; no Android or iOS rebuild on this pass.
 - [x] **Split the Plan screen** — `plan.tsx` 4170 → 2194 lines. Free-time logic and activity copy deduplicated against `@/features/copilot`; styles, the stop editor sheet and the stop-type helpers extracted to `src/features/trip-plan/`. Verbatim moves, confirmed by diff. Native Plan smoke test still owed.
 - [ ] Native Plan smoke test after the split: stop create/edit/delete/reorder, location picker return, free-time request, and the editor close guard. No automated test renders `plan.tsx`.
-- [ ] Consider the same treatment for `bookings.tsx` (3242) and `discover/results.tsx` (2793).
+- [x] **Split the Bookings screen** — `bookings.tsx` 3242 → 1188 lines; styles, editor sheet, form model, time editor and field extracted to `src/features/trip-bookings/`. Verbatim moves, confirmed by diff. Native Bookings smoke test still owed.
+- [ ] Native Bookings smoke test after the split: create/edit/delete, stop linking, the preserved-timestamp editor, payment toggle and the editor close guard.
+- [ ] Extract a `use-booking-editor` hook. The extracted sheet needs 36 props because `BookingsScreen` still owns every draft field and setter.
+- [ ] Reconcile the two different `formatStopDate` implementations in `bookings.tsx` and `accommodation.tsx`, which can render the same label differently.
+- [ ] Consider the same treatment for `discover/results.tsx` (2793).
 - [ ] Decide whether Plan's free-time card and the shared `FreeTimeAdviceCard` should converge on one design, or stay intentionally different per surface.
 - [ ] Decide whether TravelOS ever ships a dark palette. Pinning light is a deliberate hold, not a substitute for designing one.
 
