@@ -762,6 +762,34 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### End-to-end traveller walkthrough — 2026-09-17
+
+Driven on the isolated Android build `com.travelos.app.hardening` over Metro. The production `com.travelos.app` was never launched and its data was never read. The synthetic trip created here was deleted at the end; Trips returned to its empty state.
+
+**Journey completed:** Discover brief (Food/Culture, Balanced, Couple) → grounded match Amsterdam → carried into Create Trip → dates 20–24 Sep 2026 → trip created with 5 canonical days → Plan Assist moment accepted → second moment added through the stop editor → stops reordered → hotel booking saved (Canal House Hotel, 450 EUR, confirmed, paid) → Companion → Map → cold relaunch → fixture deleted.
+
+**This is the native smoke test owed for the Plan and Bookings splits.** Both refactored screens were exercised in the real app: Plan rendered and wrote stops, the extracted `StopEditorModal` rendered every field and its close guard warned on a dirty draft and preserved the draft on Keep editing; Bookings rendered and saved, and the extracted `BookingEditorModal` rendered all ten types, four statuses, amount, currency, paid toggle and notes. Reorder, delete and the trip-delete confirmation all worked. Cold relaunch reported SQLite **23**, persistence self-test **PASS**, bootstrap **ready**, and the trip survived.
+
+**Confirmed correct behaviour:**
+- Companion showed **BEFORE THE JOURNEY · 4 days to go** for a trip starting 20 Sep while the device clock read 17 Sep 00:36 EEST. This is right, not an off-by-one: UTC was 16 Sep 21:37 and Amsterdam 16 Sep 23:37, so the countdown is computed in the destination timezone as the contract requires.
+- Map stated "TravelOS does not invent a pin" and "No guessed locations" rather than inventing coordinates.
+- Discover surfaced "No Travel DNA yet — Nothing will be inferred about you", and ranked only grounded catalogue candidates with per-line `THIS TRIP` provenance. It worked with no AI server running.
+- Create Trip kept Continue disabled until a real destination and real dates existed.
+- The delete dialog named the trip, listed every record class it removes, said there is no undo and offered Archive instead.
+
+**Blocker found — the isolated build cannot use Maps or Places.** `ApiException: 9011: Requests from this Android client application com.travelos.app.hardening are blocked.` The Maps key is restricted to `com.travelos.app`, so the restriction is doing its job, but destination search and map tiles are dead in the build used for verification. The Discover prefill path was the only way to reach Create Trip. Native picker verification therefore cannot be completed in this build until the hardening package and its debug SHA-1 are added to a development-restricted key.
+
+**Defect — provider failure is invisible to the traveller.** When Places returned 9011 the search simply showed nothing. No error, no retry, no explanation; a traveller would conclude the city does not exist or the app is broken. The failure is swallowed inside the third-party `expo-location-picker` native module, which owns that search UI, so the app currently has no surface on which to report it. This breaks the contract rule that persistence and provider errors must be explicit UI states, and it is an architectural risk: the critical destination-selection step is owned by a vendor module with no error channel.
+
+**Other findings, none blocking:**
+- Language is mixed. Home, Trip Copilot and parts of the trip space are Greek while Create Trip, Trips, Discover, Plan, Bookings and Map are English, sometimes within one screen.
+- The native date and time pickers are unstyled Material teal against the warm editorial palette.
+- Raw ISO dates leak into traveller-facing copy: Create Trip shows `2026-09-20` under the formatted date, and the Step 3 summary and Copilot facts show the ISO range alone.
+- A Discover-prefilled destination carries no coordinates, so a trip created that way has an unmapped destination and an empty Trip Map.
+- The floating settings button overlaps card content on Discover results and Trip Map.
+- Discard copy differs between editors: Plan says "Discard unsaved changes?", Bookings says "Discard changes?".
+- A saved booking card shows "Paid" as a subtitle and `PAID` as a badge.
+
 ### Plan screen split — 2026-09-16
 
 - `plan.tsx` went from **4170 to 2194 lines** in three verbatim extractions, with no product behaviour or visual change intended.
