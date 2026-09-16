@@ -34,6 +34,10 @@ import {
 } from '@/features/copilot/free-time-activity-copy';
 import { PlanAssistCard } from '@/features/copilot/plan-assist-card';
 import { useFreeTimeAdvice } from '@/features/copilot/use-free-time-advice';
+import {
+  requestLocationSelection,
+  type LocationSelectionOutcome,
+} from '@/services/location-selection';
 import { FadeIn } from '@/features/motion/fade-in';
 import { playLightImpact } from '@/features/motion/haptic';
 import {
@@ -205,6 +209,14 @@ export default function PlanScreen() {
 
   useTripWorkspaceFocusRefresh();
 
+  const [locationNotice, setLocationNotice] = useState<
+    | {
+        status: Exclude<LocationSelectionOutcome['status'], 'selected'>;
+        reason?: string;
+      }
+    | null
+  >(null);
+
   const [collapsedDayIds, setCollapsedDayIds] =
     useState<Set<string>>(() => new Set());
 
@@ -372,6 +384,8 @@ export default function PlanScreen() {
   } = useFreeTimeAdvice(tripId);
 
   const resetModal = () => {
+    setLocationNotice(null);
+
     setSelectedDay(null);
 
     setEditingStop(null);
@@ -651,13 +665,14 @@ export default function PlanScreen() {
         destinationCoordinate
           ?.longitude;
 
-      try {
-        setIsPickingLocation(
-          true,
-        );
+      setIsPickingLocation(true);
+      setLocationNotice(null);
 
-        const result =
-          await pickLocation({
+      try {
+        const outcome =
+          await requestLocationSelection(
+            pickLocation,
+            {
             title:
               'Choose location',
 
@@ -696,11 +711,24 @@ export default function PlanScreen() {
               colorScheme:
                 'light',
             },
+          },
+          );
+
+        if (outcome.status !== 'selected') {
+          // Nothing was saved. The picker cannot tell us whether the traveller
+          // cancelled or whether place search failed, so say only that.
+          setLocationNotice({
+            status: outcome.status,
+            reason:
+              outcome.status === 'unavailable'
+                ? outcome.reason
+                : undefined,
           });
 
-        if (!result) {
           return;
         }
+
+        const result = outcome.result;
 
         const resultName =
           result.name
@@ -753,10 +781,11 @@ export default function PlanScreen() {
           error,
         );
 
-        Alert.alert(
-          'Could not open map',
-          'TravelOS could not open the location picker. Please try again.',
-        );
+        setLocationNotice({
+          status: 'unavailable',
+          reason:
+            'The chosen location could not be applied. Your moment is unchanged.',
+        });
       } finally {
         setIsPickingLocation(
           false,
@@ -2188,6 +2217,8 @@ export default function PlanScreen() {
         closeModal={closeModal}
         livedByStopId={livedByStopId}
         pendingImportClaimId={pendingImportClaimIdRef.current}
+        locationNotice={locationNotice}
+        onDismissLocationNotice={() => setLocationNotice(null)}
       />
     </>
   );

@@ -102,6 +102,7 @@
     "src/services/ai-preferences-lifecycle.ts",
     "src/services/stop-editor-draft.ts",
     "src/services/editor-close-policy.ts",
+    "src/services/location-selection.ts",
 
     "src/data/discover/index.ts",
     "src/data/discover/curated-western-europe.ts",

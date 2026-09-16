@@ -26,6 +26,11 @@ import {
   View,
 } from 'react-native';
 import { pickLocation } from 'expo-location-picker';
+import { LocationSearchNotice } from '@/features/destinations/location-search-notice';
+import {
+  requestLocationSelection,
+  type LocationSelectionOutcome,
+} from '@/services/location-selection';
 
 import { Screen } from '@/components/ui/screen';
 import {
@@ -168,6 +173,13 @@ export default function AccommodationScreen() {
   >();
   const [isPickingMapLocation, setIsPickingMapLocation] =
     useState(false);
+  const [locationNotice, setLocationNotice] = useState<
+    | {
+        status: Exclude<LocationSelectionOutcome['status'], 'selected'>;
+        reason?: string;
+      }
+    | null
+  >(null);
   const [checkInDate, setCheckInDate] =
     useState('');
   const [checkInTime, setCheckInTime] =
@@ -429,9 +441,10 @@ export default function AccommodationScreen() {
   };
 
   const pickStayMapLocation = async () => {
-    try {
-      setIsPickingMapLocation(true);
+    setIsPickingMapLocation(true);
+    setLocationNotice(null);
 
+    try {
       const destinationWithCoords =
         workspace.trip.destinations.find(
           (destination) =>
@@ -439,7 +452,9 @@ export default function AccommodationScreen() {
             typeof destination.longitude === 'number',
         );
 
-      const result = await pickLocation({
+      const outcome = await requestLocationSelection(
+        pickLocation,
+        {
         title: 'Choose stay location',
         doneButtonTitle: 'Use location',
         cancelButtonTitle: 'Cancel',
@@ -468,11 +483,24 @@ export default function AccommodationScreen() {
           pin: colors.coral,
           colorScheme: 'light',
         },
-      });
+      },
+      );
 
-      if (!result) {
+      if (outcome.status !== 'selected') {
+        // Nothing was saved. The picker cannot distinguish a cancellation from
+        // a place-search failure, so the notice says only what is certain.
+        setLocationNotice({
+          status: outcome.status,
+          reason:
+            outcome.status === 'unavailable'
+              ? outcome.reason
+              : undefined,
+        });
+
         return;
       }
+
+      const result = outcome.result;
 
       setLatitude(result.latitude);
       setLongitude(result.longitude);
@@ -493,10 +521,11 @@ export default function AccommodationScreen() {
         '[Accommodation] Location picker error:',
         error,
       );
-      Alert.alert(
-        'Could not open place picker',
-        'Map location was not changed.',
-      );
+      setLocationNotice({
+        status: 'unavailable',
+        reason:
+          'The chosen location could not be applied. Map location was not changed.',
+      });
     } finally {
       setIsPickingMapLocation(false);
     }
@@ -940,6 +969,14 @@ export default function AccommodationScreen() {
                 </Text>
               </View>
             </Pressable>
+
+            <LocationSearchNotice
+              status={locationNotice?.status ?? null}
+              reason={locationNotice?.reason}
+              onRetry={() => void pickStayMapLocation()}
+              onDismiss={() => setLocationNotice(null)}
+            />
+
             {typeof latitude === 'number' &&
               typeof longitude === 'number' && (
                 <Pressable

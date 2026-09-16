@@ -762,6 +762,20 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### Destination search error state — 2026-09-17
+
+The silent destination search found in the walkthrough now has an explicit UI state at all three picker call sites: Create Trip / Trip Details (`DestinationPickerField`, both the card and add variants), the Plan stop editor, and Accommodation.
+
+- `src/services/location-selection.ts` wraps `pickLocation` and returns a definite `selected` / `dismissed` / `unavailable` outcome instead of a bare result-or-null. Five tests cover the mapping, including that options pass through unchanged.
+- `LocationSearchNotice` renders the non-selected outcomes inline: a title, what actually happened, a dismiss control and an "Open the map again" retry. It is scoped per field, so the Create Trip destination notice does not appear on the origin picker.
+- Every `if (!result) return;` in a picker flow is gone.
+
+**What the copy deliberately does not claim.** TravelOS still cannot detect a Places failure. The native module logs the error and calls `predictionsAdapter.submit(emptyList())` (`LocationPickerDialogFragment.kt`), so a blocked key and a genuine cancellation both arrive in JavaScript as `null`. The dismissed notice therefore states only the certain part — nothing was saved — and then names the possibility the traveller cannot otherwise diagnose: "If the search stayed empty while you typed, place search may not be available in this build. TravelOS will not guess a location for you." It does not assert an error occurred. `unavailable` is reserved for a real thrown presentation or apply failure.
+
+**Native verification, 2026-09-17**, on `com.travelos.app.hardening` where Places returns 9011: searching "Lisboa", getting nothing and closing the map produced the notice on Create Trip; dismiss cleared it; "Open the map again" reopened the picker; the origin field stayed unaffected. No trip was created. Checks: `npx tsc --noEmit`, `npm test` 451/451, lint 48 warnings unchanged, `git diff --check`.
+
+**Still open.** This makes the failure legible, not diagnosable. A traveller sees a possibility, not a cause. Reporting the real provider error needs the native module to expose one, which means patching or replacing `expo-location-picker` and rebuilding — recorded separately in the roadmap.
+
 ### End-to-end traveller walkthrough — 2026-09-17
 
 Driven on the isolated Android build `com.travelos.app.hardening` over Metro. The production `com.travelos.app` was never launched and its data was never read. The synthetic trip created here was deleted at the end; Trips returned to its empty state.

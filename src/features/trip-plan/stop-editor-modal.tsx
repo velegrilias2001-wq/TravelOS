@@ -20,6 +20,8 @@ import {
   hasCoordinates,
   type StopLocation,
 } from '@/features/trip-plan/stop-types';
+import { LocationSearchNotice } from '@/features/destinations/location-search-notice';
+import type { LocationSelectionOutcome } from '@/services/location-selection';
 import { planStopLivedBadge } from '@/services/stop-lived-progress';
 import { colors } from '@/theme';
 
@@ -45,6 +47,13 @@ type StopEditorModalProps = {
   closeModal: () => void;
   livedByStopId: Parameters<typeof planStopLivedBadge>[1];
   pendingImportClaimId: string | null;
+  locationNotice:
+    | {
+        status: Exclude<LocationSelectionOutcome['status'], 'selected'>;
+        reason?: string;
+      }
+    | null;
+  onDismissLocationNotice: () => void;
 };
 
 /**
@@ -76,6 +85,8 @@ export function StopEditorModal({
   closeModal,
   livedByStopId,
   pendingImportClaimId,
+  locationNotice,
+  onDismissLocationNotice,
 }: StopEditorModalProps) {
   return (
   <Modal
@@ -468,6 +479,13 @@ export function StopEditorModal({
                       : 'Choose location'}
                 </Text>
               </Pressable>
+
+              <LocationSearchNotice
+                status={locationNotice?.status ?? null}
+                reason={locationNotice?.reason}
+                onRetry={chooseLocation}
+                onDismiss={onDismissLocationNotice}
+              />
 
               {pickedLocation && (
                 <Pressable

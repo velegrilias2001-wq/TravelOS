@@ -24,6 +24,13 @@ import {
   type DestinationSelection,
 } from '@/services/destination-authoring';
 import {
+  LocationSearchNotice,
+} from '@/features/destinations/location-search-notice';
+import {
+  requestLocationSelection,
+  type LocationSelectionOutcome,
+} from '@/services/location-selection';
+import {
   enrichSelectionWithProviderTimezone,
 } from '@/services/timezone-lookup';
 import {
@@ -106,6 +113,10 @@ export function DestinationPickerField({
   variant = 'card',
 }: DestinationPickerFieldProps) {
   const [isPicking, setIsPicking] = useState(false);
+  const [pickerNotice, setPickerNotice] = useState<
+    | { status: Exclude<LocationSelectionOutcome['status'], 'selected'>; reason?: string }
+    | null
+  >(null);
   const [timezoneOpen, setTimezoneOpen] = useState(false);
   const [customTimeZone, setCustomTimeZone] = useState('');
   const isMapped = Boolean(
@@ -122,10 +133,12 @@ export function DestinationPickerField({
       : 'Choose destination';
 
   const chooseDestination = async () => {
-    try {
-      setIsPicking(true);
+    setIsPicking(true);
+    setPickerNotice(null);
 
-      const result = await pickLocation({
+    const outcome = await requestLocationSelection(
+      pickLocation,
+      {
         title: variant === 'add' ? 'Add destination' : 'Choose destination',
         doneButtonTitle: 'Use destination',
         cancelButtonTitle: 'Cancel',
@@ -146,11 +159,25 @@ export function DestinationPickerField({
           pin: colors.coral,
           colorScheme: 'light',
         },
-      });
+      },
+    );
 
-      if (!result) {
+    try {
+      if (outcome.status !== 'selected') {
+        // Closing with nothing saved is now an explicit state instead of a
+        // silent return. See location-selection.ts for why a provider failure
+        // cannot be distinguished from a cancellation here.
+        setPickerNotice({
+          status: outcome.status,
+          reason:
+            outcome.status === 'unavailable'
+              ? outcome.reason
+              : undefined,
+        });
         return;
       }
+
+      const result = outcome.result;
 
       const mapped = mapDestinationProviderResult({
         latitude: result.latitude,
@@ -181,10 +208,11 @@ export function DestinationPickerField({
         ),
       );
     } catch {
-      Alert.alert(
-        'Could not choose destination',
-        'The map selection could not be opened. Your destination is unchanged.',
-      );
+      setPickerNotice({
+        status: 'unavailable',
+        reason:
+          'The chosen location could not be saved. Your destination is unchanged.',
+      });
     } finally {
       setIsPicking(false);
     }
@@ -192,6 +220,7 @@ export function DestinationPickerField({
 
   if (variant === 'add') {
     return (
+      <View style={styles.addWrap}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={actionLabel}
@@ -213,6 +242,14 @@ export function DestinationPickerField({
           {isPicking ? 'Opening map…' : actionLabel}
         </Text>
       </Pressable>
+
+        <LocationSearchNotice
+          status={pickerNotice?.status ?? null}
+          reason={pickerNotice?.reason}
+          onRetry={() => void chooseDestination()}
+          onDismiss={() => setPickerNotice(null)}
+        />
+      </View>
     );
   }
 
@@ -369,6 +406,13 @@ export function DestinationPickerField({
           Add a real location to place this destination on your trip map.
         </Text>
       ) : null}
+
+      <LocationSearchNotice
+          status={pickerNotice?.status ?? null}
+          reason={pickerNotice?.reason}
+          onRetry={() => void chooseDestination()}
+          onDismiss={() => setPickerNotice(null)}
+        />
 
       <Modal
         visible={timezoneOpen}
@@ -551,6 +595,9 @@ const styles = StyleSheet.create({
   },
   addAction: {
     marginTop: 0,
+  },
+  addWrap: {
+    gap: 0,
   },
   actionText: {
     fontFamily: fontFamily.sansSemiBold,
