@@ -1,5 +1,4 @@
 import {
-  DarkTheme,
   DefaultTheme,
   Stack,
   ThemeProvider,
@@ -29,7 +28,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
 } from 'react-native';
 
@@ -51,7 +49,6 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const dataGeneration = useSyncExternalStore(subscribeLocalDataGeneration, getLocalDataGeneration, getLocalDataGeneration);
-  const colorScheme = useColorScheme();
 
   const [
     bootstrapStatus,
@@ -166,13 +163,13 @@ export default function RootLayout() {
     return null;
   }
 
+  // TravelOS ships light only. src/theme carries a single warm palette with no
+  // dark variant, so following the system scheme would render that palette
+  // against dark navigation chrome. app.json pins userInterfaceStyle to
+  // "light"; this pins the navigation theme to match.
   return (
     <ThemeProvider
-      value={
-        colorScheme === 'dark'
-          ? DarkTheme
-          : DefaultTheme
-      }
+      value={DefaultTheme}
     >
       {bootstrapStatus === 'error' ? (
         <BootstrapErrorState

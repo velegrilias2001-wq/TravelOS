@@ -217,7 +217,7 @@ Recent native milestones include the repository/service foundation, native navig
 | Optional local AI backend | `server/` Express package (`travelos-ai-server`) with a client `AIAPIClient` |
 | Styling | Local design tokens and React Native StyleSheet-based screen styling |
 
-The package currently has start, Android, iOS, web, reset-project, lint, and automated test scripts. Lint uses a committed Expo SDK 57 `eslint.config.js` and `eslint .` (non-interactive). A GitHub Actions workflow exists for typecheck, tests, lint, and AI-server tests. Git remote `origin` exists; this branch still needs `git push -u origin HEAD` before CI runs on GitHub. Local `eas.json` profiles exist (production auto-increments Android `versionCode`). EAS project `@velegris/TravelOS` is linked; cloud builds still need Android credentials and `GOOGLE_MAPS_API_KEY` as an EAS secret.
+The package currently has start, Android, iOS, reset-project, lint, and automated test scripts. Lint uses a committed Expo SDK 57 `eslint.config.js` and `eslint .` (non-interactive). A GitHub Actions workflow exists for typecheck, tests, lint, and AI-server tests. Git remote `origin` exists; this branch still needs `git push -u origin HEAD` before CI runs on GitHub. Local `eas.json` profiles exist (production auto-increments Android `versionCode`). EAS project `@velegris/TravelOS` is linked; cloud builds still need Android credentials and `GOOGLE_MAPS_API_KEY` as an EAS secret.
 
 ## Architecture
 
@@ -762,6 +762,11 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### Platform and appearance decisions — 2026-09-16
+
+- **Web is no longer a target.** `app.json` no longer declares an `expo.web` block, the `npm run web` script is gone, and `react-dom` / `react-native-web` are uninstalled. The web target was never viable: `react-native-maps` is native-only and Expo SQLite on web needs WASM/Metro and cross-origin-isolation configuration this project does not have, so declaring it invited a build that could not run the product. The PWA at https://travelos3.netlify.app/ remains a UX reference and is unaffected. Reversible by restoring the config block, the script and the two dependencies.
+- **Light appearance is pinned.** `app.json` sets `userInterfaceStyle: "light"` and the root layout passes `DefaultTheme` unconditionally instead of reading `useColorScheme`. `src/theme` carries one warm palette with no dark variant, so following the system scheme rendered product surfaces light against dark navigation chrome. This is an intentional decision to ship light only, not dark-mode support; a real dark palette remains open work.
+
 - Maps keys are per-platform: `app.config.js` injects `GOOGLE_MAPS_ANDROID_API_KEY` and `GOOGLE_MAPS_IOS_API_KEY` into the corresponding `react-native-maps` plugin fields, failing closed when either is absent. Google Maps restrictions are per-platform, so one key cannot be restricted to both an Android package/SHA-1 and an iOS bundle. The legacy shared `GOOGLE_MAPS_API_KEY` remains accepted as a fallback for existing local and EAS setups, but it is the weaker configuration and the operator still has to issue the split keys and restrict each one. Four config tests cover per-platform resolution, legacy fallback, per-platform override and fail-closed behavior. No runtime or schema change.
 
 Android-verified on 2026-09-02: Trip Map for Nagawa rendered Google Maps with destination and stop markers and an “1 place” overlay. World showed 3 mapped destinations from saved trip facts.
