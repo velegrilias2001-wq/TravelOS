@@ -762,6 +762,15 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### Plan screen split — 2026-09-16
+
+- `plan.tsx` went from **4170 to 2194 lines** in three verbatim extractions, with no product behaviour or visual change intended.
+- **Free-time dedup.** Plan carried its own byte-identical copy of `FREE_TIME_ACTIVITY_COPY`, `freeTimeAdviceKey`, `formatFreeTimeDuration` and the whole advice-request handler, while Copilot and Companion already used `@/features/copilot`. Plan now imports the shared copy table and `useFreeTimeAdvice`. Duplicated product copy could previously drift between the three screens.
+- **Presentation kept deliberately.** Plan's free-time card and the shared `FreeTimeAdviceCard` differ in copy and layout ("FREE TIME"/"Fill this time" against "OPEN TIME"/"Ask TravelOS"). Only the logic and the copy table were unified; Plan keeps its own card. Whether the two should converge is an open product decision, not a refactor.
+- **New modules** under `src/features/trip-plan/`, deliberately outside `src/app/` so Expo Router does not treat them as routes: `plan-styles.ts` (1245), `stop-editor-modal.tsx` (591) and `stop-types.ts` (60).
+- Extracted regions were diffed against the previous commit ignoring indentation and confirmed identical.
+- **Verification limit:** typecheck, 446 tests, lint and `git diff --check` pass, but no test renders `plan.tsx`. These prove the code compiles and nothing else regressed — not that the screen still behaves correctly. A native Plan smoke test (stop create/edit/delete/reorder, location picker, free-time request, editor close guard) remains an open gate.
+
 ### Platform and appearance decisions — 2026-09-16
 
 - **Web is no longer a target.** `app.json` no longer declares an `expo.web` block, the `npm run web` script is gone, and `react-dom` / `react-native-web` are uninstalled. The web target was never viable: `react-native-maps` is native-only and Expo SQLite on web needs WASM/Metro and cross-origin-isolation configuration this project does not have, so declaring it invited a build that could not run the product. The PWA at https://travelos3.netlify.app/ remains a UX reference and is unaffected. Reversible by restoring the config block, the script and the two dependencies.
