@@ -51,13 +51,42 @@ function loadEnvLocal() {
 
 loadEnvLocal();
 
-module.exports = ({ config }) => {
-  const googleMapsApiKey =
-    process.env.GOOGLE_MAPS_API_KEY;
+/**
+ * Resolve one platform's Maps key.
+ *
+ * Google Maps restrictions are per-platform: an Android key is restricted to a
+ * package name plus signing SHA-1, an iOS key to a bundle identifier. A single
+ * key cannot carry both restrictions, so each platform gets its own variable.
+ * The legacy shared GOOGLE_MAPS_API_KEY is still accepted so existing local and
+ * EAS setups keep building, but it is the weaker configuration.
+ */
+function resolveMapsKey(platformVariable) {
+  return (
+    process.env[platformVariable] ??
+    process.env.GOOGLE_MAPS_API_KEY
+  );
+}
 
-  if (!googleMapsApiKey) {
+module.exports = ({ config }) => {
+  const androidGoogleMapsApiKey =
+    resolveMapsKey(
+      'GOOGLE_MAPS_ANDROID_API_KEY',
+    );
+
+  const iosGoogleMapsApiKey =
+    resolveMapsKey(
+      'GOOGLE_MAPS_IOS_API_KEY',
+    );
+
+  if (!androidGoogleMapsApiKey) {
     throw new Error(
-      'GOOGLE_MAPS_API_KEY is missing. Add it to .env.local',
+      'GOOGLE_MAPS_ANDROID_API_KEY is missing. Add it to .env.local',
+    );
+  }
+
+  if (!iosGoogleMapsApiKey) {
+    throw new Error(
+      'GOOGLE_MAPS_IOS_API_KEY is missing. Add it to .env.local',
     );
   }
 
@@ -87,10 +116,8 @@ module.exports = ({ config }) => {
       [
         'react-native-maps',
         {
-          androidGoogleMapsApiKey:
-            googleMapsApiKey,
-          iosGoogleMapsApiKey:
-            googleMapsApiKey,
+          androidGoogleMapsApiKey,
+          iosGoogleMapsApiKey,
         },
       ],
     ],

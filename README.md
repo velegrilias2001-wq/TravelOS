@@ -42,17 +42,19 @@ Create an uncommitted `.env.local` from `.env.example`:
 
 | Variable | Purpose |
 | --- | --- |
-| GOOGLE_MAPS_API_KEY | Google Maps / Places configuration for Android and (when rebuilt) iOS via `app.config.js` |
+| GOOGLE_MAPS_ANDROID_API_KEY | Android Google Maps / Places key, injected by `app.config.js`. Falls back to `GOOGLE_MAPS_API_KEY`. |
+| GOOGLE_MAPS_IOS_API_KEY | iOS Google Maps key, injected by `app.config.js`. Falls back to `GOOGLE_MAPS_API_KEY`. |
+| GOOGLE_MAPS_API_KEY | Legacy shared fallback for both platforms. Still supported, but one key cannot carry both platform restrictions. |
 | EXPO_PUBLIC_TRAVELOS_AI_URL | Optional loopback AI / geo server URL. Cloud hosts are ignored. |
 
-Do not commit, print, or share secret values. Restrict the Maps key to the APIs TravelOS uses (Maps SDK for Android, Places API New; Maps SDK for iOS when shipping iOS). Android restriction: package `com.travelos.app` plus the EAS/Play signing SHA-1. iOS restriction: bundle `com.travelos.app`. Local AI server tokens stay in `server/.env` only — never in `EXPO_PUBLIC_*`. Optional `GOOGLE_TIMEZONE_API_KEY` in `server/.env` enables picker Time Zone enrichment via `POST /geo/timezone` (restrict that key to Time Zone API only; never reuse the Maps key).
+Do not commit, print, or share secret values. Use a separate key per platform: Google Maps restrictions are per-platform, so one key cannot be restricted to both an Android package plus signing SHA-1 and an iOS bundle identifier. Restrict the Android key to Maps SDK for Android and Places API New, with an Android-app restriction on package `com.travelos.app` and the EAS/Play signing SHA-1. Restrict the iOS key to Maps SDK for iOS, with an iOS-app restriction on bundle `com.travelos.app`. Local AI server tokens stay in `server/.env` only — never in `EXPO_PUBLIC_*`. Optional `GOOGLE_TIMEZONE_API_KEY` in `server/.env` enables picker Time Zone enrichment via `POST /geo/timezone` (restrict that key to Time Zone API only; never reuse the Maps key).
 
 ### Versioning
 
 - User-facing version: `package.json` / `app.json` `expo.version` (currently `1.0.0`).
 - Android Play monotonic build: `app.json` `expo.android.versionCode` (EAS production uses `autoIncrement: true`).
 - iOS build number (when iOS is rebuilt): `app.json` `expo.ios.buildNumber`.
-- Cloud EAS builds: project `@velegris/TravelOS` is linked. Use `npx eas-cli` (not `npx eas`). Set `GOOGLE_MAPS_API_KEY` as an EAS secret before cloud Android builds.
+- Cloud EAS builds: project `@velegris/TravelOS` is linked. Use `npx eas-cli` (not `npx eas`). Set `GOOGLE_MAPS_ANDROID_API_KEY` as an EAS secret before cloud Android builds, and `GOOGLE_MAPS_IOS_API_KEY` before cloud iOS builds.
 
 ### Build and run on Android
 
@@ -72,7 +74,7 @@ On macOS (Windows cannot produce an iOS binary):
 
     npm run ios
 
-`ios.bundleIdentifier` is `com.travelos.app`. Maps use `PROVIDER_GOOGLE`, so enable Maps SDK for iOS and set the same `GOOGLE_MAPS_API_KEY` (EAS secret or `.env.local`) with an iOS-app restriction for that bundle. Memory camera/photo strings come from the `expo-image-picker` config plugin. TestFlight / App Store remain operator steps after a Mac/EAS iOS build.
+`ios.bundleIdentifier` is `com.travelos.app`. Maps use `PROVIDER_GOOGLE`, so enable Maps SDK for iOS and set `GOOGLE_MAPS_IOS_API_KEY` (EAS secret or `.env.local`) with an iOS-app restriction for that bundle. It must be its own key, not the Android one. Memory camera/photo strings come from the `expo-image-picker` config plugin. TestFlight / App Store remain operator steps after a Mac/EAS iOS build.
 
 ## Validation
 

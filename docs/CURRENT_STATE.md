@@ -762,7 +762,7 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
-- The API key is injected from GOOGLE_MAPS_API_KEY through app.config.js for Android and iOS Google Maps plugin fields.
+- Maps keys are per-platform: `app.config.js` injects `GOOGLE_MAPS_ANDROID_API_KEY` and `GOOGLE_MAPS_IOS_API_KEY` into the corresponding `react-native-maps` plugin fields, failing closed when either is absent. Google Maps restrictions are per-platform, so one key cannot be restricted to both an Android package/SHA-1 and an iOS bundle. The legacy shared `GOOGLE_MAPS_API_KEY` remains accepted as a fallback for existing local and EAS setups, but it is the weaker configuration and the operator still has to issue the split keys and restrict each one. Four config tests cover per-platform resolution, legacy fallback, per-platform override and fail-closed behavior. No runtime or schema change.
 
 Android-verified on 2026-09-02: Trip Map for Nagawa rendered Google Maps with destination and stop markers and an “1 place” overlay. World showed 3 mapped destinations from saved trip facts.
 - Cloud API enablement and key restrictions were not verified because secret configuration was intentionally not inspected.
