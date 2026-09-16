@@ -762,6 +762,12 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### Origin field copy — 2026-09-17
+
+Create Trip reuses `DestinationPickerField` for the trip origin, so the origin card asked "WHERE ARE YOU GOING?" under a "LEAVING FROM" label and offered "Choose destination". The component now takes a `role` of `destination` or `origin` and reads its wording from one `PICKER_COPY` table covering the prompt, placeholder, button labels, picker title and done button, search placeholder, help line and save-failure reason. Only the Create Trip origin passes `role="origin"`; every destination usage keeps its existing copy unchanged.
+
+Android-verified on 2026-09-17: destination reads "WHERE ARE YOU GOING? / Choose a city, region or country / Choose destination" and origin reads "WHERE ARE YOU LEAVING FROM? / Choose the place you travel from / Choose origin". The origin remains picker facts only; nothing about its role in the trip changed.
+
 ### Destination search error state — 2026-09-17
 
 The silent destination search found in the walkthrough now has an explicit UI state at all three picker call sites: Create Trip / Trip Details (`DestinationPickerField`, both the card and add variants), the Plan stop editor, and Accommodation.

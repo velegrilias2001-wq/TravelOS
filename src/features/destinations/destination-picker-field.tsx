@@ -65,7 +65,57 @@ interface DestinationPickerFieldProps {
   onTimeZoneChange?(timezone: string | null): void;
   disabled?: boolean;
   variant?: 'card' | 'add';
+  /**
+   * What the picked place means on this screen. Create Trip reuses this field
+   * for the trip origin, which is picker facts only and never a destination
+   * on the trip, so it must not ask "Where are you going?".
+   */
+  role?: PickerRole;
 }
+
+type PickerRole = 'destination' | 'origin';
+
+interface PickerCopy {
+  prompt: string;
+  placeholder: string;
+  choose: string;
+  add: string;
+  replace: string;
+  addMap: string;
+  done: string;
+  searchPlaceholder: string;
+  help: string;
+  saveFailed: string;
+}
+
+const PICKER_COPY: Record<PickerRole, PickerCopy> = {
+  destination: {
+    prompt: 'WHERE ARE YOU GOING?',
+    placeholder: 'Choose a city, region or country',
+    choose: 'Choose destination',
+    add: 'Add destination',
+    replace: 'Replace map location',
+    addMap: 'Add map location',
+    done: 'Use destination',
+    searchPlaceholder: 'Search cities, regions or countries…',
+    help: 'Add a real location to place this destination on your trip map.',
+    saveFailed:
+      'The chosen location could not be saved. Your destination is unchanged.',
+  },
+  origin: {
+    prompt: 'WHERE ARE YOU LEAVING FROM?',
+    placeholder: 'Choose the place you travel from',
+    choose: 'Choose origin',
+    add: 'Add origin',
+    replace: 'Replace origin location',
+    addMap: 'Add map location',
+    done: 'Use origin',
+    searchPlaceholder: 'Search cities, regions or countries…',
+    help: 'Add a real location to keep this origin on the map. It stays picker facts only.',
+    saveFailed:
+      'The chosen location could not be saved. Your origin is unchanged.',
+  },
+};
 
 const COMMON_TIME_ZONES = [
   'Europe/Athens',
@@ -111,7 +161,9 @@ export function DestinationPickerField({
   onTimeZoneChange,
   disabled = false,
   variant = 'card',
+  role = 'destination',
 }: DestinationPickerFieldProps) {
+  const copy = PICKER_COPY[role];
   const [isPicking, setIsPicking] = useState(false);
   const [pickerNotice, setPickerNotice] = useState<
     | { status: Exclude<LocationSelectionOutcome['status'], 'selected'>; reason?: string }
@@ -126,11 +178,11 @@ export function DestinationPickerField({
 
   const actionLabel = destination
     ? isMapped
-      ? 'Replace map location'
-      : 'Add map location'
+      ? copy.replace
+      : copy.addMap
     : variant === 'add'
-      ? 'Add destination'
-      : 'Choose destination';
+      ? copy.add
+      : copy.choose;
 
   const chooseDestination = async () => {
     setIsPicking(true);
@@ -139,11 +191,10 @@ export function DestinationPickerField({
     const outcome = await requestLocationSelection(
       pickLocation,
       {
-        title: variant === 'add' ? 'Add destination' : 'Choose destination',
-        doneButtonTitle: 'Use destination',
+        title: variant === 'add' ? copy.add : copy.choose,
+        doneButtonTitle: copy.done,
         cancelButtonTitle: 'Cancel',
-        searchPlaceholder:
-          'Search cities, regions or countries…',
+        searchPlaceholder: copy.searchPlaceholder,
         initialRadiusMeters: 120_000,
         disableCurrentLocation: true,
         ...(destination && isMapped
@@ -210,8 +261,7 @@ export function DestinationPickerField({
     } catch {
       setPickerNotice({
         status: 'unavailable',
-        reason:
-          'The chosen location could not be saved. Your destination is unchanged.',
+        reason: copy.saveFailed,
       });
     } finally {
       setIsPicking(false);
@@ -289,12 +339,11 @@ export function DestinationPickerField({
             <Text style={styles.stateLabel}>
               {destination
                 ? 'MAP LOCATION'
-                : 'WHERE ARE YOU GOING?'}
+                : copy.prompt}
             </Text>
 
             <Text style={styles.name}>
-              {destination?.name ||
-                'Choose a city, region or country'}
+              {destination?.name || copy.placeholder}
             </Text>
 
             {destination?.countryCode && (
@@ -402,9 +451,7 @@ export function DestinationPickerField({
       </View>
 
       {destination && !isMapped ? (
-        <Text style={styles.help}>
-          Add a real location to place this destination on your trip map.
-        </Text>
+        <Text style={styles.help}>{copy.help}</Text>
       ) : null}
 
       <LocationSearchNotice

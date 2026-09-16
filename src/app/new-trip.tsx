@@ -1010,6 +1010,7 @@ export default function NewTripScreen() {
                     Where you leave from. Picker facts only — not a destination on this trip, and never used as the day clock.
                   </Text>
                   <DestinationPickerField
+                    role="origin"
                     label="LEAVING FROM"
                     destination={origin}
                     disabled={isSaving}
