@@ -69,3 +69,39 @@ test('evidence pack stays read-only and never invents packing or readiness', () 
     /2 pending import/,
   );
 });
+
+test('the Copilot facts summary shows travel dates as readable text, not ISO keys', () => {
+  const pack = {
+    title: 'Lisboa',
+    startDate: '2026-09-20',
+    endDate: '2026-09-24',
+    destinationNames: ['Lisboa, Portugal'],
+    readinessPercent: 40,
+    readinessGaps: ['plan'],
+    packingTotal: 0,
+    packingPacked: 0,
+    pendingImportClaims: 0,
+  };
+
+  const summary = summarizeTripEvidencePack(pack);
+
+  assert.doesNotMatch(summary, /\d{4}-\d{2}-\d{2}/);
+  assert.match(summary, /Lisboa · .*2026.* → .*2026/);
+});
+
+test('an unreadable stored date is flagged instead of printed as a key', () => {
+  const summary = summarizeTripEvidencePack({
+    title: 'Lisboa',
+    startDate: 'not-a-date',
+    endDate: '2026-09-24',
+    destinationNames: [],
+    readinessPercent: null,
+    readinessGaps: [],
+    packingTotal: 0,
+    packingPacked: 0,
+    pendingImportClaims: 0,
+  });
+
+  assert.match(summary, /Saved date needs review/);
+  assert.doesNotMatch(summary, /not-a-date/);
+});

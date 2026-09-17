@@ -289,7 +289,7 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 - [ ] **Decide the product language.** Greek and English currently mix inside single screens. Pick one, or introduce real localisation.
 - [ ] Style the native date and time pickers, or wrap them, so they stop rendering Material teal against the warm palette.
 - [x] **Raw ISO dates out of Create Trip** — the `CalendarDateField` echo now appears only for a non-canonical value, where it is the diagnostic rather than noise, and the step 3 review card formats its range. Android-verified.
-- [ ] Remove the raw ISO range from the Trip Copilot facts card.
+- [x] **Trip Copilot facts card dates** — `summarizeTripEvidencePack` formats its range instead of interpolating stored keys. Two tests, Android-verified.
 - [ ] Carry coordinates from a Discover catalogue destination into the created trip, so a Discover-started trip is not born with an empty Trip Map.
 - [ ] Keep the floating settings button clear of card content on Discover results and Trip Map.
 - [ ] Unify editor discard copy across Plan and Bookings.

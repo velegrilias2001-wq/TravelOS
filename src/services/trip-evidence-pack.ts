@@ -2,6 +2,7 @@ import type { PackingItem } from '@/domain/entities/packing-item';
 import type { TravelDNA } from '@/domain/entities/travel-dna';
 
 import { packingProgress } from './packing-progress';
+import { formatCalendarDateForDisplay } from './time-truth';
 import {
   selectTripReadiness,
 } from './trip-readiness';
@@ -68,6 +69,13 @@ export function buildTripEvidencePack(input: {
   };
 }
 
+/** Traveller-facing range for the Copilot facts card; never a raw ISO key. */
+const EVIDENCE_DATE_FORMAT: Intl.DateTimeFormatOptions = {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+};
+
 export function summarizeTripEvidencePack(
   pack: TripEvidencePack,
 ): string {
@@ -96,7 +104,7 @@ export function summarizeTripEvidencePack(
       : 'No pending import claims';
 
   return [
-    `${pack.title} · ${pack.startDate} → ${pack.endDate}`,
+    `${pack.title} · ${formatCalendarDateForDisplay(pack.startDate, EVIDENCE_DATE_FORMAT)} → ${formatCalendarDateForDisplay(pack.endDate, EVIDENCE_DATE_FORMAT)}`,
     destinations,
     readiness,
     packing,

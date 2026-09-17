@@ -762,6 +762,14 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### Copilot facts card dates — 2026-09-17
+
+`summarizeTripEvidencePack` interpolated `pack.startDate` and `pack.endDate` directly, so the Trip Copilot "ΑΠΟΘΗΚΕΥΜΕΝΑ FACTS" card printed an ISO range. Both ends now go through `formatCalendarDateForDisplay`, which also degrades to "Saved date needs review" rather than showing a broken key. The summary has exactly one consumer, the Copilot card; it is not sent to any AI provider, so no prompt or parsing contract depends on the old shape.
+
+Two tests were added: the summary contains no `YYYY-MM-DD` substring, and an unreadable stored date is flagged instead of echoed.
+
+Android-verified on 2026-09-17: the card reads "Athens · Sep 20, 2026 → Sep 24, 2026". The synthetic trip was deleted afterwards and Trips returned to empty.
+
 ### ISO dates out of traveller-facing copy — 2026-09-17
 
 Two separate leaks, both fixed.
