@@ -3,6 +3,8 @@
  * Packs never invent destinations — they only style confirmed trips.
  */
 
+import { strings } from '../i18n';
+
 export type TripThemePackId = string;
 
 export interface TripThemePack {
@@ -18,7 +20,7 @@ export const TRIP_THEME_PACKS: readonly TripThemePack[] = [
   {
     id: 'ink-default',
     label: 'Ink',
-    moodEyebrow: 'Your journey',
+    moodEyebrow: strings.tripTheme.inkMood,
     accent: '#0E2421',
     accentSoft: '#D5E4DF',
     countryCodes: [],
@@ -26,7 +28,7 @@ export const TRIP_THEME_PACKS: readonly TripThemePack[] = [
   {
     id: 'mediterranean-coast',
     label: 'Mediterranean',
-    moodEyebrow: 'Coastal light',
+    moodEyebrow: strings.tripTheme.mediterraneanMood,
     accent: '#1B3A4B',
     accentSoft: '#E4EEF2',
     countryCodes: ['IT', 'ES', 'PT', 'GR', 'HR'],
@@ -34,7 +36,7 @@ export const TRIP_THEME_PACKS: readonly TripThemePack[] = [
   {
     id: 'central-europe',
     label: 'Central Europe',
-    moodEyebrow: 'River cities',
+    moodEyebrow: strings.tripTheme.centralEuropeMood,
     accent: '#3D2C2E',
     accentSoft: '#F0E6E4',
     countryCodes: ['AT', 'CZ', 'PL', 'HU', 'DE', 'SK'],
@@ -42,7 +44,7 @@ export const TRIP_THEME_PACKS: readonly TripThemePack[] = [
   {
     id: 'nordic',
     label: 'Nordic',
-    moodEyebrow: 'Northern calm',
+    moodEyebrow: strings.tripTheme.nordicMood,
     accent: '#243B4A',
     accentSoft: '#E6EEF2',
     countryCodes: ['NO', 'DK', 'SE', 'FI', 'IS'],
@@ -50,7 +52,7 @@ export const TRIP_THEME_PACKS: readonly TripThemePack[] = [
   {
     id: 'atlantic-isles',
     label: 'Atlantic',
-    moodEyebrow: 'Island weather',
+    moodEyebrow: strings.tripTheme.atlanticMood,
     accent: '#2F4A3C',
     accentSoft: '#E5EFE8',
     countryCodes: ['GB', 'IE', 'IS'],

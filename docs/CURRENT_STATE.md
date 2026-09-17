@@ -762,6 +762,26 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### Greek copy, phase 2a: the five Trip Space tabs — 2026-09-17
+
+**Translated:** Companion, Plan (screen, stop editor, Plan Assist card, stop types), Map, Bookings (screen, editor sheet, form model, time editor), More, Trip Copilot, plus the shared `CalendarDateField` / `LocalTimeField`.
+
+Service-owned copy moved to the catalogue too, because it reaches the traveller: `trip-map-context` frame eyebrows, `offline-trip-context` notices, `trip-readiness` checklist bodies, `trip-evidence-pack` summary, `trip-theme` mood eyebrows and `plan-assist` candidate copy.
+
+**Two raw enum leaks fixed.** `trips.tsx` rendered `trip.status.toUpperCase()` and `more.tsx` rendered a sentence-cased `trip.status`; both now go through label maps.
+
+**A typed contract was kept, not translated.** `TripReadinessChecklistItem.actionLabel` is the literal union `'Add' | 'Continue' | 'View'`. Translating the values broke the type, which was the right signal: the service reports intent and the screens render copy, so Copilot and More now map the token through `strings.readiness.action`.
+
+**Plan Assist and free-time copy deduplicated.** `PLAN_ASSIST_ACTIVITY_COPY` (plain, Node-safe) and `FREE_TIME_ACTIVITY_COPY` (icon-carrying) held the same ten titles and bodies twice. Both now read from one `strings.activity` entry.
+
+**Left in English on purpose:** `'Stop end time must be after stop start time'` in `plan.tsx` is matched against a thrown service error, not shown as copy. Related risk, unchanged: when a save fails with an unrecognised message, `plan.tsx` shows the raw service error text to the traveller, which is still English.
+
+Seven tests asserted English copy and now reference the catalogue instead of literals, so wording changes no longer break them.
+
+Android-verified on 2026-09-17: the Trip Space tab bar reads Συνοδός / Πρόγραμμα / Χάρτης / Κρατήσεις / Περισσότερα; Companion, Plan, the Copilot facts card and the More hub render Greek. The synthetic trip was deleted and Trips returned to empty. Checks: `tsc`, 453 tests, lint 48 warnings unchanged, `git diff --check`.
+
+**Phase 2 is not finished.** The Trip Space secondary screens are still English: Budget, Trip Details, Accommodation, Travelers, Memories, Travel Book and Packing — roughly 270 remaining strings. Discover, World, Profile, Travel DNA, import and chat remain phase 3.
+
 ### Greek copy, phase 1 — 2026-09-17
 
 **This reverses a recorded decision.** `locale-format.ts` documented "Copy stays English in V1; only formatting follows the device. RTL / string catalogs are deferred." The Greek already in the app was drift against that, not the intent. The product decision is now Greek, with a string catalogue.

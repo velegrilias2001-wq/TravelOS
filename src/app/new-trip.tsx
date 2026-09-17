@@ -1085,7 +1085,7 @@ export default function NewTripScreen() {
                       styles.sectionEyebrow
                     }
                   >
-                    WHEN
+                    {strings.newTrip.whenEyebrow}
                   </Text>
 
                   <Text

@@ -6,6 +6,9 @@ const {
   buildStopFromPlanAssistCandidate,
   findCatalogueRecordForDestination,
 } = require('../.test-build/src/services/plan-assist.js');
+const {
+  strings,
+} = require('../.test-build/src/i18n/index.js');
 
 const LISBON = {
   id: 'dest-lisbon',
@@ -57,7 +60,7 @@ test(
     for (const candidate of candidates) {
       assert.match(
         candidate.provenance.label,
-        /curated ·/,
+        new RegExp(strings.planAssist.provenanceCurated('')),
       );
       assert.equal(candidate.location, undefined);
       assert.doesNotMatch(

@@ -1,6 +1,7 @@
 import type { TripDay } from '@/domain/entities';
 import type { TripWorkspace } from './trip-service';
 import { isCanonicalDateKey } from './time-truth';
+import { strings } from '../i18n';
 
 export type TripReadinessRoute =
   | '/trip/[tripId]/plan'
@@ -129,11 +130,14 @@ export function buildTripReadinessChecklist(
   const items: TripReadinessChecklistItem[] = [
     {
       id: 'plan',
-      title: 'Plan',
+      title: strings.readiness.plan,
       body:
         readiness.totalDayCount === 0
-          ? 'Trip days are not ready yet'
-          : `${readiness.populatedDayCount} of ${readiness.totalDayCount} days have moments`,
+          ? strings.readiness.planNotReady
+          : strings.readiness.planDays(
+              readiness.populatedDayCount,
+              readiness.totalDayCount,
+            ),
       ready: planReady,
       route: '/trip/[tripId]/plan',
       actionLabel: planReady
@@ -144,13 +148,11 @@ export function buildTripReadinessChecklist(
     },
     {
       id: 'accommodation',
-      title: 'Accommodation',
+      title: strings.readiness.accommodation,
       body:
         readiness.accommodationCount > 0
-          ? `${readiness.accommodationCount} ${
-              readiness.accommodationCount === 1 ? 'stay' : 'stays'
-            } saved`
-          : 'No stay saved yet',
+          ? strings.readiness.staysSaved(readiness.accommodationCount)
+          : strings.readiness.noStay,
       ready: readiness.accommodationCount > 0,
       route: '/trip/[tripId]/accommodation',
       actionLabel:
@@ -158,36 +160,32 @@ export function buildTripReadinessChecklist(
     },
     {
       id: 'bookings',
-      title: 'Bookings',
+      title: strings.readiness.bookings,
       body:
         readiness.bookingCount > 0
-          ? `${readiness.bookingCount} active ${
-              readiness.bookingCount === 1 ? 'booking' : 'bookings'
-            }`
-          : 'No active bookings yet',
+          ? strings.readiness.activeBookings(readiness.bookingCount)
+          : strings.readiness.noBookings,
       ready: readiness.bookingCount > 0,
       route: '/trip/[tripId]/bookings',
       actionLabel: readiness.bookingCount > 0 ? 'View' : 'Add',
     },
     {
       id: 'travelers',
-      title: 'Travelers',
+      title: strings.readiness.travelers,
       body:
         readiness.travelerCount > 0
-          ? `${readiness.travelerCount} ${
-              readiness.travelerCount === 1 ? 'traveler' : 'travelers'
-            } added`
-          : 'No travelers added yet',
+          ? strings.readiness.travelersAdded(readiness.travelerCount)
+          : strings.readiness.noTravelers,
       ready: readiness.travelerCount > 0,
       route: '/trip/[tripId]/travelers',
       actionLabel: readiness.travelerCount > 0 ? 'View' : 'Add',
     },
     {
       id: 'budget',
-      title: 'Budget',
+      title: strings.readiness.budget,
       body: readiness.budgetConfigured
-        ? 'Planned budget is set'
-        : 'No planned budget yet',
+        ? strings.readiness.budgetSet
+        : strings.readiness.noBudget,
       ready: readiness.budgetConfigured,
       route: '/trip/[tripId]/budget',
       actionLabel: readiness.budgetConfigured ? 'View' : 'Add',

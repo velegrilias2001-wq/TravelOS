@@ -29,6 +29,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 interface SharedFieldProps {
   label: string;
@@ -88,15 +89,15 @@ export function CalendarDateField({
           : { day: 'numeric', month: 'long', year: 'numeric' },
       )
     : compact
-      ? 'Choose date'
-      : 'Choose a date';
+      ? strings.dateTimeField.chooseDateCompact
+      : strings.dateTimeField.chooseDate;
 
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Choose ${label.toLowerCase()}`}
+        accessibilityLabel={strings.dateTimeField.chooseLabel(label)}
         disabled={disabled}
         style={[
           styles.button,
@@ -219,7 +220,7 @@ export function LocalTimeField({
         {value && onClear ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Clear ${label.toLowerCase()}`}
+            accessibilityLabel={strings.dateTimeField.clearLabel(label)}
             disabled={disabled}
             onPress={onClear}
           >
@@ -230,7 +231,7 @@ export function LocalTimeField({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Choose ${label.toLowerCase()}`}
+        accessibilityLabel={strings.dateTimeField.chooseLabel(label)}
         disabled={disabled}
         style={[
           styles.button,
@@ -255,7 +256,10 @@ export function LocalTimeField({
               !valid && styles.review,
             ]}
           >
-            {value || (compact ? 'Add time' : 'Choose an optional time')}
+            {value ||
+              (compact
+                ? strings.dateTimeField.addTime
+                : strings.dateTimeField.chooseOptionalTime)}
           </Text>
           {!compact ? (
             <Text
@@ -264,7 +268,9 @@ export function LocalTimeField({
                 !valid && styles.review,
               ]}
             >
-              {valid ? 'Local time' : 'Saved time needs review'}
+              {valid
+                ? strings.dateTimeField.localTime
+                : strings.dateTimeField.savedTimeNeedsReview}
             </Text>
           ) : null}
         </View>

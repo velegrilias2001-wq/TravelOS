@@ -6,6 +6,9 @@ const {
   selectTripMapFrame,
   systemDirectionsUrl,
 } = require('../.test-build/src/services/trip-map-context.js');
+const {
+  strings,
+} = require('../.test-build/src/i18n/index.js');
 
 const TIMESTAMP = '2026-09-03T08:00:00.000Z';
 
@@ -134,7 +137,7 @@ test('day framing uses the assigned city and that day’s mapped stops, not dest
 
   assert.equal(frame.kind, 'display-day');
   assert.equal(frame.title, 'Lisbon');
-  assert.equal(frame.eyebrow, "TODAY'S MAP");
+  assert.equal(frame.eyebrow, strings.map.todaysMap);
   assert.deepEqual(
     frame.coordinates.map(
       (coordinate) => `${coordinate.latitude},${coordinate.longitude}`,

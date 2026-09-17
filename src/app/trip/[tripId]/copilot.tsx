@@ -64,6 +64,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 export default function TripCopilotScreen() {
   const router = useRouter();
@@ -360,12 +361,12 @@ export default function TripCopilotScreen() {
           <Text style={styles.body}>{proposal.body}</Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${proposal.actionLabel} ${proposal.title}`}
+            accessibilityLabel={`${strings.readiness.action[proposal.actionLabel]} ${proposal.title}`}
             style={styles.primaryButton}
             onPress={() => openRoute(proposal.route)}
           >
             <Text style={styles.primaryLabel}>
-              {proposal.actionLabel}
+              {strings.readiness.action[proposal.actionLabel]}
             </Text>
           </Pressable>
         </View>
@@ -523,7 +524,7 @@ export default function TripCopilotScreen() {
   return (
     <Screen scroll clearTabBar>
       <UtilityScreenHeader
-        eyebrow="TRIP COPILOT"
+        eyebrow={strings.copilot.eyebrow}
         title="Επόμενα χρήσιμα βήματα"
         subtitle="Προτάσεις από τα αποθηκευμένα facts του ταξιδιού. Τίποτα δεν γράφεται πριν την επιβεβαίωση."
         leading={(

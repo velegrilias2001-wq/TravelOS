@@ -5,6 +5,9 @@ const {
   buildTripEvidencePack,
   summarizeTripEvidencePack,
 } = require('../.test-build/src/services/trip-evidence-pack.js');
+const {
+  strings,
+} = require('../.test-build/src/i18n/index.js');
 
 const TIMESTAMP = '2026-09-06T12:00:00.000Z';
 
@@ -62,11 +65,11 @@ test('evidence pack stays read-only and never invents packing or readiness', () 
   ]);
   assert.match(
     summarizeTripEvidencePack(pack),
-    /Packing empty/,
+    new RegExp(strings.evidence.packingEmpty),
   );
   assert.match(
     summarizeTripEvidencePack(pack),
-    /2 pending import/,
+    new RegExp(strings.evidence.pendingClaims(2)),
   );
 });
 

@@ -30,6 +30,7 @@ import { styles } from '@/features/trip-bookings/bookings-styles';
 import type { TripWorkspace } from '@/services/trip-service';
 import { buildItineraryStopContexts } from '@/services/booking-stop-relationship';
 import { colors } from '@/theme';
+import { strings } from '@/i18n';
 
 type StopContext = ReturnType<typeof buildItineraryStopContexts>[number];
 
@@ -174,14 +175,14 @@ export function BookingEditorModal({
               }
             >
               {editingBooking
-                ? 'Edit booking'
-                : 'Add booking'}
+                ? strings.bookings.editorEdit
+                : strings.bookings.editorAdd}
             </Text>
           </View>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Close booking editor"
+            accessibilityLabel={strings.bookings.editorClose}
             style={
               styles.closeButton
             }
@@ -214,7 +215,7 @@ export function BookingEditorModal({
               styles.fieldLabel
             }
           >
-            TYPE
+            {strings.bookings.labelType}
           </Text>
 
           <View
@@ -286,7 +287,7 @@ export function BookingEditorModal({
               styles.fieldLabel
             }
           >
-            STATUS
+            {strings.bookings.labelStatus}
           </Text>
 
           <View
@@ -337,8 +338,8 @@ export function BookingEditorModal({
           </View>
 
           <Field
-            label="BOOKING NAME"
-            placeholder="Flight to Tokyo"
+            label={strings.bookings.labelName}
+            placeholder={strings.bookings.placeholderName}
             value={title}
             onChangeText={
               setTitle
@@ -346,8 +347,8 @@ export function BookingEditorModal({
           />
 
           <Field
-            label="PROVIDER"
-            placeholder="Emirates, Booking.com…"
+            label={strings.bookings.labelProvider}
+            placeholder={strings.bookings.placeholderProvider}
             value={provider}
             onChangeText={
               setProvider
@@ -355,7 +356,7 @@ export function BookingEditorModal({
           />
 
           <Field
-            label="CONFIRMATION CODE"
+            label={strings.bookings.labelCode}
             placeholder="ABC123"
             value={
               confirmationCode
@@ -367,7 +368,7 @@ export function BookingEditorModal({
           />
 
           <Field
-            label="BOOKING LINK"
+            label={strings.bookings.labelLink}
             placeholder="https://…"
             value={externalUrl}
             onChangeText={setExternalUrl}
@@ -380,7 +381,7 @@ export function BookingEditorModal({
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Choose plan moment"
+            accessibilityLabel={strings.bookings.choosePlanMoment}
             accessibilityState={{
               expanded: stopPickerOpen,
             }}
@@ -418,7 +419,7 @@ export function BookingEditorModal({
                 style={styles.stopPickerTitle}
               >
                 {selectedStopContext?.stop.title ??
-                  'Choose a moment from your plan'}
+                  strings.bookings.chooseMomentFromPlan}
               </Text>
             </View>
 
@@ -459,10 +460,10 @@ export function BookingEditorModal({
                 </View>
                 <View style={styles.stopChoiceCopy}>
                   <Text style={styles.stopChoiceTitle}>
-                    Not added to plan
+                    {strings.bookings.notAddedToPlan}
                   </Text>
                   <Text style={styles.stopChoiceMeta}>
-                    Keep this booking separate
+                    {strings.bookings.keepSeparate}
                   </Text>
                 </View>
                 {stopId === undefined && (
@@ -532,25 +533,25 @@ export function BookingEditorModal({
 
               {stopContexts.length === 0 && (
                 <Text style={styles.stopChoicesEmpty}>
-                  Add moments in Plan before linking this booking.
+                  {strings.bookings.addMomentsFirst}
                 </Text>
               )}
             </View>
           )}
 
           <Text style={styles.relationshipHelp}>
-            Link this booking to a moment so it appears with your plan.
+            {strings.bookings.linkHelp}
           </Text>
 
           <BookingTimeEditor
-            label="START"
+            label={strings.bookings.labelStart}
             draft={startDraft}
             fallbackDate={workspace.trip.startDate}
             onChange={setStartDraft}
           />
 
           <BookingTimeEditor
-            label="END"
+            label={strings.bookings.labelEnd}
             draft={endDraft}
             fallbackDate={workspace.trip.endDate}
             onChange={setEndDraft}
@@ -567,7 +568,7 @@ export function BookingEditorModal({
               }
             >
               <Field
-                label="AMOUNT"
+                label={strings.bookings.labelAmount}
                 placeholder="450"
                 value={amount}
                 onChangeText={
@@ -583,7 +584,7 @@ export function BookingEditorModal({
               }
             >
               <Field
-                label="CURRENCY"
+                label={strings.bookings.labelCurrency}
                 placeholder="EUR"
                 value={currency}
                 onChangeText={
@@ -609,7 +610,7 @@ export function BookingEditorModal({
                   styles.paidTitle
                 }
               >
-                Paid
+                {strings.bookings.paid}
               </Text>
 
               <Text
@@ -617,8 +618,7 @@ export function BookingEditorModal({
                   styles.paidDescription
                 }
               >
-                Mark this booking as
-                already paid.
+                {strings.bookings.paidHelp}
               </Text>
             </View>
 
@@ -639,8 +639,8 @@ export function BookingEditorModal({
           </View>
 
           <Field
-            label="NOTES"
-            placeholder="Seat, terminal, check-in notes…"
+            label={strings.bookings.labelNotes}
+            placeholder={strings.bookings.placeholderNotes}
             value={notes}
             onChangeText={
               setNotes
@@ -659,8 +659,8 @@ export function BookingEditorModal({
           accessibilityRole="button"
           accessibilityLabel={
             editingBooking
-              ? 'Save booking changes'
-              : 'Save new booking'
+              ? strings.bookings.saveBookingChanges
+              : strings.bookings.saveNewBooking
           }
           disabled={isSaving}
           style={[
@@ -680,10 +680,10 @@ export function BookingEditorModal({
             }
           >
             {isSaving
-              ? 'Saving…'
+              ? strings.bookings.saving
               : editingBooking
-                ? 'Save changes'
-                : 'Add booking'}
+                ? strings.bookings.saveChanges
+                : strings.bookings.editorAdd}
           </Text>
 
           {!isSaving && (

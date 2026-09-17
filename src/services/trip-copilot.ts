@@ -18,6 +18,7 @@ import {
 } from './trip-readiness';
 import type { TripWorkspace } from './trip-service';
 import { isCanonicalDateKey } from './time-truth';
+import { strings } from '../i18n';
 
 export type TripCopilotProposal =
   | {
@@ -120,8 +121,8 @@ export function selectTripCopilotProposals(
     proposals.push({
       kind: 'packing',
       id: 'packing:empty',
-      title: 'Packing',
-      body: 'Add traveler-authored packing items when you are ready. Nothing is invented for you.',
+      title: strings.readiness.packing,
+      body: strings.readiness.packingBody,
       packingTotal: 0,
       packingPacked: 0,
     });
@@ -129,7 +130,7 @@ export function selectTripCopilotProposals(
     proposals.push({
       kind: 'packing',
       id: 'packing:progress',
-      title: 'Packing',
+      title: strings.readiness.packing,
       body: `${packingPacked} of ${packingTotal} packed`,
       packingTotal,
       packingPacked,
@@ -205,7 +206,7 @@ export function selectTripCopilotProposals(
     proposals.push({
       kind: 'import_review',
       id: 'import_review',
-      title: 'Import review',
+      title: strings.readiness.importReview,
       body:
         pending === 1
           ? '1 claim is waiting for your review'

@@ -83,6 +83,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 interface MappedStop {
   stop: TripStop;
@@ -516,7 +517,7 @@ export default function TripMapScreen() {
               key={`destination-${destination.id}`}
               coordinate={coordinate}
               title={destination.name}
-              description="Trip destination"
+              description={strings.map.destinationMarker}
               pinColor={colors.brass}
             />
           ),
@@ -528,7 +529,7 @@ export default function TripMapScreen() {
               key={`stay-${accommodation.id}`}
               coordinate={coordinate}
               title={accommodation.name}
-              description="Saved stay"
+              description={strings.map.stayMarker}
               pinColor={colors.brand}
             />
           ),
@@ -713,8 +714,7 @@ export default function TripMapScreen() {
                     styles.emptyTitle
                   }
                 >
-                  No mapped stops
-                  yet
+                  {strings.map.emptyTitle}
                 </Text>
 
                 <Text
@@ -724,8 +724,8 @@ export default function TripMapScreen() {
                 >
                   {destinationPoints.length > 0 ||
                   mappedStays.length > 0
-                    ? 'Your destination or stays are mapped. Itinerary stops will appear here as soon as they have real map coordinates.'
-                    : 'Destinations, stays, and itinerary stops will appear here as soon as they have real map coordinates.'}
+                    ? strings.map.emptyWithAnchors
+                    : strings.map.emptyWithout}
                 </Text>
               </View>
             </View>
@@ -748,8 +748,7 @@ export default function TripMapScreen() {
                   styles.truthText
                 }
               >
-                No guessed
-                locations
+                {strings.map.noGuessed}
               </Text>
             </View>
           </View>
@@ -813,7 +812,7 @@ export default function TripMapScreen() {
                 {routesStatus === 'unavailable' &&
                 routePlan.totalLegs > 0 ? (
                   <Text style={styles.routeEtaText}>
-                    Walking routes unavailable
+                    {strings.map.routesUnavailable}
                   </Text>
                 ) : null}
               </View>
@@ -841,9 +840,9 @@ export default function TripMapScreen() {
                 >
                   {canToggleDayFrame
                     ? viewAll
-                      ? 'Today'
-                      : 'View all'
-                    : 'View all'}
+                      ? strings.map.today
+                      : strings.map.viewAll
+                    : strings.map.viewAll}
                 </Text>
               </Pressable>
             </View>
@@ -976,7 +975,7 @@ export default function TripMapScreen() {
                         color={colors.teal}
                       />
                       <Text style={styles.directionsText}>
-                        Directions
+                        {strings.map.directions}
                       </Text>
                     </Pressable>
                   </Pressable>

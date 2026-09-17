@@ -15,6 +15,7 @@ import {
 } from '@/features/trip-bookings/booking-form-model';
 import { styles } from '@/features/trip-bookings/bookings-styles';
 import { colors } from '@/theme';
+import { strings } from '@/i18n';
 
 /**
  * Booking start/end editor. Preserves an absolute or unparseable stored value
@@ -53,8 +54,8 @@ export function BookingTimeEditor({
             />
             <Text style={styles.preservedTimeTitle}>
               {draft.kind === 'absolute-instant'
-                ? 'Saved absolute instant'
-                : 'Saved time needs review'}
+                ? strings.bookings.savedAbsolute
+                : strings.bookings.savedNeedsReview}
             </Text>
           </View>
           <Text style={styles.preservedTimeValue}>
@@ -62,8 +63,8 @@ export function BookingTimeEditor({
           </Text>
           <Text style={styles.preservedTimeBody}>
             {draft.kind === 'absolute-instant'
-              ? 'This saved time uses a different format. Replace or clear it to make changes.'
-              : 'This saved time can’t be edited in its current format. Replace or clear it to make changes.'}
+              ? strings.bookings.savedOtherFormat
+              : strings.bookings.savedNotEditable}
           </Text>
           <View style={styles.preservedTimeActions}>
             <Pressable

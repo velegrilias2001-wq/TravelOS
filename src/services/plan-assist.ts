@@ -14,6 +14,7 @@ import {
   loadGroundedDiscoverCorpus,
   type GroundedDiscoverRecord,
 } from './discover-corpus';
+import { strings } from '../i18n';
 
 /** Plain copy so Node tests do not pull React Native icons. */
 const PLAN_ASSIST_ACTIVITY_COPY: Record<
@@ -21,44 +22,44 @@ const PLAN_ASSIST_ACTIVITY_COPY: Record<
   { title: string; body: string }
 > = {
   slow_walk: {
-    title: 'Take a slow walk',
-    body: 'Keep the gap easy and unstructured.',
+    title: strings.activity.slow_walk.title,
+    body: strings.activity.slow_walk.body,
   },
   coffee_or_rest: {
-    title: 'Pause for coffee or rest',
-    body: 'Use the time as a low-pressure reset.',
+    title: strings.activity.coffee_or_rest.title,
+    body: strings.activity.coffee_or_rest.body,
   },
   food_browse: {
-    title: 'Browse local food',
-    body: 'Explore food casually without committing to a specific venue.',
+    title: strings.activity.food_browse.title,
+    body: strings.activity.food_browse.body,
   },
   culture_browse: {
-    title: 'Add a little culture',
-    body: 'Use the gap for a light cultural detour.',
+    title: strings.activity.culture_browse.title,
+    body: strings.activity.culture_browse.body,
   },
   local_browse: {
-    title: 'Explore the area',
-    body: 'Wander locally without turning it into a fixed stop.',
+    title: strings.activity.local_browse.title,
+    body: strings.activity.local_browse.body,
   },
   photo_walk: {
-    title: 'Take a photo walk',
-    body: 'Slow down and notice the surroundings through your camera.',
+    title: strings.activity.photo_walk.title,
+    body: strings.activity.photo_walk.body,
   },
   shopping_browse: {
-    title: 'Browse a little',
-    body: 'Leave room for casual shopping without a fixed destination.',
+    title: strings.activity.shopping_browse.title,
+    body: strings.activity.shopping_browse.body,
   },
   wellness_pause: {
-    title: 'Take a wellness pause',
-    body: 'Use the gap for a calm reset before the next moment.',
+    title: strings.activity.wellness_pause.title,
+    body: strings.activity.wellness_pause.body,
   },
   scenic_pause: {
-    title: 'Take a scenic pause',
-    body: 'Keep the time open for a quiet view or a slower moment.',
+    title: strings.activity.scenic_pause.title,
+    body: strings.activity.scenic_pause.body,
   },
   flexible_buffer: {
-    title: 'Keep the buffer',
-    body: 'Protect the free time instead of filling every minute.',
+    title: strings.activity.flexible_buffer.title,
+    body: strings.activity.flexible_buffer.body,
   },
 };
 
@@ -288,11 +289,13 @@ export function buildPlanAssistCandidates(input: {
           kind: 'catalogue',
           identity: groundedIdentity(catalogue),
           packId: catalogue.packId,
-          label: `curated · ${catalogue.packId}`,
+          label: strings.planAssist.provenanceCurated(
+            catalogue.packId,
+          ),
         }
       : {
           kind: 'theme',
-          label: 'theme · trip preferences',
+          label: strings.planAssist.provenanceTheme,
         };
 
     const reason = reasonForCandidate({

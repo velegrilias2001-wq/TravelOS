@@ -10,6 +10,7 @@ import {
   parseBookingTemporalValue,
 } from '@/services/booking-time';
 import { formatCalendarDateForDisplay } from '@/services/time-truth';
+import { strings } from '@/i18n';
 
 /**
  * Booking type/status catalogues and the local draft model used by the
@@ -21,52 +22,52 @@ export const BOOKING_TYPES: {
   icon: keyof typeof Ionicons.glyphMap;
 }[] = [
   {
-    label: 'Flight',
+    label: strings.bookingType.flight,
     value: 'flight',
     icon: 'airplane-outline',
   },
   {
-    label: 'Train',
+    label: strings.bookingType.train,
     value: 'train',
     icon: 'train-outline',
   },
   {
-    label: 'Bus',
+    label: strings.bookingType.bus,
     value: 'bus',
     icon: 'bus-outline',
   },
   {
-    label: 'Ferry',
+    label: strings.bookingType.ferry,
     value: 'ferry',
     icon: 'boat-outline',
   },
   {
-    label: 'Car',
+    label: strings.bookingType.car,
     value: 'car',
     icon: 'car-outline',
   },
   {
-    label: 'Hotel',
+    label: strings.bookingType.hotel,
     value: 'accommodation',
     icon: 'bed-outline',
   },
   {
-    label: 'Activity',
+    label: strings.bookingType.activity,
     value: 'activity',
     icon: 'sparkles-outline',
   },
   {
-    label: 'Restaurant',
+    label: strings.bookingType.restaurant,
     value: 'restaurant',
     icon: 'restaurant-outline',
   },
   {
-    label: 'Ticket',
+    label: strings.bookingType.ticket,
     value: 'ticket',
     icon: 'ticket-outline',
   },
   {
-    label: 'Other',
+    label: strings.bookingType.other,
     value: 'other',
     icon: 'briefcase-outline',
   },
@@ -77,19 +78,19 @@ export const BOOKING_STATUSES: {
   value: BookingStatus;
 }[] = [
   {
-    label: 'Planned',
+    label: strings.bookingStatus.planned,
     value: 'planned',
   },
   {
-    label: 'Confirmed',
+    label: strings.bookingStatus.confirmed,
     value: 'confirmed',
   },
   {
-    label: 'Completed',
+    label: strings.bookingStatus.completed,
     value: 'completed',
   },
   {
-    label: 'Cancelled',
+    label: strings.bookingStatus.cancelled,
     value: 'cancelled',
   },
 ];

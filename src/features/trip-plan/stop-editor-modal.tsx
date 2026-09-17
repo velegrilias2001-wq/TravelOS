@@ -24,6 +24,7 @@ import { LocationSearchNotice } from '@/features/destinations/location-search-no
 import type { LocationSelectionOutcome } from '@/services/location-selection';
 import { planStopLivedBadge } from '@/services/stop-lived-progress';
 import { colors } from '@/theme';
+import { strings } from '@/i18n';
 
 type StopEditorModalProps = {
   selectedDay: TripDay | null;
@@ -137,10 +138,10 @@ export function StopEditorModal({
               }
             >
               {editingStop
-                ? 'Edit moment'
+                ? strings.plan.editorEdit
                 : pendingImportClaimId
-                  ? 'Add imported moment'
-                  : 'Add a moment'}
+                  ? strings.plan.editorAddImported
+                  : strings.plan.editorAdd}
             </Text>
             {!editingStop &&
               pendingImportClaimId ? (
@@ -175,14 +176,14 @@ export function StopEditorModal({
                     styles.sheetLivedNote
                   }
                 >
-                  Marked skipped in Companion. Changing the time still edits the saved plan, not that mark.
+                  {strings.plan.skippedNote}
                 </Text>
               )}
           </View>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Close moment editor"
+            accessibilityLabel={strings.plan.editorClose}
             style={
               styles.closeButton
             }
@@ -290,7 +291,7 @@ export function StopEditorModal({
               onChangeText={
                 setTitle
               }
-              placeholder="Museum, dinner, temple…"
+              placeholder={strings.plan.namePlaceholder}
               placeholderTextColor={
                 colors.textMuted
               }
@@ -473,10 +474,10 @@ export function StopEditorModal({
                   }
                 >
                   {isPickingLocation
-                    ? 'Opening map…'
+                    ? strings.picker.openingMap
                     : pickedLocation
-                      ? 'Change location'
-                      : 'Choose location'}
+                      ? strings.plan.changeLocation
+                      : strings.plan.chooseLocation}
                 </Text>
               </Pressable>
 
@@ -578,10 +579,10 @@ export function StopEditorModal({
               }
             >
               {isSaving
-                ? 'Saving…'
+                ? strings.plan.saving
                 : editingStop
-                  ? 'Save changes'
-                  : 'Add moment'}
+                  ? strings.plan.saveChanges
+                  : strings.plan.addMoment}
             </Text>
 
             {!isSaving &&

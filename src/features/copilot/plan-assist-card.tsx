@@ -18,6 +18,7 @@ import {
   radius,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 type PlanAssistCardProps = {
   cityLabel?: string | null;
@@ -43,25 +44,25 @@ export function PlanAssistCard({
   }
 
   const provenance =
-    candidates[0]?.provenance.label ?? 'theme';
+    candidates[0]?.provenance.label ??
+    strings.planAssist.provenanceFallback;
 
   return (
     <RiseIn factKey={`plan-assist:${cityLabel ?? 'day'}`}>
       <View
         style={styles.card}
-        accessibilityLabel="Plan Assist suggestions for this day"
+        accessibilityLabel={strings.plan.assistLabel}
       >
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>PLAN ASSIST</Text>
+            <Text style={styles.eyebrow}>{strings.planAssist.eyebrow}</Text>
             <Text style={styles.title}>
               {cityLabel
-                ? `Seed ${cityLabel}`
-                : 'Seed this day'}
+                ? strings.plan.seedCity(cityLabel)
+                : strings.plan.seedDay}
             </Text>
             <Text style={styles.body}>
-              Theme moments only — no invented venues. Accept
-              saves a real stop; you can add a place later.
+              {strings.plan.assistBody}
             </Text>
           </View>
           <Ionicons
@@ -109,7 +110,9 @@ export function PlanAssistCard({
                         color={colors.textInverse}
                       />
                     ) : (
-                      <Text style={styles.acceptText}>Accept</Text>
+                      <Text style={styles.acceptText}>
+                        {strings.planAssist.accept}
+                      </Text>
                     )}
                   </PressableScale>
                 </View>
@@ -120,7 +123,7 @@ export function PlanAssistCard({
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Add a moment manually"
+          accessibilityLabel={strings.plan.addManually}
           style={styles.manual}
           onPress={onAddManually}
         >

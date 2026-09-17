@@ -10,6 +10,9 @@ const {
   getTripThemePack,
   suggestTripThemePackId,
 } = require('../.test-build/src/services/trip-theme.js');
+const {
+  strings,
+} = require('../.test-build/src/i18n/index.js');
 
 const {
   buildNewTrip,
@@ -54,7 +57,7 @@ test('suggestTripThemePackId uses country codes only', () => {
   assert.equal(suggestTripThemePackId([]), 'ink-default');
   assert.equal(
     getTripThemePack('mediterranean-coast').moodEyebrow,
-    'Coastal light',
+    strings.tripTheme.mediterraneanMood,
   );
 });
 

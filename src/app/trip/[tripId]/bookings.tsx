@@ -72,6 +72,7 @@ import {
   formatStopDate,
   getBookingIcon,
 } from '@/features/trip-bookings/booking-form-model';
+import { strings } from '@/i18n';
 
 export default function BookingsScreen() {
   const router = useRouter();
@@ -383,8 +384,8 @@ export default function BookingsScreen() {
 
       if (!cleanTitle) {
         Alert.alert(
-          'Add a booking name',
-          'Give this booking a clear name.',
+          strings.bookings.alertNameTitle,
+          strings.bookings.alertNameBody,
         );
 
         return;
@@ -411,8 +412,8 @@ export default function BookingsScreen() {
         )
       ) {
         Alert.alert(
-          'Check the amount',
-          'Enter a valid booking amount.',
+          strings.bookings.alertAmountTitle,
+          strings.bookings.alertAmountBody,
         );
 
         return;
@@ -427,11 +428,11 @@ export default function BookingsScreen() {
 
         const startAt = bookingValueFromDraft(
           startDraft,
-          'Booking start',
+          strings.bookings.bookingStart,
         );
         const endAt = bookingValueFromDraft(
           endDraft,
-          'Booking end',
+          strings.bookings.bookingEnd,
         );
 
         if (editingBooking) {
@@ -550,15 +551,15 @@ export default function BookingsScreen() {
         );
 
         Alert.alert(
-          'Could not save booking',
+          strings.bookings.alertSaveFailed,
           error instanceof Error &&
           error.message.includes(
             'itinerary stop',
           )
-            ? 'The selected moment is no longer available for this trip. Choose another moment or leave the booking out of your plan.'
+            ? strings.bookings.alertStopUnavailable
             : error instanceof Error
               ? error.message
-              : 'Please try again.',
+              : strings.bookings.tryAgain,
         );
       } finally {
         setIsSaving(false);
@@ -569,15 +570,15 @@ export default function BookingsScreen() {
     booking: Booking,
   ) => {
     Alert.alert(
-      'Delete booking?',
+      strings.bookings.alertDeleteTitle,
       `Remove "${booking.title}" from this trip? Linked stays keep their facts. This booking cannot be recovered after deletion.`,
       [
         {
-          text: 'Cancel',
+          text: strings.bookings.cancel,
           style: 'cancel',
         },
         {
-          text: 'Delete',
+          text: strings.bookings.delete,
           style: 'destructive',
 
           onPress:
@@ -595,8 +596,8 @@ export default function BookingsScreen() {
                 );
 
                 Alert.alert(
-                  'Could not delete booking',
-                  'Please try again.',
+                  strings.bookings.alertDeleteFailed,
+                  strings.bookings.tryAgain,
                 );
               }
             },
@@ -625,12 +626,12 @@ export default function BookingsScreen() {
           eyebrow={tripDestinationLabel(
             workspace.trip.destinations,
           ).toUpperCase()}
-          title="Bookings"
-          subtitle="Confirmations, reservations and payment details."
+          title={strings.bookings.title}
+          subtitle={strings.bookings.subtitle}
           action={(
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Add booking"
+              accessibilityLabel={strings.bookings.add}
               style={styles.addButton}
               onPress={openCreate}
             >
@@ -644,23 +645,26 @@ export default function BookingsScreen() {
         />
 
         <CompactSummaryStrip
-          accessibilityLabel={`${workspace.bookings.length} bookings, ${confirmedCount} confirmed, ${paidCount} paid`}
+          accessibilityLabel={strings.bookings.summaryLabel(
+            workspace.bookings.length,
+            confirmedCount,
+            paidCount,
+          )}
           items={[
             {
               value: workspace.bookings.length,
-              label:
-                workspace.bookings.length === 1
-                  ? 'booking'
-                  : 'bookings',
+              label: strings.bookings.countLabel(
+                workspace.bookings.length,
+              ),
             },
-            { value: confirmedCount, label: 'confirmed' },
-            { value: paidCount, label: 'paid' },
+            { value: confirmedCount, label: strings.bookings.confirmedLabel },
+            { value: paidCount, label: strings.bookings.paidLabel },
           ]}
         />
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Import a calendar"
+          accessibilityLabel={strings.bookings.importCalendar}
           style={({ pressed }) => [
             styles.importLink,
             pressed && styles.pressed,
@@ -681,7 +685,7 @@ export default function BookingsScreen() {
           />
 
           <Text style={styles.importLinkText}>
-            Import a calendar to review
+            {strings.bookings.importCalendarToReview}
           </Text>
         </Pressable>
 
@@ -703,16 +707,13 @@ export default function BookingsScreen() {
             <Text
               style={styles.emptyTitle}
             >
-              Nothing to keep track of
-              yet.
+              {strings.bookings.emptyTitle}
             </Text>
 
             <Text
               style={styles.emptyBody}
             >
-              Add flights, hotels,
-              transport, restaurants,
-              activities and tickets.
+              {strings.bookings.emptyBody}
             </Text>
 
             <Pressable
@@ -734,7 +735,7 @@ export default function BookingsScreen() {
                   styles.primaryButtonText
                 }
               >
-                Add booking
+                {strings.bookings.add}
               </Text>
             </Pressable>
           </View>
@@ -930,8 +931,8 @@ export default function BookingsScreen() {
 
                                       if (!can) {
                                         Alert.alert(
-                                          'Link unavailable',
-                                          'This saved booking link could not be opened.',
+                                          strings.bookings.alertLinkUnavailableTitle,
+                                          strings.bookings.alertLinkUnavailableBody,
                                         );
                                         return;
                                       }
@@ -952,8 +953,8 @@ export default function BookingsScreen() {
                                       error,
                                     );
                                     Alert.alert(
-                                      'Action failed',
-                                      'Nothing was changed in this booking.',
+                                      strings.bookings.alertActionFailedTitle,
+                                      strings.bookings.alertActionFailedBody,
                                     );
                                   }
                                 })();
@@ -1028,7 +1029,7 @@ export default function BookingsScreen() {
                       {linkedAccommodations.length > 0 && (
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel="Open linked accommodation"
+                          accessibilityLabel={strings.bookings.openLinkedAccommodation}
                           style={styles.linkedAccommodationRow}
                           onPress={() =>
                             router.push({
@@ -1058,7 +1059,7 @@ export default function BookingsScreen() {
                             <Text numberOfLines={1} style={styles.linkedStopTitle}>
                               {linkedAccommodations.length === 1
                                 ? linkedAccommodations[0].name
-                                : 'Open accommodation'}
+                                : strings.bookings.openAccommodation}
                             </Text>
                           </View>
                           <Ionicons

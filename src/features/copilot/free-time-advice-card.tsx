@@ -24,6 +24,7 @@ import {
   radius,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 type FreeTimeAdviceCardProps = {
   day: TripDay;
@@ -97,10 +98,10 @@ export function FreeTimeAdviceCard({
         )}
         <Text style={styles.askButtonText}>
           {loading
-            ? 'Thinking…'
+            ? strings.freeTimeCard.thinking
             : advice
-              ? 'Refresh ideas'
-              : 'Ask TravelOS'}
+              ? strings.freeTimeCard.refreshIdeas
+              : strings.freeTimeCard.askTravelOS}
         </Text>
       </PressableScale>
 
@@ -154,7 +155,7 @@ export function FreeTimeAdviceCard({
       {onOpenPlan ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Open Plan for this day"
+          accessibilityLabel={strings.freeTimeCard.openPlanForDay}
           onPress={onOpenPlan}
           style={styles.planLink}
         >

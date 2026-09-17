@@ -35,6 +35,7 @@ import {
   radius,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 function formatMoney(
   amount: number,
@@ -49,7 +50,7 @@ function formatMoney(
 
 function formatTripDate(value: string): string {
   if (!isCanonicalDateKey(value)) {
-    return 'Date needs review';
+    return strings.more.dateNeedsReview;
   }
 
   const [year, month, day] = value.split('-').map(Number);
@@ -78,17 +79,26 @@ export default function MoreScreen() {
   );
   const destinationLabel = tripDestinationLabel(trip.destinations);
   const budgetSummary = summary.hasBudgetCurrencyConflict
-    ? 'Budget currency needs review'
+    ? strings.more.currencyNeedsReview
     : workspace.budget
-      ? `${formatMoney(summary.spentAmount, summary.accountingCurrency)} spent${
-          summary.plannedAmount === null
-            ? ''
-            : ` of ${formatMoney(
-                summary.plannedAmount,
-                summary.accountingCurrency,
-              )}`
-        }`
-      : `Set a budget in ${summary.accountingCurrency}`;
+      ? summary.plannedAmount === null
+        ? strings.more.spent(
+            formatMoney(
+              summary.spentAmount,
+              summary.accountingCurrency,
+            ),
+          )
+        : strings.more.spentOf(
+            formatMoney(
+              summary.spentAmount,
+              summary.accountingCurrency,
+            ),
+            formatMoney(
+              summary.plannedAmount,
+              summary.accountingCurrency,
+            ),
+          )
+      : strings.more.setBudget(summary.accountingCurrency);
 
   const readinessSelection = selectTripReadiness(workspace);
   const [isSharing, setIsSharing] = useState(false);
@@ -154,8 +164,8 @@ export default function MoreScreen() {
     <Screen scroll clearTabBar>
       <UtilityScreenHeader
         eyebrow={destinationLabel.toUpperCase()}
-        title="Trip hub"
-        subtitle="Details and tools for this journey."
+        title={strings.more.title}
+        subtitle={strings.more.subtitle}
       />
 
       <View style={styles.tripSummary}>
@@ -176,43 +186,43 @@ export default function MoreScreen() {
         </View>
         <View style={styles.tripMetaRow}>
           <Text style={styles.tripMeta}>
-            {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
+            {strings.tripStatusLabel[trip.status]}
           </Text>
           <View style={styles.metaDot} />
           <Text style={styles.tripMeta}>{trip.accountingCurrency}</Text>
         </View>
       </View>
 
-      <HubSection title="Trip">
+      <HubSection title={strings.more.sectionTrip}>
         <HubRow
           icon="create-outline"
-          title="Trip details"
-          body="Dates, destination, status and currency"
+          title={strings.more.tripDetails}
+          body={strings.more.tripDetailsBody}
           onPress={() => open('/trip/[tripId]/details')}
         />
         <HubDivider />
         <HubRow
           icon="people-outline"
-          title="Travelers"
-          body={`${workspace.travelers.length} ${
-            workspace.travelers.length === 1 ? 'traveler' : 'travelers'
-          }`}
+          title={strings.more.travelers}
+          body={strings.more.travelerCount(
+            workspace.travelers.length,
+          )}
           onPress={() => open('/trip/[tripId]/travelers')}
         />
       </HubSection>
 
-      <HubSection title="Planning">
+      <HubSection title={strings.more.sectionPlanning}>
         <HubRow
           icon="sparkles-outline"
-          title="Trip Copilot"
-          body="Readiness, Plan Assist, and free-time next steps"
+          title={strings.more.copilot}
+          body={strings.more.copilotBody}
           accent="brass"
           onPress={() => open('/trip/[tripId]/copilot')}
         />
         <HubDivider />
         <HubRow
           icon="wallet-outline"
-          title="Budget & expenses"
+          title={strings.more.budget}
           body={budgetSummary}
           accent="brass"
           onPress={() => open('/trip/[tripId]/budget')}
@@ -220,48 +230,52 @@ export default function MoreScreen() {
         <HubDivider />
         <HubRow
           icon="bed-outline"
-          title="Accommodation"
-          body={`${workspace.accommodations.length} ${
-            workspace.accommodations.length === 1 ? 'stay' : 'stays'
-          }`}
+          title={strings.more.accommodation}
+          body={strings.more.stayCount(
+            workspace.accommodations.length,
+          )}
           onPress={() => open('/trip/[tripId]/accommodation')}
         />
         <HubDivider />
         <HubRow
           icon="bag-handle-outline"
-          title="Packing"
-          body="Checklist you author for this trip"
+          title={strings.more.packing}
+          body={strings.more.packingBody}
           onPress={() => open('/trip/[tripId]/packing')}
         />
         <HubDivider />
         <HubRow
           icon="share-outline"
-          title={isSharing ? 'Preparing share…' : 'Share trip snapshot'}
-          body="System share of a non-secret summary. Codes and private contacts stay off."
+          title={
+            isSharing
+              ? strings.more.sharePreparing
+              : strings.more.share
+          }
+          body={strings.more.shareBody}
           onPress={shareSnapshot}
         />
       </HubSection>
 
-      <HubSection title="Your journey">
+      <HubSection title={strings.more.sectionJourney}>
         <HubRow
           icon="images-outline"
-          title="Memories"
-          body={`${workspace.memories.length} ${
-            workspace.memories.length === 1 ? 'moment saved' : 'moments saved'
-          }`}
+          title={strings.more.memories}
+          body={strings.more.memoryCount(
+            workspace.memories.length,
+          )}
           accent="brass"
           onPress={() => open('/trip/[tripId]/memories')}
         />
         <HubDivider />
         <HubRow
           icon="book-outline"
-          title="Travel Book"
+          title={strings.more.travelBook}
           body={
             workspace.memories.length === 0
-              ? 'Add memories first, then shape the story of this trip'
-              : `Shape ${workspace.memories.length} ${
-                  workspace.memories.length === 1 ? 'saved moment' : 'saved moments'
-                } into your trip story`
+              ? strings.more.travelBookEmpty
+              : strings.more.travelBookBody(
+                  workspace.memories.length,
+                )
           }
           onPress={() => open('/trip/[tripId]/travel-book')}
         />
@@ -291,7 +305,7 @@ export default function MoreScreen() {
               {index > 0 ? <HubDivider /> : null}
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${item.actionLabel} ${item.title}. ${item.body}`}
+                accessibilityLabel={`${strings.readiness.action[item.actionLabel]} ${item.title}. ${item.body}`}
                 style={({ pressed }) => [
                   styles.hubRow,
                   pressed && styles.pressed,
@@ -325,7 +339,9 @@ export default function MoreScreen() {
                   </Text>
                 </View>
                 <Text style={styles.readinessAction}>
-                  {item.actionLabel.toUpperCase()}
+                  {strings.readiness.action[
+                    item.actionLabel
+                  ].toUpperCase()}
                 </Text>
               </Pressable>
             </View>

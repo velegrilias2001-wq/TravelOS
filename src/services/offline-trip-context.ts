@@ -1,6 +1,7 @@
 import type { TripWorkspace } from './trip-service';
 import { mappedDestinations } from './destination-authoring';
 import { mappedStopCoordinate } from './trip-map-context';
+import { strings } from '../i18n';
 
 export type NetworkReachability =
   | 'online'
@@ -87,8 +88,8 @@ export function selectOfflineTripNotice(input: {
         kind: 'offline-unmapped',
         body:
           surface === 'map'
-            ? 'Trip, bookings, and stays are saved on this device. There is no saved pin, and live map tiles need a network.'
-            : 'Trip, bookings, and stays are saved on this device. Live lookup needs a network.',
+            ? strings.offline.noPinBody
+            : strings.offline.liveLookupBody,
       };
     }
 
@@ -96,8 +97,8 @@ export function selectOfflineTripNotice(input: {
       kind: 'offline',
       body:
         surface === 'map'
-          ? 'Saved pins stay on this device. Live map tiles need a network. Directions use the saved pin, not a cached route.'
-          : 'Trip, bookings, stays, and saved pins are on this device. Map tiles and live lookup need a network.',
+          ? strings.offline.savedPinsBody
+          : strings.offline.allSavedBody,
     };
   }
 
@@ -107,7 +108,7 @@ export function selectOfflineTripNotice(input: {
   ) {
     return {
       kind: 'unmapped',
-      body: 'Stops without saved coordinates stay off the map. TravelOS does not invent a pin.',
+      body: strings.offline.noInventedPin,
     };
   }
 

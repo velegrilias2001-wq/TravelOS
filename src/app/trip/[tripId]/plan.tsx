@@ -96,6 +96,7 @@ import {
   type StopLocation,
 } from '@/features/trip-plan/stop-types';
 import { StopEditorModal } from '@/features/trip-plan/stop-editor-modal';
+import { strings } from '@/i18n';
 
 function firstRouteParam(
   value: string | string[] | undefined,
@@ -257,10 +258,10 @@ export default function PlanScreen() {
       );
     } catch (error) {
       Alert.alert(
-        'City was not assigned',
+        strings.plan.alertCityTitle,
         error instanceof Error
           ? error.message
-          : 'Try assigning the city again.',
+          : strings.plan.alertCityBody,
       );
     }
   };
@@ -538,16 +539,16 @@ export default function PlanScreen() {
 
     discardPromptOpen.current = true;
     Alert.alert(
-      'Discard unsaved changes?',
-      'Your changes have not been saved. Keep editing to finish, or discard your changes.',
+      strings.plan.discardTitle,
+      strings.plan.discardBody,
       [
         {
-          text: 'Keep editing',
+          text: strings.plan.keepEditing,
           style: 'cancel',
           onPress: () => { discardPromptOpen.current = false; },
         },
         {
-          text: 'Discard',
+          text: strings.plan.discard,
           style: 'destructive',
           onPress: () => {
             discardPromptOpen.current = false;
@@ -674,16 +675,16 @@ export default function PlanScreen() {
             pickLocation,
             {
             title:
-              'Choose location',
+              strings.plan.pickerTitle,
 
             doneButtonTitle:
-              'Use location',
+              strings.plan.pickerDone,
 
             cancelButtonTitle:
-              'Cancel',
+              strings.plan.cancel,
 
             searchPlaceholder:
-              'Search places or addresses…',
+              strings.plan.pickerSearch,
 
             initialRadiusMeters:
               5000,
@@ -742,7 +743,7 @@ export default function PlanScreen() {
           resultName ||
           resultAddress ||
           title.trim() ||
-          'Selected location';
+          strings.plan.selectedLocation;
 
         const location:
           StopLocation = {
@@ -784,7 +785,7 @@ export default function PlanScreen() {
         setLocationNotice({
           status: 'unavailable',
           reason:
-            'The chosen location could not be applied. Your moment is unchanged.',
+            strings.plan.locationApplyFailed,
         });
       } finally {
         setIsPickingLocation(
@@ -811,8 +812,8 @@ export default function PlanScreen() {
 
       if (!cleanTitle) {
         Alert.alert(
-          'Add a name',
-          'Give this moment a name.',
+          strings.plan.alertNameTitle,
+          strings.plan.alertNameBody,
         );
 
         return;
@@ -914,8 +915,8 @@ export default function PlanScreen() {
               );
 
               Alert.alert(
-                'Moment saved',
-                'The stop is on the plan. The import line could not be marked reviewed — you can finish that in Import Review.',
+                strings.plan.alertMomentSavedTitle,
+                strings.plan.alertImportNotMarked,
               );
             }
           }
@@ -927,7 +928,7 @@ export default function PlanScreen() {
         const message =
           error instanceof Error
             ? error.message
-            : 'Please try again.';
+            : strings.plan.tryAgain;
 
         const isTimeValidationError =
           message.includes(
@@ -942,11 +943,11 @@ export default function PlanScreen() {
 
         if (isTimeValidationError) {
           Alert.alert(
-            'Check moment time',
+            strings.plan.alertTimeTitle,
             message.includes(
               'Stop end time must be after stop start time',
             )
-              ? 'End time must be later than start time.'
+              ? strings.plan.alertTimeBody
               : message,
           );
         } else {
@@ -956,7 +957,7 @@ export default function PlanScreen() {
           );
 
           Alert.alert(
-            'Could not save moment',
+            strings.plan.alertSaveFailed,
             message,
           );
         }
@@ -995,10 +996,10 @@ export default function PlanScreen() {
       const message =
         error instanceof Error
           ? error.message
-          : 'Please try again.';
+          : strings.plan.tryAgain;
 
       Alert.alert(
-        'Could not add moment',
+        strings.plan.alertAddFailed,
         message,
       );
     } finally {
@@ -1026,16 +1027,16 @@ export default function PlanScreen() {
         : '';
 
     Alert.alert(
-      'Remove moment?',
+      strings.plan.alertRemoveTitle,
       `Remove "${stop.title}" from this day?${unlinkMessage}`,
       [
         {
-          text: 'Cancel',
+          text: strings.plan.cancel,
           style: 'cancel',
         },
 
         {
-          text: 'Remove',
+          text: strings.plan.remove,
           style:
             'destructive',
 
@@ -1054,8 +1055,8 @@ export default function PlanScreen() {
                 );
 
                 Alert.alert(
-                  'Could not remove moment',
-                  'Please try again.',
+                  strings.plan.alertRemoveFailed,
+                  strings.plan.tryAgain,
                 );
               }
             },
@@ -1138,8 +1139,8 @@ export default function PlanScreen() {
         );
 
         Alert.alert(
-          'Could not reorder plan',
-          'Please try again.',
+          strings.plan.alertReorderFailed,
+          strings.plan.tryAgain,
         );
       }
     };
@@ -1155,8 +1156,11 @@ export default function PlanScreen() {
           eyebrow={tripDestinationLabel(
             workspace.trip.destinations,
           ).toUpperCase()}
-          title="Your plan"
-          subtitle={`${workspace.days.length} ${workspace.days.length === 1 ? 'day' : 'days'} · ${workspace.stops.length} ${workspace.stops.length === 1 ? 'moment' : 'moments'}`}
+          title={strings.plan.title}
+          subtitle={strings.plan.summary(
+            workspace.days.length,
+            workspace.stops.length,
+          )}
         />
 
         {workspace.days.length > 0 ? (
@@ -1196,7 +1200,7 @@ export default function PlanScreen() {
                         styles.dayStripWeekdaySelected,
                     ]}
                   >
-                    DAY {day.dayNumber}
+                    {strings.plan.dayNumber} {day.dayNumber}
                   </Text>
                   <Text
                     style={[
@@ -1315,7 +1319,7 @@ export default function PlanScreen() {
 
                       <View style={styles.dayCopy}>
                         <Text style={styles.dayLabel}>
-                          DAY {day.dayNumber}
+                          {strings.plan.dayNumber} {day.dayNumber}
                         </Text>
 
                         <Text style={styles.dayDate}>
@@ -1392,7 +1396,7 @@ export default function PlanScreen() {
                               styles.dayCityChipTextSelected,
                           ]}
                         >
-                          Not set
+                          {strings.plan.notSet}
                         </Text>
                       </Pressable>
 
@@ -1488,7 +1492,7 @@ export default function PlanScreen() {
                                       styles.conflictEyebrow
                                     }
                                   >
-                                    TIME CONFLICT
+                                    {strings.plan.timeConflict}
                                   </Text>
 
                                   <Text
@@ -1497,7 +1501,7 @@ export default function PlanScreen() {
                                     }
                                   >
                                     {firstStop?.title ??
-                                      'Moment'}{' '}
+                                      strings.plan.moment}{' '}
                                     overlaps{' '}
                                     {secondStop?.title ??
                                       'another moment'}
@@ -1704,7 +1708,7 @@ export default function PlanScreen() {
                                           styles.livedText
                                         }
                                       >
-                                        Done
+                                        {strings.plan.done}
                                       </Text>
                                     </View>
                                   </FadeIn>
@@ -1731,7 +1735,7 @@ export default function PlanScreen() {
                                           styles.livedSkippedText
                                         }
                                       >
-                                        Skipped
+                                        {strings.plan.skipped}
                                       </Text>
                                     </View>
                                   </FadeIn>
@@ -1760,7 +1764,7 @@ export default function PlanScreen() {
                                         styles.mappedText
                                       }
                                     >
-                                      Mapped
+                                      {strings.plan.mapped}
                                     </Text>
                                   </View>
                                 )}
@@ -1806,7 +1810,7 @@ export default function PlanScreen() {
                               {linkedBookings.length >
                                 0 && (
                                 <Pressable
-                                  accessibilityLabel="Open linked bookings"
+                                  accessibilityLabel={strings.plan.openLinkedBookings}
                                   accessibilityRole="button"
                                   hitSlop={5}
                                   style={
@@ -1976,7 +1980,7 @@ export default function PlanScreen() {
                                           styles.freeTimeEyebrow
                                         }
                                       >
-                                        FREE TIME
+                                        {strings.plan.freeTime}
                                       </Text>
 
                                       <Text
@@ -2001,7 +2005,10 @@ export default function PlanScreen() {
 
                                   <Pressable
                                     accessibilityRole="button"
-                                    accessibilityLabel={`Ask TravelOS how to use free time from ${freeTimeGap.startTime} to ${freeTimeGap.endTime}`}
+                                    accessibilityLabel={strings.plan.askFreeTime(
+                                      freeTimeGap.startTime,
+                                      freeTimeGap.endTime,
+                                    )}
                                     disabled={
                                       loadingFreeTimeKey !==
                                       null
@@ -2044,10 +2051,10 @@ export default function PlanScreen() {
                                       }
                                     >
                                       {isFreeTimeAdviceLoading
-                                        ? 'Thinking…'
+                                        ? strings.plan.thinking
                                         : freeTimeAdvice
-                                          ? 'Refresh ideas'
-                                          : 'Fill this time'}
+                                          ? strings.plan.refreshIdeas
+                                          : strings.plan.fillThisTime}
                                     </Text>
                                   </Pressable>
 
@@ -2085,7 +2092,7 @@ export default function PlanScreen() {
                                             styles.freeTimeSuggestionHeading
                                           }
                                         >
-                                          TRAVELOS IDEAS
+                                          {strings.plan.travelosIdeas}
                                         </Text>
                                       </View>
 
@@ -2095,8 +2102,8 @@ export default function PlanScreen() {
                                         }
                                       >
                                         {freeTimeAdvice.provider} ·{' '}
-                                        {freeTimeAdvice.model}. These stay
-                                        ideas. Nothing is saved as a stop.
+                                        {freeTimeAdvice.model}
+                                        {strings.plan.ideasProvenance}
                                       </Text>
 
                                       {freeTimeAdvice.suggestions.map(
@@ -2170,7 +2177,7 @@ export default function PlanScreen() {
                                           styles.freeTimeAIHint
                                         }
                                       >
-                                        Ideas only · nothing has been added to your plan.
+                                        {strings.plan.ideasOnly}
                                       </Text>
                                     </View>
                                   )}

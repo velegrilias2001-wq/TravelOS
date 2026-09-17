@@ -2,6 +2,7 @@ import type { PackingItem } from '@/domain/entities/packing-item';
 import type { TravelDNA } from '@/domain/entities/travel-dna';
 
 import { packingProgress } from './packing-progress';
+import { strings } from '../i18n';
 import { formatCalendarDateForDisplay } from './time-truth';
 import {
   selectTripReadiness,
@@ -82,26 +83,37 @@ export function summarizeTripEvidencePack(
   const destinations =
     pack.destinationNames.length > 0
       ? pack.destinationNames.join(', ')
-      : 'No destination names saved';
+      : strings.evidence.noDestinationNames;
 
   const readiness =
     pack.readinessPercent == null
-      ? 'Readiness unknown'
-      : `${pack.readinessPercent}% ready · gaps: ${
+      ? strings.evidence.readinessUnknown
+      : strings.evidence.readiness(
+          pack.readinessPercent,
           pack.readinessGaps.length > 0
-            ? pack.readinessGaps.join(', ')
-            : 'none'
-        }`;
+            ? pack.readinessGaps
+                .map(
+                  (gap) =>
+                    strings.evidence.gap[gap] ?? gap,
+                )
+                .join(', ')
+            : strings.evidence.noGaps,
+        );
 
   const packing =
     pack.packingTotal === 0
-      ? 'Packing empty'
-      : `${pack.packingPacked}/${pack.packingTotal} packed`;
+      ? strings.evidence.packingEmpty
+      : strings.evidence.packed(
+          pack.packingPacked,
+          pack.packingTotal,
+        );
 
   const imports =
     pack.pendingImportClaims > 0
-      ? `${pack.pendingImportClaims} pending import claim(s)`
-      : 'No pending import claims';
+      ? strings.evidence.pendingClaims(
+          pack.pendingImportClaims,
+        )
+      : strings.evidence.noPendingClaims;
 
   return [
     `${pack.title} · ${formatCalendarDateForDisplay(pack.startDate, EVIDENCE_DATE_FORMAT)} → ${formatCalendarDateForDisplay(pack.endDate, EVIDENCE_DATE_FORMAT)}`,

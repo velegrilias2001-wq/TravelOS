@@ -69,6 +69,7 @@ import {
 import { useCompanionPlanChangeNotice } from './use-companion-plan-change';
 import { useCompanionRuntimeRefresh } from './use-companion-runtime-refresh';
 import { CompanionFreeTimeCopilot } from './companion-free-time-copilot';
+import { strings } from '@/i18n';
 
 type CompanionPath =
   | '/trip/[tripId]/plan'
@@ -218,20 +219,20 @@ export function CompanionScreen() {
           selection.displayDay,
           workspace.trip.destinations,
         )
-      : destinations || 'Destination not yet set';
+      : destinations || strings.companion.destinationNotSet;
 
   return (
     <Screen scroll clearTabBar contentStyle={styles.screenContent}>
       <View style={styles.topBar}>
         <RoundButton
           icon="arrow-back"
-          label="Go back"
+          label={strings.companion.goBack}
           onPress={() => router.back()}
         />
-        <Text style={styles.topLabel}>COMPANION</Text>
+        <Text style={styles.topLabel}>{strings.companion.header}</Text>
         <RoundButton
           icon="options-outline"
-          label="Open trip details"
+          label={strings.companion.openTripDetails}
           onPress={() => openRoute('/trip/[tripId]/details')}
         />
       </View>
@@ -241,12 +242,12 @@ export function CompanionScreen() {
           <View style={styles.phaseDot} />
           <Text style={styles.phaseText}>
             {selection.mode === 'upcoming'
-              ? 'BEFORE THE JOURNEY'
+              ? strings.companion.beforeJourney
               : selection.mode === 'active'
-                ? 'ON THE JOURNEY'
+                ? strings.companion.onJourney
                 : selection.mode === 'completed'
-                  ? 'JOURNEY COMPLETE'
-                  : 'DATES NEED REVIEW'}
+                  ? strings.companion.journeyComplete
+                  : strings.companion.datesNeedReview}
           </Text>
         </View>
         <Text style={styles.themeMood}>{tripTheme.moodEyebrow}</Text>
@@ -260,7 +261,7 @@ export function CompanionScreen() {
         </Text>
 
         {selection.mode === 'active' &&
-        heroPlace === 'City not set for today' &&
+        heroPlace === strings.companion.cityNotSetToday &&
         selection.displayDay &&
         workspace.trip.destinations.length > 0 ? (
           <View style={styles.cityAssignCard}>
@@ -299,7 +300,7 @@ export function CompanionScreen() {
           <TruthNotice
             icon="shield-checkmark-outline"
             brass
-            body="Trip status and travel dates differ. Companion follows your travel dates."
+            body={strings.companion.statusMismatch}
           />
         )}
         {planChangeNotice ? (
@@ -360,7 +361,7 @@ function Upcoming({
   return (
     <View style={styles.stack}>
       <View style={styles.darkCard}>
-        <Text style={styles.darkEyebrow}>DEPARTURE</Text>
+        <Text style={styles.darkEyebrow}>{strings.companion.departure}</Text>
         <Text
           accessibilityLabel={`${selection.countdownDays ?? 0} days until departure`}
           style={styles.countdown}
@@ -368,11 +369,13 @@ function Upcoming({
           {selection.countdownDays ?? '—'}
         </Text>
         <Text style={styles.darkTitle}>
-          {selection.countdownDays === 1 ? 'day to go' : 'days to go'}
+          {selection.countdownDays === 1
+            ? strings.companion.dayToGo
+            : strings.companion.daysToGo}
         </Text>
         <View style={styles.brassRule} />
         <Text style={styles.darkBody}>
-          Finish the essentials and take a first look at the journey ahead.
+          {strings.companion.beforeBody}
         </Text>
       </View>
 
@@ -423,18 +426,20 @@ function FirstDayPreview({
     <View style={styles.firstDayCard}>
       <View style={styles.firstDayHeader}>
         <View style={styles.flex}>
-          <Text style={styles.sectionEyebrow}>FIRST DAY</Text>
+          <Text style={styles.sectionEyebrow}>{strings.companion.firstDay}</Text>
           <Text style={styles.firstDayDate}>
             {formatDayDate(selection.displayDay.date)}
           </Text>
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="View first day in Plan"
+          accessibilityLabel={strings.companion.viewFirstDay}
           hitSlop={8}
           onPress={() => openRoute('/trip/[tripId]/plan')}
         >
-          <Text style={styles.sectionAction}>VIEW PLAN</Text>
+          <Text style={styles.sectionAction}>
+            {strings.companion.viewPlan}
+          </Text>
         </Pressable>
       </View>
 
@@ -442,8 +447,8 @@ function FirstDayPreview({
         {selection.stopContexts.length === 0 ? (
           <Empty
             icon="calendar-outline"
-            title="Your first day is open"
-            body="Add a moment when you’re ready."
+            title={strings.companion.firstDayOpen}
+            body={strings.companion.firstDayOpenBody}
           />
         ) : (
           <View style={styles.list}>
@@ -483,14 +488,14 @@ function Active({
 }) {
   if (!selection.displayDay) {
     return (
-      <Section eyebrow="TODAY" title="Today’s plan is unavailable">
+      <Section eyebrow="TODAY" title={strings.companion.todayUnavailable}>
         <Empty
           icon="calendar-clear-outline"
-          title="Check your trip dates"
-          body="Today falls within this trip, but its itinerary could not be found."
+          title={strings.companion.checkDates}
+          body={strings.companion.checkDatesBody}
         />
         <PrimaryButton
-          label="Open Plan"
+          label={strings.companion.openPlan}
           onPress={() => openRoute('/trip/[tripId]/plan')}
         />
       </Section>
@@ -567,7 +572,7 @@ function Active({
       {!selection.timingReliable && selection.stopContexts.length > 0 && (
         <TruthNotice
           icon="reorder-three-outline"
-          body="Live now and next timing needs a saved timezone for today’s city. Today’s itinerary remains in plan order."
+          body={strings.companion.timezoneNeeded}
         />
       )}
       {selection.timingReliable &&
@@ -582,8 +587,8 @@ function Active({
                   context.phase === 'done' ||
                   context.phase === 'skipped',
               )
-                ? 'No later timed moment is still open today. Done and skipped marks do not change the saved plan.'
-                : 'No later timed moment is saved today. Moments without a time remain visible without being called current.'
+                ? strings.companion.noLaterOpen
+                : strings.companion.noLaterSaved
             }
           />
         )}
@@ -597,20 +602,20 @@ function Active({
 
       <Section
         eyebrow="TODAY"
-        title={selection.displayDay.title || 'Today’s plan'}
+        title={selection.displayDay.title || strings.companion.todaysPlan}
         meta={
           selection.timingReliable && selection.localTime
             ? `${selection.localTime} in ${selection.runtime.timeZone.timeZone}`
-            : 'Plan order'
+            : strings.companion.planOrder
         }
-        action="Full Plan"
+        action={strings.companion.fullPlan}
         onAction={() => openRoute('/trip/[tripId]/plan')}
       >
         {selection.stopContexts.length === 0 ? (
           <Empty
             icon="sunny-outline"
-            title="Nothing is planned for this day"
-            body="Companion has no moment to call current or next. The day remains open."
+            title={strings.companion.nothingPlanned}
+            body={strings.companion.nothingPlannedBody}
           />
         ) : (
           <View>
@@ -688,7 +693,7 @@ function Completed({
         <Text style={styles.darkEyebrow}>JOURNEY COMPLETE</Text>
         <Text style={styles.completeTitle}>This trip is no longer live.</Text>
         <Text style={styles.darkBody}>
-          Companion now shows your saved trip history. Nothing is presented as happening now.
+          {strings.companion.historyBody}
         </Text>
         <View style={styles.summaryRow}>
           <Summary value={selection.summary.dayCount} label="DAYS" />
@@ -700,16 +705,16 @@ function Completed({
       {selection.displayDay && (
         <Section
           eyebrow="FINAL DAY"
-          title={selection.displayDay.title || 'Final day history'}
+          title={selection.displayDay.title || strings.companion.finalDayHistory}
           meta={formatDayDate(selection.displayDay.date)}
-          action="Open Plan"
+          action={strings.companion.openPlan}
           onAction={() => openRoute('/trip/[tripId]/plan')}
         >
           {selection.stopContexts.length === 0 ? (
             <Empty
               icon="book-outline"
-              title="No final-day itinerary was recorded"
-              body="No moments were added to this day."
+              title={strings.companion.noFinalDay}
+              body={strings.companion.noFinalDayBody}
             />
           ) : (
             <View style={styles.list}>
@@ -729,10 +734,10 @@ function Completed({
         </Section>
       )}
       <View style={styles.futureCard}>
-        <Text style={styles.sectionEyebrow}>AFTER TRAVEL</Text>
+        <Text style={styles.sectionEyebrow}>{strings.companion.afterTravel}</Text>
         <Text style={styles.futureTitle}>Memories and Travel Book</Text>
         <Text style={styles.futureBody}>
-          Memories and Travel Book will help you relive this journey in a future update.
+          {strings.companion.afterTravelBody}
         </Text>
       </View>
       <ModuleActions openRoute={openRoute} />
@@ -742,13 +747,13 @@ function Completed({
 
 function DateReview({ onPress }: { onPress: () => void }) {
   return (
-    <Section eyebrow="DATE REVIEW" title="Companion needs valid trip dates">
+    <Section eyebrow="DATE REVIEW" title={strings.companion.needValidDates}>
       <Empty
         icon="alert-circle-outline"
-        title="Live context is unavailable"
-        body="The saved dates need attention before Companion can show the right day or moment."
+        title={strings.companion.liveUnavailable}
+        body={strings.companion.liveUnavailableBody}
       />
-      <PrimaryButton label="Review Trip Details" onPress={onPress} />
+      <PrimaryButton label={strings.companion.reviewTripDetails} onPress={onPress} />
     </Section>
   );
 }
@@ -970,7 +975,7 @@ function FocusStop({
                   ? ` — ${context.stop.endTime}`
                   : ''
               }`
-            : 'Time not set'}
+            : strings.companion.timeNotSet}
         </Text>
       </View>
       <View style={styles.focusMain}>
@@ -1042,7 +1047,7 @@ function FocusStop({
         />
         <PillAction
           icon="create-outline"
-          label="Open in Plan"
+          label={strings.companion.openInPlan}
           onPress={() =>
             openRoute('/trip/[tripId]/plan', {
               stopId: context.stop.id,
@@ -1052,7 +1057,7 @@ function FocusStop({
         {context.isMapped && (
           <PillAction
             icon="map-outline"
-            label="Show on Map"
+            label={strings.companion.showOnMap}
             onPress={() =>
               openRoute('/trip/[tripId]/map', {
                 stopId: context.stop.id,
@@ -1063,7 +1068,7 @@ function FocusStop({
         {context.isMapped && (
           <PillAction
             icon="navigate-outline"
-            label="Directions"
+            label={strings.companion.directions}
             onPress={() => openStopDirections(context)}
           />
         )}
@@ -1230,7 +1235,7 @@ function CompactStop({
           {context.stop.title}
         </Text>
         <Text style={styles.rowMeta}>
-          {context.stop.startTime ? `${context.stop.startTime} · ` : 'No time · '}
+          {context.stop.startTime ? `${context.stop.startTime} · ` : strings.companion.noTime}
           {context.stop.type}
           {context.bookings.length > 0
             ? ` · ${context.bookings.length} linked ${context.bookings.length === 1 ? 'booking' : 'bookings'}`
@@ -1262,7 +1267,7 @@ function StayCard({
       meta={`${
         checkIn
           ? `${formatTripDate(checkIn.date)} · ${checkIn.time}`
-          : accommodation.address || 'Stay details saved'
+          : accommodation.address || strings.companion.stayDetailsSaved
       }${checkOut ? ` — ${formatTripDate(checkOut.date)}` : ''}`}
       onPress={onPress}
     />
@@ -1293,7 +1298,7 @@ function StayContext({
             : 'TODAY’S STAY'
       }
       title={context.accommodation.name}
-      meta={event ? `${event.time} local` : 'Stay context saved'}
+      meta={event ? `${event.time} local` : strings.companion.stayContextSaved}
       onPress={onPress}
     />
   );
@@ -1437,41 +1442,41 @@ function Readiness({
     },
     {
       icon: 'bed-outline',
-      title: 'Accommodation',
+      title: strings.companion.accommodation,
       body:
         readiness.accommodationCount > 0
           ? `${readiness.accommodationCount} ${readiness.accommodationCount === 1 ? 'stay' : 'stays'} saved`
-          : 'Stay not added',
+          : strings.companion.stayNotAdded,
       ready: readiness.accommodationCount > 0,
       action: readiness.accommodationCount > 0 ? 'VIEW' : 'ADD',
       route: '/trip/[tripId]/accommodation',
     },
     {
       icon: 'briefcase-outline',
-      title: 'Bookings',
+      title: strings.companion.bookings,
       body:
         readiness.bookingCount > 0
           ? `${readiness.bookingCount} active ${readiness.bookingCount === 1 ? 'booking' : 'bookings'}`
-          : 'Bookings not added',
+          : strings.companion.bookingsNotAdded,
       ready: readiness.bookingCount > 0,
       action: readiness.bookingCount > 0 ? 'VIEW' : 'ADD',
       route: '/trip/[tripId]/bookings',
     },
     {
       icon: 'people-outline',
-      title: 'Travelers',
+      title: strings.companion.travelers,
       body:
         readiness.travelerCount > 0
           ? `${readiness.travelerCount} ${readiness.travelerCount === 1 ? 'traveler' : 'travelers'} added`
-          : 'Travelers not added',
+          : strings.companion.travelersNotAdded,
       ready: readiness.travelerCount > 0,
       action: readiness.travelerCount > 0 ? 'VIEW' : 'ADD',
       route: '/trip/[tripId]/travelers',
     },
     {
       icon: 'wallet-outline',
-      title: 'Budget',
-      body: readiness.budgetConfigured ? 'Budget set' : 'Budget not set',
+      title: strings.companion.budget,
+      body: readiness.budgetConfigured ? strings.companion.budgetSet : strings.companion.budgetNotSet,
       ready: readiness.budgetConfigured,
       action: readiness.budgetConfigured ? 'VIEW' : 'ADD',
       route: '/trip/[tripId]/budget',
@@ -1531,17 +1536,17 @@ function ModuleActions({ openRoute }: { openRoute: OpenRoute }) {
     <View style={styles.moduleRow}>
       <PillAction
         icon="wallet-outline"
-        label="Budget"
+        label={strings.companion.budget}
         onPress={() => openRoute('/trip/[tripId]/budget')}
       />
       <PillAction
         icon="people-outline"
-        label="Travelers"
+        label={strings.companion.travelers}
         onPress={() => openRoute('/trip/[tripId]/travelers')}
       />
       <PillAction
         icon="options-outline"
-        label="Trip details"
+        label={strings.companion.tripDetails}
         onPress={() => openRoute('/trip/[tripId]/details')}
       />
     </View>
@@ -1638,7 +1643,7 @@ function TruthNotice({
           onPress={onDismiss}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Dismiss plan update"
+          accessibilityLabel={strings.companion.dismissPlanUpdate}
         >
           <Ionicons
             name="close"

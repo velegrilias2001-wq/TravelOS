@@ -9,6 +9,7 @@ import {
   tripDestinationLabel,
 } from './destination-authoring';
 import { tripDayDestination } from './trip-day-destination';
+import { strings } from '../i18n';
 
 export type TripMapCompanionMode =
   | 'upcoming'
@@ -140,22 +141,22 @@ function frameEyebrow(
   mode: TripMapCompanionMode | null,
 ): string {
   if (kind === 'empty' || kind === 'all-mapped') {
-    return 'TRIP MAP';
+    return strings.map.eyebrow;
   }
 
   if (mode === 'active') {
-    return "TODAY'S MAP";
+    return strings.map.todaysMap;
   }
 
   if (mode === 'upcoming') {
-    return 'FIRST DAY';
+    return strings.map.firstDay;
   }
 
   if (mode === 'completed') {
-    return 'LAST DAY';
+    return strings.map.lastDay;
   }
 
-  return 'TRIP MAP';
+  return strings.map.eyebrow;
 }
 
 export function selectTripMapFrame(
@@ -176,7 +177,7 @@ export function selectTripMapFrame(
       kind: 'empty',
       coordinates: [],
       title: tripTitle,
-      eyebrow: 'TRIP MAP',
+      eyebrow: strings.map.eyebrow,
     };
   }
 

@@ -6,6 +6,9 @@ const {
   resolveNetworkReachability,
   selectOfflineTripNotice,
 } = require('../.test-build/src/services/offline-trip-context.js');
+const {
+  strings,
+} = require('../.test-build/src/i18n/index.js');
 
 const TIMESTAMP = '2026-09-03T08:00:00.000Z';
 
@@ -191,7 +194,7 @@ test('offline Companion names on-device facts without a second cache', () => {
     }),
     {
       kind: 'offline',
-      body: 'Trip, bookings, stays, and saved pins are on this device. Map tiles and live lookup need a network.',
+      body: strings.offline.allSavedBody,
     },
   );
 });
@@ -207,7 +210,7 @@ test('offline Map does not claim a cached route', () => {
     }),
     {
       kind: 'offline',
-      body: 'Saved pins stay on this device. Live map tiles need a network. Directions use the saved pin, not a cached route.',
+      body: strings.offline.savedPinsBody,
     },
   );
 });
@@ -248,7 +251,7 @@ test('offline Map without pins stays explicit', () => {
     }),
     {
       kind: 'offline-unmapped',
-      body: 'Trip, bookings, and stays are saved on this device. There is no saved pin, and live map tiles need a network.',
+      body: strings.offline.noPinBody,
     },
   );
 });
@@ -264,7 +267,7 @@ test('online Map names missing coordinates instead of inventing a pin', () => {
     }),
     {
       kind: 'unmapped',
-      body: 'Stops without saved coordinates stay off the map. TravelOS does not invent a pin.',
+      body: strings.offline.noInventedPin,
     },
   );
   assert.equal(
