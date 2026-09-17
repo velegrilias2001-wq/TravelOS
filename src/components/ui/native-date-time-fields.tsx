@@ -122,13 +122,14 @@ export function CalendarDateField({
           >
             {displayValue}
           </Text>
-          {!compact && value ? (
-            <Text
-              style={[
-                styles.raw,
-                !isCanonicalDateKey(value) && styles.review,
-              ]}
-            >
+          {/*
+            The stored value is only worth showing when it is not a canonical
+            calendar date: the formatted line then reads "Saved date needs
+            review", and the raw text is what the traveller has to act on.
+            A normal date needs no ISO echo.
+          */}
+          {!compact && value && !isCanonicalDateKey(value) ? (
+            <Text style={[styles.raw, styles.review]}>
               {value}
             </Text>
           ) : null}

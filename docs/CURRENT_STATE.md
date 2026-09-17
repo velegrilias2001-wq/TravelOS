@@ -762,6 +762,17 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### ISO dates out of traveller-facing copy — 2026-09-17
+
+Two separate leaks, both fixed.
+
+- `CalendarDateField` printed the stored key under every formatted date. That line is not decoration: it turns warning-coloured when the value is not a canonical calendar date, and in that case the formatted line above reads "Saved date needs review", so the raw text is the only thing the traveller can act on. It now renders **only** when the value fails `isCanonicalDateKey`, keeping the diagnostic and dropping the ISO echo under ordinary dates. This affects every date field: Create Trip, Discover, Trip Details and the booking time editor.
+- The Create Trip step 3 review card interpolated `startDate` and `endDate` directly. It now formats both through `formatCalendarDateForDisplay` with a compact day/short-month/year format, which also falls back to "Saved date needs review" rather than printing a broken key.
+
+Android-verified on 2026-09-17: step 2 shows "September 20, 2026" and "September 24, 2026" with no second line, and step 3 reads "Sep 20, 2026 → Sep 24, 2026 · EUR" instead of "2026-09-20 → 2026-09-24 · EUR". No trip was created.
+
+The Trip Copilot facts card still prints an ISO range; it is a different screen and stays open.
+
 ### Origin field copy — 2026-09-17
 
 Create Trip reuses `DestinationPickerField` for the trip origin, so the origin card asked "WHERE ARE YOU GOING?" under a "LEAVING FROM" label and offered "Choose destination". The component now takes a `role` of `destination` or `origin` and reads its wording from one `PICKER_COPY` table covering the prompt, placeholder, button labels, picker title and done button, search placeholder, help line and save-failure reason. Only the Create Trip origin passes `role="origin"`; every destination usage keeps its existing copy unchanged.

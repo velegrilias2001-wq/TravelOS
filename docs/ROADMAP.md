@@ -288,7 +288,8 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 - [ ] **Unblock native picker verification.** Add `com.travelos.app.hardening` plus its debug SHA-1 to a development-restricted Maps key, or build the hardening variant with the production package identity, so the picker and map tiles can be tested outside the production app.
 - [ ] **Decide the product language.** Greek and English currently mix inside single screens. Pick one, or introduce real localisation.
 - [ ] Style the native date and time pickers, or wrap them, so they stop rendering Material teal against the warm palette.
-- [ ] Remove raw ISO dates from traveller-facing copy in Create Trip step 2, step 3 and the Copilot facts card.
+- [x] **Raw ISO dates out of Create Trip** — the `CalendarDateField` echo now appears only for a non-canonical value, where it is the diagnostic rather than noise, and the step 3 review card formats its range. Android-verified.
+- [ ] Remove the raw ISO range from the Trip Copilot facts card.
 - [ ] Carry coordinates from a Discover catalogue destination into the created trip, so a Discover-started trip is not born with an empty Trip Map.
 - [ ] Keep the floating settings button clear of card content on Discover results and Trip Map.
 - [ ] Unify editor discard copy across Plan and Bookings.

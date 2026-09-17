@@ -68,6 +68,9 @@ import {
   MAX_TRIP_DESTINATIONS,
   moveDestinationItems,
 } from '@/services/trip-details';
+import {
+  formatCalendarDateForDisplay,
+} from '@/services/time-truth';
 
 import {
   useTripStore,
@@ -175,6 +178,13 @@ const CREATE_TRIP_STEPS: CreateTripStep[] = [
   'when',
   'finish',
 ];
+
+/** Compact range format for the review card; never a raw ISO key. */
+const REVIEW_DATE_FORMAT: Intl.DateTimeFormatOptions = {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+};
 
 const STEP_COPY: Record<
   CreateTripStep,
@@ -1140,7 +1150,7 @@ export default function NewTripScreen() {
                   ) : null}
                   <Text style={styles.reviewMeta}>
                     {startDate && endDate
-                      ? `${startDate} → ${endDate}`
+                      ? `${formatCalendarDateForDisplay(startDate, REVIEW_DATE_FORMAT)} → ${formatCalendarDateForDisplay(endDate, REVIEW_DATE_FORMAT)}`
                       : 'Dates incomplete'}
                     {' · '}
                     {currency}
