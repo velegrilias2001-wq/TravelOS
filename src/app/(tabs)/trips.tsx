@@ -26,6 +26,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 interface TripSection {
   key: 'planning' | 'completed' | 'archived';
@@ -111,17 +112,17 @@ function buildTripSections(
   const sections: TripSection[] = [
     {
       key: 'planning',
-      label: 'PLANNING',
+      label: strings.trips.sectionPlanning,
       trips: planning,
     },
     {
       key: 'completed',
-      label: 'COMPLETED',
+      label: strings.trips.sectionCompleted,
       trips: completed,
     },
     {
       key: 'archived',
-      label: 'ARCHIVED',
+      label: strings.trips.sectionArchived,
       trips: archived,
     },
   ];
@@ -154,21 +155,21 @@ export default function TripsScreen() {
       <View style={styles.header}>
         <View style={styles.headerCopy}>
           <Text style={styles.eyebrow}>
-            YOUR JOURNEYS
+            {strings.trips.eyebrow}
           </Text>
 
           <Text style={styles.title}>
-            Trips
+            {strings.trips.title}
           </Text>
 
           <Text style={styles.subtitle}>
-            Every trip you’re planning, living or remembering.
+            {strings.trips.subtitle}
           </Text>
         </View>
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Plan a new trip"
+          accessibilityLabel={strings.trips.addTripLabel}
           style={({ pressed }) => [
             styles.addButton,
             pressed && styles.pressed,
@@ -187,7 +188,7 @@ export default function TripsScreen() {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Import a calendar"
+        accessibilityLabel={strings.trips.importCalendarLabel}
         style={({ pressed }) => [
           styles.importLink,
           pressed && styles.pressed,
@@ -201,7 +202,7 @@ export default function TripsScreen() {
         />
 
         <Text style={styles.importLinkText}>
-          Import a calendar to review
+          {strings.trips.importCalendar}
         </Text>
       </Pressable>
 
@@ -218,18 +219,18 @@ export default function TripsScreen() {
 
             <View style={styles.emptyCopy}>
               <Text style={styles.emptyTitle}>
-                Plan your first trip
+                {strings.trips.emptyTitle}
               </Text>
 
               <Text style={styles.emptyBody}>
-                Choose a destination and dates. TravelOS will keep everything else together as the trip takes shape.
+                {strings.trips.emptyBody}
               </Text>
             </View>
           </View>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Plan a trip"
+            accessibilityLabel={strings.trips.emptyAction}
             style={({ pressed }) => [
               styles.primaryButton,
               pressed && styles.pressed,
@@ -239,7 +240,7 @@ export default function TripsScreen() {
             }
           >
             <Text style={styles.primaryButtonText}>
-              Plan a trip
+              {strings.trips.emptyAction}
             </Text>
 
             <Ionicons
@@ -262,10 +263,9 @@ export default function TripsScreen() {
                 </Text>
 
                 <Text style={styles.sectionCount}>
-                  {section.trips.length}{' '}
-                  {section.trips.length === 1
-                    ? 'trip'
-                    : 'trips'}
+                  {strings.trips.tripCount(
+                    section.trips.length,
+                  )}
                 </Text>
               </View>
 
@@ -342,7 +342,7 @@ function TripCard({
                 styles.statusTextDraft,
             ]}
           >
-            {trip.status.toUpperCase()}
+            {strings.tripStatus[trip.status]}
           </Text>
         </View>
 

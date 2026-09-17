@@ -38,6 +38,8 @@
 
     "src/domain/entities/**/*.ts",
 
+    "src/i18n/**/*.ts",
+
     "src/features/trip-workspace/trip-workspace-lifecycle.ts",
 
     "src/services/budget-calculations.ts",

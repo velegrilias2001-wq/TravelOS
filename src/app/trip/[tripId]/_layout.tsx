@@ -13,6 +13,7 @@ import {
   TripWorkspaceProvider,
 } from '@/features/trip-workspace/trip-workspace-context';
 import { colors } from '@/theme';
+import { strings } from '@/i18n';
 
 export default function TripSpaceLayout() {
   const { tripId: routeTripId } =
@@ -61,7 +62,7 @@ function TripSpaceTabs({
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Companion',
+          title: strings.tripTabs.companion,
 
           href: {
             pathname: '/trip/[tripId]',
@@ -85,7 +86,7 @@ function TripSpaceTabs({
       <Tabs.Screen
         name="plan"
         options={{
-          title: 'Plan',
+          title: strings.tripTabs.plan,
 
           href: {
             pathname: '/trip/[tripId]/plan',
@@ -109,7 +110,7 @@ function TripSpaceTabs({
       <Tabs.Screen
         name="map"
         options={{
-          title: 'Map',
+          title: strings.tripTabs.map,
 
           href: {
             pathname: '/trip/[tripId]/map',
@@ -133,7 +134,7 @@ function TripSpaceTabs({
       <Tabs.Screen
         name="bookings"
         options={{
-          title: 'Bookings',
+          title: strings.tripTabs.bookings,
 
           href: {
             pathname: '/trip/[tripId]/bookings',
@@ -157,7 +158,7 @@ function TripSpaceTabs({
       <Tabs.Screen
         name="more"
         options={{
-          title: 'More',
+          title: strings.tripTabs.more,
 
           href: {
             pathname: '/trip/[tripId]/more',

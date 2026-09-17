@@ -85,6 +85,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 interface ChoiceOption<
   Value extends string,
@@ -98,43 +99,43 @@ const INTENT_OPTIONS:
   ChoiceOption<TripIntent>[] = [
     {
       value: 'relax',
-      label: 'Relax',
+      label: strings.tripIntent.relax,
     },
     {
       value: 'explore',
-      label: 'Explore',
+      label: strings.tripIntent.explore,
     },
     {
       value: 'food',
-      label: 'Food',
+      label: strings.tripIntent.food,
     },
     {
       value: 'nature',
-      label: 'Nature',
+      label: strings.tripIntent.nature,
     },
     {
       value: 'event',
-      label: 'Event',
+      label: strings.tripIntent.event,
     },
     {
       value: 'social',
-      label: 'Social',
+      label: strings.tripIntent.social,
     },
     {
       value: 'romantic',
-      label: 'Romantic',
+      label: strings.tripIntent.romantic,
     },
     {
       value: 'family',
-      label: 'Family',
+      label: strings.tripIntent.family,
     },
     {
       value: 'work_leisure',
-      label: 'Work + Leisure',
+      label: strings.tripIntent.work_leisure,
     },
     {
       value: 'other',
-      label: 'Other',
+      label: strings.tripIntent.other,
     },
   ];
 
@@ -142,30 +143,30 @@ const PACE_OPTIONS:
   ChoiceOption<TripPace>[] = [
     {
       value: 'slow',
-      label: 'Slow',
+      label: strings.tripPace.slowLabel,
       description:
-        'More breathing room.',
+        strings.tripPace.slowDescription,
     },
     {
       value: 'balanced',
-      label: 'Balanced',
+      label: strings.tripPace.balancedLabel,
       description:
-        'A mix of plans and space.',
+        strings.tripPace.balancedDescription,
     },
     {
       value: 'full',
-      label: 'Full',
+      label: strings.tripPace.fullLabel,
       description:
-        'Make the most of each day.',
+        strings.tripPace.fullDescription,
     },
   ];
 
 const PARTY_OPTIONS:
   ChoiceOption<TripPartyType>[] = [
-    { value: 'solo', label: 'Solo' },
-    { value: 'couple', label: 'Couple' },
-    { value: 'friends', label: 'Friends' },
-    { value: 'family', label: 'Family' },
+    { value: 'solo', label: strings.tripParty.solo },
+    { value: 'couple', label: strings.tripParty.couple },
+    { value: 'friends', label: strings.tripParty.friends },
+    { value: 'family', label: strings.tripParty.family },
   ];
 
 type CreateTripStep =
@@ -191,22 +192,19 @@ const STEP_COPY: Record<
   { eyebrow: string; title: string; subtitle: string }
 > = {
   where: {
-    eyebrow: 'STEP 1 · WHERE',
-    title: 'Start with somewhere.',
-    subtitle:
-      'Pick one or more real places. Nothing is a trip until you create it.',
+    eyebrow: strings.newTrip.stepWhereEyebrow,
+    title: strings.newTrip.stepWhereTitle,
+    subtitle: strings.newTrip.stepWhereSubtitle,
   },
   when: {
-    eyebrow: 'STEP 2 · WHEN',
-    title: 'Choose the dates.',
-    subtitle:
-      'TravelOS builds days from these dates. You can refine the plan after.',
+    eyebrow: strings.newTrip.stepWhenEyebrow,
+    title: strings.newTrip.stepWhenTitle,
+    subtitle: strings.newTrip.stepWhenSubtitle,
   },
   finish: {
-    eyebrow: 'STEP 3 · SHAPE',
-    title: 'Make it yours.',
-    subtitle:
-      'Optional intent, pace, planned budget, a name, and the currency for trip totals.',
+    eyebrow: strings.newTrip.stepFinishEyebrow,
+    title: strings.newTrip.stepFinishTitle,
+    subtitle: strings.newTrip.stepFinishSubtitle,
   },
 };
 
@@ -402,16 +400,16 @@ export default function NewTripScreen() {
   const goNext = () => {
     if (step === 'where' && !canAdvanceWhere) {
       Alert.alert(
-        'Destination needed',
-        'Choose at least one place to continue.',
+        strings.newTrip.alertDestinationNeededTitle,
+        strings.newTrip.alertDestinationNeededBody,
       );
       return;
     }
 
     if (step === 'when' && !canAdvanceWhen) {
       Alert.alert(
-        'Dates needed',
-        'Choose a start and end date to continue.',
+        strings.newTrip.alertDatesNeededTitle,
+        strings.newTrip.alertDatesNeededBody,
       );
       return;
     }
@@ -439,7 +437,7 @@ export default function NewTripScreen() {
   const tripNamePlaceholder =
     primaryDestination?.name
       ? `${primaryDestination.name} trip`
-      : 'Give this trip a name';
+      : strings.newTrip.namePlaceholder;
 
   const updateCurrency = (
     value: string,
@@ -491,7 +489,7 @@ export default function NewTripScreen() {
     setDestinations((current) => {
       if (current.length >= MAX_TRIP_DESTINATIONS) {
         Alert.alert(
-          'Destination limit',
+          strings.newTrip.alertDestinationLimitTitle,
           `A trip can have at most ${MAX_TRIP_DESTINATIONS} destinations.`,
         );
         return current;
@@ -548,7 +546,7 @@ export default function NewTripScreen() {
 
     if (destinations.length <= 1) {
       Alert.alert(
-        'Keep one destination',
+        strings.newTrip.alertKeepOneTitle,
         'A trip needs at least one destination.',
       );
       return;
@@ -556,14 +554,14 @@ export default function NewTripScreen() {
 
     Alert.alert(
       `Remove ${destination.name}?`,
-      'This only removes the place from the new trip. Nothing has been saved yet.',
+      strings.newTrip.alertRemoveDestinationBody,
       [
         {
           text: 'Keep',
           style: 'cancel',
         },
         {
-          text: 'Remove',
+          text: strings.newTrip.remove,
           style: 'destructive',
           onPress: () => {
             setDestinations((current) =>
@@ -579,8 +577,8 @@ export default function NewTripScreen() {
     async () => {
       if (destinations.length === 0) {
         Alert.alert(
-          'Choose a destination',
-          'Choose a city, region or country before creating this trip.',
+          strings.newTrip.alertChooseDestinationTitle,
+          strings.newTrip.alertChooseDestinationBody,
         );
 
         return;
@@ -589,7 +587,7 @@ export default function NewTripScreen() {
       const resolvedTitle =
         title.trim() ||
         primaryDestination?.name?.trim() ||
-        'New trip';
+        strings.newTrip.defaultTripName;
 
       const now =
         new Date().toISOString();
@@ -609,8 +607,8 @@ export default function NewTripScreen() {
             parsed > 99
           ) {
             Alert.alert(
-              'Check party size',
-              'Party size must be a whole number from 1 to 99, or leave it blank.',
+              strings.newTrip.alertPartySizeTitle,
+              strings.newTrip.alertPartySizeBody,
             );
             return;
           }
@@ -656,11 +654,11 @@ export default function NewTripScreen() {
           );
       } catch (error) {
         Alert.alert(
-          'Check trip details',
+          strings.newTrip.alertTripDetailsTitle,
 
           error instanceof Error
             ? error.message
-            : 'Check the destination, travel dates and trip currency.',
+            : strings.newTrip.alertTripDetailsBody,
         );
 
         return;
@@ -683,8 +681,8 @@ export default function NewTripScreen() {
             parsed < 0
           ) {
             Alert.alert(
-              'Trip created',
-              'The trip was saved, but the planned budget was not set. Open Budget to add an amount of zero or more.',
+              strings.newTrip.alertTripCreatedTitle,
+              strings.newTrip.alertBudgetNotSetBody,
             );
           } else {
             try {
@@ -694,8 +692,8 @@ export default function NewTripScreen() {
               );
             } catch {
               Alert.alert(
-                'Trip created',
-                'The trip was saved, but the planned budget could not be written. You can set it under Budget.',
+                strings.newTrip.alertTripCreatedTitle,
+                strings.newTrip.alertBudgetFailedBody,
               );
             }
           }
@@ -709,8 +707,8 @@ export default function NewTripScreen() {
         }));
       } catch {
         Alert.alert(
-          'Could not create trip',
-          'TravelOS could not save this trip. Please try again.',
+          strings.newTrip.alertCreateFailedTitle,
+          strings.newTrip.alertCreateFailedBody,
         );
       } finally {
         setIsSaving(false);
@@ -737,7 +735,7 @@ export default function NewTripScreen() {
         >
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel={strings.newTrip.back}
             style={
               styles.backButton
             }
@@ -755,7 +753,7 @@ export default function NewTripScreen() {
               styles.topBarTitle
             }
           >
-            Create trip
+            {strings.newTrip.header}
           </Text>
 
           <View
@@ -801,7 +799,7 @@ export default function NewTripScreen() {
 
             <Text style={styles.title}>
               {discoverPrefill && step === 'where'
-                ? 'Make it a trip.'
+                ? strings.newTrip.prefillTitle
                 : STEP_COPY[step].title}
             </Text>
 
@@ -809,7 +807,7 @@ export default function NewTripScreen() {
               style={styles.subtitle}
             >
               {discoverPrefill && step === 'where'
-                ? 'Your Discover choice is ready. Review destinations, then continue.'
+                ? strings.newTrip.prefillSubtitle
                 : STEP_COPY[step].subtitle}
             </Text>
           </View>
@@ -853,8 +851,8 @@ export default function NewTripScreen() {
               >
                 {discoverPrefill.extraDestinations &&
                 discoverPrefill.extraDestinations.length > 0
-                  ? 'Destinations prefilled'
-                  : 'Destination prefilled'}
+                  ? strings.newTrip.prefillMany
+                  : strings.newTrip.prefillOne}
               </Text>
 
               <Text
@@ -862,7 +860,7 @@ export default function NewTripScreen() {
                   styles.discoverBody
                 }
               >
-                Nothing has been created yet. Continue only when the places look right.
+                {strings.newTrip.prefillNote}
               </Text>
             </View>
           </View>
@@ -878,11 +876,11 @@ export default function NewTripScreen() {
                 {destinations.length === 0 ? (
                   <View style={styles.whereDoors}>
                     <Text style={styles.fieldLabel}>
-                      HOW DO YOU WANT TO START
+                      {strings.newTrip.howToStart}
                     </Text>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Help me decide where to go"
+                      accessibilityLabel={strings.newTrip.helpMeDecideLabel}
                       disabled={isSaving}
                       style={({ pressed }) => [
                         styles.whereDoor,
@@ -894,14 +892,14 @@ export default function NewTripScreen() {
                       }
                     >
                       <Text style={styles.whereDoorTitle}>
-                        Help me decide
+                        {strings.newTrip.helpMeDecide}
                       </Text>
                       <Text style={styles.whereDoorBody}>
-                        Open Discover with your brief. Grounded places can return here as Create Trip prefill — nothing saves until you confirm.
+                        {strings.newTrip.helpMeDecideBody}
                       </Text>
                     </Pressable>
                     <Text style={styles.whereDoorDivider}>
-                      Or pick a place you already know
+                      {strings.newTrip.orPickKnown}
                     </Text>
                     <DestinationPickerField
                       disabled={isSaving}
@@ -921,8 +919,10 @@ export default function NewTripScreen() {
                       <DestinationPickerField
                         label={
                           destinations.length === 1
-                            ? 'DESTINATION'
-                            : `DESTINATION ${index + 1}`
+                            ? strings.newTrip.destinationLabel
+                            : strings.newTrip.destinationLabelNumbered(
+                                index + 1,
+                              )
                         }
                         destination={destination}
                         disabled={isSaving}
@@ -1014,14 +1014,14 @@ export default function NewTripScreen() {
 
                 <View style={styles.originBlock}>
                   <Text style={styles.fieldLabel}>
-                    ORIGIN · OPTIONAL
+                    {strings.newTrip.originEyebrow}
                   </Text>
                   <Text style={styles.helperText}>
-                    Where you leave from. Picker facts only — not a destination on this trip, and never used as the day clock.
+                    {strings.newTrip.originHelper}
                   </Text>
                   <DestinationPickerField
                     role="origin"
-                    label="LEAVING FROM"
+                    label={strings.newTrip.originLabel}
                     destination={origin}
                     disabled={isSaving}
                     onSelect={(selection) =>
@@ -1046,7 +1046,7 @@ export default function NewTripScreen() {
                   {origin ? (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Clear origin"
+                      accessibilityLabel={strings.newTrip.originClear}
                       disabled={isSaving}
                       style={({ pressed }) => [
                         styles.secondaryTextButton,
@@ -1055,7 +1055,7 @@ export default function NewTripScreen() {
                       onPress={() => setOrigin(null)}
                     >
                       <Text style={styles.secondaryTextButtonLabel}>
-                        Clear origin
+                        {strings.newTrip.originClear}
                       </Text>
                     </Pressable>
                   ) : null}
@@ -1093,7 +1093,7 @@ export default function NewTripScreen() {
                       styles.sectionTitle
                     }
                   >
-                    Travel dates
+                    {strings.newTrip.travelDates}
                   </Text>
                 </View>
 
@@ -1103,7 +1103,7 @@ export default function NewTripScreen() {
                   }
                 >
                   <CalendarDateField
-                    label="START DATE"
+                    label={strings.newTrip.startDate}
                     value={startDate}
                     fallbackDate={
                       endDate
@@ -1115,7 +1115,7 @@ export default function NewTripScreen() {
                   />
 
                   <CalendarDateField
-                    label="END DATE"
+                    label={strings.newTrip.endDate}
                     value={endDate}
                     fallbackDate={
                       startDate
@@ -1133,7 +1133,7 @@ export default function NewTripScreen() {
               <>
                 <View style={styles.reviewCard}>
                   <Text style={styles.reviewEyebrow}>
-                    READY TO CREATE
+                    {strings.newTrip.readyToCreate}
                   </Text>
                   <Text style={styles.reviewTitle}>
                     {title.trim() || tripNamePlaceholder}
@@ -1151,7 +1151,7 @@ export default function NewTripScreen() {
                   <Text style={styles.reviewMeta}>
                     {startDate && endDate
                       ? `${formatCalendarDateForDisplay(startDate, REVIEW_DATE_FORMAT)} → ${formatCalendarDateForDisplay(endDate, REVIEW_DATE_FORMAT)}`
-                      : 'Dates incomplete'}
+                      : strings.newTrip.datesIncomplete}
                     {' · '}
                     {currency}
                   </Text>
@@ -1178,7 +1178,7 @@ export default function NewTripScreen() {
                         styles.sectionTitle
                       }
                     >
-                      Shape the journey
+                      {strings.newTrip.shapeTitle}
                     </Text>
 
                     <Text
@@ -1186,7 +1186,7 @@ export default function NewTripScreen() {
                         styles.sectionDescription
                       }
                     >
-                      Optional. Choose what matters most for this trip and how full you want the days to feel.
+                      {strings.newTrip.shapeBody}
                     </Text>
                   </View>
 
@@ -1392,7 +1392,7 @@ export default function NewTripScreen() {
                         styles.helperText
                       }
                     >
-                      Planning context only. Does not create traveler profiles.
+                      {strings.newTrip.partyNote}
                     </Text>
                     <View
                       style={
@@ -1453,7 +1453,7 @@ export default function NewTripScreen() {
                     </View>
                     <Field
                       label="PARTY SIZE · OPTIONAL"
-                      placeholder="e.g. 2"
+                      placeholder={strings.newTrip.partySizePlaceholder}
                       value={partySizeText}
                       disabled={isSaving}
                       keyboardType="number-pad"
@@ -1486,7 +1486,7 @@ export default function NewTripScreen() {
                         styles.sectionTitle
                       }
                     >
-                      Trip details
+                      {strings.newTrip.tripDetails}
                     </Text>
                   </View>
 
@@ -1509,7 +1509,7 @@ export default function NewTripScreen() {
                   >
                     <Field
                       label="TRIP CURRENCY"
-                      placeholder="EUR"
+                      placeholder={strings.newTrip.currencyPlaceholder}
                       value={currency}
                       disabled={isSaving}
                       maxLength={3}
@@ -1524,7 +1524,7 @@ export default function NewTripScreen() {
                         styles.helperText
                       }
                     >
-                      Used for your budget and trip totals. Expenses can still use the currency you paid.
+                      {strings.newTrip.currencyNote}
                     </Text>
                   </View>
 
@@ -1535,7 +1535,7 @@ export default function NewTripScreen() {
                   >
                     <Field
                       label="PLANNED BUDGET · OPTIONAL"
-                      placeholder="e.g. 1200"
+                      placeholder={strings.newTrip.budgetPlaceholder}
                       value={plannedBudgetAmount}
                       disabled={isSaving}
                       keyboardType="decimal-pad"
@@ -1549,7 +1549,7 @@ export default function NewTripScreen() {
                         styles.helperText
                       }
                     >
-                      Saved only when you enter an amount with the trip currency above. Leave blank to skip.
+                      {strings.newTrip.budgetNote}
                     </Text>
                   </View>
                 </View>
@@ -1575,7 +1575,7 @@ export default function NewTripScreen() {
         {step !== 'finish' ? (
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Continue"
+            accessibilityLabel={strings.newTrip.continue}
             disabled={
               isSaving ||
               (step === 'where' && !canAdvanceWhere) ||
@@ -1596,7 +1596,7 @@ export default function NewTripScreen() {
                 styles.createButtonText
               }
             >
-              Continue
+              {strings.newTrip.continue}
             </Text>
             <Ionicons
               name="arrow-forward"
@@ -1609,7 +1609,7 @@ export default function NewTripScreen() {
         ) : (
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Create trip"
+            accessibilityLabel={strings.newTrip.createTrip}
             disabled={
               isSaving ||
               !isReady
@@ -1632,8 +1632,8 @@ export default function NewTripScreen() {
               }
             >
               {isSaving
-                ? 'Creating trip…'
-                : 'Create trip'}
+                ? strings.newTrip.creatingTrip
+                : strings.newTrip.createTrip}
             </Text>
 
             {!isSaving ? (
@@ -1652,7 +1652,7 @@ export default function NewTripScreen() {
         !canAdvanceWhere &&
         !isSaving ? (
           <Text style={styles.ctaHint}>
-            Choose a destination to continue — or{' '}
+            {strings.newTrip.needDestination} — {' '}
             <Text
               accessibilityRole="link"
               style={styles.ctaHintLink}
@@ -1660,7 +1660,7 @@ export default function NewTripScreen() {
                 router.push('/travel-chat')
               }
             >
-              Help me decide
+              {strings.newTrip.helpMeDecide}
             </Text>
             .
           </Text>
@@ -1672,7 +1672,7 @@ export default function NewTripScreen() {
           <Text
             style={styles.ctaHint}
           >
-            Choose start and end dates to continue.
+            {strings.newTrip.needDates}
           </Text>
         ) : null}
         </View>

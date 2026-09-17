@@ -15,6 +15,7 @@ import {
   radius,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 type NoticeStatus = Exclude<
   LocationSelectionOutcome['status'],
@@ -70,13 +71,13 @@ export function LocationSearchNotice({
 
         <Text style={styles.title}>
           {unavailable
-            ? 'Map could not open'
-            : 'No location saved'}
+            ? strings.locationNotice.unavailableTitle
+            : strings.locationNotice.dismissedTitle}
         </Text>
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Dismiss location message"
+          accessibilityLabel={strings.locationNotice.dismissLabel}
           hitSlop={10}
           onPress={onDismiss}
         >
@@ -91,26 +92,27 @@ export function LocationSearchNotice({
       <Text style={styles.body}>
         {unavailable
           ? reason
-          : 'You closed the map without choosing a place, so nothing changed.'}
+          : strings.locationNotice.dismissedBody}
       </Text>
 
       {unavailable ? null : (
         <Text style={styles.hint}>
-          If the search stayed empty while you typed, place search may not be
-          available in this build. TravelOS will not guess a location for you.
+          {strings.locationNotice.dismissedHint}
         </Text>
       )}
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Open the map again"
+        accessibilityLabel={strings.locationNotice.retryLabel}
         style={({ pressed }) => [
           styles.retry,
           pressed && styles.pressed,
         ]}
         onPress={onRetry}
       >
-        <Text style={styles.retryText}>Open the map again</Text>
+        <Text style={styles.retryText}>
+          {strings.locationNotice.retry}
+        </Text>
       </Pressable>
     </View>
   );

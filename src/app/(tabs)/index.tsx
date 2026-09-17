@@ -50,6 +50,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 function formatTripDates(trip: Trip): string {
   const startLabel = formatCalendarDateForDisplay(
@@ -258,7 +259,7 @@ export default function HomeScreen() {
 
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Open profile"
+            accessibilityLabel={strings.home.openProfile}
             style={styles.profileButton}
             onPress={() => router.push('/profile')}
           >
@@ -309,8 +310,8 @@ export default function HomeScreen() {
 
             <Text style={styles.heroGreeting}>
               {featuredPhase === 'active'
-                ? 'You are on the journey.'
-                : 'Your next trip is waiting.'}
+                ? strings.home.heroOnJourney
+                : strings.home.heroUpcoming}
             </Text>
 
             <View style={styles.heroContent}>
@@ -320,7 +321,7 @@ export default function HomeScreen() {
                       featured.trip,
                       featured.runtime,
                     )
-                  : 'Destination not set'}
+                  : strings.home.heroNoDestination}
               </Text>
 
               <Text
@@ -345,8 +346,8 @@ export default function HomeScreen() {
             <View style={styles.heroFooter}>
               <Text style={styles.heroFooterText}>
                 {featuredPhase === 'active'
-                  ? 'Open Companion'
-                  : 'Continue planning'}
+                  ? strings.home.heroOpenCompanion
+                  : strings.home.heroContinuePlanning}
               </Text>
               <View style={styles.heroArrow}>
                 <Ionicons
@@ -360,7 +361,7 @@ export default function HomeScreen() {
 
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Open Trip Copilot"
+            accessibilityLabel={strings.home.openCopilot}
             style={styles.copilotDoor}
             onPress={() =>
               router.push({
@@ -376,7 +377,7 @@ export default function HomeScreen() {
             />
             <View style={styles.copilotDoorCopy}>
               <Text style={styles.copilotDoorTitle}>
-                Trip Copilot
+                {strings.home.copilotDoorTitle}
               </Text>
               <Text style={styles.copilotDoorBody}>
                 Επόμενα χρήσιμα βήματα από τα αποθηκευμένα
@@ -409,7 +410,7 @@ export default function HomeScreen() {
 
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Help me decide with TravelOS chat"
+            accessibilityLabel={strings.home.helpMeDecideChat}
             style={styles.primaryButton}
             onPress={() =>
               router.push('/travel-chat')
@@ -427,7 +428,7 @@ export default function HomeScreen() {
 
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Create a trip"
+            accessibilityLabel={strings.home.createTrip}
             style={styles.secondaryButton}
             onPress={() => router.push('/new-trip')}
           >
@@ -443,7 +444,7 @@ export default function HomeScreen() {
 
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Import bookings or files"
+            accessibilityLabel={strings.home.importBookings}
             style={styles.importRow}
             onPress={() =>
               router.push('/import' as Href)
@@ -474,7 +475,7 @@ export default function HomeScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Browse Discover catalogue"
+            accessibilityLabel={strings.home.browseDiscover}
             style={styles.tertiaryLink}
             onPress={() =>
               router.push('/discover/find-destination')
@@ -543,7 +544,7 @@ export default function HomeScreen() {
 
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Open trips"
+            accessibilityLabel={strings.home.openTrips}
             containerStyle={styles.statCardContainer}
             style={styles.statCard}
             onPress={() => router.push('/trips')}
@@ -577,10 +578,10 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionEyebrow}>
-                BEFORE YOU GO
+                {strings.home.readinessEyebrow}
               </Text>
               <Text style={styles.sectionTitle}>
-                Trip readiness
+                {strings.home.readinessTitle}
               </Text>
             </View>
           </View>
@@ -630,20 +631,20 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionEyebrow}>
-                TRIPS
+                {strings.home.tripsEyebrow}
               </Text>
               <Text style={styles.sectionTitle}>
-                Recent
+                {strings.home.tripsTitle}
               </Text>
             </View>
 
             <PressableScale
               accessibilityRole="button"
-              accessibilityLabel="See all trips"
+              accessibilityLabel={strings.home.tripsSeeAllLabel}
               onPress={() => router.push('/trips')}
             >
               <Text style={styles.sectionAction}>
-                See all
+                {strings.home.tripsSeeAll}
               </Text>
             </PressableScale>
           </View>
@@ -686,10 +687,10 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionEyebrow}>
-              EXPLORE
+              {strings.home.exploreEyebrow}
             </Text>
             <Text style={styles.sectionTitle}>
-              More doors
+              {strings.home.exploreTitle}
             </Text>
           </View>
         </View>
@@ -697,7 +698,7 @@ export default function HomeScreen() {
         <View style={styles.actionGrid}>
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Open Discover"
+            accessibilityLabel={strings.home.discoverLabel}
             containerStyle={styles.actionCardContainer}
             style={styles.actionCard}
             onPress={() => router.push('/discover')}
@@ -710,7 +711,7 @@ export default function HomeScreen() {
               />
             </View>
             <Text style={styles.actionTitle}>
-              Discover
+              {strings.home.discoverTitle}
             </Text>
             <Text style={styles.actionDescription}>
               Grounded ιδέες για το επόμενο ταξίδι.
@@ -719,7 +720,7 @@ export default function HomeScreen() {
 
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Ask TravelOS chat"
+            accessibilityLabel={strings.home.chatLabel}
             containerStyle={styles.actionCardContainer}
             style={styles.actionCard}
             onPress={() => router.push('/travel-chat')}
@@ -743,7 +744,7 @@ export default function HomeScreen() {
         <View style={[styles.actionGrid, { marginTop: spacing[3] }]}>
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Open World"
+            accessibilityLabel={strings.home.openWorld}
             containerStyle={styles.actionCardContainer}
             style={styles.actionCard}
             onPress={() => router.push('/world')}
@@ -793,7 +794,7 @@ export default function HomeScreen() {
                   </Text>
                   <PressableScale
                     accessibilityRole="button"
-                    accessibilityLabel="Continue to organize path"
+                    accessibilityLabel={strings.home.continueOrganize}
                     style={styles.primaryButton}
                     onPress={() => setFirstRunStep('organize')}
                   >
@@ -803,7 +804,7 @@ export default function HomeScreen() {
                   </PressableScale>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Open Travel Chat now"
+                    accessibilityLabel={strings.home.openTravelChat}
                     style={styles.tertiaryLink}
                     onPress={() => {
                       void finishFirstRun().then(() => {
@@ -831,7 +832,7 @@ export default function HomeScreen() {
                   </Text>
                   <PressableScale
                     accessibilityRole="button"
-                    accessibilityLabel="Finish first-run coach"
+                    accessibilityLabel={strings.home.finishCoach}
                     style={styles.primaryButton}
                     onPress={() => {
                       void finishFirstRun();
@@ -843,7 +844,7 @@ export default function HomeScreen() {
                   </PressableScale>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Create a trip now"
+                    accessibilityLabel={strings.home.createTripNow}
                     style={styles.tertiaryLink}
                     onPress={() => {
                       void finishFirstRun().then(() => {

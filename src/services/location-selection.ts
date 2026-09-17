@@ -2,6 +2,7 @@ import type {
   PickLocationOptions,
   PickLocationResult,
 } from 'expo-location-picker';
+import { strings } from '../i18n';
 
 /**
  * Explicit outcome of one native location-picker presentation.
@@ -28,7 +29,7 @@ export type LocationSelectionOutcome =
     };
 
 export const LOCATION_PICKER_UNAVAILABLE_REASON =
-  'The map could not be opened. Nothing was changed.';
+  strings.locationNotice.pickerUnavailable;
 
 type PickLocationFn = (
   options?: PickLocationOptions,

@@ -286,7 +286,10 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 - [x] **Origin field copy** — `DestinationPickerField` takes a `role`, and the Create Trip origin no longer asks "Where are you going?" or offers "Choose destination". Android-verified.
 - [ ] **Report the real provider error, not just the possibility.** Places returned `9011 blocked` and the traveller saw an empty result list with no message. The failure is swallowed inside `expo-location-picker`, which owns the search UI, so this needs either a wrapper that reports the module's error state or a replacement picker. Contract requires explicit error states.
 - [ ] **Unblock native picker verification.** Add `com.travelos.app.hardening` plus its debug SHA-1 to a development-restricted Maps key, or build the hardening variant with the production package identity, so the picker and map tiles can be tested outside the production app.
-- [ ] **Decide the product language.** Greek and English currently mix inside single screens. Pick one, or introduce real localisation.
+- [x] **Greek copy, phase 1** — string catalogue at `src/i18n`, then both tab bars, Home, Trips, Create Trip, the shared destination picker and the location notice. Trip status badges no longer render the raw enum. Android-verified. This reverses the "copy stays English in V1" note in `locale-format.ts`.
+- [ ] **Greek copy, phase 2: Trip Space** — Companion, Plan, Map, Bookings, More, Budget, Details, Accommodation, Travelers, Memories, Travel Book.
+- [ ] **Greek copy, phase 3** — Discover, World, Profile, Travel DNA, import and chat.
+- [ ] Update the `locale-format.ts` header once every phase lands, so the file no longer claims English copy.
 - [ ] Style the native date and time pickers, or wrap them, so they stop rendering Material teal against the warm palette.
 - [x] **Raw ISO dates out of Create Trip** — the `CalendarDateField` echo now appears only for a non-canonical value, where it is the diagnostic rather than noise, and the step 3 review card formats its range. Android-verified.
 - [x] **Trip Copilot facts card dates** — `summarizeTripEvidencePack` formats its range instead of interpolating stored keys. Two tests, Android-verified.

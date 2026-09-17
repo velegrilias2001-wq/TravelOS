@@ -6,6 +6,7 @@ import {
 } from '@/features/navigation/use-travelos-tab-bar-style';
 import { TabBarIcon } from '@/features/motion/tab-bar-icon';
 import { colors } from '@/theme';
+import { strings } from '@/i18n';
 
 export default function MainTabsLayout() {
   const tabBarStyle = useTravelOSTabBarStyle();
@@ -29,7 +30,7 @@ export default function MainTabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: strings.tabs.home,
 
           tabBarIcon: ({
             color,
@@ -52,7 +53,7 @@ export default function MainTabsLayout() {
       <Tabs.Screen
         name="trips"
         options={{
-          title: 'Trips',
+          title: strings.tabs.trips,
 
           tabBarIcon: ({
             color,
@@ -75,7 +76,7 @@ export default function MainTabsLayout() {
       <Tabs.Screen
         name="discover"
         options={{
-          title: 'Discover',
+          title: strings.tabs.discover,
 
           tabBarIcon: ({
             color,
@@ -98,7 +99,7 @@ export default function MainTabsLayout() {
       <Tabs.Screen
         name="world"
         options={{
-          title: 'World',
+          title: strings.tabs.world,
 
           tabBarIcon: ({
             color,
@@ -121,7 +122,7 @@ export default function MainTabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: strings.tabs.profile,
 
           tabBarIcon: ({
             color,

@@ -45,6 +45,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 type DestinationDisplayValue = Pick<
   TripDestination,
@@ -90,30 +91,28 @@ interface PickerCopy {
 
 const PICKER_COPY: Record<PickerRole, PickerCopy> = {
   destination: {
-    prompt: 'WHERE ARE YOU GOING?',
-    placeholder: 'Choose a city, region or country',
-    choose: 'Choose destination',
-    add: 'Add destination',
-    replace: 'Replace map location',
-    addMap: 'Add map location',
-    done: 'Use destination',
-    searchPlaceholder: 'Search cities, regions or countries…',
-    help: 'Add a real location to place this destination on your trip map.',
-    saveFailed:
-      'The chosen location could not be saved. Your destination is unchanged.',
+    prompt: strings.picker.destinationPrompt,
+    placeholder: strings.picker.destinationPlaceholder,
+    choose: strings.picker.destinationChoose,
+    add: strings.picker.destinationAdd,
+    replace: strings.picker.destinationReplace,
+    addMap: strings.picker.addMap,
+    done: strings.picker.destinationDone,
+    searchPlaceholder: strings.picker.searchPlaceholder,
+    help: strings.picker.destinationHelp,
+    saveFailed: strings.picker.destinationSaveFailed,
   },
   origin: {
-    prompt: 'WHERE ARE YOU LEAVING FROM?',
-    placeholder: 'Choose the place you travel from',
-    choose: 'Choose origin',
-    add: 'Add origin',
-    replace: 'Replace origin location',
-    addMap: 'Add map location',
-    done: 'Use origin',
-    searchPlaceholder: 'Search cities, regions or countries…',
-    help: 'Add a real location to keep this origin on the map. It stays picker facts only.',
-    saveFailed:
-      'The chosen location could not be saved. Your origin is unchanged.',
+    prompt: strings.picker.originPrompt,
+    placeholder: strings.picker.originPlaceholder,
+    choose: strings.picker.originChoose,
+    add: strings.picker.originAdd,
+    replace: strings.picker.originReplace,
+    addMap: strings.picker.addMap,
+    done: strings.picker.originDone,
+    searchPlaceholder: strings.picker.searchPlaceholder,
+    help: strings.picker.originHelp,
+    saveFailed: strings.picker.originSaveFailed,
   },
 };
 
@@ -140,22 +139,22 @@ function timezoneSourceLabel(
   source: DestinationDisplayValue['timezoneSource'],
 ): string {
   if (source === 'provider') {
-    return 'From the map provider';
+    return strings.picker.sourceProvider;
   }
 
   if (source === 'catalogue') {
-    return 'From the catalogue';
+    return strings.picker.sourceCatalogue;
   }
 
   if (source === 'traveler') {
-    return 'Set by you';
+    return strings.picker.sourceTraveler;
   }
 
-  return 'Saved timezone';
+  return strings.picker.sourceSaved;
 }
 
 export function DestinationPickerField({
-  label = 'DESTINATION',
+  label = strings.newTrip.destinationLabel,
   destination,
   onSelect,
   onTimeZoneChange,
@@ -193,7 +192,7 @@ export function DestinationPickerField({
       {
         title: variant === 'add' ? copy.add : copy.choose,
         doneButtonTitle: copy.done,
-        cancelButtonTitle: 'Cancel',
+        cancelButtonTitle: strings.picker.cancel,
         searchPlaceholder: copy.searchPlaceholder,
         initialRadiusMeters: 120_000,
         disableCurrentLocation: true,
@@ -289,7 +288,7 @@ export function DestinationPickerField({
           color={colors.textInverse}
         />
         <Text style={styles.actionText}>
-          {isPicking ? 'Opening map…' : actionLabel}
+          {isPicking ? strings.picker.openingMap : actionLabel}
         </Text>
       </Pressable>
 
@@ -338,7 +337,7 @@ export function DestinationPickerField({
           <View style={styles.copy}>
             <Text style={styles.stateLabel}>
               {destination
-                ? 'MAP LOCATION'
+                ? strings.picker.mapLocationLabel
                 : copy.prompt}
             </Text>
 
@@ -377,8 +376,8 @@ export function DestinationPickerField({
               ]}
             >
               {isMapped
-                ? 'Map location saved'
-                : 'Map location not added'}
+                ? strings.picker.mapSaved
+                : strings.picker.mapNotAdded}
             </Text>
           </View>
         )}
@@ -387,23 +386,23 @@ export function DestinationPickerField({
           <View style={styles.timezoneRow}>
             <View style={styles.timezoneCopy}>
               <Text style={styles.timezoneLabel}>
-                TIMEZONE
+                {strings.picker.timezoneLabel}
               </Text>
               <Text style={styles.timezoneValue}>
-                {destination.timezone ?? 'Unknown'}
+                {destination.timezone ?? strings.picker.timezoneUnknown}
               </Text>
               <Text style={styles.timezoneSource}>
                 {destination.timezone
                   ? timezoneSourceLabel(
                       destination.timezoneSource,
                     )
-                  : 'Not guessed from the map pin'}
+                  : strings.picker.timezoneNotGuessed}
               </Text>
             </View>
             {onTimeZoneChange ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Set timezone"
+                accessibilityLabel={strings.picker.timezoneSetLabel}
                 disabled={disabled}
                 style={({ pressed }) => [
                   styles.timezoneAction,
@@ -418,7 +417,9 @@ export function DestinationPickerField({
                 }}
               >
                 <Text style={styles.timezoneActionText}>
-                  {destination.timezone ? 'Change' : 'Set'}
+                  {destination.timezone
+                    ? strings.picker.timezoneChange
+                    : strings.picker.timezoneSet}
                 </Text>
               </Pressable>
             ) : null}
@@ -444,7 +445,7 @@ export function DestinationPickerField({
           />
           <Text style={styles.actionText}>
             {isPicking
-              ? 'Opening map…'
+              ? strings.picker.openingMap
               : actionLabel}
           </Text>
         </Pressable>
@@ -476,10 +477,10 @@ export function DestinationPickerField({
             onPress={() => undefined}
           >
             <Text style={styles.timezoneSheetTitle}>
-              City timezone
+              {strings.picker.timezoneSheetTitle}
             </Text>
             <Text style={styles.timezoneSheetBody}>
-              Use a real IANA timezone. TravelOS will not guess one from coordinates.
+              {strings.picker.timezoneSheetBody}
             </Text>
             {COMMON_TIME_ZONES.map((zone) => (
               <Pressable
@@ -500,7 +501,7 @@ export function DestinationPickerField({
             <TextInput
               value={customTimeZone}
               onChangeText={setCustomTimeZone}
-              placeholder="Europe/Lisbon"
+              placeholder="Europe/Athens"
               autoCapitalize="none"
               autoCorrect={false}
               style={styles.timezoneInput}
@@ -508,19 +509,19 @@ export function DestinationPickerField({
             <View style={styles.timezoneSheetActions}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Clear timezone"
+                accessibilityLabel={strings.picker.timezoneClearLabel}
                 onPress={() => {
                   onTimeZoneChange?.(null);
                   setTimezoneOpen(false);
                 }}
               >
                 <Text style={styles.timezoneClearText}>
-                  Clear
+                  {strings.picker.timezoneClear}
                 </Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Save timezone"
+                accessibilityLabel={strings.picker.timezoneSaveLabel}
                 style={styles.timezoneSave}
                 onPress={() => {
                   const value = customTimeZone.trim();
@@ -530,8 +531,8 @@ export function DestinationPickerField({
                     !isValidIanaTimeZone(value)
                   ) {
                     Alert.alert(
-                      'Timezone not recognized',
-                      'Enter a valid IANA timezone such as Europe/Lisbon.',
+                      strings.picker.timezoneInvalidTitle,
+                      strings.picker.timezoneInvalidBody,
                     );
                     return;
                   }
@@ -541,7 +542,7 @@ export function DestinationPickerField({
                 }}
               >
                 <Text style={styles.timezoneSaveText}>
-                  Save
+                  {strings.picker.timezoneSave}
                 </Text>
               </Pressable>
             </View>

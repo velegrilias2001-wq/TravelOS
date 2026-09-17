@@ -762,6 +762,22 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### Greek copy, phase 1 — 2026-09-17
+
+**This reverses a recorded decision.** `locale-format.ts` documented "Copy stays English in V1; only formatting follows the device. RTL / string catalogs are deferred." The Greek already in the app was drift against that, not the intent. The product decision is now Greek, with a string catalogue.
+
+- `src/i18n/el.ts` holds the Greek copy; `src/i18n/index.ts` exports it as `strings`. Screens read typed properties (`strings.trips.title`), not string keys, so a missing or renamed entry fails `tsc` instead of rendering an empty label.
+- The catalogue is for traveller-facing copy only. Log messages, AI prompts, provider payloads and canonical domain values stay as they are.
+- `src/i18n/**` is in the test build, and `location-selection.ts` imports it relatively (`../i18n`), because the `@/` alias is not resolved at runtime there.
+
+**Translated in this phase:** both tab bars, Home, Trips, Create Trip (all three steps, option catalogues, alerts, placeholders, hints), the shared `DestinationPickerField` for both roles, and `LocationSearchNotice`.
+
+Trip status badges previously rendered `trip.status.toUpperCase()` — the canonical enum value straight into the UI. They now go through a label map, so the domain value no longer leaks to the traveller.
+
+Android-verified on 2026-09-17: tab bar reads Αρχική / Ταξίδια / Ανακάλυψε / Κόσμος / Προφίλ, Trips and Create Trip step 1 are fully Greek including the picker card. Checks: `tsc`, 453 tests, lint 48 warnings unchanged, `git diff --check`.
+
+**Not yet translated:** the Trip Space screens (Companion, Plan, Map, Bookings, More, Budget, Details, Accommodation, Travelers, Memories, Travel Book), Discover, World, Profile, Travel DNA, import and chat. Those remain English and are the next phases.
+
 ### Copilot facts card dates — 2026-09-17
 
 `summarizeTripEvidencePack` interpolated `pack.startDate` and `pack.endDate` directly, so the Trip Copilot "ΑΠΟΘΗΚΕΥΜΕΝΑ FACTS" card printed an ISO range. Both ends now go through `formatCalendarDateForDisplay`, which also degrades to "Saved date needs review" rather than showing a broken key. The summary has exactly one consumer, the Copilot card; it is not sent to any AI provider, so no prompt or parsing contract depends on the old shape.
