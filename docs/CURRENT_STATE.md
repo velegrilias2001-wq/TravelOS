@@ -778,7 +778,11 @@ Android-verified on 2026-09-19: the Discover tab, find-destination, World, Profi
 
 Checks: `tsc`, 453 tests, lint 48 warnings unchanged, `git diff --check`.
 
-**Remaining:** the `locale-format.ts` header still says "Copy stays English in V1"; that note is now wrong and should be corrected. Service-thrown error messages shown to travellers on unrecognised failures are still English, tracked separately.
+**Follow-up, done:** the `locale-format.ts` header no longer claims copy stays English. It now states plainly that copy comes from the `src/i18n` catalogue while `resolveDisplayLocale()` resolves a separate formatting locale from the device.
+
+**Open, surfaced by that correction:** copy language and formatting locale can disagree. On a device set to English the app renders Greek copy beside English-formatted dates like "Sep 20, 2026" — visible in every Android screenshot taken during the migration. Pinning `el-GR` would align them but would override the traveller's own device setting, so it is recorded as a decision, not applied.
+
+Service-thrown error messages shown to travellers on unrecognised failures are still English, tracked separately.
 
 ### Greek copy, phase 2b: Trip Space secondary screens — 2026-09-19
 
