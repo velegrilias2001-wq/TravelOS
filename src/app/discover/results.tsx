@@ -118,6 +118,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 type DiscoverExplanationState =
   | {
@@ -143,57 +144,57 @@ const INTENT_LABELS: Record<
   TripIntent,
   string
 > = {
-  relax: 'Relax',
-  explore: 'Explore',
-  food: 'Food',
-  nature: 'Nature',
-  event: 'Event',
-  social: 'Social',
-  romantic: 'Romantic',
-  family: 'Family',
-  work_leisure: 'Work + Leisure',
-  other: 'Other',
+  relax: strings.tripIntent.relax,
+  explore: strings.tripIntent.explore,
+  food: strings.tripIntent.food,
+  nature: strings.tripIntent.nature,
+  event: strings.tripIntent.event,
+  social: strings.tripIntent.social,
+  romantic: strings.tripIntent.romantic,
+  family: strings.tripParty.family,
+  work_leisure: strings.tripIntent.work_leisure,
+  other: strings.tripIntent.other,
 };
 
 const PACE_LABELS: Record<
   TripPace,
   string
 > = {
-  slow: 'Slow',
-  balanced: 'Balanced',
-  full: 'Full',
+  slow: strings.tripPace.slowLabel,
+  balanced: strings.tripPace.balancedLabel,
+  full: strings.tripPace.fullLabel,
 };
 
 const INTEREST_LABELS: Record<
   TravelInterest,
   string
 > = {
-  food: 'Food',
-  culture: 'Culture',
-  nature: 'Nature',
-  beaches: 'Beaches',
-  nightlife: 'Nightlife',
-  shopping: 'Shopping',
-  wellness: 'Wellness',
-  adventure: 'Adventure',
+  food: strings.tripIntent.food,
+  culture: strings.travelDna.interestCulture,
+  nature: strings.tripIntent.nature,
+  beaches: strings.travelDna.interestBeaches,
+  nightlife: strings.travelDna.interestNightlife,
+  shopping: strings.travelDna.interestShopping,
+  wellness: strings.travelDna.interestWellness,
+  adventure: strings.travelDna.interestAdventure,
 };
 
 const PARTY_LABELS: Record<
   TypicalTravelParty,
   string
 > = {
-  solo: 'Solo',
-  couple: 'Couple',
-  friends: 'Friends',
-  family: 'Family',
+  solo: strings.tripParty.solo,
+  couple: strings.tripParty.couple,
+  friends: strings.tripParty.friends,
+  family: strings.tripParty.family,
 };
 
 const STYLE_LABELS: Record<
   TravelStyle,
   string
 > = {
-  local: 'Local',
-  iconic: 'Iconic',
+  local: strings.travelDna.styleLocal,
+  iconic: strings.travelDna.styleIconic,
   mix: 'Mix',
 };
 
@@ -201,18 +202,18 @@ const BUDGET_STYLE_LABELS: Record<
   BudgetStyle,
   string
 > = {
-  value: 'Value',
-  comfortable: 'Comfortable',
-  premium: 'Premium',
+  value: strings.travelDna.budgetValue,
+  comfortable: strings.travelDna.budgetComfortable,
+  premium: strings.travelDna.budgetPremium,
 };
 
 const RHYTHM_LABELS: Record<
   DailyRhythm,
   string
 > = {
-  morning: 'Morning',
-  flexible: 'Flexible',
-  night: 'Night',
+  morning: strings.travelDna.rhythmMorning,
+  flexible: strings.discoverResults.flexible,
+  night: strings.travelDna.rhythmNight,
 };
 
 function sourceLabel(
@@ -491,7 +492,7 @@ export default function DiscoverResultsScreen() {
 
       if (current.length >= 3) {
         setCompareError(
-          'Compare up to three grounded destinations.',
+          strings.discoverResults.compareUpToThree,
         );
         return current;
       }
@@ -503,7 +504,7 @@ export default function DiscoverResultsScreen() {
   const openCompare = () => {
     if (!brief || compareIdentities.length < 2) {
       setCompareError(
-        'Select 2 or 3 destinations to compare.',
+        strings.discoverResults.compareSelectTwoOrThree,
       );
       return;
     }
@@ -520,7 +521,7 @@ export default function DiscoverResultsScreen() {
       setCompareError(
         error instanceof Error
           ? error.message
-          : 'Those destinations could not be compared.',
+          : strings.discoverResults.compareFailed,
       );
     }
   };
@@ -681,7 +682,7 @@ export default function DiscoverResultsScreen() {
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel={strings.discoverShared.goBack}
             style={
               styles.backButton
             }
@@ -703,19 +704,19 @@ export default function DiscoverResultsScreen() {
           </Text>
 
           <Text style={styles.title}>
-            No trip brief yet
+            {strings.discoverResults.noBriefTitle}
           </Text>
 
           <Text
             style={styles.subtitle}
           >
-            Go back and tell TravelOS what kind of trip you are looking for.
+            {strings.discoverResults.noBriefBody}
           </Text>
         </View>
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Return to Discover"
+          accessibilityLabel={strings.discoverResults.returnToDiscover}
           style={
             styles.primaryButton
           }
@@ -730,7 +731,7 @@ export default function DiscoverResultsScreen() {
               styles.primaryButtonText
             }
           >
-            Return to Discover
+            {strings.discoverResults.returnToDiscover}
           </Text>
         </Pressable>
       </Screen>
@@ -779,8 +780,8 @@ export default function DiscoverResultsScreen() {
           ]
             .filter(Boolean)
             .join(' · ') ||
-          'Flexible'
-        : 'Open';
+          strings.discoverResults.flexible
+        : strings.discoverResults.open;
 
   const timingSource:
     DiscoverPreferenceSource =
@@ -791,7 +792,7 @@ export default function DiscoverResultsScreen() {
   const budgetLabel =
     brief.budget
       ? `${brief.budget.maximumAmount} ${brief.budget.currency}`
-      : 'Open';
+      : strings.discoverResults.open;
 
   const toggleSaved = (
     identity: string,
@@ -933,7 +934,7 @@ export default function DiscoverResultsScreen() {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={strings.discoverShared.goBack}
           style={styles.backButton}
           onPress={() =>
             router.back()
@@ -951,11 +952,11 @@ export default function DiscoverResultsScreen() {
         </Text>
 
         <Text style={styles.title}>
-          Places that fit
+          {strings.discoverResults.title}
         </Text>
 
         <Text style={styles.subtitle}>
-          Real destinations ranked against the preferences TravelOS knows for this trip.
+          {strings.discoverResults.subtitle}
         </Text>
       </View>
 
@@ -974,7 +975,7 @@ export default function DiscoverResultsScreen() {
               styles.readyEyebrow
             }
           >
-            GROUNDED RESULTS
+            {strings.discoverResults.groundedEyebrow}
           </Text>
 
           <Text
@@ -982,7 +983,7 @@ export default function DiscoverResultsScreen() {
               styles.readyTitle
             }
           >
-            Ranked from real destination candidates
+            {strings.discoverResults.groundedTitle}
           </Text>
 
           <Text
@@ -990,7 +991,7 @@ export default function DiscoverResultsScreen() {
               styles.readyBody
             }
           >
-            These destinations come from the curated TravelOS catalogue. Explicit preference matching stays first. Semantic matches, when available, can only add other grounded catalogue places.
+            {strings.discoverResults.groundedBody}
           </Text>
         </View>
       </View>
@@ -1002,8 +1003,8 @@ export default function DiscoverResultsScreen() {
       >
         <SectionHeading
           eyebrow="DESTINATIONS"
-          title="Your best matches"
-          description="Choose any destination to carry it into New Trip. Nothing is created until you confirm it there."
+          title={strings.discoverResults.bestMatches}
+          description={strings.discoverResults.bestMatchesBody}
         />
 
         {!travelDNALoaded ? (
@@ -1087,8 +1088,8 @@ export default function DiscoverResultsScreen() {
         >
           <SectionHeading
             eyebrow="ALSO CLOSE"
-            title="Semantic matches"
-            description="Grounded catalogue destinations that are close to this trip brief in meaning. TravelOS did not invent these places."
+            title={strings.discoverResults.semanticTitle}
+            description={strings.discoverResults.semanticBody}
           />
 
           {semanticStatus ===
@@ -1114,7 +1115,7 @@ export default function DiscoverResultsScreen() {
                   styles.loadingHint
                 }
               >
-                Explicit ranking above stays available while this runs.
+                {strings.discoverResults.explicitStaysAvailable}
               </Text>
             </View>
           ) : semanticStatus ===
@@ -1129,14 +1130,14 @@ export default function DiscoverResultsScreen() {
                   styles.degradeTitle
                 }
               >
-                Semantic lane unavailable
+                {strings.discoverResults.semanticUnavailable}
               </Text>
               <Text
                 style={
                   styles.degradeBody
                 }
               >
-                Local retrieve could not run. Your explicit matches above are unchanged. Nothing was invented or saved.
+                {strings.discoverResults.semanticUnavailableBody}
               </Text>
             </View>
           ) : (
@@ -1215,18 +1216,18 @@ export default function DiscoverResultsScreen() {
       <View style={styles.section}>
         <SectionHeading
           eyebrow="TRIP BRIEF"
-          title="What you told TravelOS"
-          description="These are explicit choices for this specific trip."
+          title={strings.discoverResults.youToldTitle}
+          description={strings.discoverResults.youToldBody}
         />
 
         <SummaryRow
-          label="Timing"
+          label={strings.discoverResults.timing}
           value={timingLabel}
           source={timingSource}
         />
 
         <SummaryRow
-          label="Budget"
+          label={strings.discoverResults.budget}
           value={budgetLabel}
           source={
             brief.budget
@@ -1236,13 +1237,13 @@ export default function DiscoverResultsScreen() {
         />
 
         <SummaryRow
-          label="Primary intent"
+          label={strings.discoverResults.primaryIntent}
           value={
             brief.intent
               ? INTENT_LABELS[
                   brief.intent
                 ]
-              : 'Open'
+              : strings.discoverResults.open
           }
           source={
             brief.intent
@@ -1255,12 +1256,12 @@ export default function DiscoverResultsScreen() {
       <View style={styles.section}>
         <SectionHeading
           eyebrow="PERSONALIZATION"
-          title="What TravelOS used"
-          description="Trip-specific choices take priority. Travel DNA fills only gaps where you already saved a preference."
+          title={strings.discoverResults.usedTitle}
+          description={strings.discoverResults.usedBody}
         />
 
         <SummaryRow
-          label="Pace"
+          label={strings.discoverResults.pace}
           value={
             personalization.pace
               .value
@@ -1268,7 +1269,7 @@ export default function DiscoverResultsScreen() {
                   personalization
                     .pace.value
                 ]
-              : 'Open'
+              : strings.discoverResults.open
           }
           source={
             personalization.pace
@@ -1277,7 +1278,7 @@ export default function DiscoverResultsScreen() {
         />
 
         <SummaryRow
-          label="Interests"
+          label={strings.discoverResults.interests}
           value={
             personalization
               .interests.values
@@ -1291,7 +1292,7 @@ export default function DiscoverResultsScreen() {
                       ],
                   )
                   .join(', ')
-              : 'Open'
+              : strings.discoverResults.open
           }
           source={
             personalization
@@ -1300,7 +1301,7 @@ export default function DiscoverResultsScreen() {
         />
 
         <SummaryRow
-          label="Travel party"
+          label={strings.discoverResults.travelParty}
           value={
             personalization.party
               .value
@@ -1308,7 +1309,7 @@ export default function DiscoverResultsScreen() {
                   personalization
                     .party.value
                 ]
-              : 'Open'
+              : strings.discoverResults.open
           }
           source={
             personalization.party
@@ -1317,7 +1318,7 @@ export default function DiscoverResultsScreen() {
         />
 
         <SummaryRow
-          label="Travel style"
+          label={strings.discoverResults.travelStyle}
           value={
             personalization
               .travelStyle.value
@@ -1326,7 +1327,7 @@ export default function DiscoverResultsScreen() {
                     .travelStyle
                     .value
                 ]
-              : 'Open'
+              : strings.discoverResults.open
           }
           source={
             personalization
@@ -1335,7 +1336,7 @@ export default function DiscoverResultsScreen() {
         />
 
         <SummaryRow
-          label="Budget style"
+          label={strings.discoverResults.budgetStyle}
           value={
             personalization
               .budgetStyle.value
@@ -1344,7 +1345,7 @@ export default function DiscoverResultsScreen() {
                     .budgetStyle
                     .value
                 ]
-              : 'Open'
+              : strings.discoverResults.open
           }
           source={
             personalization
@@ -1353,7 +1354,7 @@ export default function DiscoverResultsScreen() {
         />
 
         <SummaryRow
-          label="Daily rhythm"
+          label={strings.discoverResults.dailyRhythm}
           value={
             personalization
               .dailyRhythm.value
@@ -1362,7 +1363,7 @@ export default function DiscoverResultsScreen() {
                     .dailyRhythm
                     .value
                 ]
-              : 'Open'
+              : strings.discoverResults.open
           }
           source={
             personalization
@@ -1386,7 +1387,7 @@ export default function DiscoverResultsScreen() {
               styles.nextEyebrow
             }
           >
-            CONTROL
+            {strings.discoverResults.controlEyebrow}
           </Text>
 
           <Text
@@ -1394,7 +1395,7 @@ export default function DiscoverResultsScreen() {
               styles.nextTitle
             }
           >
-            You stay in control
+            {strings.discoverResults.controlTitle}
           </Text>
 
           <Text
@@ -1402,7 +1403,7 @@ export default function DiscoverResultsScreen() {
               styles.nextBody
             }
           >
-            Choosing a destination only prepares New Trip. TravelOS will not save anything until you explicitly create the trip.
+            {strings.discoverResults.controlBody}
           </Text>
         </View>
       </View>
@@ -1420,7 +1421,7 @@ export default function DiscoverResultsScreen() {
           </Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Compare selected destinations"
+            accessibilityLabel={strings.discoverResults.compareSelected}
             disabled={compareIdentities.length < 2}
             style={({ pressed }) => [
               styles.compareBarButton,
@@ -1431,7 +1432,7 @@ export default function DiscoverResultsScreen() {
             onPress={openCompare}
           >
             <Text style={styles.compareBarButtonText}>
-              Compare
+              {strings.discoverResults.compare}
             </Text>
           </Pressable>
         </View>
@@ -1446,13 +1447,13 @@ export default function DiscoverResultsScreen() {
         <View style={styles.compareModalBackdrop}>
           <View style={styles.compareModalSheet}>
             <Text style={styles.compareModalEyebrow}>
-              TRADEOFF COMPARE
+              {strings.discoverResults.tradeoffEyebrow}
             </Text>
             <Text style={styles.compareModalTitle}>
-              Grounded catalogue only
+              {strings.discoverResults.groundedOnly}
             </Text>
             <Text style={styles.compareModalBody}>
-              Rows use your brief or Travel DNA. Empty catalogue evidence stays Unknown — nothing is invented.
+              {strings.discoverResults.tradeoffBody}
             </Text>
 
             {compareResult ? (
@@ -1463,7 +1464,7 @@ export default function DiscoverResultsScreen() {
                 <View>
                   <View style={styles.compareHeaderRow}>
                     <Text style={styles.compareDimCell}>
-                      Dimension
+                      {strings.discoverResults.dimension}
                     </Text>
                     {compareResult.columns.map((column) => (
                       <Text
@@ -1476,7 +1477,7 @@ export default function DiscoverResultsScreen() {
                   </View>
                   {compareResult.rows.length === 0 ? (
                     <Text style={styles.compareModalBody}>
-                      No active preference dimensions to compare.
+                      {strings.discoverResults.noDimensions}
                     </Text>
                   ) : (
                     compareResult.rows.map((row) => (
@@ -1498,10 +1499,10 @@ export default function DiscoverResultsScreen() {
                             style={styles.comparePlaceCell}
                           >
                             {cell.status === 'match'
-                              ? 'Match'
+                              ? strings.discoverResults.match
                               : cell.status === 'no_match'
-                                ? 'No match'
-                                : 'Unknown'}
+                                ? strings.discoverResults.noMatch
+                                : strings.discoverResults.unknown}
                           </Text>
                         ))}
                       </View>
@@ -1513,12 +1514,12 @@ export default function DiscoverResultsScreen() {
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Close compare"
+              accessibilityLabel={strings.discoverResults.closeCompare}
               style={styles.compareCloseButton}
               onPress={() => setCompareOpen(false)}
             >
               <Text style={styles.compareBarButtonText}>
-                Close
+                {strings.discoverResults.close}
               </Text>
             </Pressable>
           </View>
@@ -1567,7 +1568,7 @@ function DestinationMatchCard({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Choose ${destination.name}`}
+      accessibilityLabel={strings.discoverResults.chooseLabel(destination.name)}
       onPress={onChoose}
       style={({ pressed }) => [
         styles.destinationCard,
@@ -1587,8 +1588,8 @@ function DestinationMatchCard({
             }
           >
             {isSemantic
-              ? 'SEMANTIC MATCH'
-              : `MATCH #${rank}`}
+              ? strings.discoverResults.semanticMatch
+              : strings.discoverResults.matchRank(rank)}
           </Text>
 
           <Text
@@ -1646,7 +1647,7 @@ function DestinationMatchCard({
               styles.reasonsEyebrow
             }
           >
-            WHY IT FITS
+            {strings.discoverResults.whyItFits}
           </Text>
 
           <View
@@ -1701,7 +1702,7 @@ function DestinationMatchCard({
             styles.noReasonText
           }
         >
-          No explicit preference overlap yet. Add more trip preferences to refine the ranking.
+          {strings.discoverResults.noOverlap}
         </Text>
       )}
 
@@ -1725,7 +1726,7 @@ function DestinationMatchCard({
                   styles.reasonsEyebrow
                 }
               >
-                FROM THE CATALOGUE
+                {strings.discoverResults.fromCatalogue}
               </Text>
               <Text
                 style={
@@ -1755,12 +1756,12 @@ function DestinationMatchCard({
                 styles.explanationGuard
               }
             >
-              Paraphrase of catalogue facts only. Nothing was saved.
+              {strings.discoverResults.paraphraseNote}
             </Text>
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Ask TravelOS again why ${destination.name} fits`}
+              accessibilityLabel={strings.discoverResults.askAgainLabel(destination.name)}
               onPress={onAskExplanation}
               style={
                 styles.explainButton
@@ -1771,7 +1772,7 @@ function DestinationMatchCard({
                   styles.explainButtonText
                 }
               >
-                Ask again
+                {strings.discoverResults.askAgain}
               </Text>
             </Pressable>
           </View>
@@ -1788,11 +1789,11 @@ function DestinationMatchCard({
               styles.explanationError
             }
           >
-            TravelOS could not explain this from the catalogue. Nothing was saved.
+            {strings.discoverResults.explainFailed}
           </Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Retry explaining ${destination.name}`}
+            accessibilityLabel={strings.discoverResults.retryExplainLabel(destination.name)}
             onPress={onAskExplanation}
             style={
               styles.explainAskRow
@@ -1808,14 +1809,14 @@ function DestinationMatchCard({
                 styles.explainButtonText
               }
             >
-              Try again
+              {strings.discoverResults.tryAgain}
             </Text>
           </Pressable>
         </View>
       ) : (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Ask TravelOS why ${destination.name} fits`}
+          accessibilityLabel={strings.discoverResults.askWhyLabel(destination.name)}
           disabled={explaining}
           onPress={onAskExplanation}
           style={[
@@ -1842,8 +1843,8 @@ function DestinationMatchCard({
             }
           >
             {explaining
-              ? 'Asking TravelOS…'
-              : 'Ask TravelOS why it fits'}
+              ? strings.discoverResults.asking
+              : strings.discoverResults.askWhyItFits}
           </Text>
         </Pressable>
       )}
@@ -1852,8 +1853,8 @@ function DestinationMatchCard({
         accessibilityRole="button"
         accessibilityLabel={
           compareSelected
-            ? `Remove ${destination.name} from compare`
-            : `Add ${destination.name} to compare`
+            ? strings.discoverResults.removeFromCompareLabel(destination.name)
+            : strings.discoverResults.addToCompareLabel(destination.name)
         }
         accessibilityState={{ selected: compareSelected }}
         onPress={onToggleCompare}
@@ -1861,8 +1862,8 @@ function DestinationMatchCard({
       >
         <Text style={styles.explainButtonText}>
           {compareSelected
-            ? 'Selected for compare'
-            : 'Add to compare'}
+            ? strings.discoverResults.selectedForCompare
+            : strings.discoverResults.addToCompare}
         </Text>
       </Pressable>
 
@@ -1870,8 +1871,8 @@ function DestinationMatchCard({
         accessibilityRole="button"
         accessibilityLabel={
           saved
-            ? `Remove ${destination.name} from saved ideas`
-            : `Save ${destination.name} as an idea`
+            ? strings.a11y.removeFromSavedNamed(destination.name)
+            : strings.a11y.saveAsIdea(destination.name)
         }
         onPress={onToggleSaved}
         style={styles.explainButton}
@@ -1897,8 +1898,8 @@ function DestinationMatchCard({
               }
             >
               {saved
-                ? 'Remove from saved ideas'
-                : 'Save this idea'}
+                ? strings.discoverShared.removeFromSaved
+                : strings.discoverShared.saveIdea}
             </Text>
           </View>
         </BookmarkPulse>
@@ -1914,7 +1915,7 @@ function DestinationMatchCard({
             styles.chooseText
           }
         >
-          Choose destination
+          {strings.discoverResults.chooseDestination}
         </Text>
 
         <Ionicons

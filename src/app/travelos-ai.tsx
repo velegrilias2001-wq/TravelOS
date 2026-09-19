@@ -26,6 +26,7 @@ import {
   radius,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 type LoadStatus = 'loading' | 'ready' | 'error';
 
@@ -59,16 +60,16 @@ export default function TravelOsAiScreen() {
   // Local privacy controls must not wait for a cold or unreachable server.
   useEffect(() => {
     if (status !== 'ready' || !enabled) {
-      setHealthDetail('TravelOS AI is off on this device. Your saved trips still work.');
+      setHealthDetail(strings.travelOsAi.offNotice);
       return;
     }
     let active = true;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10_000);
-    setHealthDetail('Checking availability…');
+    setHealthDetail(strings.travelOsAi.checking);
     void probeCopilotHealth(controller.signal).then((health) => {
       if (active) {
-        setHealthDetail(`${health.status === 'ready' ? 'Ready' : 'Unavailable'} · ${health.detail}`);
+        setHealthDetail(`${health.status === 'ready' ? strings.travelOsAi.ready : strings.travelOsAi.unavailable} · ${health.detail}`);
       }
     }).finally(() => clearTimeout(timeout));
     return () => {
@@ -98,11 +99,11 @@ export default function TravelOsAiScreen() {
       <UtilityScreenHeader
         eyebrow="YOUR TRAVELOS"
         title="TravelOS AI"
-        subtitle="Grounded travel intelligence"
+        subtitle={strings.travelOsAi.subtitle}
         leading={
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Back to Profile"
+            accessibilityLabel={strings.travelOsAi.back}
             onPress={() => router.back()}
             style={styles.backButton}
           >
@@ -124,8 +125,8 @@ export default function TravelOsAiScreen() {
 
       {status === 'error' ? (
         <InlineError
-          title="Could not load AI settings"
-          body="Try again from Profile."
+          title={strings.travelOsAi.loadFailed}
+          body={strings.travelOsAi.loadFailedBody}
         />
       ) : null}
 
@@ -134,16 +135,14 @@ export default function TravelOsAiScreen() {
           <View style={styles.row}>
             <View style={styles.rowCopy}>
               <Text style={styles.rowTitle}>
-                Use TravelOS AI
+                {strings.travelOsAi.useAi}
               </Text>
               <Text style={styles.rowBody}>
-                Chat, Discover AI explanations and free-time advice.
-                Suggestions need your confirmation before they become
-                saved trip facts. Manual planning remains available.
+                {strings.travelOsAi.useAiBody}
               </Text>
             </View>
             <Switch
-              accessibilityLabel="Use TravelOS AI"
+              accessibilityLabel={strings.travelOsAi.useAi}
               value={enabled}
               disabled={isSaving}
               onValueChange={(value) => {
@@ -161,26 +160,14 @@ export default function TravelOsAiScreen() {
           ) : null}
 
           <Text style={styles.privacy}>
-            When you use AI, relevant context is sent to the TravelOS
-            server and its configured AI provider. Chat includes the
-            messages you enter. Discover may include your Travel DNA,
-            discovery preferences and catalogue places.
+            {strings.travelOsAi.privacyContext}
           </Text>
           <Text style={styles.privacy}>
-            Free-time advice may also include trip dates, itinerary
-            names, times and precise locations, booking titles, providers,
-            amounts and payment status, stay names, addresses and
-            check-in/out times, traveler counts and budget summaries.
-            Structured trip context excludes confirmation codes,
-            contact details and free-form notes. Avoid typing sensitive
-            information into chat.
+            {strings.travelOsAi.privacyFreeTime}
           </Text>
           <Text style={styles.privacy}>
-            Provider retention and processing depend on the configured
-            service; zero retention is not guaranteed. Turning AI off
-            blocks new AI requests, but cannot recall data already sent.
-            Online place lookup and directions are separate services.
-            Provider API keys stay on the server.
+            {strings.travelOsAi.privacyRetention}
+            {strings.travelOsAi.privacyServices}
           </Text>
         </View>
       ) : null}

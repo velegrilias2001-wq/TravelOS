@@ -312,7 +312,7 @@ function TripCard({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Open ${trip.title}`}
+      accessibilityLabel={strings.a11y.open(trip.title)}
       style={({ pressed }) => [
         styles.tripCard,
         pressed && styles.pressed,

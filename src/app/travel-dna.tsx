@@ -50,6 +50,7 @@ import {
   radius,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 type LoadStatus =
   | 'loading'
@@ -63,18 +64,18 @@ const PACE_OPTIONS: Array<{
 }> = [
   {
     value: 'slow',
-    label: 'Slow',
-    description: 'More breathing room',
+    label: strings.travelDna.paceSlow,
+    description: strings.travelDna.paceSlowBody,
   },
   {
     value: 'balanced',
-    label: 'Balanced',
-    description: 'A considered mix',
+    label: strings.travelDna.paceBalanced,
+    description: strings.travelDna.paceBalancedBody,
   },
   {
     value: 'full',
-    label: 'Full',
-    description: 'Make the most of each day',
+    label: strings.travelDna.paceFull,
+    description: strings.travelDna.paceFullBody,
   },
 ];
 
@@ -82,14 +83,14 @@ const INTEREST_OPTIONS: Array<{
   value: TravelInterest;
   label: string;
 }> = [
-  { value: 'food', label: 'Food' },
-  { value: 'culture', label: 'Culture' },
-  { value: 'nature', label: 'Nature' },
-  { value: 'beaches', label: 'Beaches' },
-  { value: 'nightlife', label: 'Nightlife' },
-  { value: 'shopping', label: 'Shopping' },
-  { value: 'wellness', label: 'Wellness' },
-  { value: 'adventure', label: 'Adventure' },
+  { value: 'food', label: strings.travelDna.interestFood },
+  { value: 'culture', label: strings.travelDna.interestCulture },
+  { value: 'nature', label: strings.travelDna.interestNature },
+  { value: 'beaches', label: strings.travelDna.interestBeaches },
+  { value: 'nightlife', label: strings.travelDna.interestNightlife },
+  { value: 'shopping', label: strings.travelDna.interestShopping },
+  { value: 'wellness', label: strings.travelDna.interestWellness },
+  { value: 'adventure', label: strings.travelDna.interestAdventure },
 ];
 
 const STYLE_OPTIONS: Array<{
@@ -99,18 +100,18 @@ const STYLE_OPTIONS: Array<{
 }> = [
   {
     value: 'local',
-    label: 'Local',
-    description: 'Neighbourhoods and local life',
+    label: strings.travelDna.styleLocal,
+    description: strings.travelDna.styleLocalBody,
   },
   {
     value: 'iconic',
-    label: 'Iconic',
-    description: 'The essential highlights',
+    label: strings.travelDna.styleIconic,
+    description: strings.travelDna.styleIconicBody,
   },
   {
     value: 'mix',
-    label: 'Mix',
-    description: 'A bit of both',
+    label: strings.travelDna.styleMix,
+    description: strings.travelDna.styleMixBody,
   },
 ];
 
@@ -121,18 +122,18 @@ const BUDGET_OPTIONS: Array<{
 }> = [
   {
     value: 'value',
-    label: 'Value',
-    description: 'Spend thoughtfully',
+    label: strings.travelDna.budgetValue,
+    description: strings.travelDna.budgetValueBody,
   },
   {
     value: 'comfortable',
-    label: 'Comfortable',
-    description: 'Balance value and comfort',
+    label: strings.travelDna.budgetComfortable,
+    description: strings.travelDna.budgetComfortableBody,
   },
   {
     value: 'premium',
-    label: 'Premium',
-    description: 'Prioritise the experience',
+    label: strings.travelDna.budgetPremium,
+    description: strings.travelDna.budgetPremiumBody,
   },
 ];
 
@@ -143,18 +144,18 @@ const RHYTHM_OPTIONS: Array<{
 }> = [
   {
     value: 'morning',
-    label: 'Morning',
-    description: 'Start earlier',
+    label: strings.travelDna.rhythmMorning,
+    description: strings.travelDna.rhythmMorningBody,
   },
   {
     value: 'flexible',
-    label: 'Flexible',
-    description: 'Let the day flow',
+    label: strings.travelDna.rhythmFlexible,
+    description: strings.travelDna.rhythmFlexibleBody,
   },
   {
     value: 'night',
-    label: 'Night',
-    description: 'Later starts, later finishes',
+    label: strings.travelDna.rhythmNight,
+    description: strings.travelDna.rhythmNightBody,
   },
 ];
 
@@ -162,10 +163,10 @@ const PARTY_OPTIONS: Array<{
   value: TypicalTravelParty;
   label: string;
 }> = [
-  { value: 'solo', label: 'Solo' },
-  { value: 'couple', label: 'Couple' },
-  { value: 'friends', label: 'Friends' },
-  { value: 'family', label: 'Family' },
+  { value: 'solo', label: strings.tripParty.solo },
+  { value: 'couple', label: strings.tripParty.couple },
+  { value: 'friends', label: strings.tripParty.friends },
+  { value: 'family', label: strings.tripParty.family },
 ];
 
 export default function TravelDNAScreen() {
@@ -319,8 +320,8 @@ export default function TravelDNAScreen() {
       });
 
       Alert.alert(
-        'Travel DNA saved',
-        'Your preferences are saved on this device.',
+        strings.travelDna.savedTitle,
+        strings.travelDna.savedBody,
       );
     } catch (error) {
       console.error(
@@ -329,8 +330,8 @@ export default function TravelDNAScreen() {
       );
 
       Alert.alert(
-        'Could not save',
-        'Your Travel DNA could not be saved. Please try again.',
+        strings.travelDna.saveFailed,
+        strings.travelDna.saveFailedBody,
       );
     } finally {
       setIsSaving(false);
@@ -341,9 +342,9 @@ export default function TravelDNAScreen() {
     return (
       <Screen>
         <UtilityScreenHeader
-          eyebrow="YOUR TRAVELOS"
-          title="Travel DNA"
-          subtitle="The preferences you choose for how you like to travel."
+          eyebrow={strings.profile.eyebrow}
+          title={strings.travelDna.title}
+          subtitle={strings.travelDna.subtitle}
           leading={<BackButton />}
         />
 
@@ -363,15 +364,15 @@ export default function TravelDNAScreen() {
     return (
       <Screen>
         <UtilityScreenHeader
-          eyebrow="YOUR TRAVELOS"
-          title="Travel DNA"
-          subtitle="The preferences you choose for how you like to travel."
+          eyebrow={strings.profile.eyebrow}
+          title={strings.travelDna.title}
+          subtitle={strings.travelDna.subtitle}
           leading={<BackButton />}
         />
 
         <InlineError
-          title="Travel DNA couldn't be opened."
-          body="Your saved data has not been changed."
+          title={strings.travelDna.openFailed}
+          body={strings.travelDna.unchanged}
           onRetry={() => {
             void loadProfile();
           }}
@@ -383,8 +384,8 @@ export default function TravelDNAScreen() {
   return (
     <Screen scroll>
       <UtilityScreenHeader
-        eyebrow="ΤΟ TRAVELOS ΣΟΥ"
-        title="Travel DNA"
+        eyebrow={strings.profile.eyebrow}
+        title={strings.travelDna.title}
         subtitle="Πες στο TravelOS πώς προτιμάς να ταξιδεύεις. Κάθε επιλογή μένει ρητή και επεξεργάσιμη."
         leading={<BackButton />}
       />
@@ -435,9 +436,9 @@ export default function TravelDNAScreen() {
       ) : null}
 
       <PreferenceSection
-        eyebrow="PACE"
-        title="How full should a trip feel?"
-        helper="Choose one, or leave it open."
+        eyebrow={strings.travelDna.paceEyebrow}
+        title={strings.travelDna.paceTitle}
+        helper={strings.travelDna.chooseOne}
       >
         <ChoiceColumn
           options={PACE_OPTIONS}
@@ -453,9 +454,9 @@ export default function TravelDNAScreen() {
       </PreferenceSection>
 
       <PreferenceSection
-        eyebrow="INTERESTS"
-        title="What usually pulls you in?"
-        helper="Choose as many as you like."
+        eyebrow={strings.travelDna.interestsEyebrow}
+        title={strings.travelDna.interestsTitle}
+        helper={strings.travelDna.chooseMany}
       >
         <ChipGrid
           options={INTEREST_OPTIONS}
@@ -465,9 +466,9 @@ export default function TravelDNAScreen() {
       </PreferenceSection>
 
       <PreferenceSection
-        eyebrow="TRAVEL STYLE"
-        title="Local life or iconic places?"
-        helper="Choose one, or leave it open."
+        eyebrow={strings.travelDna.styleEyebrow}
+        title={strings.travelDna.styleTitle}
+        helper={strings.travelDna.chooseOne}
       >
         <ChoiceColumn
           options={STYLE_OPTIONS}
@@ -483,9 +484,9 @@ export default function TravelDNAScreen() {
       </PreferenceSection>
 
       <PreferenceSection
-        eyebrow="BUDGET STYLE"
-        title="How do you like to spend?"
-        helper="This is a preference, not a trip budget."
+        eyebrow={strings.travelDna.budgetEyebrow}
+        title={strings.travelDna.budgetTitle}
+        helper={strings.travelDna.budgetNote}
       >
         <ChoiceColumn
           options={BUDGET_OPTIONS}
@@ -501,9 +502,9 @@ export default function TravelDNAScreen() {
       </PreferenceSection>
 
       <PreferenceSection
-        eyebrow="DAILY RHYTHM"
-        title="When does travel feel best?"
-        helper="Choose one, or leave it open."
+        eyebrow={strings.travelDna.rhythmEyebrow}
+        title={strings.travelDna.rhythmTitle}
+        helper={strings.travelDna.chooseOne}
       >
         <ChoiceColumn
           options={RHYTHM_OPTIONS}
@@ -519,9 +520,9 @@ export default function TravelDNAScreen() {
       </PreferenceSection>
 
       <PreferenceSection
-        eyebrow="TYPICAL PARTY"
-        title="Who do you usually travel with?"
-        helper="This can still vary from trip to trip."
+        eyebrow={strings.travelDna.partyEyebrow}
+        title={strings.travelDna.partyTitle}
+        helper={strings.travelDna.partyNote}
       >
         <ChipGrid
           options={PARTY_OPTIONS}
@@ -544,7 +545,7 @@ export default function TravelDNAScreen() {
       <View style={styles.saveArea}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Save Travel DNA"
+          accessibilityLabel={strings.travelDna.save}
           disabled={isSaving}
           style={({ pressed }) => [
             styles.saveButton,
@@ -570,7 +571,7 @@ export default function TravelDNAScreen() {
                 color={colors.textInverse}
               />
               <Text style={styles.saveText}>
-                Save Travel DNA
+                {strings.travelDna.save}
               </Text>
             </>
           )}
@@ -590,7 +591,7 @@ function BackButton() {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Back to Profile"
+      accessibilityLabel={strings.travelDna.back}
       style={({ pressed }) => [
         styles.backButton,
         pressed && styles.pressed,

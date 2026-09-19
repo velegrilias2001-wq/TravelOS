@@ -55,6 +55,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 export default function DiscoverBestTimeScreen() {
   const router = useRouter();
@@ -122,7 +123,7 @@ export default function DiscoverBestTimeScreen() {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={strings.discoverShared.goBack}
           style={styles.backButton}
           onPress={() => {
             if (selectedIdentity) {
@@ -141,15 +142,15 @@ export default function DiscoverBestTimeScreen() {
         </Pressable>
 
         <Text style={styles.eyebrow}>
-          DISCOVER
+          {strings.discoverTab.eyebrow}
         </Text>
 
         <Text style={styles.title}>
-          Best time to go
+          {strings.bestTime.title}
         </Text>
 
         <Text style={styles.subtitle}>
-          Choose a catalogue destination. TravelOS only shows months that a cited source supports, and never turns those months into trip dates.
+          {strings.bestTime.intro}
         </Text>
       </View>
 
@@ -202,8 +203,8 @@ function DestinationRow({
       accessibilityRole="button"
       accessibilityLabel={`${option.destination.name}. ${
         option.hasSeasonGuidance
-          ? 'Season guidance available'
-          : 'No season data yet'
+          ? strings.bestTime.seasonAvailable
+          : strings.bestTime.noSeasonData
       }`}
       style={({ pressed }) => [
         styles.destinationCard,
@@ -279,7 +280,9 @@ function BestTimeGuidance({
 
             <Text style={styles.guidanceBody}>
               {advice.yearRound
-                ? `Official tourism sources describe ${advice.destination.name} as visitable throughout the year. That is not a ranked best week, and it is not a trip date.`
+                ? strings.bestTime.yearRoundNote(
+          advice.destination.name,
+        )
                 : `Official tourism sources name ${formatDiscoverSupportedMonths(advice.supportedMonths)} as suitable months to visit ${advice.destination.name}. TravelOS does not invent a start or end date from that.`}
             </Text>
           </>
@@ -295,7 +298,7 @@ function BestTimeGuidance({
             <Pressable
               key={`${item.url}:${item.checkedAt}`}
               accessibilityRole="link"
-              accessibilityLabel={`Open cited source ${item.label}`}
+              accessibilityLabel={strings.a11y.openCitedSource(item.label)}
               style={({ pressed }) => [
                 styles.evidenceCard,
                 pressed && styles.pressed,
@@ -306,7 +309,7 @@ function BestTimeGuidance({
             >
               <View style={styles.evidenceCopy}>
                 <Text style={styles.evidenceEyebrow}>
-                  CITED SOURCE
+                  {strings.discoverShared.citedSource}
                 </Text>
 
                 <Text style={styles.evidenceTitle}>
@@ -329,7 +332,7 @@ function BestTimeGuidance({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Make this destination a trip"
+        accessibilityLabel={strings.bestTime.makeThisATrip}
         style={({ pressed }) => [
           styles.primaryButton,
           pressed && styles.pressed,
@@ -338,11 +341,11 @@ function BestTimeGuidance({
       >
         <View>
           <Text style={styles.primaryButtonEyebrow}>
-            MAKE IT A TRIP
+            {strings.discoverShared.makeItATrip}
           </Text>
 
           <Text style={styles.primaryButtonText}>
-            Open Create Trip with this destination
+            {strings.bestTime.openCreateTrip}
           </Text>
         </View>
 
@@ -357,8 +360,8 @@ function BestTimeGuidance({
         accessibilityRole="button"
         accessibilityLabel={
           saved
-            ? 'Remove this destination from saved ideas'
-            : 'Save this destination idea'
+            ? strings.bestTime.removeDestinationFromSaved
+            : strings.bestTime.saveDestinationIdea
         }
         style={({ pressed }) => [
           styles.secondaryButton,
@@ -370,14 +373,14 @@ function BestTimeGuidance({
       >
         <Text style={styles.secondaryButtonText}>
           {saved
-            ? 'Remove from saved ideas'
-            : 'Save this idea'}
+            ? strings.discoverShared.removeFromSaved
+            : strings.discoverShared.saveIdea}
         </Text>
       </Pressable>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Choose another destination"
+        accessibilityLabel={strings.bestTime.chooseAnother}
         style={({ pressed }) => [
           styles.secondaryButton,
           pressed && styles.pressed,
@@ -385,7 +388,7 @@ function BestTimeGuidance({
         onPress={onChooseAnother}
       >
         <Text style={styles.secondaryButtonText}>
-          Choose another destination
+          {strings.bestTime.chooseAnother}
         </Text>
       </Pressable>
     </View>

@@ -53,6 +53,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 type TimingMode =
   | 'unsure'
@@ -70,118 +71,118 @@ interface ChoiceOption<
 const INTENT_OPTIONS: ChoiceOption<TripIntent>[] = [
   {
     value: 'relax',
-    label: 'Relax',
+    label: strings.tripIntent.relax,
   },
   {
     value: 'explore',
-    label: 'Explore',
+    label: strings.tripIntent.explore,
   },
   {
     value: 'food',
-    label: 'Food',
+    label: strings.tripIntent.food,
   },
   {
     value: 'nature',
-    label: 'Nature',
+    label: strings.tripIntent.nature,
   },
   {
     value: 'event',
-    label: 'Event',
+    label: strings.tripIntent.event,
   },
   {
     value: 'social',
-    label: 'Social',
+    label: strings.tripIntent.social,
   },
   {
     value: 'romantic',
-    label: 'Romantic',
+    label: strings.tripIntent.romantic,
   },
   {
     value: 'family',
-    label: 'Family',
+    label: strings.tripParty.family,
   },
   {
     value: 'work_leisure',
-    label: 'Work + Leisure',
+    label: strings.tripIntent.work_leisure,
   },
   {
     value: 'other',
-    label: 'Other',
+    label: strings.tripIntent.other,
   },
 ];
 
 const PACE_OPTIONS: ChoiceOption<TripPace>[] = [
   {
     value: 'slow',
-    label: 'Slow',
+    label: strings.tripPace.slowLabel,
     description:
-      'More breathing room.',
+      strings.tripPace.slowDescription,
   },
   {
     value: 'balanced',
-    label: 'Balanced',
+    label: strings.tripPace.balancedLabel,
     description:
       'A mix of plans and space.',
   },
   {
     value: 'full',
-    label: 'Full',
+    label: strings.tripPace.fullLabel,
     description:
-      'Make the most of each day.',
+      strings.tripPace.fullDescription,
   },
 ];
 
 const INTEREST_OPTIONS: ChoiceOption<TravelInterest>[] = [
   {
     value: 'food',
-    label: 'Food',
+    label: strings.tripIntent.food,
   },
   {
     value: 'culture',
-    label: 'Culture',
+    label: strings.travelDna.interestCulture,
   },
   {
     value: 'nature',
-    label: 'Nature',
+    label: strings.tripIntent.nature,
   },
   {
     value: 'beaches',
-    label: 'Beaches',
+    label: strings.travelDna.interestBeaches,
   },
   {
     value: 'nightlife',
-    label: 'Nightlife',
+    label: strings.travelDna.interestNightlife,
   },
   {
     value: 'shopping',
-    label: 'Shopping',
+    label: strings.travelDna.interestShopping,
   },
   {
     value: 'wellness',
-    label: 'Wellness',
+    label: strings.travelDna.interestWellness,
   },
   {
     value: 'adventure',
-    label: 'Adventure',
+    label: strings.travelDna.interestAdventure,
   },
 ];
 
 const PARTY_OPTIONS: ChoiceOption<TypicalTravelParty>[] = [
   {
     value: 'solo',
-    label: 'Solo',
+    label: strings.tripParty.solo,
   },
   {
     value: 'couple',
-    label: 'Couple',
+    label: strings.tripParty.couple,
   },
   {
     value: 'friends',
-    label: 'Friends',
+    label: strings.tripParty.friends,
   },
   {
     value: 'family',
-    label: 'Family',
+    label: strings.tripParty.family,
   },
 ];
 
@@ -369,7 +370,7 @@ export default function FindDestinationScreen() {
           !endDate
         ) {
           throw new Error(
-            'Choose both exact travel dates.',
+            strings.findDestination.alertDatesBody,
           );
         }
 
@@ -424,7 +425,7 @@ export default function FindDestinationScreen() {
         !cleanCurrency
       ) {
         throw new Error(
-          'Add both a budget amount and currency, or leave both blank.',
+          strings.findDestination.alertBudgetBody,
         );
       }
 
@@ -465,10 +466,10 @@ export default function FindDestinationScreen() {
       );
     } catch (error) {
       Alert.alert(
-        'Check your trip brief',
+        strings.findDestination.alertBriefTitle,
         error instanceof Error
           ? error.message
-          : 'Some of the trip details need review.',
+          : strings.findDestination.alertBriefBody,
       );
     }
   };
@@ -491,7 +492,7 @@ export default function FindDestinationScreen() {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={strings.discoverShared.goBack}
           style={styles.backButton}
           onPress={() =>
             router.back()
@@ -509,11 +510,11 @@ export default function FindDestinationScreen() {
         </Text>
 
         <Text style={styles.title}>
-          Find me somewhere
+          {strings.findDestination.title}
         </Text>
 
         <Text style={styles.subtitle}>
-          Tell TravelOS what this trip should feel like. You can leave anything open and refine it later.
+          {strings.findDestination.intro}
         </Text>
       </View>
 
@@ -530,17 +531,17 @@ export default function FindDestinationScreen() {
           <Text style={styles.dnaTitle}>
             {travelDNALoaded
               ? hasTravelDNA
-                ? 'Travel DNA is helping'
-                : 'No Travel DNA yet'
-              : 'Checking Travel DNA…'}
+                ? strings.findDestination.dnaHelping
+                : strings.findDestination.dnaNone
+              : strings.findDestination.dnaLoading}
           </Text>
 
           <Text style={styles.dnaBody}>
             {travelDNALoaded
               ? hasTravelDNA
-                ? 'Where you leave this brief open, TravelOS can use the preferences you have already chosen in your Travel DNA.'
-                : 'You can still use Discover normally. Nothing will be inferred about you.'
-              : 'Your saved preferences are being loaded.'}
+                ? strings.findDestination.dnaHelpingBody
+                : strings.findDestination.dnaNoneBody
+              : strings.findDestination.dnaLoadingBody}
           </Text>
         </View>
       </View>
@@ -548,14 +549,14 @@ export default function FindDestinationScreen() {
       <View style={styles.form}>
         <View style={styles.section}>
           <SectionHeading
-            eyebrow="WHEN"
-            title="When could you go?"
-            description="Choose exact dates, a flexible window, or leave timing open."
+            eyebrow={strings.findDestination.whenEyebrow}
+            title={strings.findDestination.whenTitle}
+            description={strings.findDestination.whenBody}
           />
 
           <View style={styles.segmented}>
             <TimingChoice
-              label="Not sure"
+              label={strings.findDestination.notSure}
               selected={
                 timingMode ===
                 'unsure'
@@ -568,7 +569,7 @@ export default function FindDestinationScreen() {
             />
 
             <TimingChoice
-              label="Exact"
+              label={strings.findDestination.exact}
               selected={
                 timingMode ===
                 'exact'
@@ -581,7 +582,7 @@ export default function FindDestinationScreen() {
             />
 
             <TimingChoice
-              label="Flexible"
+              label={strings.findDestination.flexible}
               selected={
                 timingMode ===
                 'flexible'
@@ -602,7 +603,7 @@ export default function FindDestinationScreen() {
               }
             >
               <CalendarDateField
-                label="START DATE"
+                label={strings.findDestination.labelStartDate}
                 value={startDate}
                 fallbackDate={
                   endDate
@@ -613,7 +614,7 @@ export default function FindDestinationScreen() {
               />
 
               <CalendarDateField
-                label="END DATE"
+                label={strings.findDestination.labelEndDate}
                 value={endDate}
                 fallbackDate={
                   startDate
@@ -633,7 +634,7 @@ export default function FindDestinationScreen() {
               }
             >
               <CalendarDateField
-                label="EARLIEST START"
+                label={strings.findDestination.labelEarliestStart}
                 value={
                   earliestStartDate
                 }
@@ -646,7 +647,7 @@ export default function FindDestinationScreen() {
               />
 
               <CalendarDateField
-                label="LATEST END"
+                label={strings.findDestination.labelLatestEnd}
                 value={
                   latestEndDate
                 }
@@ -668,7 +669,7 @@ export default function FindDestinationScreen() {
                     styles.fieldLabel
                   }
                 >
-                  IDEAL TRIP LENGTH
+                  {strings.findDestination.idealLength}
                 </Text>
 
                 <TextInput
@@ -678,7 +679,7 @@ export default function FindDestinationScreen() {
                   onChangeText={
                     setTripLengthDays
                   }
-                  placeholder="e.g. 5 days"
+                  placeholder={strings.findDestination.lengthPlaceholder}
                   placeholderTextColor={
                     colors.textMuted
                   }
@@ -692,9 +693,9 @@ export default function FindDestinationScreen() {
 
         <View style={styles.section}>
           <SectionHeading
-            eyebrow="BUDGET"
-            title="What feels comfortable?"
-            description="Optional. Use the currency in which you think about this trip. TravelOS will not silently convert it."
+            eyebrow={strings.findDestination.budgetEyebrow}
+            title={strings.findDestination.budgetTitle}
+            description={strings.findDestination.budgetBody}
           />
 
           <View style={styles.budgetRow}>
@@ -708,7 +709,7 @@ export default function FindDestinationScreen() {
                   styles.fieldLabel
                 }
               >
-                MAXIMUM
+                {strings.findDestination.maximum}
               </Text>
 
               <TextInput
@@ -737,7 +738,7 @@ export default function FindDestinationScreen() {
                   styles.fieldLabel
                 }
               >
-                CURRENCY
+                {strings.findDestination.currency}
               </Text>
 
               <TextInput
@@ -761,14 +762,14 @@ export default function FindDestinationScreen() {
 
         <View style={styles.section}>
           <SectionHeading
-            eyebrow="WHY THIS TRIP"
-            title="What are you looking for?"
-            description="These choices are only for this trip. Leave them blank to let Travel DNA provide context where available."
+            eyebrow={strings.findDestination.whyEyebrow}
+            title={strings.findDestination.whyTitle}
+            description={strings.findDestination.whyBody}
           />
 
           <View style={styles.choiceGroup}>
             <Text style={styles.fieldLabel}>
-              PRIMARY INTENT · OPTIONAL
+              {strings.findDestination.primaryIntent}
             </Text>
 
             <View style={styles.chipGrid}>
@@ -803,7 +804,7 @@ export default function FindDestinationScreen() {
 
           <View style={styles.choiceGroup}>
             <Text style={styles.fieldLabel}>
-              INTERESTS · OPTIONAL
+              {strings.findDestination.interests}
             </Text>
 
             <View style={styles.chipGrid}>
@@ -833,14 +834,14 @@ export default function FindDestinationScreen() {
 
         <View style={styles.section}>
           <SectionHeading
-            eyebrow="TRAVEL STYLE"
-            title="How should the trip feel?"
-            description="Trip-specific choices override your general Travel DNA."
+            eyebrow={strings.findDestination.styleEyebrow}
+            title={strings.findDestination.styleTitle}
+            description={strings.findDestination.styleBody}
           />
 
           <View style={styles.choiceGroup}>
             <Text style={styles.fieldLabel}>
-              TRIP PACE · OPTIONAL
+              {strings.findDestination.tripPace}
             </Text>
 
             <View style={styles.paceOptions}>
@@ -925,7 +926,7 @@ export default function FindDestinationScreen() {
 
           <View style={styles.choiceGroup}>
             <Text style={styles.fieldLabel}>
-              WHO ARE YOU GOING WITH? · OPTIONAL
+              {strings.findDestination.whoWith}
             </Text>
 
             <View style={styles.chipGrid}>
@@ -956,7 +957,7 @@ export default function FindDestinationScreen() {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Find destinations"
+          accessibilityLabel={strings.findDestination.findDestinations}
           style={({ pressed }) => [
             styles.primaryButton,
             pressed &&
@@ -972,7 +973,7 @@ export default function FindDestinationScreen() {
                 styles.primaryButtonEyebrow
               }
             >
-              NEXT
+              {strings.findDestination.next}
             </Text>
 
             <Text
@@ -980,7 +981,7 @@ export default function FindDestinationScreen() {
                 styles.primaryButtonText
               }
             >
-              Find destinations
+              {strings.findDestination.findDestinations}
             </Text>
           </View>
 

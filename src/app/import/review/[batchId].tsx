@@ -40,6 +40,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 export default function ImportReviewScreen() {
   const router = useRouter();
@@ -82,7 +83,7 @@ export default function ImportReviewScreen() {
 
   const reload = useCallback(async () => {
     if (!batchId) {
-      setError('Import review was not found.');
+      setError(strings.importReview.notFound);
       setLoaded(true);
       return;
     }
@@ -105,7 +106,7 @@ export default function ImportReviewScreen() {
         try {
           if (!batchId) {
             if (active) {
-              setError('Import review was not found.');
+              setError(strings.importReview.notFound);
               setLoaded(true);
             }
 
@@ -128,7 +129,7 @@ export default function ImportReviewScreen() {
             setError(
               caught instanceof Error
                 ? caught.message
-                : 'This review could not be opened.',
+                : strings.importReview.openFailed,
             );
             setLoaded(true);
           }
@@ -146,7 +147,7 @@ export default function ImportReviewScreen() {
     overrides: ImportBookingAcceptOverrides = {},
   ) => {
     if (!selectedTripId) {
-      setError('Choose a trip before accepting a claim.');
+      setError(strings.importReview.chooseTripFirst);
       return;
     }
 
@@ -161,7 +162,7 @@ export default function ImportReviewScreen() {
       setError(
         caught instanceof Error
           ? caught.message
-          : 'This claim could not become a booking.',
+          : strings.importReview.claimFailed,
       );
     }
   };
@@ -182,7 +183,7 @@ export default function ImportReviewScreen() {
       setError(
         caught instanceof Error
           ? caught.message
-          : 'This seed claim could not open Create Trip.',
+          : strings.importReview.seedFailed,
       );
     }
   };
@@ -198,14 +199,14 @@ export default function ImportReviewScreen() {
       setError(
         caught instanceof Error
           ? caught.message
-          : 'This line could not be marked reviewed.',
+          : strings.importReview.markFailed,
       );
     }
   };
 
   const addLineAsStop = (listing: ImportClaimListing) => {
     if (!selectedTripId) {
-      setError('Choose a trip before adding a line as a stop.');
+      setError(strings.importReview.chooseTripForStop);
       return;
     }
 
@@ -222,7 +223,7 @@ export default function ImportReviewScreen() {
       setError(
         caught instanceof Error
           ? caught.message
-          : 'This line could not open Plan.',
+          : strings.importReview.lineFailed,
       );
     }
   };
@@ -235,7 +236,7 @@ export default function ImportReviewScreen() {
       setError(
         caught instanceof Error
           ? caught.message
-          : 'This claim could not be dismissed.',
+          : strings.importReview.dismissFailed,
       );
     }
   };
@@ -245,7 +246,7 @@ export default function ImportReviewScreen() {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={strings.discoverShared.goBack}
           style={({ pressed }) => [
             styles.backButton,
             pressed && styles.pressed,
@@ -260,35 +261,35 @@ export default function ImportReviewScreen() {
         </Pressable>
 
         <Text style={styles.eyebrow}>
-          IMPORTED CLAIMS
+          {strings.importReview.eyebrow}
         </Text>
 
         <Text style={styles.title}>
-          Review before it becomes a booking
+          {strings.importReview.title}
         </Text>
 
         <Text style={styles.subtitle}>
-          Accepting a calendar claim writes one planned booking onto the trip you choose. Seed claims open Create Trip instead — they never invent a destination or write a trip alone.
+          {strings.importReview.intro}
         </Text>
       </View>
 
       {selectableTrips.length === 0 ? (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyEyebrow}>
-            NEEDS A TRIP
+            {strings.importReview.needsTripEyebrow}
           </Text>
 
           <Text style={styles.emptyTitle}>
-            Create a trip first
+            {strings.importReview.createTripFirst}
           </Text>
 
           <Text style={styles.emptyBody}>
-            Imported claims cannot invent a destination or dates. Confirm a trip, then accept the events onto it.
+            {strings.importReview.createTripFirstBody}
           </Text>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Plan a trip"
+            accessibilityLabel={strings.importReview.planATrip}
             style={({ pressed }) => [
               styles.primaryButton,
               pressed && styles.pressed,
@@ -296,14 +297,14 @@ export default function ImportReviewScreen() {
             onPress={() => router.push('/new-trip')}
           >
             <Text style={styles.primaryButtonText}>
-              Plan a trip
+              {strings.importReview.planATrip}
             </Text>
           </Pressable>
         </View>
       ) : (
         <View style={styles.tripList}>
           <Text style={styles.sectionEyebrow}>
-            ACCEPT ONTO
+            {strings.importReview.acceptOnto}
           </Text>
 
           {selectableTrips.map((trip) => (
@@ -327,7 +328,7 @@ export default function ImportReviewScreen() {
         <View style={styles.list}>
           {listings.length === 0 ? (
             <Text style={styles.emptyBody}>
-              This calendar did not leave any claims to review.
+              {strings.importReview.noClaims}
             </Text>
           ) : (
             listings.map((listing) => (
@@ -372,13 +373,13 @@ function TripChoice({
 }) {
   const destination =
     trip.destinations.length === 0
-      ? 'No destination yet'
+      ? strings.importReview.noDestinationYet
       : tripDestinationLabel(trip.destinations);
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Choose ${trip.title}`}
+      accessibilityLabel={strings.a11y.choose(trip.title)}
       style={({ pressed }) => [
         styles.tripCard,
         selected && styles.tripCardSelected,
@@ -445,8 +446,8 @@ function ClaimCard({
       <Text style={styles.cardDetail}>
         {startLabel ??
           (claim.kind === 'itinerary_line'
-            ? 'No fixed time'
-            : 'Start unknown')}
+            ? strings.importReview.noFixedTime
+            : strings.importReview.startUnknown)}
         {endLabel ? ` → ${endLabel}` : ''}
       </Text>
 
@@ -468,7 +469,7 @@ function ClaimCard({
       {pending && claim.kind === 'trip_seed' ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Start Create Trip from ${claim.title}`}
+          accessibilityLabel={strings.a11y.startCreateTripFrom(claim.title)}
           style={({ pressed }) => [
             styles.primaryButton,
             pressed && styles.pressed,
@@ -476,7 +477,7 @@ function ClaimCard({
           onPress={onStartCreateTrip}
         >
           <Text style={styles.primaryButtonText}>
-            Start Create Trip
+            {strings.importReview.startCreateTrip}
           </Text>
         </Pressable>
       ) : null}
@@ -485,7 +486,7 @@ function ClaimCard({
         <View style={styles.lineActions}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Add ${claim.title} as stop`}
+            accessibilityLabel={strings.a11y.addAsStop(claim.title)}
             accessibilityState={{ disabled: !canAccept }}
             style={({ pressed }) => [
               styles.primaryButton,
@@ -496,12 +497,12 @@ function ClaimCard({
             onPress={onAddAsStop}
           >
             <Text style={styles.primaryButtonText}>
-              Add as stop
+              {strings.importReview.addAsStop}
             </Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Mark ${claim.title} reviewed`}
+            accessibilityLabel={strings.a11y.markReviewed(claim.title)}
             style={({ pressed }) => [
               styles.secondaryButton,
               pressed && styles.pressed,
@@ -518,10 +519,10 @@ function ClaimCard({
       {pending && claim.kind === 'booking' ? (
         <View style={styles.acceptEditor}>
           <Text style={styles.acceptEditorLabel}>
-            EDIT BEFORE ACCEPT
+            {strings.importReview.editBeforeAccept}
           </Text>
           <Text style={styles.cardDetail}>
-            Optional fields stay empty when blank. Nothing is invented.
+            {strings.importReview.optionalStayEmpty}
           </Text>
           <View style={styles.typeRow}>
             {(
@@ -559,16 +560,16 @@ function ClaimCard({
             })}
           </View>
           <TextInput
-            accessibilityLabel="Provider"
-            placeholder="Provider"
+            accessibilityLabel={strings.importReview.provider}
+            placeholder={strings.importReview.provider}
             placeholderTextColor={colors.textMuted}
             value={provider}
             onChangeText={setProvider}
             style={styles.input}
           />
           <TextInput
-            accessibilityLabel="Confirmation code"
-            placeholder="Confirmation code"
+            accessibilityLabel={strings.importReview.confirmationCode}
+            placeholder={strings.importReview.confirmationCode}
             placeholderTextColor={colors.textMuted}
             value={confirmationCode}
             onChangeText={setConfirmationCode}
@@ -576,8 +577,8 @@ function ClaimCard({
             style={styles.input}
           />
           <TextInput
-            accessibilityLabel="Booking link"
-            placeholder="Booking link (https://…)"
+            accessibilityLabel={strings.importReview.bookingLink}
+            placeholder={strings.importReview.bookingLinkPlaceholder}
             placeholderTextColor={colors.textMuted}
             value={externalUrl}
             onChangeText={setExternalUrl}
@@ -586,7 +587,7 @@ function ClaimCard({
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Accept ${claim.title} as a booking`}
+            accessibilityLabel={strings.a11y.acceptAsBooking(claim.title)}
             disabled={!canAccept}
             style={({ pressed }) => [
               styles.primaryButton,
@@ -603,7 +604,7 @@ function ClaimCard({
             }
           >
             <Text style={styles.primaryButtonText}>
-              Accept as planned booking
+              {strings.importReview.acceptAsPlanned}
             </Text>
           </Pressable>
         </View>
@@ -612,7 +613,7 @@ function ClaimCard({
       {pending ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Dismiss ${claim.title}`}
+          accessibilityLabel={strings.a11y.dismiss(claim.title)}
           style={({ pressed }) => [
             styles.secondaryButton,
             pressed && styles.pressed,
@@ -620,26 +621,26 @@ function ClaimCard({
           onPress={onDismiss}
         >
           <Text style={styles.secondaryButtonText}>
-            Dismiss this claim
+            {strings.importReview.dismissThisClaim}
           </Text>
         </Pressable>
       ) : null}
 
       {claim.status === 'accepted' && claim.kind === 'booking' ? (
         <Text style={styles.cardDetail}>
-          Accepted as a planned booking. It is still not confirmed reservation truth.
+          {strings.importReview.acceptedNote}
         </Text>
       ) : null}
 
       {claim.status === 'accepted' && claim.kind !== 'booking' ? (
         <Text style={styles.cardDetail}>
-          Reviewed. Canonical trip facts still require Create Trip or Plan.
+          {strings.importReview.reviewedNote}
         </Text>
       ) : null}
 
       {claim.status === 'dismissed' ? (
         <Text style={styles.cardDetail}>
-          Dismissed. This claim did not become trip truth.
+          {strings.importReview.dismissedNote}
         </Text>
       ) : null}
     </View>

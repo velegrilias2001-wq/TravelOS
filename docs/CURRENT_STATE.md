@@ -762,6 +762,24 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### Greek copy, phase 3 — 2026-09-19
+
+Discover (tab, find-destination, results, journeys, best-time, saved), World, Profile, Travel DNA, import and import review, TravelOS AI and trip notifications. **The Greek migration is complete.**
+
+The Profile backup and restore confirmations are translated, including the long destructive-restore message that lists exactly what a restore replaces.
+
+**A screen was missing from the phase plan.** `trip-notifications.tsx` was in neither phase 2 nor phase 3 as originally scoped; a repository-wide count after phase 3 found it with thirteen untranslated strings. It is now translated. The count is the reason it surfaced at all — the per-phase file lists would not have caught it.
+
+**Deliberately left in English:** `'TravelOS AI'` is the product name, and `'AbortError'` in `discover/results.tsx` is a JavaScript error name matched in a `catch`, not copy. `'Stop end time must be after stop start time'` in `plan.tsx` remains a service-error comparison as recorded in phase 2a.
+
+**A latent bug surfaced by typing.** `discover/results.tsx` rendered `MATCH #${rank}` where `rank` is optional, so a semantic result without a rank would have shown "MATCH #undefined". The catalogue helper now takes an optional rank and renders the label without a number instead of inventing one.
+
+Android-verified on 2026-09-19: the Discover tab, find-destination, World, Profile and Travel DNA render Greek. Five leftovers were only visible on device — the Discover heading, the Profile heading, the World stat labels and filter chip, and two Travel DNA option descriptions.
+
+Checks: `tsc`, 453 tests, lint 48 warnings unchanged, `git diff --check`.
+
+**Remaining:** the `locale-format.ts` header still says "Copy stays English in V1"; that note is now wrong and should be corrected. Service-thrown error messages shown to travellers on unrecognised failures are still English, tracked separately.
+
 ### Greek copy, phase 2b: Trip Space secondary screens — 2026-09-19
 
 Budget, Trip Details, Accommodation, Travelers, Memories, Travel Book and Packing are now Greek, which completes phase 2. Booking, accommodation, budget and traveler type catalogues, and the trip status labels used in Trip Details, all read from `src/i18n/el.ts`.

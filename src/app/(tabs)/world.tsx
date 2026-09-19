@@ -54,6 +54,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 const EMPTY_WORLD_CONTEXT: WorldPlaceContext = {
   days: [],
@@ -320,17 +321,17 @@ export default function WorldScreen() {
           <View style={styles.headerTop}>
             <View style={styles.headerCopy}>
               <Text style={styles.eyebrow}>
-                YOUR WORLD
+                {strings.world.eyebrow}
               </Text>
 
               <Text style={styles.title}>
-                The places that make up your story.
+                {strings.world.subtitle}
               </Text>
             </View>
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Show all mapped destinations"
+              accessibilityLabel={strings.world.showAllMapped}
               style={({ pressed }) => [
                 styles.fitButton,
                 pressed && styles.pressed,
@@ -348,11 +349,9 @@ export default function WorldScreen() {
           <View style={styles.stats}>
             <Stat
               value={trips.length}
-              label={
-                trips.length === 1
-                  ? 'trip'
-                  : 'trips'
-              }
+              label={strings.world.tripLabel(
+                trips.length,
+              )}
             />
 
             <View style={styles.statDivider} />
@@ -360,9 +359,9 @@ export default function WorldScreen() {
             <Stat
               value={footprint.livedCountries}
               label={
-                footprint.livedCountries === 1
-                  ? 'country'
-                  : 'countries'
+                strings.world.countryLabel(
+                  footprint.livedCountries,
+                )
               }
             />
 
@@ -370,26 +369,26 @@ export default function WorldScreen() {
 
             <Stat
               value={counts.lived}
-              label="lived"
+              label={strings.world.livedStat}
             />
 
             <View style={styles.statDivider} />
 
             <Stat
               value={counts.planned}
-              label="planned"
+              label={strings.world.plannedStat}
             />
           </View>
 
           <View style={styles.filters}>
             <FilterPill
-              label="All"
+              label={strings.world.all}
               active={filter === 'all'}
               onPress={() => setFilter('all')}
             />
 
             <FilterPill
-              label="Planned"
+              label={strings.world.planned}
               active={filter === 'planned'}
               onPress={() =>
                 setFilter('planned')
@@ -397,7 +396,7 @@ export default function WorldScreen() {
             />
 
             <FilterPill
-              label="Lived"
+              label={strings.world.lived}
               active={filter === 'lived'}
               onPress={() =>
                 setFilter('lived')
@@ -418,18 +417,18 @@ export default function WorldScreen() {
               <View style={styles.emptyCopy}>
                 <Text style={styles.emptyTitle}>
                   {filter === 'lived'
-                    ? 'No lived places yet.'
+                    ? strings.world.noLived
                     : filter === 'planned'
-                      ? 'No planned places in this list.'
-                      : 'Your world starts with a trip.'}
+                      ? strings.world.noPlanned
+                      : strings.world.startsWithTrip}
                 </Text>
 
                 <Text style={styles.emptyBody}>
                   {filter === 'lived'
-                    ? 'Mark a planned stop done in Companion after you are there. A completed trip is not a visit.'
+                    ? strings.world.markDoneHint
                     : filter === 'planned'
-                      ? 'Every saved destination on these trips already has a done stop on an assigned day.'
-                      : 'Plan somewhere new and your travel world will grow from there.'}
+                      ? strings.world.allHaveDoneStop
+                      : strings.world.planSomewhereNew}
                 </Text>
               </View>
             </View>
@@ -450,15 +449,14 @@ export default function WorldScreen() {
             <View style={styles.panelHeader}>
               <View>
                 <Text style={styles.panelEyebrow}>
-                  YOUR DESTINATIONS
+                  {strings.world.destinationsEyebrow}
                 </Text>
 
                 <Text style={styles.panelTitle}>
                   {filteredDestinations.length}{' '}
-                  {filteredDestinations.length ===
-                  1
-                    ? 'place'
-                    : 'places'}
+                  {strings.world.placeLabel(
+                    filteredDestinations.length,
+                  )}
                 </Text>
               </View>
 
@@ -467,7 +465,7 @@ export default function WorldScreen() {
                 <Text style={styles.mapHint}>
                   {filteredDestinations.length -
                     mappedDestinations.length}{' '}
-                  need map details
+                  {strings.world.needMapDetails}
                 </Text>
               ) : null}
             </View>
@@ -538,7 +536,7 @@ function FilterPill({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${label} places`}
+      accessibilityLabel={strings.world.placesLabel(label)}
       accessibilityState={{
         selected: active,
       }}
@@ -576,9 +574,12 @@ function DestinationCard({
       accessibilityLabel={
         item.mapped
           ? item.archive.memoryCount > 0
-            ? `Show ${item.destination.name} on the map, ${item.archive.memoryCount} ${item.archive.memoryCount === 1 ? 'memory' : 'memories'}`
-            : `Show ${item.destination.name} on the map`
-          : `Add map details for ${item.destination.name}`
+            ? strings.a11y.showOnMapWithMemories(
+            item.destination.name,
+            item.archive.memoryCount,
+          )
+            : strings.a11y.showOnMap(item.destination.name)
+          : strings.a11y.addMapDetails(item.destination.name)
       }
       style={({ pressed }) => [
         styles.destinationCard,
@@ -646,20 +647,20 @@ function DestinationCard({
       <View style={styles.destinationMeta}>
         <Text style={styles.destinationState}>
           {item.kind === 'lived'
-            ? 'LIVED'
-            : 'PLANNED'}
+            ? strings.world.livedBadge
+            : strings.world.plannedBadge}
         </Text>
 
         {!item.mapped ? (
           <Text style={styles.unmapped}>
-            ADD MAP
+            {strings.world.addMap}
           </Text>
         ) : item.archive.memoryCount > 0 ? (
           <Text style={styles.archiveCount}>
             {item.archive.memoryCount}{' '}
             {item.archive.memoryCount === 1
-              ? 'MEMORY'
-              : 'MEMORIES'}
+              ? strings.world.memoryBadge
+              : strings.world.memoriesBadge}
           </Text>
         ) : null}
       </View>

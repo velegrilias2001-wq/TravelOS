@@ -22,6 +22,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 export default function DiscoverScreen() {
   const router = useRouter();
@@ -31,15 +32,15 @@ export default function DiscoverScreen() {
       <RiseIn factKey="discover-home">
         <View style={styles.header}>
           <Text style={styles.eyebrow}>
-            DISCOVER
+            {strings.discoverTab.eyebrow}
           </Text>
 
           <Text style={styles.title}>
-            Where could this take you?
+            {strings.discoverTab.heading}
           </Text>
 
           <Text style={styles.subtitle}>
-            Start with a place you already have in mind, or let TravelOS help you decide where and when to go.
+            {strings.discoverTab.intro}
           </Text>
         </View>
       </RiseIn>
@@ -51,7 +52,7 @@ export default function DiscoverScreen() {
         >
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Start planning a destination you already know"
+            accessibilityLabel={strings.discoverTab.knowWhereLabel}
             style={({ pressed }) => [
               styles.primaryCard,
               pressed && styles.pressed,
@@ -79,15 +80,15 @@ export default function DiscoverScreen() {
             </View>
 
             <Text style={styles.primaryEyebrow}>
-              I KNOW WHERE
+              {strings.discoverTab.knowWhereEyebrow}
             </Text>
 
             <Text style={styles.primaryTitle}>
-              Start with a place
+              {strings.discoverTab.knowWhereTitle}
             </Text>
 
             <Text style={styles.primaryBody}>
-              Choose your destination and dates, then build the trip from there.
+              {strings.discoverTab.knowWhereBody}
             </Text>
           </Pressable>
         </RiseIn>
@@ -95,11 +96,11 @@ export default function DiscoverScreen() {
         <View style={styles.overlapSheet}>
           <View style={styles.sectionHeading}>
             <Text style={styles.sectionEyebrow}>
-              FIND THE TRIP
+              {strings.discoverTab.findTripEyebrow}
             </Text>
 
             <Text style={styles.sectionTitle}>
-              Let TravelOS help you choose
+              {strings.discoverTab.findTripTitle}
             </Text>
           </View>
 
@@ -108,26 +109,26 @@ export default function DiscoverScreen() {
               [
                 {
                   icon: 'sparkles-outline' as const,
-                  title: 'Find me somewhere',
-                  body: 'Tell us when you can travel, your budget and what kind of trip you want.',
+                  title: strings.discoverTab.findSomewhere,
+                  body: strings.discoverTab.findSomewhereBody,
                   path: '/discover/find-destination' as const,
                 },
                 {
                   icon: 'calendar-outline' as const,
-                  title: 'Best time to go',
-                  body: 'Already know the place? See sourced months for that destination.',
+                  title: strings.discoverTab.bestTime,
+                  body: strings.discoverTab.bestTimeBody,
                   path: '/discover/best-time' as const,
                 },
                 {
                   icon: 'compass-outline' as const,
-                  title: 'Ready-made journeys',
-                  body: 'Explore curated trip ideas you can keep, adapt and make your own.',
+                  title: strings.discoverTab.journeys,
+                  body: strings.discoverTab.journeysBody,
                   path: '/discover/journeys' as const,
                 },
                 {
                   icon: 'bookmark-outline' as const,
-                  title: 'Saved ideas',
-                  body: 'Keep catalogue destinations and journey ideas without turning them into trips.',
+                  title: strings.discoverTab.saved,
+                  body: strings.discoverTab.savedBody,
                   path: '/discover/saved' as const,
                 },
               ] as const
@@ -161,11 +162,11 @@ export default function DiscoverScreen() {
 
         <View style={styles.promiseCopy}>
           <Text style={styles.promiseTitle}>
-            Built around your real trip
+            {strings.discoverTab.groundedTitle}
           </Text>
 
           <Text style={styles.promiseBody}>
-            Discover uses what you explicitly tell TravelOS about this trip, while keeping suggestions separate from confirmed plans.
+            {strings.discoverTab.groundedBody}
           </Text>
         </View>
       </View>

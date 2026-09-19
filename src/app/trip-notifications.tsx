@@ -40,6 +40,7 @@ import {
   radius,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 type LoadStatus = 'loading' | 'ready' | 'error';
 
@@ -91,8 +92,8 @@ export default function TripNotificationsScreen() {
 
         if (!granted) {
           Alert.alert(
-            'Notifications are off',
-            'Allow notifications in system settings to receive stop reminders.',
+            strings.tripNotifications.offTitle,
+            strings.tripNotifications.offBody,
           );
           setEnabled(false);
           await saveNotificationPreferences({
@@ -112,8 +113,8 @@ export default function TripNotificationsScreen() {
       await reconcileTripNotifications();
     } catch {
       Alert.alert(
-        'Could not save',
-        'Notification preferences were not updated.',
+        strings.tripNotifications.saveFailed,
+        strings.tripNotifications.saveFailedBody,
       );
       await reload();
     } finally {
@@ -125,8 +126,8 @@ export default function TripNotificationsScreen() {
     <Screen scroll={status === 'ready'}>
       <UtilityScreenHeader
         eyebrow="YOUR TRAVELOS"
-        title="Trip notifications"
-        subtitle="Local reminders from your saved plan — never invented times."
+        title={strings.tripNotifications.title}
+        subtitle={strings.tripNotifications.subtitle}
         leading={<BackButton />}
       />
 
@@ -138,8 +139,8 @@ export default function TripNotificationsScreen() {
 
       {status === 'error' ? (
         <InlineError
-          title="Could not load preferences"
-          body="Try again in a moment."
+          title={strings.tripNotifications.loadFailed}
+          body={strings.tripNotifications.loadFailedBody}
           onRetry={() => {
             void reload();
           }}
@@ -149,25 +150,21 @@ export default function TripNotificationsScreen() {
       {status === 'ready' ? (
         <View style={styles.body}>
           <Text style={styles.copy}>
-            TravelOS can remind you shortly before a
-            planned stop starts. Reminders need a
-            saved destination timezone and a timed
-            stop.
+            {strings.tripNotifications.intro}
           </Text>
 
           <View style={styles.card}>
             <View style={styles.row}>
               <View style={styles.rowCopy}>
                 <Text style={styles.rowTitle}>
-                  Stop start reminders
+                  {strings.tripNotifications.rowTitle}
                 </Text>
                 <Text style={styles.rowBody}>
-                  {leadMinutes} minutes before a
-                  timed moment
+                  {strings.tripNotifications.rowBody(leadMinutes)}
                 </Text>
               </View>
               <Switch
-                accessibilityLabel="Enable stop start reminders"
+                accessibilityLabel={strings.tripNotifications.enableLabel}
                 value={enabled}
                 disabled={isSaving}
                 onValueChange={(value) => {
@@ -199,15 +196,15 @@ export default function TripNotificationsScreen() {
               />
               <Text style={styles.metaText}>
                 {permissionGranted
-                  ? 'System permission granted'
-                  : 'System permission required'}
+                  ? strings.tripNotifications.permissionGranted
+                  : strings.tripNotifications.permissionRequired}
               </Text>
             </View>
           </View>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Refresh scheduled reminders"
+            accessibilityLabel={strings.tripNotifications.refresh}
             disabled={isSaving}
             style={({ pressed }) => [
               styles.refresh,
@@ -225,7 +222,7 @@ export default function TripNotificationsScreen() {
             }}
           >
             <Text style={styles.refreshText}>
-              Refresh scheduled reminders
+              {strings.tripNotifications.refresh}
             </Text>
           </Pressable>
         </View>
@@ -238,7 +235,7 @@ function BackButton() {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Back to Profile"
+      accessibilityLabel={strings.tripNotifications.back}
       style={({ pressed }) => [
         styles.backButton,
         pressed && styles.pressed,

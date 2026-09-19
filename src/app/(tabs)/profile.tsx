@@ -33,6 +33,7 @@ import {
   radius,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 export default function ProfileScreen() {
   const trips = useTripStore(
@@ -77,7 +78,7 @@ export default function ProfileScreen() {
           snapshot.status === 'ready'
             ? 'TravelOS AI'
             : snapshot.status === 'disabled'
-              ? 'TravelOS AI is off'
+              ? strings.profile.travelOsAiOff
               : 'AI unavailable',
           `${snapshot.detail}${available}`,
         );
@@ -105,23 +106,23 @@ export default function ProfileScreen() {
 
         if (!canShare) {
           Alert.alert(
-            'Export saved on this device',
-            `Wrote ${document.trips.length} trip${document.trips.length === 1 ? '' : 's'} to a local JSON file. Sharing is unavailable on this platform.`,
+            strings.profile.exportSavedTitle,
+            strings.profile.exportSavedBody(document.trips.length),
           );
           return;
         }
 
         await Sharing.shareAsync(path, {
           mimeType: 'application/json',
-          dialogTitle: 'Export TravelOS local backup',
+          dialogTitle: strings.profile.exportDialogTitle,
           UTI: 'public.json',
         });
       } catch (error) {
         Alert.alert(
-          'Export could not finish',
+          strings.profile.exportFailed,
           error instanceof Error
             ? error.message
-            : 'Something went wrong while preparing the backup.',
+            : strings.profile.exportFailedBody,
         );
       } finally {
         release();
@@ -140,20 +141,29 @@ export default function ProfileScreen() {
         if (!picked) return;
         const { document, summary, sourceLabel } = picked;
         const confirmed = await confirmDestructiveAsync({
-          title: 'Replace local TravelOS data?',
-          message: `This replaces every trip, Travel DNA, traveler, and saved idea on this device with “${sourceLabel}” (${summary.tripCount} trips, exported ${summary.exportedAt}). Open editors and discovery/chat sessions will reset. Photo files are not restored. Import review queues are cleared. This cannot be undone.`,
-          confirmLabel: 'Replace data',
+          title: strings.profile.replaceTitle,
+          message: strings.profile.replaceMessage(
+            sourceLabel,
+            summary.tripCount,
+            summary.exportedAt,
+          ),
+          confirmLabel: strings.profile.replaceConfirm,
         });
         if (!confirmed) return;
         const restored = await restoreLocalDataExportDocument(document);
         Alert.alert(
-          'Local backup restored',
+          strings.profile.restoredTitle,
           restored.refreshFailed
-            ? 'Your data was restored, but screens or reminders could not refresh. Close and reopen TravelOS. Do not repeat the restore.'
-            : `Loaded ${restored.tripCount} trip${restored.tripCount === 1 ? '' : 's'} from the backup onto this device. Photo files are not restored.`,
+            ? strings.profile.restoredRefreshFailed
+            : strings.profile.restoredBody(restored.tripCount),
         );
       } catch (error) {
-        Alert.alert('Restore could not finish', error instanceof Error ? error.message : 'The backup could not be restored.');
+        Alert.alert(
+          strings.profile.restoreFailed,
+          error instanceof Error
+            ? error.message
+            : strings.profile.restoreFailedBody,
+        );
       } finally {
         release();
         setIsRestoring(false);
@@ -173,21 +183,21 @@ export default function ProfileScreen() {
       </Modal>
       <View style={styles.header}>
         <Text style={styles.eyebrow}>
-          YOUR TRAVELOS
+          {strings.profile.eyebrow}
         </Text>
 
         <Text style={styles.title}>
-          Profile
+          {strings.profile.title}
         </Text>
 
         <Text style={styles.subtitle}>
-          Your travel life, preferences and settings in one place.
+          {strings.profile.subtitle}
         </Text>
       </View>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Open Travel DNA"
+        accessibilityLabel={strings.profile.openTravelDna}
         style={({ pressed }) => [
           styles.identityCard,
           pressed && styles.pressed,
@@ -204,30 +214,30 @@ export default function ProfileScreen() {
 
         <View style={styles.identityCopy}>
           <Text style={styles.identityEyebrow}>
-            TRAVEL PROFILE
+            {strings.profile.travelProfileEyebrow}
           </Text>
 
           <Text style={styles.identityTitle}>
-            Make TravelOS feel like yours.
+            {strings.profile.travelProfileTitle}
           </Text>
 
           <Text style={styles.identityBody}>
-            Your Travel DNA keeps the preferences you explicitly choose for how you like to travel.
+            {strings.profile.travelProfileBody}
           </Text>
 
           <Text style={styles.identityCta}>
-            Open Travel DNA
+            {strings.profile.openTravelDna}
           </Text>
         </View>
       </Pressable>
 
       <View style={styles.sectionHeading}>
         <Text style={styles.sectionEyebrow}>
-          YOUR TRAVEL LIFE
+          {strings.profile.lifeEyebrow}
         </Text>
 
         <Text style={styles.sectionTitle}>
-          At a glance
+          {strings.profile.atAGlance}
         </Text>
       </View>
 
@@ -236,8 +246,8 @@ export default function ProfileScreen() {
           value={trips.length}
           label={
             trips.length === 1
-              ? 'Trip'
-              : 'Trips'
+              ? strings.profile.tripLabel
+              : strings.profile.tripsLabel
           }
         />
 
@@ -245,32 +255,32 @@ export default function ProfileScreen() {
 
         <Stat
           value={completedTrips}
-          label="Completed"
+          label={strings.profile.completed}
         />
 
         <View style={styles.statDivider} />
 
         <Stat
           value={mappedDestinations}
-          label="Mapped"
+          label={strings.profile.mapped}
         />
       </View>
 
       <View style={styles.sectionHeading}>
         <Text style={styles.sectionEyebrow}>
-          PERSONALIZE
+          {strings.profile.personalizeEyebrow}
         </Text>
 
         <Text style={styles.sectionTitle}>
-          Preferences & settings
+          {strings.profile.preferences}
         </Text>
       </View>
 
       <View style={styles.settingsCard}>
         <ActiveRow
           icon="finger-print-outline"
-          title="Travel DNA"
-          body="Interests, pace, travel style, budget style, daily rhythm and typical travel party."
+          title={strings.profile.travelDna}
+          body={strings.profile.travelDnaBody}
           onPress={() => router.push('/travel-dna')}
         />
 
@@ -278,8 +288,8 @@ export default function ProfileScreen() {
 
         <ActiveRow
           icon="bookmark-outline"
-          title="Saved ideas"
-          body="Catalogue destinations and journey ideas you kept. These are not trips or visited places."
+          title={strings.profile.savedIdeas}
+          body={strings.profile.savedIdeasBody}
           onPress={() => router.push('/discover/saved')}
         />
 
@@ -289,10 +299,10 @@ export default function ProfileScreen() {
           icon="download-outline"
           title={
             isExporting
-              ? 'Preparing export…'
-              : 'Export local backup'
+              ? strings.profile.exporting
+              : strings.profile.exportBackup
           }
-          body="Save an unencrypted JSON backup (up to 8 MiB). It may contain private travel details: share only somewhere you trust. Photo files are not included."
+          body={strings.profile.exportBody}
           onPress={exportLocalBackup}
         />
 
@@ -302,10 +312,10 @@ export default function ProfileScreen() {
           icon="cloud-upload-outline"
           title={
             isRestoring
-              ? 'Restoring backup…'
-              : 'Restore local backup'
+              ? strings.profile.restoring
+              : strings.profile.restoreBackup
           }
-          body="Replace local data with a TravelOS JSON backup (up to 8 MiB). Photo files are not restored; photo references may not work on another device. Confirm before continuing."
+          body={strings.profile.restoreBody}
           onPress={restoreLocalBackup}
         />
 
@@ -313,8 +323,8 @@ export default function ProfileScreen() {
 
         <ActiveRow
           icon="sparkles-outline"
-          title="TravelOS AI"
-          body="Grounded Travel Chat, Trip Copilot, and Discover help. Confirm before anything becomes trip truth. Device kill-switch and privacy notes inside."
+          title={strings.profile.travelOsAi}
+          body={strings.profile.travelOsAiBody}
           onPress={() =>
             router.push('/travelos-ai' as never)
           }
@@ -326,10 +336,10 @@ export default function ProfileScreen() {
           icon="pulse-outline"
           title={
             isProbingCopilot
-              ? 'Checking copilot…'
-              : 'Probe AI health'
+              ? strings.profile.probing
+              : strings.profile.probeAi
           }
-          body="Ping the configured TravelOS AI proxy for tool availability. Does not write trip data."
+          body={strings.profile.probeAiBody}
           onPress={checkCopilot}
         />
 
@@ -337,8 +347,8 @@ export default function ProfileScreen() {
 
         <ActiveRow
           icon="notifications-outline"
-          title="Trip notifications"
-          body="Local reminders before timed stops when a destination timezone is saved."
+          title={strings.profile.notifications}
+          body={strings.profile.notificationsBody}
           onPress={() =>
             router.push('/trip-notifications' as never)
           }
@@ -348,18 +358,18 @@ export default function ProfileScreen() {
 
         <FutureRow
           icon="cloud-outline"
-          title="Account & sync"
-          body="Back up your trips and keep TravelOS in sync across devices."
+          title={strings.profile.accountSync}
+          body={strings.profile.accountSyncBody}
         />
       </View>
 
       <View style={styles.sectionHeading}>
         <Text style={styles.sectionEyebrow}>
-          YOUR DATA
+          {strings.profile.dataEyebrow}
         </Text>
 
         <Text style={styles.sectionTitle}>
-          Private by default
+          {strings.profile.privateByDefault}
         </Text>
       </View>
 
@@ -374,11 +384,11 @@ export default function ProfileScreen() {
 
         <View style={styles.privacyCopy}>
           <Text style={styles.privacyTitle}>
-            Your trips stay with you.
+            {strings.profile.tripsStayWithYou}
           </Text>
 
           <Text style={styles.privacyBody}>
-            Travel data is stored on this device. Export and restore use a local JSON backup. TravelOS AI is optional and confirm-gated; cloud sync and photo-file backup remain later, explicit options.
+            {strings.profile.privacyBody}
           </Text>
         </View>
       </View>
@@ -422,7 +432,7 @@ function ActiveRow({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Open ${title}`}
+      accessibilityLabel={strings.a11y.open(title)}
       style={({ pressed }) => [
         styles.settingsRow,
         pressed && styles.pressed,

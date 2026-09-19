@@ -47,6 +47,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 export default function DiscoverSavedScreen() {
   const router = useRouter();
@@ -115,7 +116,7 @@ export default function DiscoverSavedScreen() {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={strings.discoverShared.goBack}
           style={styles.backButton}
           onPress={() => router.back()}
         >
@@ -127,15 +128,15 @@ export default function DiscoverSavedScreen() {
         </Pressable>
 
         <Text style={styles.eyebrow}>
-          DISCOVER
+          {strings.discoverTab.eyebrow}
         </Text>
 
         <Text style={styles.title}>
-          Saved ideas
+          {strings.savedIdeas.title}
         </Text>
 
         <Text style={styles.subtitle}>
-          These are candidates you chose to keep. They are not trips, not visited places, and not a plan until you confirm Create Trip.
+          {strings.savedIdeas.intro}
         </Text>
       </View>
 
@@ -148,15 +149,15 @@ export default function DiscoverSavedScreen() {
       ) : listings.length === 0 ? (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyEyebrow}>
-            NOTHING SAVED YET
+            {strings.savedIdeas.nothingSaved}
           </Text>
 
           <Text style={styles.emptyTitle}>
-            Keep a destination or journey idea here
+            {strings.savedIdeas.keepAnIdea}
           </Text>
 
           <Text style={styles.emptyBody}>
-            Saving an idea does not create a trip and does not appear as travel history.
+            {strings.savedIdeas.savingNote}
           </Text>
         </View>
       ) : (
@@ -210,7 +211,7 @@ function SavedIdeaCard({
       {listing.available ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Make ${listing.title} a trip`}
+          accessibilityLabel={strings.a11y.makeATrip(listing.title)}
           style={({ pressed }) => [
             styles.primaryButton,
             pressed && styles.pressed,
@@ -219,11 +220,11 @@ function SavedIdeaCard({
         >
           <View>
             <Text style={styles.primaryButtonEyebrow}>
-              MAKE IT A TRIP
+              {strings.discoverShared.makeItATrip}
             </Text>
 
             <Text style={styles.primaryButtonText}>
-              Open Create Trip with this idea
+              {strings.savedIdeas.openCreateTripWithIdea}
             </Text>
           </View>
 
@@ -235,13 +236,13 @@ function SavedIdeaCard({
         </Pressable>
       ) : (
         <Text style={styles.unavailable}>
-          This idea can no longer be confirmed because it is not in the catalogue.
+          {strings.savedIdeas.noLongerInCatalogue}
         </Text>
       )}
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Remove ${listing.title} from saved ideas`}
+        accessibilityLabel={strings.a11y.removeFromSavedNamed(listing.title)}
         style={({ pressed }) => [
           styles.secondaryButton,
           pressed && styles.pressed,
@@ -251,7 +252,7 @@ function SavedIdeaCard({
         }}
       >
         <Text style={styles.secondaryButtonText}>
-          Remove from saved ideas
+          {strings.discoverShared.removeFromSaved}
         </Text>
       </Pressable>
     </View>

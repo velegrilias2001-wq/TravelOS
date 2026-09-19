@@ -30,6 +30,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 export default function ImportScreen() {
   const router = useRouter();
@@ -104,7 +105,7 @@ export default function ImportScreen() {
       setError(
         caught instanceof Error
           ? caught.message
-          : 'This material could not be imported.',
+          : strings.importScreen.materialFailed,
       );
     } finally {
       setBusy(false);
@@ -140,7 +141,7 @@ export default function ImportScreen() {
       setError(
         caught instanceof Error
           ? caught.message
-          : 'This file could not be imported.',
+          : strings.importScreen.fileFailed,
       );
     } finally {
       setBusy(false);
@@ -152,7 +153,7 @@ export default function ImportScreen() {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={strings.discoverShared.goBack}
           style={({ pressed }) => [
             styles.backButton,
             pressed && styles.pressed,
@@ -167,11 +168,11 @@ export default function ImportScreen() {
         </Pressable>
 
         <Text style={styles.eyebrow}>
-          REVIEW FIRST
+          {strings.importScreen.eyebrow}
         </Text>
 
         <Text style={styles.title}>
-          Import material
+          {strings.importScreen.title}
         </Text>
 
         <Text style={styles.subtitle}>
@@ -181,7 +182,7 @@ export default function ImportScreen() {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Choose a calendar file"
+        accessibilityLabel={strings.importScreen.chooseFile}
         disabled={busy}
         style={({ pressed }) => [
           styles.fileButton,
@@ -195,11 +196,11 @@ export default function ImportScreen() {
       >
         <View>
           <Text style={styles.primaryButtonEyebrow}>
-            CHOOSE FILE
+            {strings.importScreen.chooseFileEyebrow}
           </Text>
 
           <Text style={styles.primaryButtonText}>
-            Review an .ics, zip, PDF, Office, or confirmation photo
+            {strings.importScreen.chooseFileTitle}
           </Text>
         </View>
 
@@ -218,7 +219,7 @@ export default function ImportScreen() {
 
       <View style={styles.editor}>
         <Text style={styles.editorLabel}>
-          Or paste calendar text
+          {strings.importScreen.orPaste}
         </Text>
 
         <TextInput
@@ -234,7 +235,7 @@ export default function ImportScreen() {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Review calendar events"
+          accessibilityLabel={strings.importScreen.reviewEvents}
           disabled={busy || text.trim().length === 0}
           style={({ pressed }) => [
             styles.primaryButton,
@@ -248,11 +249,11 @@ export default function ImportScreen() {
         >
           <View>
             <Text style={styles.primaryButtonEyebrow}>
-              REVIEW QUEUE
+              {strings.importScreen.reviewQueue}
             </Text>
 
             <Text style={styles.primaryButtonText}>
-              Extract events without saving bookings
+              {strings.importScreen.extractWithoutSaving}
             </Text>
           </View>
 
@@ -267,14 +268,14 @@ export default function ImportScreen() {
       {batches.length > 0 ? (
         <View style={styles.list}>
           <Text style={styles.sectionEyebrow}>
-            RECENT REVIEWS
+            {strings.importScreen.recentReviews}
           </Text>
 
           {batches.map((batch) => (
             <Pressable
               key={batch.id}
               accessibilityRole="button"
-              accessibilityLabel={`Open ${batch.sourceLabel}`}
+              accessibilityLabel={strings.a11y.open(batch.sourceLabel)}
               style={({ pressed }) => [
                 styles.batchCard,
                 pressed && styles.pressed,
@@ -292,7 +293,7 @@ export default function ImportScreen() {
               <Text style={styles.batchDetail}>
                 {batch.skippedCount > 0
                   ? `${batch.skippedCount} events were skipped because they were incomplete.`
-                  : 'Open to review extracted claims.'}
+                  : strings.importScreen.openToReview}
               </Text>
             </Pressable>
           ))}

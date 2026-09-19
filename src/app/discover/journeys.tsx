@@ -48,6 +48,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 export default function DiscoverJourneysScreen() {
   const router = useRouter();
@@ -107,7 +108,7 @@ export default function DiscoverJourneysScreen() {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={strings.discoverShared.goBack}
           style={styles.backButton}
           onPress={() => {
             if (selectedIdentity) {
@@ -126,15 +127,15 @@ export default function DiscoverJourneysScreen() {
         </Pressable>
 
         <Text style={styles.eyebrow}>
-          DISCOVER
+          {strings.discoverTab.eyebrow}
         </Text>
 
         <Text style={styles.title}>
-          Ready-made journeys
+          {strings.journeys.title}
         </Text>
 
         <Text style={styles.subtitle}>
-          These are catalogue ideas, not trips. Extra cities can become destinations when you create the trip. TravelOS will not invent an itinerary or dates. Nothing is saved until you confirm Create Trip.
+          {strings.journeys.intro}
         </Text>
       </View>
 
@@ -196,7 +197,7 @@ function JourneyRow({
     >
       <View style={styles.destinationCopy}>
         <Text style={styles.destinationEyebrow}>
-          JOURNEY IDEA
+          {strings.journeys.journeyIdea}
         </Text>
 
         <Text style={styles.destinationTitle}>
@@ -237,7 +238,7 @@ function JourneyDetail({
     <View style={styles.guidance}>
       <View style={styles.guidanceCard}>
         <Text style={styles.guidanceEyebrow}>
-          IDEA, NOT A TRIP
+          {strings.journeys.ideaNotTrip}
         </Text>
 
         <Text style={styles.guidanceTitle}>
@@ -252,7 +253,7 @@ function JourneyDetail({
       <View style={styles.destinationCard}>
         <View style={styles.destinationCopy}>
           <Text style={styles.destinationEyebrow}>
-            PRIMARY DESTINATION
+            {strings.journeys.primaryDestination}
           </Text>
 
           <Text style={styles.destinationTitle}>
@@ -274,7 +275,7 @@ function JourneyDetail({
         >
           <View style={styles.destinationCopy}>
             <Text style={styles.destinationEyebrow}>
-              ALSO IN THIS IDEA
+              {strings.journeys.alsoInThisIdea}
             </Text>
 
             <Text style={styles.destinationTitle}>
@@ -282,7 +283,7 @@ function JourneyDetail({
             </Text>
 
             <Text style={styles.destinationMeta}>
-              This city can be added as another destination when you create the trip.
+              {strings.journeys.extraCityNote}
             </Text>
           </View>
         </View>
@@ -292,7 +293,7 @@ function JourneyDetail({
         <Pressable
           key={`${item.url}:${item.checkedAt}`}
           accessibilityRole="link"
-          accessibilityLabel={`Open cited source ${item.label}`}
+          accessibilityLabel={strings.a11y.openCitedSource(item.label)}
           style={({ pressed }) => [
             styles.evidenceCard,
             pressed && styles.pressed,
@@ -303,7 +304,7 @@ function JourneyDetail({
         >
           <View style={styles.evidenceCopy}>
             <Text style={styles.evidenceEyebrow}>
-              CITED SOURCE
+              {strings.discoverShared.citedSource}
             </Text>
 
             <Text style={styles.evidenceTitle}>
@@ -325,7 +326,7 @@ function JourneyDetail({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Make this idea a trip"
+        accessibilityLabel={strings.journeys.makeThisATrip}
         style={({ pressed }) => [
           styles.primaryButton,
           pressed && styles.pressed,
@@ -334,7 +335,7 @@ function JourneyDetail({
       >
         <View>
           <Text style={styles.primaryButtonEyebrow}>
-            MAKE IT A TRIP
+            {strings.discoverShared.makeItATrip}
           </Text>
 
           <Text style={styles.primaryButtonText}>
@@ -355,8 +356,8 @@ function JourneyDetail({
         accessibilityRole="button"
         accessibilityLabel={
           saved
-            ? 'Remove this journey from saved ideas'
-            : 'Save this journey idea'
+            ? strings.journeys.removeJourneyFromSaved
+            : strings.journeys.saveJourneyIdea
         }
         style={({ pressed }) => [
           styles.secondaryButton,
@@ -368,14 +369,14 @@ function JourneyDetail({
       >
         <Text style={styles.secondaryButtonText}>
           {saved
-            ? 'Remove from saved ideas'
-            : 'Save this idea'}
+            ? strings.discoverShared.removeFromSaved
+            : strings.discoverShared.saveIdea}
         </Text>
       </Pressable>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Choose another journey"
+        accessibilityLabel={strings.journeys.chooseAnotherLabel}
         style={({ pressed }) => [
           styles.secondaryButton,
           pressed && styles.pressed,
@@ -383,7 +384,7 @@ function JourneyDetail({
         onPress={onChooseAnother}
       >
         <Text style={styles.secondaryButtonText}>
-          Choose another idea
+          {strings.journeys.chooseAnother}
         </Text>
       </Pressable>
     </View>
@@ -393,18 +394,18 @@ function JourneyDetail({
 function formatCheckedAt(value: string): string {
   const [year, month, day] = value.split('-');
   const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
+    strings.months.january,
+    strings.months.february,
+    strings.months.march,
+    strings.months.april,
+    strings.months.may,
+    strings.months.june,
+    strings.months.july,
+    strings.months.august,
+    strings.months.september,
+    strings.months.october,
+    strings.months.november,
+    strings.months.december,
   ];
 
   return `${Number(day)} ${months[Number(month) - 1]} ${year}`;

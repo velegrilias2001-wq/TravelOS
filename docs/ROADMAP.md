@@ -290,7 +290,8 @@ Goal: make user data durable across devices and operate TravelOS as a released p
 - [x] **Greek copy, phase 2a: the five Trip Space tabs** — Companion, Plan, Map, Bookings, More and Trip Copilot, plus the shared date/time fields and the traveller-facing copy in the map, offline, readiness, evidence-pack, theme and plan-assist services. Two raw `trip.status` leaks fixed; the typed `actionLabel` contract kept and mapped in the UI; the duplicated Plan Assist / free-time activity copy unified. Android-verified.
 - [x] **Greek copy, phase 2b: Trip Space secondary screens** — Budget, Trip Details, Accommodation, Travelers, Memories, Travel Book and Packing, plus a shared `strings.a11y` group for name-based accessibility phrasings. Phase 2 is complete. Android-verified.
 - [ ] Surface a translated message when a Plan save fails with an unrecognised service error, instead of showing the raw English exception text.
-- [ ] **Greek copy, phase 3** — Discover, World, Profile, Travel DNA, import and chat.
+- [x] **Greek copy, phase 3** — Discover and its sub-screens, World, Profile including the backup/restore confirmations, Travel DNA, import and import review, TravelOS AI, and `trip-notifications.tsx` which a repository-wide count found missing from the phase plan. The Greek migration is complete. Android-verified.
+- [ ] Correct the `locale-format.ts` header: it still claims copy stays English in V1.
 - [ ] Update the `locale-format.ts` header once every phase lands, so the file no longer claims English copy.
 - [ ] Style the native date and time pickers, or wrap them, so they stop rendering Material teal against the warm palette.
 - [x] **Raw ISO dates out of Create Trip** — the `CalendarDateField` echo now appears only for a non-canonical value, where it is the diagnostic rather than noise, and the step 3 review card formats its range. Android-verified.
