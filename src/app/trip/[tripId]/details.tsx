@@ -47,6 +47,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 type EditableStatus = Exclude<
   TripStatus,
@@ -59,19 +60,19 @@ const STATUS_OPTIONS: Array<{
 }> = [
   {
     value: 'draft',
-    label: 'Draft',
+    label: strings.tripStatusLabel.draft,
   },
   {
     value: 'planned',
-    label: 'Planned',
+    label: strings.tripStatusLabel.planned,
   },
   {
     value: 'completed',
-    label: 'Completed',
+    label: strings.tripStatusLabel.completed,
   },
   {
     value: 'archived',
-    label: 'Archived',
+    label: strings.tripStatusLabel.archived,
   },
 ];
 
@@ -82,36 +83,36 @@ interface ChoiceOption<Value extends string> {
 }
 
 const INTENT_OPTIONS: ChoiceOption<TripIntent>[] = [
-  { value: 'relax', label: 'Relax' },
-  { value: 'explore', label: 'Explore' },
-  { value: 'food', label: 'Food' },
-  { value: 'nature', label: 'Nature' },
-  { value: 'event', label: 'Event' },
-  { value: 'social', label: 'Social' },
-  { value: 'romantic', label: 'Romantic' },
-  { value: 'family', label: 'Family' },
+  { value: 'relax', label: strings.tripIntent.relax },
+  { value: 'explore', label: strings.tripIntent.explore },
+  { value: 'food', label: strings.tripIntent.food },
+  { value: 'nature', label: strings.tripIntent.nature },
+  { value: 'event', label: strings.tripIntent.event },
+  { value: 'social', label: strings.tripIntent.social },
+  { value: 'romantic', label: strings.tripIntent.romantic },
+  { value: 'family', label: strings.tripIntent.family },
   {
     value: 'work_leisure',
-    label: 'Work + Leisure',
+    label: strings.tripIntent.work_leisure,
   },
-  { value: 'other', label: 'Other' },
+  { value: 'other', label: strings.tripIntent.other },
 ];
 
 const PACE_OPTIONS: ChoiceOption<TripPace>[] = [
   {
     value: 'slow',
-    label: 'Slow',
-    description: 'More breathing room.',
+    label: strings.tripPace.slowLabel,
+    description: strings.tripPace.slowDescription,
   },
   {
     value: 'balanced',
-    label: 'Balanced',
+    label: strings.tripPace.balancedLabel,
     description: 'A mix of plans and space.',
   },
   {
     value: 'full',
-    label: 'Full',
-    description: 'Make the most of each day.',
+    label: strings.tripPace.fullLabel,
+    description: strings.tripPace.fullDescription,
   },
 ];
 
@@ -188,7 +189,7 @@ export default function TripDetailsScreen() {
     setDestinations((current) => {
       if (current.length >= MAX_TRIP_DESTINATIONS) {
         Alert.alert(
-          'Destination limit',
+          strings.tripDetails.alertDestinationLimit,
           `A trip can have at most ${MAX_TRIP_DESTINATIONS} destinations.`,
         );
         return current;
@@ -221,7 +222,7 @@ export default function TripDetailsScreen() {
 
     if (destinations.length <= 1) {
       Alert.alert(
-        'Keep one destination',
+        strings.tripDetails.alertKeepOne,
         'A trip needs at least one destination.',
       );
       return;
@@ -229,14 +230,14 @@ export default function TripDetailsScreen() {
 
     Alert.alert(
       `Remove ${destination.name.trim() || 'this destination'}?`,
-      'Stops, bookings, and stays stay on this trip. This only removes the place from the destination list.',
+      strings.tripDetails.alertRemoveDestinationBody,
       [
         {
-          text: 'Keep',
+          text: strings.tripDetails.keep,
           style: 'cancel',
         },
         {
-          text: 'Remove',
+          text: strings.tripDetails.remove,
           style: 'destructive',
           onPress: () => {
             setShowSavedNotice(false);
@@ -258,7 +259,7 @@ export default function TripDetailsScreen() {
 
     if (!cleanTitle) {
       Alert.alert(
-        'Add a trip title',
+        strings.tripDetails.alertTitleNeeded,
         'A clear trip title keeps every part of this journey connected.',
       );
       return;
@@ -271,8 +272,8 @@ export default function TripDetailsScreen() {
       )
     ) {
       Alert.alert(
-        'Check destinations',
-        'Every existing destination needs a name.',
+        strings.tripDetails.alertDestinationsTitle,
+        strings.tripDetails.alertDestinationsBody,
       );
       return;
     }
@@ -284,18 +285,18 @@ export default function TripDetailsScreen() {
       );
     } catch (error) {
       Alert.alert(
-        'Check your dates',
+        strings.tripDetails.alertDatesTitle,
         error instanceof Error
           ? error.message
-          : 'Choose a valid date range.',
+          : strings.tripDetails.alertDatesBody,
       );
       return;
     }
 
     if (!/^[A-Z]{3}$/.test(cleanCurrency)) {
       Alert.alert(
-        'Check the currency',
-        'Use a three-letter accounting currency code such as EUR or USD.',
+        strings.tripDetails.alertCurrencyTitle,
+        strings.tripDetails.alertCurrencyBody,
       );
       return;
     }
@@ -344,12 +345,12 @@ export default function TripDetailsScreen() {
       );
 
       Alert.alert(
-        'Could not save trip details',
+        strings.tripDetails.alertSaveFailed,
         budgetCurrencyBlocked
-          ? 'This trip already has a saved budget. Its accounting currency cannot be relabeled or converted here.'
+          ? strings.tripDetails.alertBudgetLocked
           : error instanceof Error && error.message
             ? error.message
-            : 'Your saved trip remains available. Review the details and try again.',
+            : strings.tripDetails.alertSaveFailedBody,
       );
     } finally {
       setIsSaving(false);
@@ -358,15 +359,15 @@ export default function TripDetailsScreen() {
 
   const deleteTrip = () => {
       Alert.alert(
-        `Delete “${trip.title}”?`,
-        'This permanently removes this trip and its related local plan, moments, bookings, stays, budget, expenses, memories, Travel Book, and photo copies in app storage from this device. Gallery originals are left untouched. There is no undo. Profile offers a JSON backup of data, but not photo files. To keep the trip hidden instead, choose Archived in Status and save.',
+        strings.tripDetails.deleteConfirmTitle(trip.title),
+        strings.tripDetails.deleteConfirmBody,
       [
         {
-          text: 'Cancel',
+          text: strings.tripDetails.cancel,
           style: 'cancel',
         },
         {
-          text: 'Delete trip',
+          text: strings.tripDetails.deleteConfirm,
           style: 'destructive',
           onPress: () => {
             void (async () => {
@@ -381,8 +382,8 @@ export default function TripDetailsScreen() {
                 );
                 setIsDeleting(false);
                 Alert.alert(
-                  'Could not delete trip',
-                  'No deletion was confirmed. Your local trip remains available.',
+                  strings.tripDetails.alertDeleteFailed,
+                  strings.tripDetails.alertDeleteFailedBody,
                 );
               }
             })();
@@ -405,7 +406,7 @@ export default function TripDetailsScreen() {
         <View style={styles.topBar}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Back to More"
+            accessibilityLabel={strings.tripDetails.back}
             style={styles.backButton}
             onPress={() => router.back()}
           >
@@ -424,9 +425,9 @@ export default function TripDetailsScreen() {
         </View>
 
         <UtilityScreenHeader
-          eyebrow="TRIP OVERVIEW"
-          title="Trip details"
-          subtitle="Destination, dates, status and budget currency."
+          eyebrow={strings.tripDetails.eyebrowOverview}
+          title={strings.tripDetails.title}
+          subtitle={strings.tripDetails.subtitle}
         />
 
         {showSavedNotice && (
@@ -437,21 +438,21 @@ export default function TripDetailsScreen() {
               color={colors.success}
             />
             <Text style={styles.savedNoticeText}>
-              Trip details saved.
+              {strings.tripDetails.savedToast}
             </Text>
           </View>
         )}
 
         <SectionHeader
-          eyebrow="THE JOURNEY"
-          title="Basics"
+          eyebrow={strings.tripDetails.eyebrowJourney}
+          title={strings.tripDetails.basics}
         />
 
         <View style={styles.card}>
           <Field
-            label="TRIP TITLE"
+            label={strings.tripDetails.labelTitle}
             value={title}
-            placeholder="Summer in Japan"
+            placeholder={strings.tripDetails.titlePlaceholder}
             onChangeText={(value) => {
               setShowSavedNotice(false);
               setTitle(value);
@@ -461,7 +462,7 @@ export default function TripDetailsScreen() {
           <View style={styles.divider} />
 
           <Text style={styles.fieldLabel}>
-            STATUS
+            {strings.tripDetails.labelStatus}
           </Text>
 
           {status === 'active' && (
@@ -469,10 +470,10 @@ export default function TripDetailsScreen() {
               <View style={styles.activeDot} />
               <View style={styles.activeStatusCopy}>
                 <Text style={styles.activeStatusTitle}>
-                  Active
+                  {strings.tripDetails.activeStatus}
                 </Text>
                 <Text style={styles.activeStatusBody}>
-                  Active is set automatically while the trip is happening.
+                  {strings.tripDetails.activeNote}
                 </Text>
               </View>
             </View>
@@ -515,17 +516,17 @@ export default function TripDetailsScreen() {
         </View>
 
         <SectionHeader
-          eyebrow="TRIP CHARACTER"
-          title="Intent & pace"
+          eyebrow={strings.tripDetails.eyebrowCharacter}
+          title={strings.tripDetails.intentAndPace}
         />
 
         <View style={styles.card}>
           <Text style={styles.fieldLabel}>
-            PRIMARY INTENT · OPTIONAL
+            {strings.tripDetails.intentEyebrow}
           </Text>
 
           <Text style={styles.choiceHelp}>
-            What matters most for this trip?
+            {strings.tripDetails.intentQuestion}
           </Text>
 
           <View style={styles.intentGrid}>
@@ -574,11 +575,11 @@ export default function TripDetailsScreen() {
           <View style={styles.divider} />
 
           <Text style={styles.fieldLabel}>
-            TRIP PACE · OPTIONAL
+            {strings.tripDetails.paceEyebrow}
           </Text>
 
           <Text style={styles.choiceHelp}>
-            How full should the days feel?
+            {strings.tripDetails.paceQuestion}
           </Text>
 
           <View style={styles.paceOptions}>
@@ -647,13 +648,13 @@ export default function TripDetailsScreen() {
           </View>
 
           <Text style={styles.choiceFootnote}>
-            Tap the selected option again to leave it unset.
+            {strings.tripDetails.unsetHint}
           </Text>
         </View>
 
         <SectionHeader
-          eyebrow="WHERE"
-          title="Destinations"
+          eyebrow={strings.tripDetails.eyebrowWhere}
+          title={strings.tripDetails.destinations}
         />
 
         <View style={styles.card}>
@@ -665,7 +666,7 @@ export default function TripDetailsScreen() {
                 color={colors.warning}
               />
               <Text style={styles.inlineNoticeText}>
-                This trip does not have a destination yet. Add a real map location before saving one.
+                {strings.tripDetails.noDestinationYet}
               </Text>
             </View>
           ) : (
@@ -736,7 +737,7 @@ export default function TripDetailsScreen() {
                       <View style={styles.destinationActions}>
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel={`Move ${destination.name} earlier`}
+                          accessibilityLabel={strings.a11y.moveEarlier(destination.name)}
                           disabled={isSaving || index === 0}
                           hitSlop={5}
                           style={({ pressed }) => [
@@ -755,7 +756,7 @@ export default function TripDetailsScreen() {
                         </Pressable>
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel={`Move ${destination.name} later`}
+                          accessibilityLabel={strings.a11y.moveLater(destination.name)}
                           disabled={
                             isSaving ||
                             index === destinations.length - 1
@@ -778,7 +779,7 @@ export default function TripDetailsScreen() {
                         </Pressable>
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel={`Remove ${destination.name}`}
+                          accessibilityLabel={strings.a11y.remove(destination.name)}
                           disabled={isSaving}
                           hitSlop={5}
                           style={({ pressed }) => [
@@ -800,7 +801,7 @@ export default function TripDetailsScreen() {
 
                     {destination.replacement && (
                       <Text style={styles.pendingDestinationText}>
-                        This destination will update when you save.
+                        {strings.tripDetails.destinationWillUpdate}
                       </Text>
                     )}
                   </View>
@@ -827,20 +828,20 @@ export default function TripDetailsScreen() {
 
           {destinations.length > 1 ? (
             <Text style={styles.destinationFootnote}>
-              Each city can keep its own timezone when a catalogue, map provider, or you supply one. TravelOS will not guess a timezone from coordinates or destination order. Companion uses that city’s timezone for today when the day is assigned and exactly one city is locally today.
+              {strings.tripDetails.timezoneFootnote}
             </Text>
           ) : null}
         </View>
 
         <SectionHeader
-          eyebrow="WHEN"
-          title="Travel dates"
+          eyebrow={strings.tripDetails.eyebrowWhen}
+          title={strings.tripDetails.travelDates}
         />
 
         <View style={styles.card}>
           <CalendarDateField
             compact
-            label="START DATE"
+            label={strings.tripDetails.labelStartDate}
             value={startDate}
             fallbackDate={endDate}
             onChange={(value) => {
@@ -853,7 +854,7 @@ export default function TripDetailsScreen() {
 
           <CalendarDateField
             compact
-            label="END DATE"
+            label={strings.tripDetails.labelEndDate}
             value={endDate}
             fallbackDate={startDate}
             onChange={(value) => {
@@ -868,15 +869,15 @@ export default function TripDetailsScreen() {
         </View>
 
         <SectionHeader
-          eyebrow="TRIP MONEY"
-          title="Budget currency"
+          eyebrow={strings.tripDetails.eyebrowMoney}
+          title={strings.tripDetails.budgetCurrency}
         />
 
         <View style={styles.card}>
           <Field
-            label="BUDGET CURRENCY"
+            label={strings.tripDetails.labelBudgetCurrency}
             value={accountingCurrency}
-            placeholder="EUR"
+            placeholder={strings.newTrip.currencyPlaceholder}
             editable={!hasPersistedBudget}
             autoCapitalize="characters"
             maxLength={3}
@@ -909,7 +910,7 @@ export default function TripDetailsScreen() {
             <Text style={styles.currencyPolicyText}>
               {hasPersistedBudget
                 ? 'A saved budget is using this currency, so it can’t be changed.'
-                : 'Used for trip totals. Local currencies stay separate.'}
+                : strings.tripDetails.currencyNote}
             </Text>
           </View>
         </View>
@@ -926,8 +927,8 @@ export default function TripDetailsScreen() {
         >
           <Text style={styles.saveButtonText}>
             {isSaving
-              ? 'Saving trip…'
-              : 'Save trip details'}
+              ? strings.tripDetails.saving
+              : strings.tripDetails.save}
           </Text>
           {!isSaving && (
             <Ionicons
@@ -940,7 +941,7 @@ export default function TripDetailsScreen() {
 
         <View style={styles.dangerSection}>
           <Text style={styles.sectionEyebrow}>
-            DANGER ZONE
+            {strings.tripDetails.dangerZone}
           </Text>
           <View style={styles.dangerRow}>
             <View style={styles.dangerIcon}>
@@ -952,15 +953,15 @@ export default function TripDetailsScreen() {
             </View>
             <View style={styles.dangerCopy}>
               <Text style={styles.dangerTitle}>
-                Delete trip
+                {strings.tripDetails.deleteTitle}
               </Text>
               <Text style={styles.dangerBody}>
-                Permanently remove this trip from this device. Archive it in Status if you might still need it. JSON backups do not include photo files.
+                {strings.tripDetails.deleteBody}
               </Text>
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Delete trip"
+              accessibilityLabel={strings.tripDetails.deleteTitle}
               disabled={isSaving || isDeleting}
               style={[
                 styles.deleteButton,
@@ -970,7 +971,7 @@ export default function TripDetailsScreen() {
               onPress={deleteTrip}
             >
               <Text style={styles.deleteButtonText}>
-                {isDeleting ? '…' : 'Delete'}
+                {isDeleting ? '…' : strings.tripDetails.delete}
               </Text>
             </Pressable>
           </View>

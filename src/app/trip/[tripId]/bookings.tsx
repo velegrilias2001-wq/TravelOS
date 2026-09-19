@@ -571,7 +571,7 @@ export default function BookingsScreen() {
   ) => {
     Alert.alert(
       strings.bookings.alertDeleteTitle,
-      `Remove "${booking.title}" from this trip? Linked stays keep their facts. This booking cannot be recovered after deletion.`,
+      strings.bookings.removeBookingBody(booking.title),
       [
         {
           text: strings.bookings.cancel,
@@ -975,7 +975,9 @@ export default function BookingsScreen() {
                       {linkedStopContext && (
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel={`Open ${linkedStopContext.stop.title} in Plan`}
+                          accessibilityLabel={strings.a11y.openInPlan(
+                            linkedStopContext.stop.title,
+                          )}
                           style={styles.linkedStopRow}
                           onPress={() =>
                             router.push({
@@ -1114,7 +1116,7 @@ export default function BookingsScreen() {
 
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel={`Delete ${booking.title}`}
+                          accessibilityLabel={strings.a11y.del(booking.title)}
                           style={
                             styles.deleteButton
                           }

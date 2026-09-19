@@ -553,7 +553,7 @@ export default function NewTripScreen() {
     }
 
     Alert.alert(
-      `Remove ${destination.name}?`,
+      strings.a11y.removeQuestion(destination.name),
       strings.newTrip.alertRemoveDestinationBody,
       [
         {
@@ -938,7 +938,7 @@ export default function NewTripScreen() {
                         <View style={styles.destinationActions}>
                           <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={`Move ${destination.name} earlier`}
+                            accessibilityLabel={strings.a11y.moveEarlier(destination.name)}
                             disabled={isSaving || index === 0}
                             hitSlop={5}
                             style={({ pressed }) => [
@@ -957,7 +957,7 @@ export default function NewTripScreen() {
                           </Pressable>
                           <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={`Move ${destination.name} later`}
+                            accessibilityLabel={strings.a11y.moveLater(destination.name)}
                             disabled={
                               isSaving ||
                               index === destinations.length - 1
@@ -980,7 +980,7 @@ export default function NewTripScreen() {
                           </Pressable>
                           <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={`Remove ${destination.name}`}
+                            accessibilityLabel={strings.a11y.remove(destination.name)}
                             disabled={isSaving}
                             hitSlop={5}
                             style={({ pressed }) => [

@@ -145,7 +145,7 @@ function formatStopTimeRange(
   }
 
   if (stop.endTime) {
-    return `Until ${stop.endTime}`;
+    return strings.a11y.until(stop.endTime);
   }
 
   return null;
@@ -1028,7 +1028,10 @@ export default function PlanScreen() {
 
     Alert.alert(
       strings.plan.alertRemoveTitle,
-      `Remove "${stop.title}" from this day?${unlinkMessage}`,
+      strings.plan.removeStopBody(
+        stop.title,
+        unlinkMessage,
+      ),
       [
         {
           text: strings.plan.cancel,
@@ -1185,7 +1188,10 @@ export default function PlanScreen() {
                 <Pressable
                   key={`strip-${day.id}`}
                   accessibilityRole="button"
-                  accessibilityLabel={`Jump to day ${day.dayNumber}, ${formatDayDate(day.date)}`}
+                  accessibilityLabel={strings.a11y.jumpToDay(
+                    day.dayNumber,
+                    formatDayDate(day.date),
+                  )}
                   accessibilityState={{ selected }}
                   style={[
                     styles.dayStripChip,
@@ -1301,7 +1307,15 @@ export default function PlanScreen() {
                   <View style={styles.dayHeader}>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`Day ${day.dayNumber}, ${formatDayDate(day.date)}${stops.length > 0 ? collapsed ? ', collapsed' : ', expanded' : ''}`}
+                      accessibilityLabel={strings.a11y.dayState(
+                            day.dayNumber,
+                            formatDayDate(day.date),
+                            stops.length > 0
+                              ? collapsed
+                                ? strings.a11y.collapsed
+                                : strings.a11y.expanded
+                              : '',
+                          )}
                       accessibilityState={
                         stops.length > 0
                           ? { expanded: !collapsed }
@@ -1345,7 +1359,7 @@ export default function PlanScreen() {
                     {stops.length > 0 && (
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel={`Add moment to day ${day.dayNumber}`}
+                        accessibilityLabel={strings.a11y.addMomentToDay(day.dayNumber)}
                         style={
                           styles.addButton
                         }
@@ -1376,7 +1390,7 @@ export default function PlanScreen() {
                     >
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel={`Leave day ${day.dayNumber} city unassigned`}
+                        accessibilityLabel={strings.a11y.leaveDayUnassigned(day.dayNumber)}
                         accessibilityState={{
                           selected: !assignedCity,
                         }}
@@ -1410,7 +1424,10 @@ export default function PlanScreen() {
                             <Pressable
                               key={destination.id}
                               accessibilityRole="button"
-                              accessibilityLabel={`Assign ${destination.name} to day ${day.dayNumber}`}
+                              accessibilityLabel={strings.a11y.assignToDay(
+                                  destination.name,
+                                  day.dayNumber,
+                                )}
                               accessibilityState={{
                                 selected,
                               }}
@@ -1849,7 +1866,7 @@ export default function PlanScreen() {
                                 <>
                                   <Pressable
                                     accessibilityRole="button"
-                                    accessibilityLabel={`Move ${stop.title} earlier`}
+                                    accessibilityLabel={strings.a11y.moveEarlier(stop.title)}
                                     hitSlop={5}
                                     disabled={
                                       index ===
@@ -1883,7 +1900,7 @@ export default function PlanScreen() {
 
                                   <Pressable
                                     accessibilityRole="button"
-                                    accessibilityLabel={`Move ${stop.title} later`}
+                                    accessibilityLabel={strings.a11y.moveLater(stop.title)}
                                     hitSlop={5}
                                     disabled={
                                       index ===
@@ -1921,7 +1938,7 @@ export default function PlanScreen() {
 
                               <Pressable
                                 accessibilityRole="button"
-                                accessibilityLabel={`Delete ${stop.title}`}
+                                accessibilityLabel={strings.a11y.del(stop.title)}
                                 hitSlop={5}
                                 style={
                                   styles.smallAction

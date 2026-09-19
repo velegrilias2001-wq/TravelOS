@@ -33,6 +33,7 @@ import {
   spacing,
 } from '@/theme';
 import { MIN_TOUCH_TARGET } from '@/theme/touch';
+import { strings } from '@/i18n';
 
 function chronologicalMemories(
   memories: Memory[],
@@ -60,7 +61,7 @@ function formatMomentDate(value: string): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return 'Moment date unavailable';
+    return strings.travelBook.momentDateUnavailable;
   }
 
   return date.toLocaleString('en-GB', {
@@ -285,8 +286,8 @@ export default function TravelBookScreen() {
   const handleSave = async () => {
     if (!title.trim()) {
       Alert.alert(
-        'Add a title',
-        'Your Travel Book needs a title before it can be saved.',
+        strings.travelBook.alertTitleNeeded,
+        strings.travelBook.alertTitleNeededBody,
       );
       return;
     }
@@ -312,10 +313,10 @@ export default function TravelBookScreen() {
       markSaved({ title: saved.title, summary: saved.summary ?? '', selectedIds: saved.memoryIds, coverImageUri: saved.coverImageUri, isPublished: saved.isPublished });
 
       Alert.alert(
-        'Travel Book saved',
+        strings.travelBook.alertSavedTitle,
         saved.isPublished
-          ? 'This book is marked as published in your local TravelOS library.'
-          : 'Your draft is saved locally.',
+          ? strings.travelBook.alertPublishedBody
+          : strings.travelBook.alertDraftBody,
       );
     } catch (error) {
       console.error(
@@ -323,10 +324,10 @@ export default function TravelBookScreen() {
         error,
       );
       Alert.alert(
-        'Could not save',
+        strings.travelBook.alertSaveFailed,
         error instanceof Error
           ? error.message
-          : 'The Travel Book could not be saved.',
+          : strings.travelBook.alertSaveFailedBody,
       );
     } finally {
       setIsSaving(false);
@@ -339,12 +340,12 @@ export default function TravelBookScreen() {
     }
 
     Alert.alert(
-      'Delete Travel Book?',
-      'The book layout will be deleted. Your Memories will stay untouched.',
+      strings.travelBook.alertDeleteTitle,
+      strings.travelBook.alertDeleteBody,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: strings.travelBook.cancel, style: 'cancel' },
         {
-          text: 'Delete',
+          text: strings.travelBook.delete,
           style: 'destructive',
           onPress: () => {
             void (async () => {
@@ -357,8 +358,8 @@ export default function TravelBookScreen() {
                 setIsPublished(false);
                 markSaved({ title: trip.title, summary: '', selectedIds: [], coverImageUri: undefined, isPublished: false });
                 Alert.alert(
-                  'Travel Book deleted',
-                  'The book was removed. Your Memories are still saved.',
+                  strings.travelBook.alertDeletedTitle,
+                  strings.travelBook.alertDeletedBody,
                 );
               } catch (error) {
                 console.error(
@@ -366,8 +367,8 @@ export default function TravelBookScreen() {
                   error,
                 );
                 Alert.alert(
-                  'Could not delete',
-                  'The Travel Book could not be deleted.',
+                  strings.travelBook.alertDeleteFailed,
+                  strings.travelBook.alertDeleteFailedBody,
                 );
               }
             })();
@@ -381,8 +382,8 @@ export default function TravelBookScreen() {
     <Screen scroll clearTabBar>
       <UtilityScreenHeader
         eyebrow={destinationLabel.toUpperCase()}
-        title="Travel Book"
-        subtitle="Shape real trip moments into a lasting story."
+        title={strings.travelBook.title}
+        subtitle={strings.travelBook.subtitle}
       />
 
       <View style={styles.truthNote}>
@@ -392,8 +393,7 @@ export default function TravelBookScreen() {
           color={colors.teal}
         />
         <Text style={styles.truthText}>
-          V1 uses only your saved Memories. No AI-written
-          events or invented details are added.
+          {strings.travelBook.onlySavedMemories}
         </Text>
       </View>
 
@@ -401,7 +401,7 @@ export default function TravelBookScreen() {
         {coverImageUri ? (
           <LocalImage
             uri={coverImageUri}
-            accessibilityLabel="Travel Book cover"
+            accessibilityLabel={strings.travelBook.cover}
             style={styles.coverImage}
           />
         ) : (
@@ -414,11 +414,10 @@ export default function TravelBookScreen() {
               />
             </View>
             <Text style={styles.coverPlaceholderTitle}>
-              Your journey, in your words.
+              {strings.travelBook.yourWords}
             </Text>
             <Text style={styles.coverPlaceholderBody}>
-              Select a saved photo below to use it as the
-              cover.
+              {strings.travelBook.selectCoverHint}
             </Text>
           </View>
         )}
@@ -445,7 +444,7 @@ export default function TravelBookScreen() {
 
       <SectionHeader
         eyebrow="BOOK DETAILS"
-        title="Shape the story"
+        title={strings.travelBook.shapeStory}
       />
 
       <View style={styles.editorCard}>
@@ -453,7 +452,7 @@ export default function TravelBookScreen() {
         <TextInput
           value={title}
           onChangeText={setTitle}
-          placeholder="A name for this journey"
+          placeholder={strings.travelBook.placeholderTitle}
           placeholderTextColor={colors.textMuted}
           style={styles.input}
         />
@@ -462,7 +461,7 @@ export default function TravelBookScreen() {
         <TextInput
           value={summary}
           onChangeText={setSummary}
-          placeholder="A short reflection in your own words…"
+          placeholder={strings.travelBook.placeholderSummary}
           placeholderTextColor={colors.textMuted}
           multiline
           textAlignVertical="top"
@@ -472,28 +471,28 @@ export default function TravelBookScreen() {
         <FieldLabel text="STATE" />
         <View style={styles.stateRow}>
           <StateChoice
-            label="Draft"
-            description="Still shaping"
+            label={strings.travelBook.draft}
+            description={strings.travelBook.stillShaping}
             selected={!isPublished}
             onPress={() => setIsPublished(false)}
           />
           <StateChoice
-            label="Published"
-            description="Finished locally"
+            label={strings.travelBook.published}
+            description={strings.travelBook.finishedLocally}
             selected={isPublished}
             onPress={() => setIsPublished(true)}
           />
         </View>
 
         <Text style={styles.helperText}>
-          Published is a local TravelOS state in V1.
-          Sharing and export are not enabled yet.
+          {strings.travelBook.publishedNote}
+          {strings.travelBook.sharingNote}
         </Text>
       </View>
 
       <SectionHeader
         eyebrow="STORY"
-        title="Selected moments"
+        title={strings.travelBook.selectedMoments}
       />
 
       {selectedMemories.length === 0 ? (
@@ -504,11 +503,10 @@ export default function TravelBookScreen() {
             color={colors.textMuted}
           />
           <Text style={styles.emptyStoryTitle}>
-            No moments selected
+            {strings.travelBook.noMomentsSelected}
           </Text>
           <Text style={styles.emptyStoryBody}>
-            Choose at least one Memory below when you want
-            this book to tell part of the journey.
+            {strings.travelBook.noMomentsBody}
           </Text>
         </View>
       ) : (
@@ -535,7 +533,7 @@ export default function TravelBookScreen() {
 
       <SectionHeader
         eyebrow="CURATE"
-        title="Choose what belongs"
+        title={strings.travelBook.chooseWhatBelongs}
       />
 
       {memories.length === 0 ? (
@@ -546,11 +544,10 @@ export default function TravelBookScreen() {
             color={colors.textMuted}
           />
           <Text style={styles.emptyStoryTitle}>
-            Add Memories first
+            {strings.travelBook.addMemoriesFirst}
           </Text>
           <Text style={styles.emptyStoryBody}>
-            Notes and photos from Memories become the real
-            material for your Travel Book.
+            {strings.travelBook.addMemoriesBody}
           </Text>
         </View>
       ) : (
@@ -570,7 +567,7 @@ export default function TravelBookScreen() {
                 <View style={styles.memoryRow}>
                   <Pressable
                     accessibilityRole="checkbox"
-                    accessibilityLabel={`${memory.title?.trim() || (memory.type === 'photo' ? 'Photo moment' : 'Note')}`}
+                    accessibilityLabel={`${memory.title?.trim() || (memory.type === 'photo' ? strings.travelBook.photoMoment : strings.travelBook.note)}`}
                     accessibilityState={{
                       checked: selected,
                     }}
@@ -599,7 +596,7 @@ export default function TravelBookScreen() {
                     memory.mediaUri ? (
                       <LocalImage
                         uri={memory.mediaUri}
-                        accessibilityLabel={`${memory.title?.trim() || 'Photo'} thumbnail`}
+                        accessibilityLabel={`${memory.title?.trim() || strings.travelBook.photo} thumbnail`}
                         style={styles.memoryThumb}
                       />
                     ) : (
@@ -623,8 +620,8 @@ export default function TravelBookScreen() {
                       >
                         {memory.title?.trim() ||
                           (memory.type === 'photo'
-                            ? 'Photo moment'
-                            : 'Note')}
+                            ? strings.travelBook.photoMoment
+                            : strings.travelBook.note)}
                       </Text>
                       <Text
                         numberOfLines={1}
@@ -643,8 +640,8 @@ export default function TravelBookScreen() {
                         accessibilityRole="button"
                         accessibilityLabel={
                           isCover
-                            ? 'Cover photo selected'
-                            : 'Use as cover photo'
+                            ? strings.travelBook.coverSelected
+                            : strings.travelBook.useAsCover
                         }
                         style={[
                           styles.coverButton,
@@ -678,7 +675,7 @@ export default function TravelBookScreen() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
-          isSaving ? 'Saving Travel Book' : 'Save Travel Book'
+          isSaving ? strings.travelBook.savingBook : strings.travelBook.saveBook
         }
         disabled={isSaving}
         style={[
@@ -694,7 +691,7 @@ export default function TravelBookScreen() {
         ) : (
           <>
             <Text style={styles.saveButtonText}>
-              Save Travel Book
+              {strings.travelBook.saveBook}
             </Text>
             <Ionicons
               name="arrow-forward"
@@ -708,7 +705,7 @@ export default function TravelBookScreen() {
       {book && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Delete Travel Book"
+          accessibilityLabel={strings.travelBook.deleteBook}
           style={styles.deleteButton}
           onPress={handleDelete}
         >
@@ -718,7 +715,7 @@ export default function TravelBookScreen() {
             color={colors.coral}
           />
           <Text style={styles.deleteButtonText}>
-            Delete Travel Book
+            {strings.travelBook.deleteBook}
           </Text>
         </Pressable>
       )}
@@ -833,7 +830,7 @@ function StoryMoment({
           memory.mediaUri && (
             <LocalImage
               uri={memory.mediaUri}
-              accessibilityLabel={`${memory.title?.trim() || 'Photo'} story image`}
+              accessibilityLabel={`${memory.title?.trim() || strings.travelBook.photo} story image`}
               style={styles.storyImage}
             />
           )}
@@ -841,8 +838,8 @@ function StoryMoment({
         <Text style={styles.storyTitle}>
           {memory.title?.trim() ||
             (memory.type === 'photo'
-              ? 'Photo moment'
-              : 'Saved note')}
+              ? strings.travelBook.photoMoment
+              : strings.travelBook.savedNote)}
         </Text>
 
         {memory.caption?.trim() && (

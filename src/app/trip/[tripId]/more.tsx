@@ -387,7 +387,7 @@ function HubRow({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Open ${title}`}
+      accessibilityLabel={strings.a11y.open(title)}
       style={({ pressed }) => [
         styles.hubRow,
         pressed && styles.pressed,

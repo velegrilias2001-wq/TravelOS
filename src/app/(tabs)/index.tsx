@@ -280,7 +280,7 @@ export default function HomeScreen() {
           <View style={styles.featuredBlock}>
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel={`Open ${featuredTrip.title}`}
+            accessibilityLabel={strings.a11y.open(featuredTrip.title)}
             style={[
               styles.heroCard,
               { backgroundColor: featuredTheme.accent },
@@ -654,7 +654,7 @@ export default function HomeScreen() {
               <PressableScale
                 key={trip.id}
                 accessibilityRole="button"
-                accessibilityLabel={`Open ${trip.title}`}
+                accessibilityLabel={strings.a11y.open(trip.title)}
                 style={styles.tripRow}
                 onPress={() => openTrip(trip)}
               >

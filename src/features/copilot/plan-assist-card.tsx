@@ -96,7 +96,7 @@ export function PlanAssistCard({
                   </View>
                   <PressableScale
                     accessibilityRole="button"
-                    accessibilityLabel={`Accept ${candidate.title}`}
+                    accessibilityLabel={strings.a11y.accept(candidate.title)}
                     disabled={disabled}
                     style={[
                       styles.accept,

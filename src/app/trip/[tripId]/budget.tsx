@@ -50,6 +50,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 const CATEGORY_DETAILS: Record<
   BudgetCategory,
@@ -60,37 +61,37 @@ const CATEGORY_DETAILS: Record<
   }
 > = {
   accommodation: {
-    label: 'Accommodation',
+    label: strings.budgetCategory.accommodation,
     icon: 'bed-outline',
     color: colors.teal,
   },
   transport: {
-    label: 'Transport',
+    label: strings.budgetCategory.transport,
     icon: 'train-outline',
     color: colors.brass,
   },
   food: {
-    label: 'Food',
+    label: strings.budgetCategory.food,
     icon: 'restaurant-outline',
     color: colors.coral,
   },
   activities: {
-    label: 'Activities',
+    label: strings.budgetCategory.activities,
     icon: 'sparkles-outline',
     color: colors.success,
   },
   shopping: {
-    label: 'Shopping',
+    label: strings.budgetCategory.shopping,
     icon: 'bag-handle-outline',
     color: colors.warning,
   },
   insurance: {
-    label: 'Insurance',
+    label: strings.budgetCategory.insurance,
     icon: 'shield-checkmark-outline',
     color: colors.textSecondary,
   },
   other: {
-    label: 'Other',
+    label: strings.budgetCategory.other,
     icon: 'ellipsis-horizontal-outline',
     color: colors.textMuted,
   },
@@ -139,7 +140,7 @@ function fromDateKey(value: string): Date {
 
 function formatDate(value?: string): string {
   if (!value) {
-    return 'Date not recorded';
+    return strings.budget.dateNotRecorded;
   }
 
   return fromDateKey(value).toLocaleDateString(
@@ -294,8 +295,8 @@ export default function BudgetScreen() {
       parsed < 0
     ) {
       Alert.alert(
-        'Check the budget',
-        'Enter a planned amount of zero or more.',
+        strings.budget.alertBudgetTitle,
+        strings.budget.alertBudgetBody,
       );
       return;
     }
@@ -310,8 +311,8 @@ export default function BudgetScreen() {
         error,
       );
       Alert.alert(
-        'Could not save budget',
-        'Your existing budget data was not changed. Please try again.',
+        strings.budget.alertBudgetFailed,
+        strings.budget.alertBudgetFailedBody,
       );
     } finally {
       setIsSaving(false);
@@ -352,8 +353,8 @@ export default function BudgetScreen() {
 
     if (!title.trim()) {
       Alert.alert(
-        'Add a title',
-        'Name this expense so it remains useful later.',
+        strings.budget.alertTitleNeeded,
+        strings.budget.alertTitleNeededBody,
       );
       return;
     }
@@ -364,24 +365,24 @@ export default function BudgetScreen() {
       parsedAmount <= 0
     ) {
       Alert.alert(
-        'Check the amount',
-        'Enter an expense amount greater than zero.',
+        strings.budget.alertAmountTitle,
+        strings.budget.alertAmountBody,
       );
       return;
     }
 
     if (!/^[A-Z]{3}$/.test(cleanCurrency)) {
       Alert.alert(
-        'Check the currency',
-        'Use a three-letter currency code such as EUR or JPY.',
+        strings.budget.alertCurrencyTitle,
+        strings.budget.alertCurrencyBody,
       );
       return;
     }
 
     if (!expenseDate) {
       Alert.alert(
-        'Choose a date',
-        'Select when this expense happened.',
+        strings.budget.alertDateTitle,
+        strings.budget.alertDateBody,
       );
       return;
     }
@@ -416,8 +417,8 @@ export default function BudgetScreen() {
         error,
       );
       Alert.alert(
-        'Could not save expense',
-        'Your existing expense data was not changed. Please try again.',
+        strings.budget.alertExpenseFailed,
+        strings.budget.alertExpenseFailedBody,
       );
     } finally {
       setIsSaving(false);
@@ -428,12 +429,12 @@ export default function BudgetScreen() {
     expense: BudgetItem,
   ) => {
     Alert.alert(
-      'Delete expense?',
-      `Remove "${expense.title}" from this budget?`,
+      strings.budget.alertDeleteTitle,
+      strings.budget.removeExpenseBody(expense.title),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: strings.budget.cancel, style: 'cancel' },
         {
-          text: 'Delete',
+          text: strings.budget.delete,
           style: 'destructive',
           onPress: async () => {
             try {
@@ -446,8 +447,8 @@ export default function BudgetScreen() {
                 error,
               );
               Alert.alert(
-                'Could not delete expense',
-                'Nothing was removed. Please try again.',
+                strings.budget.alertDeleteFailed,
+                strings.budget.alertDeleteFailedBody,
               );
             }
           },
@@ -469,13 +470,13 @@ export default function BudgetScreen() {
     <>
       <Screen scroll clearTabBar>
         <UtilityScreenHeader
-          eyebrow={`TRIP MONEY · ${accountingCurrency}`}
-          title="Budget"
-          subtitle="Plan your spending and see what’s left."
+          eyebrow={strings.budget.eyebrow(accountingCurrency)}
+          title={strings.budget.title}
+          subtitle={strings.budget.subtitle}
           leading={(
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Back to More"
+              accessibilityLabel={strings.budget.back}
               style={styles.backButton}
               onPress={() => router.back()}
             >
@@ -489,7 +490,7 @@ export default function BudgetScreen() {
           action={(
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Add expense"
+              accessibilityLabel={strings.budget.addExpense}
               disabled={!canAddExpense}
               style={[
                 styles.addButton,
@@ -516,7 +517,7 @@ export default function BudgetScreen() {
 
             <View style={styles.conflictCopy}>
               <Text style={styles.conflictTitle}>
-                Budget currency needs review
+                {strings.budget.currencyNeedsReview}
               </Text>
               <Text style={styles.conflictBody}>
                 This budget uses {workspace.budget?.currencyCode}, while the trip budget currency is {accountingCurrency}. The amounts remain unchanged and separate.
@@ -529,11 +530,11 @@ export default function BudgetScreen() {
               <View style={styles.summaryTopRow}>
                 <View>
                   <Text style={styles.summaryLabel}>
-                    PLANNED BUDGET
+                    {strings.budget.plannedBudget}
                   </Text>
                   <Text style={styles.summaryAmount}>
                     {summary.plannedAmount === null
-                      ? 'Not set'
+                      ? strings.budget.notSet
                       : formatMoney(
                           summary.plannedAmount,
                           accountingCurrency,
@@ -543,7 +544,7 @@ export default function BudgetScreen() {
 
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Edit planned budget"
+                  accessibilityLabel={strings.budget.editPlanned}
                   style={styles.editPlanButton}
                   onPress={openPlan}
                 >
@@ -567,7 +568,7 @@ export default function BudgetScreen() {
               <View style={styles.metricsRow}>
                 <View style={styles.metric}>
                   <Text style={styles.metricLabel}>
-                    SPENT
+                    {strings.budget.spent}
                   </Text>
                   <Text style={styles.metricValue}>
                     {formatMoney(
@@ -583,8 +584,8 @@ export default function BudgetScreen() {
                   <Text style={styles.metricLabel}>
                     {summary.remainingAmount !== null &&
                     summary.remainingAmount < 0
-                      ? 'OVER BUDGET'
-                      : 'REMAINING'}
+                      ? strings.budget.overBudget
+                      : strings.budget.remaining}
                   </Text>
                   <Text style={styles.metricValue}>
                     {summary.remainingAmount === null
@@ -613,7 +614,7 @@ export default function BudgetScreen() {
                     Kept outside the {accountingCurrency} total
                   </Text>
                   <Text style={styles.currencyNoticeBody}>
-                    These amounts stay in their original currencies and are not included in the trip total.
+                    {strings.budget.originalCurrenciesNote}
                   </Text>
 
                   <View style={styles.currencyPills}>
@@ -646,10 +647,10 @@ export default function BudgetScreen() {
                 />
                 <View style={styles.currencyNoticeCopy}>
                   <Text style={styles.currencyNoticeTitle}>
-                    Converted into {accountingCurrency}
+                    {strings.budget.convertedInto(accountingCurrency)}
                   </Text>
                   <Text style={styles.currencyNoticeBody}>
-                    These totals use an explicit traveler rate with an as-of date. They are not live market prices.
+                    {strings.budget.explicitRateNote}
                   </Text>
                   <View style={styles.currencyPills}>
                     {summary.convertedCurrencyTotals.map(
@@ -685,10 +686,10 @@ export default function BudgetScreen() {
               />
               <View style={styles.currencyNoticeCopy}>
                 <Text style={styles.currencyNoticeTitle}>
-                  Traveler FX rates
+                  {strings.budget.fxTitle}
                 </Text>
                 <Text style={styles.currencyNoticeBody}>
-                  Foreign paid expenses enter the {accountingCurrency} total only when you save a rate. There is no live FX feed.
+                  {strings.budget.fxNote(accountingCurrency)}
                 </Text>
                 {workspace.fxRates.map((rate) => (
                   <View
@@ -700,13 +701,15 @@ export default function BudgetScreen() {
                     </Text>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`Remove ${rate.fromCurrency} rate`}
+                      accessibilityLabel={strings.budget.fxRemoveLabel(
+                        rate.fromCurrency,
+                      )}
                       onPress={() =>
                         void actions.deleteFxRate(rate.id)
                       }
                     >
                       <Text style={styles.fxRateRemove}>
-                        Remove
+                        {strings.budget.remove}
                       </Text>
                     </Pressable>
                   </View>
@@ -737,7 +740,7 @@ export default function BudgetScreen() {
                   />
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Save FX rate"
+                    accessibilityLabel={strings.budget.fxSave}
                     disabled={isSavingFx}
                     style={styles.fxSave}
                     onPress={() => {
@@ -757,10 +760,10 @@ export default function BudgetScreen() {
                           fxEditor.markSaved({ fxFromCurrency: '', fxRate: '', fxAsOf: '' });
                         } catch (error) {
                           Alert.alert(
-                            'Could not save FX rate',
+                            strings.budget.alertFxFailed,
                             error instanceof Error
                               ? error.message
-                              : 'Check the currencies, rate, and as-of date.',
+                              : strings.budget.alertFxFailedBody,
                           );
                         } finally {
                           setIsSavingFx(false);
@@ -769,7 +772,7 @@ export default function BudgetScreen() {
                     }}
                   >
                     <Text style={styles.fxSaveText}>
-                      Save rate
+                      {strings.budget.saveRate}
                     </Text>
                   </Pressable>
                 </View>
@@ -785,8 +788,8 @@ export default function BudgetScreen() {
             )}
 
             <SectionHeader
-              eyebrow="WHERE IT WENT"
-              title="Categories"
+              eyebrow={strings.budget.eyebrowWhere}
+              title={strings.budget.categories}
             />
 
             {summary.categoryTotals.length > 0 ? (
@@ -853,9 +856,9 @@ export default function BudgetScreen() {
             )}
 
             <SectionHeader
-              eyebrow="YOUR RECORD"
-              title="Expenses"
-              actionLabel="Add expense"
+              eyebrow={strings.budget.eyebrowRecord}
+              title={strings.budget.expenses}
+              actionLabel={strings.budget.addExpense}
               onAction={openCreateExpense}
             />
 
@@ -872,10 +875,10 @@ export default function BudgetScreen() {
 
                   <View style={styles.emptyExpensesCopy}>
                     <Text style={styles.emptyTitle}>
-                      No expenses yet
+                      {strings.budget.noExpenses}
                     </Text>
                     <Text style={styles.emptyBody}>
-                      Add what you spend as the trip takes shape.
+                      {strings.budget.noExpensesBody}
                     </Text>
                   </View>
                 </View>
@@ -885,7 +888,7 @@ export default function BudgetScreen() {
                   onPress={openCreateExpense}
                 >
                   <Text style={styles.secondaryActionButtonText}>
-                    Add expense
+                    {strings.budget.addExpense}
                   </Text>
                 </Pressable>
               </View>
@@ -922,10 +925,10 @@ export default function BudgetScreen() {
 
               <View style={styles.emptyBudgetCopy}>
                 <Text style={styles.emptyBudgetTitle}>
-                  Set a budget for this trip
+                  {strings.budget.emptyTitle}
                 </Text>
                 <Text style={styles.emptyBudgetBody}>
-                  Choose how much you want to spend in {accountingCurrency}. Expenses can still use the currency you paid.
+                  {strings.budget.emptyBody(accountingCurrency)}
                 </Text>
               </View>
             </View>
@@ -936,18 +939,22 @@ export default function BudgetScreen() {
                 onPress={openPlan}
               >
                 <Text style={styles.primaryButtonText}>
-                  Set budget
+                  {strings.budget.setBudget}
                 </Text>
               </Pressable>
 
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Change trip currency from ${accountingCurrency}`}
+                accessibilityLabel={strings.budget.changeCurrencyLabel(
+                  accountingCurrency,
+                )}
                 style={styles.currencyTextButton}
                 onPress={openTripCurrencySettings}
               >
                 <Text style={styles.currencyTextButtonText}>
-                  Change {accountingCurrency}
+                  {strings.budget.changeCurrency(
+                    accountingCurrency,
+                  )}
                 </Text>
                 <Ionicons
                   name="chevron-forward"
@@ -975,13 +982,13 @@ export default function BudgetScreen() {
                 {accountingCurrency} · TRIP BUDGET
               </Text>
               <Text style={styles.sheetTitle}>
-                Planned amount
+                {strings.budget.plannedAmount}
               </Text>
             </View>
             <Pressable
               style={styles.closeButton}
               accessibilityRole="button"
-              accessibilityLabel="Close planned budget editor"
+              accessibilityLabel={strings.budget.plannedEditorClose}
               onPress={requestClosePlan}
             >
               <Ionicons
@@ -994,11 +1001,11 @@ export default function BudgetScreen() {
 
           <View style={styles.planSheetContent}>
             <Text style={styles.fieldLabel}>
-              PLANNED BUDGET
+              {strings.budget.labelPlannedBudget}
             </Text>
 
             <TextInput
-              accessibilityLabel="Planned budget amount"
+              accessibilityLabel={strings.budget.plannedAmount}
               value={plannedAmount}
               onChangeText={setPlannedAmount}
               placeholder="0.00"
@@ -1010,7 +1017,7 @@ export default function BudgetScreen() {
             <View style={styles.tripCurrencyRow}>
               <View style={styles.tripCurrencyCopy}>
                 <Text style={styles.tripCurrencyLabel}>
-                  TRIP CURRENCY
+                  {strings.budget.tripCurrencyLabel}
                 </Text>
                 <Text style={styles.tripCurrencyValue}>
                   {accountingCurrency}
@@ -1031,7 +1038,9 @@ export default function BudgetScreen() {
               ) : (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Change trip currency from ${accountingCurrency}`}
+                  accessibilityLabel={strings.budget.changeCurrencyLabel(
+                  accountingCurrency,
+                )}
                   style={styles.currencyChangeButton}
                   onPress={requestPlanCurrencyChange}
                 >
@@ -1049,8 +1058,8 @@ export default function BudgetScreen() {
 
             <Text style={styles.fieldHelp}>
               {workspace.budget
-                ? 'The trip currency is locked while saved budget data exists.'
-                : 'Set the trip currency before saving your first budget. Expenses can still use the currency you paid.'}
+                ? strings.budget.currencyLocked
+                : strings.budget.currencyBeforeFirst}
             </Text>
 
             <Pressable
@@ -1062,7 +1071,7 @@ export default function BudgetScreen() {
               onPress={() => void savePlannedBudget()}
             >
               <Text style={styles.sheetSaveButtonText}>
-                {isSaving ? 'Saving…' : 'Save budget'}
+                {isSaving ? strings.budget.saving : strings.budget.saveBudget}
               </Text>
             </Pressable>
           </View>
@@ -1079,18 +1088,18 @@ export default function BudgetScreen() {
           <View style={styles.sheetHeader}>
             <View>
               <Text style={styles.sheetEyebrow}>
-                ACTUAL EXPENSE
+                {strings.budget.actualExpense}
               </Text>
               <Text style={styles.sheetTitle}>
                 {editingExpense
-                  ? 'Edit expense'
-                  : 'Add expense'}
+                  ? strings.budget.editorEdit
+                  : strings.budget.editorAdd}
               </Text>
             </View>
             <Pressable
               style={styles.closeButton}
               accessibilityRole="button"
-              accessibilityLabel="Close expense editor"
+              accessibilityLabel={strings.budget.editorClose}
               onPress={requestCloseExpense}
             >
               <Ionicons
@@ -1107,16 +1116,16 @@ export default function BudgetScreen() {
             showsVerticalScrollIndicator={false}
           >
             <Field
-              label="TITLE"
+              label={strings.budget.labelTitle}
               value={title}
               onChangeText={setTitle}
-              placeholder="Dinner by the harbour"
+              placeholder={strings.budget.placeholderTitle}
             />
 
             <View style={styles.fieldRow}>
               <View style={styles.amountField}>
                 <Field
-                  label="AMOUNT"
+                  label={strings.budget.labelAmount}
                   value={amount}
                   onChangeText={setAmount}
                   placeholder="0.00"
@@ -1125,7 +1134,7 @@ export default function BudgetScreen() {
               </View>
               <View style={styles.currencyField}>
                 <Field
-                  label="CURRENCY"
+                  label={strings.budget.labelCurrency}
                   value={currency}
                   onChangeText={setCurrency}
                   placeholder={accountingCurrency}
@@ -1136,11 +1145,11 @@ export default function BudgetScreen() {
             </View>
 
             <Text style={styles.fieldHelpInline}>
-              Use the currency you actually paid.
+              {strings.budget.actualCurrencyNote}
             </Text>
 
             <Text style={styles.fieldLabel}>
-              CATEGORY
+              {strings.budget.labelCategory}
             </Text>
             <View style={styles.choiceWrap}>
               {BUDGET_CATEGORIES.map((value) => {
@@ -1185,7 +1194,7 @@ export default function BudgetScreen() {
             </Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Choose expense date"
+              accessibilityLabel={strings.budget.chooseDate}
               style={styles.dateButton}
               onPress={openDatePicker}
             >
@@ -1202,7 +1211,7 @@ export default function BudgetScreen() {
               >
                 {expenseDate
                   ? formatDate(expenseDate)
-                  : 'Choose expense date'}
+                  : strings.budget.chooseDate}
               </Text>
               <Ionicons
                 name="chevron-forward"
@@ -1222,8 +1231,8 @@ export default function BudgetScreen() {
               )}
 
             <LinkChoices
-              label="BOOKING"
-              emptyLabel="No booking link"
+              label={strings.budget.labelBooking}
+              emptyLabel={strings.budget.noBookingLink}
               selectedId={bookingId}
               choices={workspace.bookings.map(
                 (booking) => ({
@@ -1235,8 +1244,8 @@ export default function BudgetScreen() {
             />
 
             <LinkChoices
-              label="ITINERARY STOP"
-              emptyLabel="No stop link"
+              label={strings.budget.labelStop}
+              emptyLabel={strings.budget.noStopLink}
               selectedId={stopId}
               choices={workspace.stops.map((stop) => ({
                 id: stop.id,
@@ -1246,10 +1255,10 @@ export default function BudgetScreen() {
             />
 
             <Field
-              label="NOTES"
+              label={strings.budget.labelNotes}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Optional context, receipt details or who paid…"
+              placeholder={strings.budget.placeholderNotes}
               multiline
             />
 
@@ -1263,10 +1272,10 @@ export default function BudgetScreen() {
             >
               <Text style={styles.sheetSaveButtonText}>
                 {isSaving
-                  ? 'Saving…'
+                  ? strings.budget.saving
                   : editingExpense
-                    ? 'Save changes'
-                    : 'Add expense'}
+                    ? strings.budget.saveChanges
+                    : strings.budget.editorAdd}
               </Text>
             </Pressable>
 
@@ -1390,7 +1399,7 @@ function ExpenseRow({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Delete ${expense.title}`}
+        accessibilityLabel={strings.a11y.del(expense.title)}
         style={styles.deleteButton}
         onPress={onDelete}
       >

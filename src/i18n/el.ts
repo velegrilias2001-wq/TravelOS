@@ -9,6 +9,45 @@
  * values, or anything a machine reads.
  */
 export const el = {
+  /** Reusable accessibility phrasings built around a name. */
+  a11y: {
+    edit: (name: string) => `Επεξεργασία ${name}`,
+    remove: (name: string) => `Αφαίρεση ${name}`,
+    removeQuestion: (name: string) => `Αφαίρεση ${name};`,
+    del: (name: string) => `Διαγραφή ${name}`,
+    open: (name: string) => `Άνοιξε ${name}`,
+    openBooking: (name: string) => `Άνοιξε την κράτηση ${name}`,
+    openLinkedBooking: (name: string) =>
+      `Άνοιξε τη συνδεδεμένη κράτηση ${name}`,
+    openInPlan: (name: string) => `Άνοιξε ${name} στο Πρόγραμμα`,
+    openInPlanWith: (name: string, label: string) =>
+      `Άνοιξε ${name} στο Πρόγραμμα, ${label.toLowerCase()}`,
+    openWithBody: (title: string, body: string) => `Άνοιξε ${title}. ${body}`,
+    openDirections: (name: string) => `Άνοιξε οδηγίες προς ${name}`,
+    moveEarlier: (name: string) => `Μετακίνησε ${name} νωρίτερα`,
+    moveLater: (name: string) => `Μετακίνησε ${name} αργότερα`,
+    accept: (name: string) => `Αποδοχή ${name}`,
+    dayLabel: (day: number) => `Μέρα ${day}`,
+    dayWithDate: (day: number, date: string) => `Μέρα ${day} · ${date}`,
+    dayPrefix: (day: number) => `Μέρα ${day} · `,
+    dayDatePrefix: (day: number, date: string) => `Μέρα ${day} · ${date} · `,
+    jumpToDay: (day: number, date: string) =>
+      `Μετάβαση στη μέρα ${day}, ${date}`,
+    dayState: (day: number, date: string, state: string) =>
+      `Μέρα ${day}, ${date}${state}`,
+    collapsed: ', συμπτυγμένη',
+    expanded: ', ανεπτυγμένη',
+    addMomentToDay: (day: number) => `Πρόσθεσε στιγμή στη μέρα ${day}`,
+    leaveDayUnassigned: (day: number) =>
+      `Άφησε τη μέρα ${day} χωρίς πόλη`,
+    assignToDay: (name: string, day: number) =>
+      `Ανάθεσε ${name} στη μέρα ${day}`,
+    assignToToday: (name: string) => `Ανάθεσε ${name} στο σήμερα`,
+    until: (time: string) => `Έως ${time}`,
+    freeTimeIdeas: (from: string, to: string) =>
+      `Ιδέες ελεύθερου χρόνου από ${from} έως ${to}`,
+  },
+
   tabs: {
     home: 'Αρχική',
     trips: 'Ταξίδια',
@@ -229,6 +268,8 @@ export const el = {
     alertSaveFailed: 'Δεν αποθηκεύτηκε η στιγμή',
     alertAddFailed: 'Δεν προστέθηκε η στιγμή',
     alertRemoveTitle: 'Αφαίρεση στιγμής;',
+    removeStopBody: (name: string, extra: string) =>
+      `Αφαίρεση «${name}» από αυτή τη μέρα;${extra}`,
     alertRemoveFailed: 'Δεν αφαιρέθηκε η στιγμή',
     alertReorderFailed: 'Δεν άλλαξε η σειρά του προγράμματος',
     locationApplyFailed:
@@ -314,6 +355,8 @@ export const el = {
     alertStopUnavailable:
       'Η επιλεγμένη στιγμή δεν είναι πλέον διαθέσιμη για αυτό το ταξίδι. Διάλεξε άλλη στιγμή ή άφησε την κράτηση εκτός προγράμματος.',
     alertDeleteTitle: 'Διαγραφή κράτησης;',
+    removeBookingBody: (name: string) =>
+      `Αφαίρεση «${name}» από αυτό το ταξίδι; Οι συνδεδεμένες διαμονές κρατούν τα στοιχεία τους. Αυτή η κράτηση δεν ανακτάται μετά τη διαγραφή.`,
     alertDeleteFailed: 'Δεν διαγράφηκε η κράτηση',
     alertLinkUnavailableTitle: 'Ο σύνδεσμος δεν είναι διαθέσιμος',
     alertLinkUnavailableBody:
@@ -547,6 +590,493 @@ export const el = {
       'Μια ήρεμη θεματική στιγμή — διάλεξε τόπο αργότερα αν θέλεις.',
     bufferBody:
       'Κρατά τον ελεύθερο χρόνο ειλικρινή — τα ημιτελή πλάνα είναι έγκυρα.',
+  },
+
+  packing: {
+    alertAddFailed: 'Δεν προστέθηκε το είδος',
+    alertUpdateFailed: 'Δεν ενημερώθηκε το είδος',
+    alertRemoveTitle: 'Αφαίρεση είδους αποσκευής;',
+    alertRemoveFailed: 'Δεν αφαιρέθηκε το είδος',
+    tryAgain: 'Δοκίμασε ξανά.',
+    cancel: 'Άκυρο',
+    remove: 'Αφαίρεση',
+    loadFailed: 'Δεν ήταν δυνατή η φόρτωση των ειδών αποσκευής.',
+    removeLabel: (title: string) => `Αφαίρεση ${title}`,
+  },
+
+  travelerType: {
+    adultLabel: 'Ενήλικας',
+    adultDescription: 'Ενήλικας ταξιδιώτης',
+    childLabel: 'Παιδί',
+    childDescription: 'Παιδί ταξιδιώτης',
+    infantLabel: 'Βρέφος',
+    infantDescription: 'Βρέφος ταξιδιώτης',
+  },
+
+  travelers: {
+    title: 'Ταξιδιώτες',
+    subtitle: 'Οι άνθρωποι που έρχονται σε αυτό το ταξίδι.',
+    add: 'Πρόσθεσε ταξιδιώτη',
+    countLabel: (count: number) =>
+      count === 1 ? 'ταξιδιώτης' : 'ταξιδιώτες',
+    summaryLabel: (count: number) =>
+      count === 1
+        ? '1 ταξιδιώτης σε αυτό το ταξίδι'
+        : `${count} ταξιδιώτες σε αυτό το ταξίδι`,
+    emptyBody:
+      'Πρόσθεσε κάποιον νέο ή διάλεξε ταξιδιώτη που έχεις ήδη αποθηκεύσει. Ένα ταξίδι μπορεί να μείνει χωρίς ταξιδιώτες όσο σχεδιάζεις, και μπορεί να έχει προαιρετικό κάτοχο.',
+    privacyNote:
+      'Κράτα διαβατήρια και στοιχεία υγείας εκτός των προφίλ ταξιδιωτών. Προσκλήσεις, ρόλοι πέρα από τον κάτοχο και μοίρασμα εξόδων δεν είναι ακόμα διαθέσιμα.',
+    edit: 'Επεξεργασία',
+    removeFromTrip: 'Αφαίρεση από το ταξίδι',
+    removeOwner: 'Αφαίρεση κατόχου',
+    makeOwner: 'Όρισε κάτοχο',
+    savedTraveler: 'Αποθηκευμένος ταξιδιώτης',
+    editorAdd: 'Πρόσθεσε ταξιδιώτη',
+    editorEdit: 'Επεξεργασία ταξιδιώτη',
+    editorNew: 'Νέος ταξιδιώτης',
+    editorClose: 'Κλείσε τον επεξεργαστή ταξιδιώτη',
+    sharedNote:
+      'Οι αλλαγές σε αυτόν τον ταξιδιώτη θα φανούν και στα άλλα του ταξίδια.',
+    contactNote:
+      'Πρόσθεσε μόνο τα στοιχεία επικοινωνίας που χρειάζεσαι για το ταξίδι.',
+    labelFirstName: 'ΟΝΟΜΑ',
+    labelLastName: 'ΕΠΩΝΥΜΟ',
+    labelEmail: 'EMAIL',
+    labelPhone: 'ΤΗΛΕΦΩΝΟ',
+    required: 'Απαιτείται',
+    optional: 'Προαιρετικό',
+    saving: 'Αποθήκευση…',
+    saveChanges: 'Αποθήκευση αλλαγών',
+    createAndAdd: 'Δημιουργία και προσθήκη στο ταξίδι',
+    createNew: 'Δημιούργησε νέο ταξιδιώτη',
+    addSomeoneNew: 'Πρόσθεσε κάποιον νέο σε αυτό το ταξίδι',
+    savedLoadFailed:
+      'Δεν φορτώθηκαν οι αποθηκευμένοι ταξιδιώτες. Μπορείς να δημιουργήσεις νέο.',
+    noOtherSaved: 'Δεν υπάρχουν άλλοι αποθηκευμένοι ταξιδιώτες.',
+    alertUpdateFailed: 'Δεν ενημερώθηκε ο ταξιδιώτης',
+    alertCreateFailed: 'Δεν δημιουργήθηκε ο ταξιδιώτης',
+    alertAddFailed: 'Δεν προστέθηκε ο ταξιδιώτης',
+    alertOwnerFailed: 'Δεν ενημερώθηκε ο κάτοχος του ταξιδιού',
+    alertRemoveTitle: 'Αφαίρεση από αυτό το ταξίδι;',
+    alertRemoveFailed: 'Δεν αφαιρέθηκε ο ταξιδιώτης',
+    unchangedBody:
+      'Τα αποθηκευμένα δεδομένα σου δεν άλλαξαν. Δοκίμασε ξανά.',
+    nothingChanged: 'Τίποτα δεν άλλαξε. Δοκίμασε ξανά.',
+    cancel: 'Άκυρο',
+    remove: 'Αφαίρεση',
+    whoIsTaking: 'Ποιος έρχεται σε αυτό το ταξίδι;',
+    savedTravelers: 'ΑΠΟΘΗΚΕΥΜΕΝΟΙ ΤΑΞΙΔΙΩΤΕΣ',
+    travelerTypeLabel: 'ΤΥΠΟΣ ΤΑΞΙΔΙΩΤΗ',
+    eyebrowAddToTrip: 'ΠΡΟΣΘΗΚΗ ΣΕ ΑΥΤΟ ΤΟ ΤΑΞΙΔΙ',
+    eyebrowTraveler: 'ΤΑΞΙΔΙΩΤΗΣ',
+    removeBody: (name: string) =>
+      `Ο/Η ${name} θα αφαιρεθεί από αυτό το ταξίδι. Θα παραμείνει διαθέσιμος/η στα άλλα σου ταξίδια.`,
+  },
+
+  tripDetails: {
+    eyebrowOverview: 'ΕΠΙΣΚΟΠΗΣΗ ΤΑΞΙΔΙΟΥ',
+    title: 'Στοιχεία ταξιδιού',
+    subtitle: 'Προορισμός, ημερομηνίες, κατάσταση και νόμισμα.',
+    back: 'Πίσω στα Περισσότερα',
+    savedToast: 'Τα στοιχεία του ταξιδιού αποθηκεύτηκαν.',
+
+    eyebrowJourney: 'Η ΔΙΑΔΡΟΜΗ',
+    basics: 'Βασικά',
+    labelTitle: 'ΤΙΤΛΟΣ ΤΑΞΙΔΙΟΥ',
+    titlePlaceholder: 'Καλοκαίρι στην Ιαπωνία',
+    labelStatus: 'ΚΑΤΑΣΤΑΣΗ',
+    activeStatus: 'Σε εξέλιξη',
+    activeNote:
+      'Η κατάσταση «σε εξέλιξη» ορίζεται αυτόματα όσο το ταξίδι συμβαίνει.',
+
+    eyebrowCharacter: 'ΧΑΡΑΚΤΗΡΑΣ ΤΑΞΙΔΙΟΥ',
+    intentAndPace: 'Πρόθεση & ρυθμός',
+    unsetHint: 'Πάτα ξανά την επιλεγμένη επιλογή για να την αφήσεις κενή.',
+    intentEyebrow: 'ΚΥΡΙΑ ΠΡΟΘΕΣΗ · ΠΡΟΑΙΡΕΤΙΚΟ',
+    intentQuestion: 'Τι μετράει περισσότερο για αυτό το ταξίδι;',
+    paceEyebrow: 'ΡΥΘΜΟΣ ΤΑΞΙΔΙΟΥ · ΠΡΟΑΙΡΕΤΙΚΟ',
+    paceQuestion: 'Πόσο γεμάτες θέλεις τις μέρες;',
+
+    eyebrowWhere: 'ΠΟΥ',
+    destinations: 'Προορισμοί',
+    noDestinationYet:
+      'Αυτό το ταξίδι δεν έχει ακόμα προορισμό. Πρόσθεσε πραγματικό σημείο στον χάρτη πριν αποθηκεύσεις.',
+    timezoneFootnote:
+      'Κάθε πόλη μπορεί να κρατά τη δική της ζώνη ώρας όταν την παρέχει κατάλογος, πάροχος χάρτη ή εσύ. Το TravelOS δεν μαντεύει ζώνη από συντεταγμένες ή σειρά προορισμών. Ο Συνοδός χρησιμοποιεί τη ζώνη εκείνης της πόλης για σήμερα όταν η μέρα είναι ανατεθειμένη και ακριβώς μία πόλη είναι τοπικά σήμερα.',
+    destinationWillUpdate:
+      'Αυτός ο προορισμός θα ενημερωθεί όταν αποθηκεύσεις.',
+
+    eyebrowWhen: 'ΠΟΤΕ',
+    travelDates: 'Ημερομηνίες ταξιδιού',
+    labelStartDate: 'ΗΜΕΡΟΜΗΝΙΑ ΕΝΑΡΞΗΣ',
+    labelEndDate: 'ΗΜΕΡΟΜΗΝΙΑ ΛΗΞΗΣ',
+
+    eyebrowMoney: 'ΧΡΗΜΑΤΑ ΤΑΞΙΔΙΟΥ',
+    budgetCurrency: 'Νόμισμα προϋπολογισμού',
+    labelBudgetCurrency: 'ΝΟΜΙΣΜΑ ΠΡΟΫΠΟΛΟΓΙΣΜΟΥ',
+    currencyNote:
+      'Χρησιμοποιείται για τα σύνολα του ταξιδιού. Τα τοπικά νομίσματα μένουν ξεχωριστά.',
+
+    saving: 'Αποθήκευση ταξιδιού…',
+    save: 'Αποθήκευση στοιχείων',
+
+    dangerZone: 'ΕΠΙΚΙΝΔΥΝΗ ΖΩΝΗ',
+    deleteTitle: 'Διαγραφή ταξιδιού',
+    deleteBody:
+      'Αφαιρεί οριστικά αυτό το ταξίδι από τη συσκευή. Αρχειοθέτησέ το στην Κατάσταση αν μπορεί να το χρειαστείς. Τα JSON αντίγραφα δεν περιλαμβάνουν αρχεία φωτογραφιών.',
+    delete: 'Διαγραφή',
+    deleteConfirmBody:
+      'Αυτό αφαιρεί οριστικά το ταξίδι και το σχετικό τοπικό πρόγραμμα, στιγμές, κρατήσεις, διαμονές, προϋπολογισμό, έξοδα, αναμνήσεις, Βιβλίο ταξιδιού και αντίγραφα φωτογραφιών από αυτή τη συσκευή. Τα πρωτότυπα στη συλλογή σου μένουν ανέγγιχτα. Δεν υπάρχει αναίρεση. Το Προφίλ προσφέρει JSON αντίγραφο δεδομένων, όχι αρχείων φωτογραφιών. Για να κρύψεις το ταξίδι αντί να το σβήσεις, διάλεξε Αρχειοθετημένο στην Κατάσταση και αποθήκευσε.',
+    deleteConfirm: 'Διαγραφή ταξιδιού',
+    deleteConfirmTitle: (title: string) => `Διαγραφή «${title}»;`,
+
+    alertTitleNeeded: 'Πρόσθεσε τίτλο ταξιδιού',
+    alertDestinationsTitle: 'Έλεγξε τους προορισμούς',
+    alertDestinationsBody: 'Κάθε υπάρχων προορισμός χρειάζεται όνομα.',
+    alertDatesTitle: 'Έλεγξε τις ημερομηνίες',
+    alertDatesBody: 'Διάλεξε έγκυρο εύρος ημερομηνιών.',
+    alertCurrencyTitle: 'Έλεγξε το νόμισμα',
+    alertCurrencyBody:
+      'Χρησιμοποίησε τριγράμματο κωδικό νομίσματος, όπως EUR ή USD.',
+    alertSaveFailed: 'Δεν αποθηκεύτηκαν τα στοιχεία',
+    alertBudgetLocked:
+      'Αυτό το ταξίδι έχει ήδη αποθηκευμένο προϋπολογισμό. Το λογιστικό του νόμισμα δεν αλλάζει ούτε μετατρέπεται εδώ.',
+    alertSaveFailedBody:
+      'Το αποθηκευμένο ταξίδι παραμένει διαθέσιμο. Έλεγξε τα στοιχεία και δοκίμασε ξανά.',
+    alertDeleteFailed: 'Δεν διαγράφηκε το ταξίδι',
+    alertDeleteFailedBody:
+      'Δεν επιβεβαιώθηκε διαγραφή. Το τοπικό σου ταξίδι παραμένει διαθέσιμο.',
+    alertDestinationLimit: 'Όριο προορισμών',
+    alertKeepOne: 'Κράτα έναν προορισμό',
+    alertRemoveDestinationBody:
+      'Οι στάσεις, οι κρατήσεις και οι διαμονές μένουν σε αυτό το ταξίδι. Αυτό αφαιρεί μόνο τον τόπο από τη λίστα προορισμών.',
+    keep: 'Κράτα',
+    remove: 'Αφαίρεση',
+    cancel: 'Άκυρο',
+  },
+
+  accommodationType: {
+    hotel: 'Ξενοδοχείο',
+    apartment: 'Διαμέρισμα',
+    hostel: 'Ξενώνας',
+    villa: 'Βίλα',
+    resort: 'Θέρετρο',
+    camping: 'Κάμπινγκ',
+    other: 'Άλλο',
+  },
+
+  accommodation: {
+    title: 'Διαμονή',
+    subtitle: 'Ξενοδοχεία, ενοικιάσεις και διαμονές για αυτό το ταξίδι.',
+    add: 'Πρόσθεσε διαμονή',
+    notSet: 'Δεν ορίστηκε',
+    date: 'Ημερομηνία',
+    stayCountLabel: (count: number) =>
+      count === 1 ? 'διαμονή' : 'διαμονές',
+    bookedLabel: 'με κράτηση',
+    inPlanLabel: 'στο πρόγραμμα',
+    summaryLabel: (stays: number, booked: number, inPlan: number) =>
+      `${stays} διαμονές, ${booked} με κράτηση, ${inPlan} στο πρόγραμμα`,
+    emptyTitle: 'Πρόσθεσε την πρώτη σου διαμονή',
+    emptyBody:
+      'Αποθήκευσε ξενοδοχείο, ενοικίαση ή άλλο μέρος που θα μείνεις. Πρόσθεσε ημερομηνίες και συνδέσμους όποτε τα έχεις.',
+
+    editorEdit: 'Επεξεργασία διαμονής',
+    editorAdd: 'Πρόσθεσε διαμονή',
+    editorEyebrow: 'ΣΤΟΙΧΕΙΑ ΔΙΑΜΟΝΗΣ',
+    editorClose: 'Κλείσε τον επεξεργαστή διαμονής',
+    labelName: 'ΟΝΟΜΑ',
+    labelAddress: 'ΔΙΕΥΘΥΝΣΗ',
+    labelCheckIn: 'ΑΦΙΞΗ',
+    labelCheckOut: 'ΑΝΑΧΩΡΗΣΗ',
+    labelPhone: 'ΤΗΛΕΦΩΝΟ',
+    labelWebsite: 'ΙΣΤΟΣΕΛΙΔΑ',
+    labelNotes: 'ΣΗΜΕΙΩΣΕΙΣ',
+    placeholderName: 'Όνομα ξενοδοχείου, ενοικίασης ή διαμονής',
+    placeholderAddress: 'Διεύθυνση ή όνομα τόπου',
+    placeholderPhone: 'Προαιρετικό τηλέφωνο',
+    placeholderWebsite: 'Προαιρετική ιστοσελίδα',
+    placeholderNotes: 'Πρόσβαση, check-in ή σημειώσεις διαμονής',
+
+    replaceMapLocation: 'Άλλαξε σημείο διαμονής στον χάρτη',
+    chooseMapLocation: 'Διάλεξε σημείο διαμονής στον χάρτη',
+    openingPicker: 'Άνοιγμα επιλογέα τόπου…',
+    realPlaceNote:
+      'Διάλεξε πραγματικό μέρος. Το TravelOS δεν μαντεύει συντεταγμένες από τη διεύθυνση.',
+    clearMapLocation: 'Καθάρισε το σημείο διαμονής',
+    mapPinSaved: 'Η πινέζα αποθηκεύτηκε',
+    addStay: 'Πρόσθεσε διαμονή',
+    addHotelBookingFirst:
+      'Πρόσθεσε πρώτα μια κράτηση ξενοδοχείου και μετά σύνδεσέ την εδώ.',
+    clearMapPin: 'Καθάρισε την πινέζα',
+    pickerTitle: 'Διάλεξε σημείο διαμονής',
+    pickerDone: 'Χρήση σημείου',
+    pickerSearch: 'Αναζήτηση ξενοδοχείων ή διευθύνσεων…',
+
+    linkBooking: 'Σύνδεσε κράτηση',
+    noBookingLinked: 'Δεν έχει συνδεθεί κράτηση',
+    keepSeparateBookings: 'Κράτα αυτή τη διαμονή ξεχωριστά από τις κρατήσεις',
+    chooseMomentFromPlan: 'Διάλεξε στιγμή από το πρόγραμμά σου',
+    notInPlan: 'Εκτός προγράμματος',
+    keepSeparatePlan: 'Κράτα αυτή τη διαμονή ξεχωριστά από το πρόγραμμα',
+
+    saving: 'Αποθήκευση…',
+    saveChanges: 'Αποθήκευση αλλαγών',
+    chooseDate: 'Διάλεξε ημερομηνία',
+    chooseTime: 'Διάλεξε ώρα',
+
+    alertCheckInPair:
+      'Διάλεξε και ημερομηνία και ώρα άφιξης, ή καθάρισε και τα δύο',
+    alertCheckOutPair:
+      'Διάλεξε και ημερομηνία και ώρα αναχώρησης, ή καθάρισε και τα δύο',
+    locationApplyFailed:
+      'Το επιλεγμένο σημείο δεν εφαρμόστηκε. Το σημείο στον χάρτη δεν άλλαξε.',
+    alertSaveFailed: 'Δεν αποθηκεύτηκε η διαμονή',
+    alertDeleteTitle: 'Διαγραφή διαμονής;',
+    removeAccommodationBody: (name: string) =>
+      `Αφαίρεση «${name}»; Κάθε συνδεδεμένη κράτηση και στάση προγράμματος θα μείνει αποθηκευμένη.`,
+    alertDeleteFailed: 'Δεν διαγράφηκε η διαμονή',
+    alertDeleteFailedBody:
+      'Η αποθηκευμένη διαμονή σου δεν άλλαξε. Δοκίμασε ξανά.',
+    tryAgain: 'Δοκίμασε ξανά.',
+    cancel: 'Άκυρο',
+    delete: 'Διαγραφή',
+  },
+
+  memories: {
+    title: 'Αναμνήσεις',
+    subtitle:
+      'Κράτα τις μικρές στιγμές που έκαναν αυτή τη διαδρομή δική σου. Τα αρχεία φωτογραφιών μένουν σε αυτή τη συσκευή και δεν μπαίνουν στα JSON αντίγραφα.',
+    back: 'Πίσω στα Περισσότερα',
+    add: 'Πρόσθεσε ανάμνηση',
+    addFirst: 'Πρόσθεσε πρώτη ανάμνηση',
+    addNote: 'Πρόσθεσε σημείωση',
+    addPhoto: 'Πρόσθεσε φωτογραφία',
+    savedMoment: 'Αποθηκευμένη στιγμή',
+    photoMemory: 'Φωτογραφική ανάμνηση',
+    videoMemory: 'Ανάμνηση βίντεο',
+    note: 'Σημείωση',
+    noteMemory: 'Σημείωση',
+    photo: 'Φωτογραφία',
+    tripMoment: 'Στιγμή ταξιδιού',
+    otherMoments: 'Άλλες στιγμές',
+    videoTitle: 'Αναμνήσεις βίντεο',
+    videoBody: 'Η επεξεργασία βίντεο δεν είναι ακόμα μέρος των Αναμνήσεων V1.',
+
+    storyStarts: 'Η ταξιδιωτική σου ιστορία ξεκινά εδώ.',
+    photoStorageNote:
+      'Τα αντίγραφα φωτογραφιών μένουν στο TravelOS σε αυτή τη συσκευή και δουλεύουν χωρίς δίκτυο. Τα πρωτότυπα στη συλλογή σου μένουν ανέγγιχτα. Τα JSON αντίγραφα περιλαμβάνουν στοιχεία ανάμνησης, όχι αρχεία φωτογραφιών.',
+    addAPhoto: 'Πρόσθεσε φωτογραφία',
+    takeOrChoose: 'Τράβα μία τώρα ή διάλεξε κάποια που έχεις ήδη.',
+    timestampNote:
+      'Οι νέες αναμνήσεις παίρνουν χρονοσήμανση όταν τις αποθηκεύεις. Οι συνδέσεις μέρας και στάσης τις κρατούν στη σωστή θέση στη διαδρομή σου.',
+    captureEyebrow: 'ΚΡΑΤΑ ΜΙΑ ΣΤΙΓΜΗ',
+    captureTitle: 'Αποθήκευσέ την πριν χαθεί.',
+    captureBody:
+      'Πρόσθεσε μια σκέψη ή κράτα μια φωτογραφία, και σύνδεσέ την με τη μέρα ή τον τόπο που ανήκει.',
+    emptyBody:
+      'Κράτα μια σημείωση, μια φωτογραφία ή μια μικρή λεπτομέρεια που θέλεις να θυμάσαι.',
+
+    editorEyebrow: 'Στοιχεία ανάμνησης',
+    editorTitle: 'Κράτα αυτή τη στιγμή',
+    editorClose: 'Κλείσε τον επεξεργαστή ανάμνησης',
+    photoPreview: 'Προεπισκόπηση φωτογραφίας',
+    takePhoto: 'Τράβα φωτογραφία με την κάμερα',
+    choosePhoto: 'Διάλεξε φωτογραφία από τη συλλογή',
+    removePhoto: 'Αφαίρεση φωτογραφίας',
+    placeholderTitle: 'Ηλιοβασίλεμα στην Οία',
+    labelWhySpecial: 'Τι έκανε αυτή τη στιγμή ξεχωριστή;',
+    placeholderNote: 'Γράψε ό,τι θέλεις να θυμάσαι…',
+    noDaySelected: 'Δεν επιλέχθηκε μέρα',
+    noTripDay: 'Καμία μέρα ταξιδιού',
+    noStop: 'Καμία στάση προγράμματος',
+    optional: 'Προαιρετικό',
+    savingMemory: 'Αποθήκευση ανάμνησης',
+    saveMemoryChanges: 'Αποθήκευση αλλαγών ανάμνησης',
+    saveMemory: 'Αποθήκευση ανάμνησης',
+    saving: 'Αποθήκευση…',
+    saveChanges: 'Αποθήκευση αλλαγών',
+
+    alertPhotosFailed: 'Δεν άνοιξαν οι φωτογραφίες',
+    alertCameraPermission: 'Χρειάζεται άδεια κάμερας',
+    alertCameraPermissionBody:
+      'Επίτρεψε πρόσβαση στην κάμερα για να τραβήξεις φωτογραφία για αυτή την ανάμνηση.',
+    alertCameraFailed: 'Δεν άνοιξε η κάμερα',
+    alertSaveFailed: 'Δεν αποθηκεύτηκε η ανάμνηση',
+    alertDeleteTitle: 'Διαγραφή ανάμνησης;',
+    alertDeleteFailed: 'Δεν διαγράφηκε η ανάμνηση',
+    tryAgain: 'Δοκίμασε ξανά.',
+    cancel: 'Άκυρο',
+    delete: 'Διαγραφή',
+  },
+
+  travelBook: {
+    title: 'Βιβλίο ταξιδιού',
+    subtitle: 'Δώσε μορφή σε πραγματικές στιγμές του ταξιδιού σε μια ιστορία που μένει.',
+    cover: 'Εξώφυλλο βιβλίου ταξιδιού',
+    shapeStory: 'Δώσε μορφή στην ιστορία',
+    yourWords: 'Η διαδρομή σου, με τα δικά σου λόγια.',
+    selectCoverHint:
+      'Διάλεξε μια αποθηκευμένη φωτογραφία παρακάτω για εξώφυλλο.',
+    placeholderTitle: 'Ένα όνομα για αυτή τη διαδρομή',
+    placeholderSummary: 'Μια σύντομη σκέψη με τα δικά σου λόγια…',
+    draft: 'Πρόχειρο',
+    stillShaping: 'Ακόμα διαμορφώνεται',
+    published: 'Δημοσιευμένο',
+    finishedLocally: 'Ολοκληρωμένο τοπικά',
+    publishedNote: 'Το «δημοσιευμένο» είναι τοπική κατάσταση του TravelOS στην V1.',
+    sharingNote: 'Η κοινοποίηση και η εξαγωγή δεν είναι ακόμα ενεργές.',
+    selectedMoments: 'Επιλεγμένες στιγμές',
+    chooseWhatBelongs: 'Διάλεξε τι ανήκει',
+    noMomentsSelected: 'Δεν επιλέχθηκαν στιγμές',
+    noMomentsBody:
+      'Διάλεξε τουλάχιστον μία Ανάμνηση παρακάτω όταν θέλεις αυτό το βιβλίο να αφηγηθεί μέρος της διαδρομής.',
+    addMemoriesFirst: 'Πρόσθεσε πρώτα Αναμνήσεις',
+    addMemoriesBody:
+      'Σημειώσεις και φωτογραφίες από τις Αναμνήσεις γίνονται το πραγματικό υλικό για το Βιβλίο ταξιδιού σου.',
+    photoMoment: 'Φωτογραφική στιγμή',
+    note: 'Σημείωση',
+    savedNote: 'Αποθηκευμένη σημείωση',
+    photo: 'Φωτογραφία',
+    coverSelected: 'Επιλέχθηκε ως εξώφυλλο',
+    useAsCover: 'Χρήση ως εξώφυλλο',
+    savingBook: 'Αποθήκευση Βιβλίου ταξιδιού',
+    saveBook: 'Αποθήκευση Βιβλίου ταξιδιού',
+    deleteBook: 'Διαγραφή Βιβλίου ταξιδιού',
+    momentDateUnavailable: 'Η ημερομηνία στιγμής δεν είναι διαθέσιμη',
+    onlySavedMemories:
+      'Η V1 χρησιμοποιεί μόνο τις αποθηκευμένες σου Αναμνήσεις. Δεν προστίθενται γεγονότα γραμμένα από AI ούτε επινοημένες λεπτομέρειες.',
+
+    alertTitleNeeded: 'Πρόσθεσε τίτλο',
+    alertTitleNeededBody:
+      'Το Βιβλίο ταξιδιού χρειάζεται τίτλο πριν αποθηκευτεί.',
+    alertSavedTitle: 'Το Βιβλίο ταξιδιού αποθηκεύτηκε',
+    alertPublishedBody:
+      'Αυτό το βιβλίο είναι σημειωμένο ως δημοσιευμένο στην τοπική σου βιβλιοθήκη TravelOS.',
+    alertDraftBody: 'Το πρόχειρό σου αποθηκεύτηκε τοπικά.',
+    alertSaveFailed: 'Δεν αποθηκεύτηκε',
+    alertSaveFailedBody: 'Το Βιβλίο ταξιδιού δεν αποθηκεύτηκε.',
+    alertDeleteTitle: 'Διαγραφή Βιβλίου ταξιδιού;',
+    alertDeleteBody:
+      'Η διάταξη του βιβλίου θα διαγραφεί. Οι Αναμνήσεις σου θα μείνουν ανέγγιχτες.',
+    alertDeletedTitle: 'Το Βιβλίο ταξιδιού διαγράφηκε',
+    alertDeletedBody: 'Το βιβλίο αφαιρέθηκε. Οι Αναμνήσεις σου είναι ακόμα αποθηκευμένες.',
+    alertDeleteFailed: 'Δεν διαγράφηκε',
+    alertDeleteFailedBody: 'Το Βιβλίο ταξιδιού δεν διαγράφηκε.',
+    cancel: 'Άκυρο',
+    delete: 'Διαγραφή',
+  },
+
+  budgetCategory: {
+    accommodation: 'Διαμονή',
+    transport: 'Μετακίνηση',
+    food: 'Φαγητό',
+    activities: 'Δραστηριότητες',
+    shopping: 'Αγορές',
+    insurance: 'Ασφάλιση',
+    other: 'Άλλο',
+  },
+
+  budget: {
+    eyebrow: (currency: string) => `ΧΡΗΜΑΤΑ ΤΑΞΙΔΙΟΥ · ${currency}`,
+    title: 'Προϋπολογισμός',
+    subtitle: 'Σχεδίασε τα έξοδά σου και δες τι μένει.',
+    back: 'Πίσω στα Περισσότερα',
+    addExpense: 'Πρόσθεσε έξοδο',
+    notSet: 'Δεν ορίστηκε',
+    dateNotRecorded: 'Δεν καταγράφηκε ημερομηνία',
+
+    plannedBudget: 'ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ',
+    spent: 'ΔΑΠΑΝΗΘΗΚΑΝ',
+    remaining: 'ΥΠΟΛΟΙΠΟ',
+    overBudget: 'ΥΠΕΡΒΑΣΗ',
+    editPlanned: 'Επεξεργασία προϋπολογισμού',
+    convertedInto: (currency: string) => `Μετατράπηκε σε ${currency}`,
+    explicitRateNote:
+      'Αυτά τα σύνολα χρησιμοποιούν ρητή ισοτιμία ταξιδιώτη με ημερομηνία αναφοράς. Δεν είναι ζωντανές τιμές αγοράς.',
+    fxTitle: 'Ισοτιμίες ταξιδιώτη',
+    fxNote: (currency: string) =>
+      `Τα έξοδα σε ξένο νόμισμα μπαίνουν στο σύνολο ${currency} μόνο όταν αποθηκεύσεις ισοτιμία. Δεν υπάρχει ζωντανή ροή ισοτιμιών.`,
+    fxSave: 'Αποθήκευση ισοτιμίας',
+    saveRate: 'Αποθήκευση',
+    fxRemoveLabel: (currency: string) => `Αφαίρεση ισοτιμίας ${currency}`,
+    remove: 'Αφαίρεση',
+
+    eyebrowWhere: 'ΠΟΥ ΠΗΓΑΝ',
+    categories: 'Κατηγορίες',
+    eyebrowRecord: 'ΤΟ ΑΡΧΕΙΟ ΣΟΥ',
+    expenses: 'Έξοδα',
+    noExpenses: 'Δεν υπάρχουν έξοδα ακόμα',
+    noExpensesBody: 'Πρόσθεσε ό,τι ξοδεύεις καθώς το ταξίδι παίρνει μορφή.',
+
+    plannedEditorClose: 'Κλείσε τον επεξεργαστή προϋπολογισμού',
+    plannedAmount: 'Ποσό προϋπολογισμού',
+    labelPlannedBudget: 'ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ',
+    currencyLocked:
+      'Το νόμισμα του ταξιδιού κλειδώνει όσο υπάρχουν αποθηκευμένα δεδομένα προϋπολογισμού.',
+    currencyBeforeFirst:
+      'Όρισε το νόμισμα του ταξιδιού πριν αποθηκεύσεις τον πρώτο σου προϋπολογισμό. Τα έξοδα μπορούν να κρατήσουν το νόμισμα που πλήρωσες.',
+    saving: 'Αποθήκευση…',
+    saveBudget: 'Αποθήκευση προϋπολογισμού',
+    emptyTitle: 'Όρισε προϋπολογισμό για αυτό το ταξίδι',
+    currencyNeedsReview: 'Το νόμισμα του προϋπολογισμού θέλει έλεγχο',
+    originalCurrenciesNote:
+      'Αυτά τα ποσά μένουν στα αρχικά τους νομίσματα και δεν περιλαμβάνονται στο σύνολο του ταξιδιού.',
+    tripCurrencyLabel: 'ΝΟΜΙΣΜΑ ΤΑΞΙΔΙΟΥ',
+    actualExpense: 'ΠΡΑΓΜΑΤΙΚΟ ΕΞΟΔΟ',
+    actualCurrencyNote: 'Χρησιμοποίησε το νόμισμα που πραγματικά πλήρωσες.',
+    emptyBody: (currency: string) =>
+      `Διάλεξε πόσα θέλεις να ξοδέψεις σε ${currency}. Τα έξοδα μπορούν να κρατήσουν το νόμισμα που πλήρωσες.`,
+    setBudget: 'Όρισε προϋπολογισμό',
+    changeCurrency: (currency: string) => `Άλλαξε ${currency}`,
+    changeCurrencyLabel: (currency: string) =>
+      `Άλλαξε το νόμισμα του ταξιδιού από ${currency}`,
+
+    editorEdit: 'Επεξεργασία εξόδου',
+    editorAdd: 'Πρόσθεσε έξοδο',
+    editorClose: 'Κλείσε τον επεξεργαστή εξόδου',
+    labelTitle: 'ΤΙΤΛΟΣ',
+    labelAmount: 'ΠΟΣΟ',
+    labelCurrency: 'ΝΟΜΙΣΜΑ',
+    labelCategory: 'ΚΑΤΗΓΟΡΙΑ',
+    labelBooking: 'ΚΡΑΤΗΣΗ',
+    labelStop: 'ΣΤΑΣΗ ΠΡΟΓΡΑΜΜΑΤΟΣ',
+    labelNotes: 'ΣΗΜΕΙΩΣΕΙΣ',
+    placeholderTitle: 'Δείπνο στο λιμάνι',
+    placeholderNotes: 'Προαιρετικό πλαίσιο, στοιχεία απόδειξης ή ποιος πλήρωσε…',
+    chooseDate: 'Διάλεξε ημερομηνία εξόδου',
+    noBookingLink: 'Χωρίς σύνδεση κράτησης',
+    noStopLink: 'Χωρίς σύνδεση στάσης',
+    saveChanges: 'Αποθήκευση αλλαγών',
+
+    alertBudgetTitle: 'Έλεγξε τον προϋπολογισμό',
+    alertBudgetBody: 'Δώσε ποσό μηδέν ή μεγαλύτερο.',
+    alertBudgetFailed: 'Δεν αποθηκεύτηκε ο προϋπολογισμός',
+    alertBudgetFailedBody:
+      'Τα υπάρχοντα δεδομένα προϋπολογισμού δεν άλλαξαν. Δοκίμασε ξανά.',
+    alertTitleNeeded: 'Πρόσθεσε τίτλο',
+    alertTitleNeededBody:
+      'Δώσε όνομα σε αυτό το έξοδο ώστε να παραμείνει χρήσιμο αργότερα.',
+    alertAmountTitle: 'Έλεγξε το ποσό',
+    alertAmountBody: 'Δώσε ποσό εξόδου μεγαλύτερο από μηδέν.',
+    alertCurrencyTitle: 'Έλεγξε το νόμισμα',
+    alertCurrencyBody:
+      'Χρησιμοποίησε τριγράμματο κωδικό νομίσματος, όπως EUR ή JPY.',
+    alertDateTitle: 'Διάλεξε ημερομηνία',
+    alertDateBody: 'Επίλεξε πότε έγινε αυτό το έξοδο.',
+    alertExpenseFailed: 'Δεν αποθηκεύτηκε το έξοδο',
+    alertExpenseFailedBody:
+      'Τα υπάρχοντα δεδομένα εξόδων δεν άλλαξαν. Δοκίμασε ξανά.',
+    alertDeleteTitle: 'Διαγραφή εξόδου;',
+    removeExpenseBody: (name: string) =>
+      `Αφαίρεση «${name}» από αυτόν τον προϋπολογισμό;`,
+    alertDeleteFailed: 'Δεν διαγράφηκε το έξοδο',
+    alertDeleteFailedBody: 'Τίποτα δεν αφαιρέθηκε. Δοκίμασε ξανά.',
+    alertFxFailed: 'Δεν αποθηκεύτηκε η ισοτιμία',
+    alertFxFailedBody: 'Έλεγξε τα νομίσματα, την ισοτιμία και την ημερομηνία.',
+    cancel: 'Άκυρο',
+    delete: 'Διαγραφή',
   },
 
   map: {

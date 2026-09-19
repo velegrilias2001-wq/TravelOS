@@ -54,6 +54,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 type EditorMode =
   | 'choose'
@@ -74,18 +75,18 @@ const TYPE_DETAILS: Record<
   }
 > = {
   adult: {
-    label: 'Adult',
-    description: 'Adult traveler',
+    label: strings.travelerType.adultLabel,
+    description: strings.travelerType.adultDescription,
     icon: 'person-outline',
   },
   child: {
-    label: 'Child',
-    description: 'Child traveler',
+    label: strings.travelerType.childLabel,
+    description: strings.travelerType.childDescription,
     icon: 'happy-outline',
   },
   infant: {
-    label: 'Infant',
-    description: 'Infant traveler',
+    label: strings.travelerType.infantLabel,
+    description: strings.travelerType.infantDescription,
     icon: 'heart-outline',
   },
 };
@@ -219,11 +220,11 @@ export default function TravelersScreen() {
     } catch (error) {
       Alert.alert(
         editing
-          ? 'Could not update traveler'
-          : 'Could not create traveler',
+          ? strings.travelers.alertUpdateFailed
+          : strings.travelers.alertCreateFailed,
         error instanceof Error
           ? error.message
-          : 'Your saved data has not changed. Please try again.',
+          : strings.travelers.unchangedBody,
       );
     } finally {
       setIsSaving(false);
@@ -242,10 +243,10 @@ export default function TravelersScreen() {
       closeModal();
     } catch (error) {
       Alert.alert(
-        'Could not add traveler',
+        strings.travelers.alertAddFailed,
         error instanceof Error
           ? error.message
-          : 'Your saved data has not changed. Please try again.',
+          : strings.travelers.unchangedBody,
       );
     } finally {
       setIsSaving(false);
@@ -263,8 +264,8 @@ export default function TravelersScreen() {
         error,
       );
       Alert.alert(
-        'Could not update trip owner',
-        'Nothing changed. Please try again.',
+        strings.travelers.alertOwnerFailed,
+        strings.travelers.nothingChanged,
       );
     }
   };
@@ -273,12 +274,14 @@ export default function TravelersScreen() {
     traveler: Traveler,
   ) => {
     Alert.alert(
-      'Remove from this trip?',
-      `${travelerDisplayName(traveler)} will be removed from this trip. They will remain available in your other trips.`,
+      strings.travelers.alertRemoveTitle,
+      strings.travelers.removeBody(
+        travelerDisplayName(traveler),
+      ),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: strings.travelers.cancel, style: 'cancel' },
         {
-          text: 'Remove',
+          text: strings.travelers.remove,
           onPress: async () => {
             try {
               await actions.removeTraveler(
@@ -291,8 +294,8 @@ export default function TravelersScreen() {
                 error,
               );
               Alert.alert(
-                'Could not remove traveler',
-                'Nothing changed. Please try again.',
+                strings.travelers.alertRemoveFailed,
+                strings.travelers.nothingChanged,
               );
             }
           },
@@ -308,12 +311,12 @@ export default function TravelersScreen() {
           eyebrow={tripDestinationLabel(
             workspace.trip.destinations,
           ).toUpperCase()}
-          title="Travelers"
-          subtitle="The people joining this trip."
+          title={strings.travelers.title}
+          subtitle={strings.travelers.subtitle}
           action={(
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Add traveler"
+              accessibilityLabel={strings.travelers.add}
               style={styles.addButton}
               onPress={openAdd}
             >
@@ -328,14 +331,15 @@ export default function TravelersScreen() {
 
         {workspace.travelers.length > 0 ? (
           <CompactSummaryStrip
-            accessibilityLabel={`${workspace.travelers.length} ${workspace.travelers.length === 1 ? 'traveler' : 'travelers'} in this trip`}
+            accessibilityLabel={strings.travelers.summaryLabel(
+              workspace.travelers.length,
+            )}
             items={[
               {
                 value: workspace.travelers.length,
-                label:
-                  workspace.travelers.length === 1
-                    ? 'traveler'
-                    : 'travelers',
+                label: strings.travelers.countLabel(
+                  workspace.travelers.length,
+                ),
               },
             ]}
           />
@@ -351,10 +355,10 @@ export default function TravelersScreen() {
               />
             </View>
             <Text style={styles.emptyTitle}>
-              Who is taking this trip?
+              {strings.travelers.whoIsTaking}
             </Text>
             <Text style={styles.emptyBody}>
-              Add someone new or choose a traveler you have saved before. A trip can stay without travelers while you plan, and it can have an optional owner.
+              {strings.travelers.emptyBody}
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -362,7 +366,7 @@ export default function TravelersScreen() {
               onPress={openAdd}
             >
               <Text style={styles.primaryButtonText}>
-                Add traveler
+                {strings.travelers.add}
               </Text>
             </Pressable>
           </View>
@@ -438,7 +442,7 @@ export default function TravelersScreen() {
                           color={colors.brand}
                         />
                         <Text style={styles.editActionText}>
-                          Edit
+                          {strings.travelers.edit}
                         </Text>
                       </Pressable>
                       <Pressable
@@ -462,8 +466,8 @@ export default function TravelersScreen() {
                         />
                         <Text style={styles.editActionText}>
                           {isOwner
-                            ? 'Remove owner'
-                            : 'Make owner'}
+                            ? strings.travelers.removeOwner
+                            : strings.travelers.makeOwner}
                         </Text>
                       </Pressable>
                       <Pressable
@@ -480,7 +484,7 @@ export default function TravelersScreen() {
                           color={colors.textSecondary}
                         />
                         <Text style={styles.removeActionText}>
-                          Remove from trip
+                          {strings.travelers.removeFromTrip}
                         </Text>
                       </Pressable>
                     </View>
@@ -498,7 +502,7 @@ export default function TravelersScreen() {
             color={colors.textMuted}
           />
           <Text style={styles.privacyNoteText}>
-            Keep passport and health information out of traveler profiles. Invitations, roles beyond owner, and expense splitting are not available yet.
+            {strings.travelers.privacyNote}
           </Text>
         </View>
         <View style={styles.bottomSpace} />
@@ -519,20 +523,20 @@ export default function TravelersScreen() {
               <View style={styles.modalHeaderCopy}>
                 <Text style={styles.modalEyebrow}>
                   {editorMode === 'choose'
-                    ? 'ADD TO THIS TRIP'
-                    : 'TRAVELER'}
+                    ? strings.travelers.eyebrowAddToTrip
+                    : strings.travelers.eyebrowTraveler}
                 </Text>
                 <Text style={styles.modalTitle}>
                   {editorMode === 'choose'
-                    ? 'Add traveler'
+                    ? strings.travelers.editorAdd
                     : editorMode === 'edit'
-                      ? 'Edit traveler'
-                      : 'New traveler'}
+                      ? strings.travelers.editorEdit
+                      : strings.travelers.editorNew}
                 </Text>
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Close traveler editor"
+                accessibilityLabel={strings.travelers.editorClose}
                 style={styles.closeButton}
                 onPress={requestCloseModal}
               >
@@ -565,13 +569,13 @@ export default function TravelersScreen() {
                       color={colors.teal}
                     />
                     <Text style={styles.sharedTruthText}>
-                      Changes to this traveler will appear in their other trips too.
+                      {strings.travelers.sharedNote}
                     </Text>
                   </View>
                 )}
 
                 <Text style={styles.fieldLabel}>
-                  TRAVELER TYPE
+                  {strings.travelers.travelerTypeLabel}
                 </Text>
                 <View style={styles.typeGrid}>
                   {TRAVELER_TYPES.map((item) => {
@@ -616,35 +620,35 @@ export default function TravelersScreen() {
                 </View>
 
                 <Field
-                  label="FIRST NAME"
+                  label={strings.travelers.labelFirstName}
                   value={firstName}
                   onChangeText={setFirstName}
-                  placeholder="Required"
+                  placeholder={strings.travelers.required}
                   autoCapitalize="words"
                   textContentType="givenName"
                 />
                 <Field
-                  label="LAST NAME"
+                  label={strings.travelers.labelLastName}
                   value={lastName}
                   onChangeText={setLastName}
-                  placeholder="Optional"
+                  placeholder={strings.travelers.optional}
                   autoCapitalize="words"
                   textContentType="familyName"
                 />
                 <Field
-                  label="EMAIL"
+                  label={strings.travelers.labelEmail}
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="Optional"
+                  placeholder={strings.travelers.optional}
                   autoCapitalize="none"
                   keyboardType="email-address"
                   textContentType="emailAddress"
                 />
                 <Field
-                  label="PHONE"
+                  label={strings.travelers.labelPhone}
                   value={phone}
                   onChangeText={setPhone}
-                  placeholder="Optional"
+                  placeholder={strings.travelers.optional}
                   keyboardType="phone-pad"
                   textContentType="telephoneNumber"
                 />
@@ -656,7 +660,7 @@ export default function TravelersScreen() {
                     color={colors.brass}
                   />
                   <Text style={styles.dataBoundaryText}>
-                    Only add the contact details you need for the trip.
+                    {strings.travelers.contactNote}
                   </Text>
                 </View>
 
@@ -671,10 +675,10 @@ export default function TravelersScreen() {
                 >
                   <Text style={styles.saveButtonText}>
                     {isSaving
-                      ? 'Saving…'
+                      ? strings.travelers.saving
                       : editorMode === 'edit'
-                        ? 'Save changes'
-                        : 'Create and add to trip'}
+                        ? strings.travelers.saveChanges
+                        : strings.travelers.createAndAdd}
                   </Text>
                   {!isSaving && (
                     <Ionicons
@@ -724,10 +728,10 @@ function TravelerChooser({
         </View>
         <View style={styles.choiceCopy}>
           <Text style={styles.newTravelerTitle}>
-            Create a new traveler
+            {strings.travelers.createNew}
           </Text>
           <Text style={styles.newTravelerMeta}>
-            Add someone new to this trip
+            {strings.travelers.addSomeoneNew}
           </Text>
         </View>
         <Ionicons
@@ -739,7 +743,7 @@ function TravelerChooser({
 
       <View style={styles.libraryHeader}>
         <Text style={styles.fieldLabel}>
-          SAVED TRAVELERS
+          {strings.travelers.savedTravelers}
         </Text>
         <Text style={styles.libraryHint}>Choose someone you’ve added before</Text>
       </View>
@@ -759,7 +763,7 @@ function TravelerChooser({
             color={colors.brass}
           />
           <Text style={styles.libraryStateText}>
-            Saved travelers could not be loaded. You can still create a new traveler.
+            {strings.travelers.savedLoadFailed}
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -777,7 +781,7 @@ function TravelerChooser({
             color={colors.textMuted}
           />
           <Text style={styles.libraryStateText}>
-            No other saved travelers are available.
+            {strings.travelers.noOtherSaved}
           </Text>
         </View>
       ) : (
@@ -802,7 +806,7 @@ function TravelerChooser({
                 </Text>
                 <Text style={styles.libraryMeta}>
                   {TYPE_DETAILS[traveler.type]?.description ??
-                    'Saved traveler'}
+                    strings.travelers.savedTraveler}
                 </Text>
               </View>
               <View style={styles.addExistingBadge}>

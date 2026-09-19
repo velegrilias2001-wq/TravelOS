@@ -962,7 +962,7 @@ export default function TripMapScreen() {
                     )}
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`Open directions to ${item.stop.title}`}
+                      accessibilityLabel={strings.a11y.openDirections(item.stop.title)}
                       hitSlop={8}
                       onPress={() =>
                         openDirections(item)

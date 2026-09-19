@@ -762,6 +762,20 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### Greek copy, phase 2b: Trip Space secondary screens — 2026-09-19
+
+Budget, Trip Details, Accommodation, Travelers, Memories, Travel Book and Packing are now Greek, which completes phase 2. Booking, accommodation, budget and traveler type catalogues, and the trip status labels used in Trip Details, all read from `src/i18n/el.ts`.
+
+**Two sweeps caught what a naive grep missed.** Single-line quoted strings were only part of the copy: a second pass over multi-line JSX text nodes found the Budget empty state, the Travel DNA-style section headings in Trip Details, the Memories photo-storage note and others. A third pass over **template literals** found about forty more, mostly accessibility labels built around a name — "Move X earlier", "Open X in Plan", "Day N · date". Those now use a shared `strings.a11y` group of name-taking helpers rather than a per-screen entry each, so the phrasing stays consistent.
+
+Two more raw `trip.status` renderings were replaced with label maps while translating Trip Details.
+
+Android-verified on 2026-09-19: the Budget empty state, the More hub, Trip Details including its delete confirmation, and the shared date fields all render Greek. The synthetic trip was deleted and Trips returned to empty.
+
+Checks: `tsc`, 453 tests, lint 48 warnings unchanged, `git diff --check`.
+
+**Still English, as phase 3:** Discover, World, Profile, Travel DNA, import and chat. Profile in particular holds long backup/restore confirmations that are user-facing.
+
 ### Greek copy, phase 2a: the five Trip Space tabs — 2026-09-17
 
 **Translated:** Companion, Plan (screen, stop editor, Plan Assist card, stop types), Map, Bookings (screen, editor sheet, form model, time editor), More, Trip Copilot, plus the shared `CalendarDateField` / `LocalTimeField`.

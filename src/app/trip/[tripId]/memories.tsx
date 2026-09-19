@@ -60,6 +60,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 interface PendingImage {
   uri: string;
@@ -95,7 +96,7 @@ function formatCapturedAt(
   if (
     Number.isNaN(date.getTime())
   ) {
-    return 'Saved moment';
+    return strings.memories.savedMoment;
   }
 
   return date.toLocaleString(
@@ -115,10 +116,10 @@ function memoryTitle(
   return (
     memory.title?.trim() ||
     (memory.type === 'photo'
-      ? 'Photo memory'
+      ? strings.memories.photoMemory
       : memory.type === 'video'
-        ? 'Video memory'
-        : 'Note')
+        ? strings.memories.videoMemory
+        : strings.memories.note)
   );
 }
 
@@ -195,7 +196,7 @@ function buildGroups(
     dayGroups.push({
       key: 'unplaced',
       eyebrow: 'UNPLACED',
-      title: 'Other moments',
+      title: strings.memories.otherMoments,
       memories: unplaced,
     });
   }
@@ -410,8 +411,8 @@ export default function MemoriesScreen() {
       memory.type === 'video'
     ) {
       Alert.alert(
-        'Video memories',
-        'Video editing is not part of Memories V1 yet.',
+        strings.memories.videoTitle,
+        strings.memories.videoBody,
       );
       return;
     }
@@ -502,8 +503,8 @@ export default function MemoriesScreen() {
         );
 
         Alert.alert(
-          'Could not open photos',
-          'Please try again.',
+          strings.memories.alertPhotosFailed,
+          strings.memories.tryAgain,
         );
       }
     };
@@ -516,8 +517,8 @@ export default function MemoriesScreen() {
 
         if (!permission.granted) {
           Alert.alert(
-            'Camera permission needed',
-            'Allow camera access to take a photo for this memory.',
+            strings.memories.alertCameraPermission,
+            strings.memories.alertCameraPermissionBody,
           );
           return;
         }
@@ -556,8 +557,8 @@ export default function MemoriesScreen() {
         );
 
         Alert.alert(
-          'Could not open camera',
-          'Please try again.',
+          strings.memories.alertCameraFailed,
+          strings.memories.tryAgain,
         );
       }
     };
@@ -644,10 +645,10 @@ export default function MemoriesScreen() {
         );
 
         Alert.alert(
-          'Could not save memory',
+          strings.memories.alertSaveFailed,
           error instanceof Error
             ? error.message
-            : 'Please try again.',
+            : strings.memories.tryAgain,
         );
       } finally {
         setIsSaving(false);
@@ -658,15 +659,15 @@ export default function MemoriesScreen() {
     memory: Memory,
   ) => {
     Alert.alert(
-      'Delete memory?',
+      strings.memories.alertDeleteTitle,
       `Remove "${memoryTitle(memory)}" from this trip?`,
       [
         {
-          text: 'Cancel',
+          text: strings.memories.cancel,
           style: 'cancel',
         },
         {
-          text: 'Delete',
+          text: strings.memories.delete,
           style: 'destructive',
           onPress:
             async () => {
@@ -681,8 +682,8 @@ export default function MemoriesScreen() {
                 );
 
                 Alert.alert(
-                  'Could not delete memory',
-                  'Please try again.',
+                  strings.memories.alertDeleteFailed,
+                  strings.memories.tryAgain,
                 );
               }
             },
@@ -696,12 +697,12 @@ export default function MemoriesScreen() {
       <Screen scroll clearTabBar>
         <UtilityScreenHeader
           eyebrow={destinationLabel.toUpperCase()}
-          title="Memories"
-          subtitle="Keep the small moments that made this journey yours. Photo files stay on this device and are not included in JSON backups."
+          title={strings.memories.title}
+          subtitle={strings.memories.subtitle}
           leading={(
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Back to More"
+              accessibilityLabel={strings.memories.back}
               style={styles.headerButton}
               onPress={() =>
                 router.back()
@@ -717,7 +718,7 @@ export default function MemoriesScreen() {
           action={(
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Add memory"
+              accessibilityLabel={strings.memories.add}
               style={styles.addButton}
               onPress={() =>
                 openCreate()
@@ -765,20 +766,20 @@ export default function MemoriesScreen() {
         <View style={styles.quickCapture}>
           <View style={styles.quickCaptureCopy}>
             <Text style={styles.quickEyebrow}>
-              CAPTURE A MOMENT
+              {strings.memories.captureEyebrow}
             </Text>
             <Text style={styles.quickTitle}>
-              Save it before it slips away.
+              {strings.memories.captureTitle}
             </Text>
             <Text style={styles.quickBody}>
-              Add a thought or keep a photo, then connect it to the day or place it belongs to.
+              {strings.memories.captureBody}
             </Text>
           </View>
 
           <View style={styles.quickActions}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Add a note memory"
+              accessibilityLabel={strings.memories.addNote}
               style={styles.quickAction}
               onPress={() =>
                 openCreate('note')
@@ -796,7 +797,7 @@ export default function MemoriesScreen() {
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Add a photo memory"
+              accessibilityLabel={strings.memories.addPhoto}
               style={styles.quickAction}
               onPress={() =>
                 openCreate('photo')
@@ -824,14 +825,14 @@ export default function MemoriesScreen() {
               />
             </View>
             <Text style={styles.emptyTitle}>
-              Your travel story starts here.
+              {strings.memories.storyStarts}
             </Text>
             <Text style={styles.emptyBody}>
-              Keep a note, a photo, or a small detail you want to remember later.
+              {strings.memories.emptyBody}
             </Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Add first memory"
+              accessibilityLabel={strings.memories.addFirst}
               style={styles.primaryButton}
               onPress={() =>
                 openCreate()
@@ -843,7 +844,7 @@ export default function MemoriesScreen() {
                 color={colors.textInverse}
               />
               <Text style={styles.primaryButtonText}>
-                Add first memory
+                {strings.memories.addFirst}
               </Text>
             </Pressable>
           </View>
@@ -913,7 +914,7 @@ export default function MemoriesScreen() {
             color={colors.brass}
           />
           <Text style={styles.localNoteText}>
-            Photo copies stay in TravelOS on this device and work offline. Gallery originals are left untouched. JSON backups include memory details, not photo files.
+            {strings.memories.photoStorageNote}
           </Text>
         </View>
 
@@ -941,14 +942,14 @@ export default function MemoriesScreen() {
                 </Text>
                 <Text style={styles.modalTitle}>
                   {editing
-                    ? 'Memory details'
-                    : 'Keep this moment'}
+                    ? strings.memories.editorEyebrow
+                    : strings.memories.editorTitle}
                 </Text>
               </View>
 
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Close memory editor"
+                accessibilityLabel={strings.memories.editorClose}
                 style={styles.closeButton}
                 onPress={requestCloseEditor}
               >
@@ -990,7 +991,7 @@ export default function MemoriesScreen() {
                 {visibleImageUri ? (
                   <LocalImage
                     uri={visibleImageUri}
-                    accessibilityLabel="Memory photo preview"
+                    accessibilityLabel={strings.memories.photoPreview}
                     style={styles.photoPreview}
                   />
                 ) : (
@@ -1001,10 +1002,10 @@ export default function MemoriesScreen() {
                       color={colors.textMuted}
                     />
                     <Text style={styles.photoPlaceholderTitle}>
-                      Add a photo
+                      {strings.memories.addAPhoto}
                     </Text>
                     <Text style={styles.photoPlaceholderBody}>
-                      Take one now or choose one you already have.
+                      {strings.memories.takeOrChoose}
                     </Text>
                   </View>
                 )}
@@ -1012,7 +1013,7 @@ export default function MemoriesScreen() {
                 <View style={styles.photoActions}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Take photo with camera"
+                    accessibilityLabel={strings.memories.takePhoto}
                     style={styles.photoAction}
                     onPress={() =>
                       void takePhoto()
@@ -1030,7 +1031,7 @@ export default function MemoriesScreen() {
 
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Choose photo from library"
+                    accessibilityLabel={strings.memories.choosePhoto}
                     style={styles.photoAction}
                     onPress={() =>
                       void pickFromLibrary()
@@ -1049,7 +1050,7 @@ export default function MemoriesScreen() {
                   {visibleImageUri && (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Remove photo"
+                      accessibilityLabel={strings.memories.removePhoto}
                       hitSlop={12}
                       style={styles.photoRemoveAction}
                       onPress={clearPhoto}
@@ -1071,7 +1072,7 @@ export default function MemoriesScreen() {
               onChangeText={setTitle}
               placeholder={
                 type === 'photo'
-                  ? 'Sunset in Oia'
+                  ? strings.memories.placeholderTitle
                   : 'A small thing worth remembering'
               }
             />
@@ -1086,8 +1087,8 @@ export default function MemoriesScreen() {
               onChangeText={setCaption}
               placeholder={
                 type === 'photo'
-                  ? 'What made this moment special?'
-                  : 'Write what you want to remember…'
+                  ? strings.memories.labelWhySpecial
+                  : strings.memories.placeholderNote
               }
               multiline
             />
@@ -1100,8 +1101,11 @@ export default function MemoriesScreen() {
               icon="calendar-outline"
               label={
                 selectedDay
-                  ? `Day ${selectedDay.dayNumber} · ${formatDayDate(selectedDay.date)}`
-                  : 'No day selected'
+                  ? strings.a11y.dayWithDate(
+                        selectedDay.dayNumber,
+                        formatDayDate(selectedDay.date),
+                      )
+                  : strings.memories.noDaySelected
               }
               expanded={dayPickerOpen}
               onPress={() =>
@@ -1115,7 +1119,7 @@ export default function MemoriesScreen() {
             {dayPickerOpen && (
               <View style={styles.choiceList}>
                 <ChoiceRow
-                  title="No trip day"
+                  title={strings.memories.noTripDay}
                   selected={
                     !dayId
                   }
@@ -1137,7 +1141,7 @@ export default function MemoriesScreen() {
                     (day) => (
                       <ChoiceRow
                         key={day.id}
-                        title={`Day ${day.dayNumber}`}
+                        title={strings.a11y.dayLabel(day.dayNumber)}
                         meta={formatDayDate(day.date)}
                         selected={
                           dayId ===
@@ -1163,7 +1167,7 @@ export default function MemoriesScreen() {
               label={
                 selectedStop
                   ? selectedStop.title
-                  : 'No itinerary stop'
+                  : strings.memories.noStop
               }
               meta={
                 selectedStop
@@ -1171,7 +1175,7 @@ export default function MemoriesScreen() {
                       selectedStop,
                       workspace.days,
                     )
-                  : 'Optional'
+                  : strings.memories.optional
               }
               expanded={stopPickerOpen}
               onPress={() =>
@@ -1185,7 +1189,7 @@ export default function MemoriesScreen() {
             {stopPickerOpen && (
               <View style={styles.choiceList}>
                 <ChoiceRow
-                  title="No itinerary stop"
+                  title={strings.memories.noStop}
                   selected={
                     !stopId
                   }
@@ -1263,7 +1267,7 @@ export default function MemoriesScreen() {
                 color={colors.brass}
               />
               <Text style={styles.captureTruthText}>
-                New memories are timestamped when you save them. Day and stop links keep them in the right place in your journey.
+                {strings.memories.timestampNote}
               </Text>
             </View>
 
@@ -1271,10 +1275,10 @@ export default function MemoriesScreen() {
               accessibilityRole="button"
               accessibilityLabel={
                 isSaving
-                  ? 'Saving memory'
+                  ? strings.memories.savingMemory
                   : editing
-                    ? 'Save memory changes'
-                    : 'Save memory'
+                    ? strings.memories.saveMemoryChanges
+                    : strings.memories.saveMemory
               }
               disabled={isSaving}
               style={[
@@ -1288,10 +1292,10 @@ export default function MemoriesScreen() {
             >
               <Text style={styles.saveButtonText}>
                 {isSaving
-                  ? 'Saving…'
+                  ? strings.memories.saving
                   : editing
-                    ? 'Save changes'
-                    : 'Save memory'}
+                    ? strings.memories.saveChanges
+                    : strings.memories.saveMemory}
               </Text>
             </Pressable>
 
@@ -1384,7 +1388,7 @@ function MemoryCard({
                 style={styles.contextText}
               >
                 {day
-                  ? `Day ${day.dayNumber}`
+                  ? strings.a11y.dayLabel(day.dayNumber)
                   : ''}
                 {day && stop
                   ? ' · '
@@ -1428,7 +1432,7 @@ function TypeChoice({
   return (
     <Pressable
       accessibilityRole="radio"
-      accessibilityLabel={photo ? 'Photo memory' : 'Note memory'}
+      accessibilityLabel={photo ? strings.memories.photoMemory : strings.memories.noteMemory}
       accessibilityState={{
         checked: selected,
       }}
@@ -1460,8 +1464,8 @@ function TypeChoice({
         ]}
       >
         {photo
-          ? 'Photo'
-          : 'Note'}
+          ? strings.memories.photo
+          : strings.memories.note}
       </Text>
     </Pressable>
   );
@@ -1626,10 +1630,13 @@ function dayForStopLabel(
     );
 
   if (!day) {
-    return 'Trip moment';
+    return strings.memories.tripMoment;
   }
 
-  return `Day ${day.dayNumber} · ${formatDayDate(day.date)}`;
+  return strings.a11y.dayWithDate(
+              day.dayNumber,
+              formatDayDate(day.date),
+            );
 }
 
 const styles = StyleSheet.create({

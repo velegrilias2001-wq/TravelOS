@@ -512,7 +512,10 @@ export function BookingEditorModal({
                       </Text>
                       <Text style={styles.stopChoiceMeta}>
                         {context.day
-                          ? `Day ${context.day.dayNumber} · ${formatStopDate(context.day.date)} · `
+                          ? strings.a11y.dayDatePrefix(
+                          context.day.dayNumber,
+                          formatStopDate(context.day.date),
+                        )
                           : ''}
                         {context.stop.startTime
                           ? `${context.stop.startTime} · `

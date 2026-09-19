@@ -54,7 +54,7 @@ export function FreeTimeAdviceCard({
   const adviceKey = freeTimeAdviceKey(day.id, gap);
 
   return (
-    <View style={styles.card} accessibilityLabel={`Free time ideas for ${gap.startTime} to ${gap.endTime}`}>
+    <View style={styles.card} accessibilityLabel={strings.a11y.freeTimeIdeas(gap.startTime, gap.endTime)}>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
           <Text style={styles.eyebrow}>OPEN TIME</Text>
@@ -79,7 +79,7 @@ export function FreeTimeAdviceCard({
 
       <PressableScale
         accessibilityRole="button"
-        accessibilityLabel={`Ask TravelOS how to use free time from ${gap.startTime} to ${gap.endTime}`}
+        accessibilityLabel={strings.plan.askFreeTime(gap.startTime, gap.endTime)}
         disabled={disabled || loading}
         style={[
           styles.askButton,

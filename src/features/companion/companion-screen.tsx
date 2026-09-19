@@ -278,7 +278,7 @@ export function CompanionScreen() {
                 <Pressable
                   key={destination.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`Assign ${destination.name} to today`}
+                  accessibilityLabel={strings.a11y.assignToToday(destination.name)}
                   style={styles.cityAssignButton}
                   onPress={() => {
                     void actions.assignDayDestination(
@@ -1001,7 +1001,7 @@ function FocusStop({
       {booking ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Open linked booking ${booking.title}`}
+          accessibilityLabel={strings.a11y.openLinkedBooking(booking.title)}
           style={styles.bookingTruthCard}
           onPress={() =>
             openRoute('/trip/[tripId]/bookings', {
@@ -1140,7 +1140,7 @@ function TimelineStop({
       <View style={styles.flex}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Open ${context.stop.title} in Plan, ${label.toLowerCase()}`}
+          accessibilityLabel={strings.a11y.openInPlanWith(context.stop.title, label)}
           style={[
             styles.timelineCard,
             isCurrent && styles.timelineCardCurrent,
@@ -1219,7 +1219,7 @@ function CompactStop({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Open ${context.stop.title} in Plan`}
+      accessibilityLabel={strings.a11y.openInPlan(context.stop.title)}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       onPress={onPress}
     >
@@ -1319,7 +1319,7 @@ function BookingCard({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Open ${booking.title}`}
+      accessibilityLabel={strings.a11y.open(booking.title)}
       style={({ pressed }) => [
         styles.bookingRouteCard,
         pressed && styles.pressed,
@@ -1384,7 +1384,7 @@ function ContextCard({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Open ${title}`}
+      accessibilityLabel={strings.a11y.open(title)}
       style={({ pressed }) => [
         styles.contextCard,
         brass && styles.contextCardBrass,
@@ -1499,7 +1499,7 @@ function Readiness({
           <Pressable
             key={row.title}
             accessibilityRole="button"
-            accessibilityLabel={`Open ${row.title}. ${row.body}`}
+            accessibilityLabel={strings.a11y.openWithBody(row.title, row.body)}
             style={({ pressed }) => [
               styles.readinessRow,
               index < orderedRows.length - 1 && styles.readinessDivider,

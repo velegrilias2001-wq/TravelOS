@@ -72,6 +72,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 type PickerTarget =
   | 'checkInDate'
@@ -87,31 +88,31 @@ const TYPE_DETAILS: Record<
   }
 > = {
   hotel: {
-    label: 'Hotel',
+    label: strings.accommodationType.hotel,
     icon: 'business-outline',
   },
   apartment: {
-    label: 'Apartment',
+    label: strings.accommodationType.apartment,
     icon: 'home-outline',
   },
   hostel: {
-    label: 'Hostel',
+    label: strings.accommodationType.hostel,
     icon: 'bed-outline',
   },
   villa: {
-    label: 'Villa',
+    label: strings.accommodationType.villa,
     icon: 'sunny-outline',
   },
   resort: {
-    label: 'Resort',
+    label: strings.accommodationType.resort,
     icon: 'water-outline',
   },
   camping: {
-    label: 'Camping',
+    label: strings.accommodationType.camping,
     icon: 'bonfire-outline',
   },
   other: {
-    label: 'Other',
+    label: strings.accommodationType.other,
     icon: 'key-outline',
   },
 };
@@ -131,7 +132,7 @@ function formatStayDateTime(
 
   return parts
     ? `${formatDate(parts.date)} · ${parts.time}`
-    : 'Not set';
+    : strings.accommodation.notSet;
 }
 
 function formatStopDate(value: string): string {
@@ -364,7 +365,7 @@ export default function AccommodationScreen() {
         );
 
   const openPicker = (target: PickerTarget) => {
-    const mode = target.endsWith('Date')
+    const mode = target.endsWith(strings.accommodation.date)
       ? 'date'
       : 'time';
 
@@ -395,7 +396,7 @@ export default function AccommodationScreen() {
       Boolean(checkInTime)
     ) {
       throw new Error(
-        'Choose both a check-in date and time, or clear both',
+        strings.accommodation.alertCheckInPair,
       );
     }
 
@@ -404,7 +405,7 @@ export default function AccommodationScreen() {
       Boolean(checkOutTime)
     ) {
       throw new Error(
-        'Choose both a check-out date and time, or clear both',
+        strings.accommodation.alertCheckOutPair,
       );
     }
 
@@ -455,10 +456,10 @@ export default function AccommodationScreen() {
       const outcome = await requestLocationSelection(
         pickLocation,
         {
-        title: 'Choose stay location',
-        doneButtonTitle: 'Use location',
-        cancelButtonTitle: 'Cancel',
-        searchPlaceholder: 'Search hotels or addresses…',
+        title: strings.accommodation.pickerTitle,
+        doneButtonTitle: strings.accommodation.pickerDone,
+        cancelButtonTitle: strings.accommodation.cancel,
+        searchPlaceholder: strings.accommodation.pickerSearch,
         initialRadiusMeters: 5000,
         disableCurrentLocation: true,
         ...(typeof latitude === 'number' &&
@@ -524,7 +525,7 @@ export default function AccommodationScreen() {
       setLocationNotice({
         status: 'unavailable',
         reason:
-          'The chosen location could not be applied. Map location was not changed.',
+          strings.accommodation.locationApplyFailed,
       });
     } finally {
       setIsPickingMapLocation(false);
@@ -548,10 +549,10 @@ export default function AccommodationScreen() {
       closeModal();
     } catch (error) {
       Alert.alert(
-        'Could not save accommodation',
+        strings.accommodation.alertSaveFailed,
         error instanceof Error
           ? error.message
-          : 'Please try again.',
+          : strings.accommodation.tryAgain,
       );
     } finally {
       setIsSaving(false);
@@ -562,12 +563,14 @@ export default function AccommodationScreen() {
     accommodation: Accommodation,
   ) => {
     Alert.alert(
-      'Delete accommodation?',
-      `Remove “${accommodation.name}”? Any linked booking and itinerary stop will stay saved.`,
+      strings.accommodation.alertDeleteTitle,
+      strings.accommodation.removeAccommodationBody(
+        accommodation.name,
+      ),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: strings.accommodation.cancel, style: 'cancel' },
         {
-          text: 'Delete',
+          text: strings.accommodation.delete,
           style: 'destructive',
           onPress: async () => {
             try {
@@ -584,8 +587,8 @@ export default function AccommodationScreen() {
                 error,
               );
               Alert.alert(
-                'Could not delete accommodation',
-                'Your saved stay has not been changed. Please try again.',
+                strings.accommodation.alertDeleteFailed,
+                strings.accommodation.alertDeleteFailedBody,
               );
             }
           },
@@ -601,12 +604,12 @@ export default function AccommodationScreen() {
           eyebrow={tripDestinationLabel(
             workspace.trip.destinations,
           ).toUpperCase()}
-          title="Accommodation"
-          subtitle="Hotels, rentals and stays for this trip."
+          title={strings.accommodation.title}
+          subtitle={strings.accommodation.subtitle}
           action={(
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Add accommodation"
+              accessibilityLabel={strings.accommodation.add}
               style={styles.addButton}
               onPress={openCreate}
             >
@@ -621,19 +624,29 @@ export default function AccommodationScreen() {
 
         {workspace.accommodations.length > 0 ? (
           <CompactSummaryStrip
-            accessibilityLabel={`${workspace.accommodations.length} stays, ${workspace.accommodations.filter((item) => item.bookingId).length} booked, ${workspace.accommodations.filter((item) => item.stopId).length} in the plan`}
+            accessibilityLabel={strings.accommodation.summaryLabel(
+              workspace.accommodations.length,
+              workspace.accommodations.filter(
+                (item) => item.bookingId,
+              ).length,
+              workspace.accommodations.filter(
+                (item) => item.stopId,
+              ).length,
+            )}
             items={[
               {
                 value: workspace.accommodations.length,
-                label: workspace.accommodations.length === 1 ? 'stay' : 'stays',
+                label: strings.accommodation.stayCountLabel(
+                  workspace.accommodations.length,
+                ),
               },
               {
                 value: workspace.accommodations.filter((item) => item.bookingId).length,
-                label: 'booked',
+                label: strings.accommodation.bookedLabel,
               },
               {
                 value: workspace.accommodations.filter((item) => item.stopId).length,
-                label: 'in plan',
+                label: strings.accommodation.inPlanLabel,
               },
             ]}
           />
@@ -652,10 +665,10 @@ export default function AccommodationScreen() {
 
               <View style={styles.emptyCopy}>
                 <Text style={styles.emptyTitle}>
-                  Add your first stay
+                  {strings.accommodation.emptyTitle}
                 </Text>
                 <Text style={styles.emptyBody}>
-                  Save a hotel, rental or other place you’ll stay. Add dates and links whenever you have them.
+                  {strings.accommodation.emptyBody}
                 </Text>
               </View>
             </View>
@@ -665,7 +678,7 @@ export default function AccommodationScreen() {
               onPress={openCreate}
             >
               <Text style={styles.primaryButtonText}>
-                Add stay
+                {strings.accommodation.addStay}
               </Text>
             </Pressable>
           </View>
@@ -694,7 +707,7 @@ export default function AccommodationScreen() {
                   <Pressable
                     key={accommodation.id}
                     accessibilityRole="button"
-                    accessibilityLabel={`Edit ${accommodation.name}`}
+                    accessibilityLabel={strings.a11y.edit(accommodation.name)}
                     style={({ pressed }) => [
                       styles.stayCard,
                       pressed && styles.pressed,
@@ -729,7 +742,7 @@ export default function AccommodationScreen() {
                           typeof accommodation.longitude ===
                             'number' && (
                             <Text style={styles.stayMapped}>
-                              Map pin saved
+                              {strings.accommodation.mapPinSaved}
                             </Text>
                           )}
                       </View>
@@ -761,7 +774,7 @@ export default function AccommodationScreen() {
                         {booking && (
                           <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={`Open booking ${booking.title}`}
+                            accessibilityLabel={strings.a11y.openBooking(booking.title)}
                             style={styles.relationshipRow}
                             onPress={() =>
                               router.push({
@@ -792,7 +805,7 @@ export default function AccommodationScreen() {
                         {stopContext && (
                           <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={`Open ${stopContext.stop.title} in Plan`}
+                            accessibilityLabel={strings.a11y.openInPlan(stopContext.stop.title)}
                             style={styles.relationshipRow}
                             onPress={() =>
                               router.push({
@@ -812,7 +825,7 @@ export default function AccommodationScreen() {
                             />
                             <Text style={styles.stopRelationshipText}>
                               {stopContext.day
-                                ? `Day ${stopContext.day.dayNumber} · `
+                                ? strings.a11y.dayPrefix(stopContext.day.dayNumber)
                                 : ''}
                               {stopContext.stop.title}
                             </Text>
@@ -859,15 +872,15 @@ export default function AccommodationScreen() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalEyebrow}>
-                  STAY DETAILS
+                  {strings.accommodation.editorEyebrow}
                 </Text>
                 <Text style={styles.modalTitle}>
-                  {editing ? 'Edit accommodation' : 'Add accommodation'}
+                  {editing ? strings.accommodation.editorEdit : strings.accommodation.editorAdd}
                 </Text>
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Close accommodation editor"
+                accessibilityLabel={strings.accommodation.editorClose}
                 style={styles.closeButton}
                 onPress={requestCloseModal}
               >
@@ -915,16 +928,16 @@ export default function AccommodationScreen() {
             </View>
 
             <Field
-              label="NAME"
+              label={strings.accommodation.labelName}
               value={name}
               onChangeText={setName}
-              placeholder="Hotel, rental or stay name"
+              placeholder={strings.accommodation.placeholderName}
             />
             <Field
-              label="ADDRESS"
+              label={strings.accommodation.labelAddress}
               value={address}
               onChangeText={setAddress}
-              placeholder="Address or place name"
+              placeholder={strings.accommodation.placeholderAddress}
             />
 
             <Text style={styles.fieldLabel}>MAP LOCATION</Text>
@@ -933,8 +946,8 @@ export default function AccommodationScreen() {
               accessibilityLabel={
                 typeof latitude === 'number' &&
                 typeof longitude === 'number'
-                  ? 'Replace stay map location'
-                  : 'Choose stay map location'
+                  ? strings.accommodation.replaceMapLocation
+                  : strings.accommodation.chooseMapLocation
               }
               disabled={isPickingMapLocation}
               style={({ pressed }) => [
@@ -964,8 +977,8 @@ export default function AccommodationScreen() {
                   typeof longitude === 'number'
                     ? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
                     : isPickingMapLocation
-                      ? 'Opening place picker…'
-                      : 'Choose a real place. TravelOS will not guess coordinates from the address.'}
+                      ? strings.accommodation.openingPicker
+                      : strings.accommodation.realPlaceNote}
                 </Text>
               </View>
             </Pressable>
@@ -981,14 +994,14 @@ export default function AccommodationScreen() {
               typeof longitude === 'number' && (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Clear stay map location"
+                  accessibilityLabel={strings.accommodation.clearMapLocation}
                   onPress={() => {
                     setLatitude(undefined);
                     setLongitude(undefined);
                   }}
                 >
                   <Text style={styles.clearMapLocation}>
-                    Clear map pin
+                    {strings.accommodation.clearMapPin}
                   </Text>
                 </Pressable>
               )}
@@ -1024,7 +1037,7 @@ export default function AccommodationScreen() {
               label={linkedBooking ? 'LINKED BOOKING' : 'NOT LINKED'}
               title={
                 linkedBooking?.title ??
-                'Link a booking'
+                strings.accommodation.linkBooking
               }
               expanded={bookingPickerOpen}
               onPress={() =>
@@ -1035,8 +1048,8 @@ export default function AccommodationScreen() {
               <View style={styles.choices}>
                 <ChoiceRow
                   selected={!bookingId}
-                  title="No booking linked"
-                  meta="Keep this stay separate from bookings"
+                  title={strings.accommodation.noBookingLinked}
+                  meta={strings.accommodation.keepSeparateBookings}
                   onPress={() => {
                     setBookingId(undefined);
                     setBookingPickerOpen(false);
@@ -1060,7 +1073,7 @@ export default function AccommodationScreen() {
                 ))}
                 {lodgingBookings.length === 0 && (
                   <Text style={styles.choiceEmpty}>
-                    Add a Hotel booking first, then link it here.
+                    {strings.accommodation.addHotelBookingFirst}
                   </Text>
                 )}
               </View>
@@ -1078,7 +1091,7 @@ export default function AccommodationScreen() {
               }
               title={
                 linkedStopContext?.stop.title ??
-                'Choose a moment from your plan'
+                strings.accommodation.chooseMomentFromPlan
               }
               expanded={stopPickerOpen}
               onPress={() =>
@@ -1089,8 +1102,8 @@ export default function AccommodationScreen() {
               <View style={styles.choices}>
                 <ChoiceRow
                   selected={!stopId}
-                  title="Not in plan"
-                  meta="Keep this stay separate from your plan"
+                  title={strings.accommodation.notInPlan}
+                  meta={strings.accommodation.keepSeparatePlan}
                   onPress={() => {
                     setStopId(undefined);
                     setStopPickerOpen(false);
@@ -1103,7 +1116,10 @@ export default function AccommodationScreen() {
                     title={context.stop.title}
                     meta={`${
                       context.day
-                        ? `Day ${context.day.dayNumber} · ${formatStopDate(context.day.date)} · `
+                        ? strings.a11y.dayDatePrefix(
+                        context.day.dayNumber,
+                        formatStopDate(context.day.date),
+                      )
                         : ''
                     }${
                       context.stop.startTime
@@ -1125,25 +1141,25 @@ export default function AccommodationScreen() {
             )}
 
             <Field
-              label="PHONE"
+              label={strings.accommodation.labelPhone}
               value={phone}
               onChangeText={setPhone}
-              placeholder="Optional phone number"
+              placeholder={strings.accommodation.placeholderPhone}
               keyboardType="phone-pad"
             />
             <Field
-              label="WEBSITE"
+              label={strings.accommodation.labelWebsite}
               value={website}
               onChangeText={setWebsite}
-              placeholder="Optional website"
+              placeholder={strings.accommodation.placeholderWebsite}
               autoCapitalize="none"
               keyboardType="url"
             />
             <Field
-              label="NOTES"
+              label={strings.accommodation.labelNotes}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Access, check-in or stay notes"
+              placeholder={strings.accommodation.placeholderNotes}
               multiline
             />
 
@@ -1168,10 +1184,10 @@ export default function AccommodationScreen() {
             >
               <Text style={styles.saveButtonText}>
                 {isSaving
-                  ? 'Saving…'
+                  ? strings.accommodation.saving
                   : editing
-                    ? 'Save changes'
-                    : 'Add accommodation'}
+                    ? strings.accommodation.saveChanges
+                    : strings.accommodation.editorAdd}
               </Text>
               <Ionicons
                 name="arrow-forward"
@@ -1202,7 +1218,7 @@ export default function AccommodationScreen() {
               <DateTimePicker
                 value={valueForPicker(iosPickerTarget)}
                 mode={
-                  iosPickerTarget.endsWith('Date')
+                  iosPickerTarget.endsWith(strings.accommodation.date)
                     ? 'date'
                     : 'time'
                 }
@@ -1270,12 +1286,12 @@ function StayEditor({
       <View style={styles.stayEditorRow}>
         <DatePartButton
           icon="calendar-outline"
-          value={date ? formatDate(date) : 'Choose date'}
+          value={date ? formatDate(date) : strings.accommodation.chooseDate}
           onPress={onDatePress}
         />
         <DatePartButton
           icon="time-outline"
-          value={time || 'Choose time'}
+          value={time || strings.accommodation.chooseTime}
           onPress={onTimePress}
         />
       </View>

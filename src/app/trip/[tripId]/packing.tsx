@@ -38,6 +38,7 @@ import {
   shadows,
   spacing,
 } from '@/theme';
+import { strings } from '@/i18n';
 
 export default function PackingScreen() {
   const router = useRouter();
@@ -121,10 +122,10 @@ export default function PackingScreen() {
       await load();
     } catch (error) {
       Alert.alert(
-        'Could not add item',
+        strings.packing.alertAddFailed,
         error instanceof Error
           ? error.message
-          : 'Try again.',
+          : strings.packing.tryAgain,
       );
     } finally {
       setBusy(false);
@@ -146,10 +147,10 @@ export default function PackingScreen() {
       await load();
     } catch (error) {
       Alert.alert(
-        'Could not update item',
+        strings.packing.alertUpdateFailed,
         error instanceof Error
           ? error.message
-          : 'Try again.',
+          : strings.packing.tryAgain,
       );
     } finally {
       setBusy(false);
@@ -158,12 +159,12 @@ export default function PackingScreen() {
 
   const removeItem = (item: PackingItem) => {
     Alert.alert(
-      'Remove packing item?',
+      strings.packing.alertRemoveTitle,
       `"${item.title}" will be deleted from this trip.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: strings.packing.cancel, style: 'cancel' },
         {
-          text: 'Remove',
+          text: strings.packing.remove,
           style: 'destructive',
           onPress: () => {
             void (async () => {
@@ -176,10 +177,10 @@ export default function PackingScreen() {
                 await load();
               } catch (error) {
                 Alert.alert(
-                  'Could not remove item',
+                  strings.packing.alertRemoveFailed,
                   error instanceof Error
                     ? error.message
-                    : 'Try again.',
+                    : strings.packing.tryAgain,
                 );
               } finally {
                 setBusy(false);
@@ -291,7 +292,7 @@ export default function PackingScreen() {
 
       {status === 'error' ? (
         <Text style={styles.errorText}>
-          Could not load packing items.
+          {strings.packing.loadFailed}
         </Text>
       ) : null}
 
@@ -334,7 +335,7 @@ export default function PackingScreen() {
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Remove ${item.title}`}
+              accessibilityLabel={strings.packing.removeLabel(item.title)}
               hitSlop={8}
               onPress={() => removeItem(item)}
             >
