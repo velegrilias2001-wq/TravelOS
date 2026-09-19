@@ -762,6 +762,14 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### Lint warning ceiling — 2026-09-19
+
+`npm run lint` is now `eslint . --max-warnings 48`. Plain `eslint .` exits 0 on warnings, so the 48 existing warnings were invisible to CI and a new one would have been too. The ceiling is the current count, so it blocks growth without demanding a cleanup first; lowering it as warnings are fixed is a ratchet, not a requirement.
+
+Verified in both directions: at a ceiling of 48 lint exits 0, and at 47 — which simulates one new warning — it exits 1.
+
+**Context that prompted this.** CI runs #10 to #15 all failed, every one at the Lint step. The cause was `app.config.js` using `__dirname` without a declared global, which ESLint reported as an error. That was fixed in `ea25016`, one of the seven commits sitting locally unpushed before this session began, so CI had been red purely because the fix had never been pushed. Run #16 and #17 are green. The ceiling does not change that history; it only makes future warning growth visible.
+
 ### Greek copy, phase 3 — 2026-09-19
 
 Discover (tab, find-destination, results, journeys, best-time, saved), World, Profile, Travel DNA, import and import review, TravelOS AI and trip notifications. **The Greek migration is complete.**

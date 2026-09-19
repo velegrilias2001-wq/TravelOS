@@ -52,7 +52,7 @@
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 48",
     "test": "tsc --project tsconfig.test.json && node --test tests/*.test.cjs",
     "benchmark:discover-embeddings": "tsc --project tsconfig.test.json && node scripts/benchmark-discover-embeddings.cjs",
     "generate:discover-embeddings": "tsc --project tsconfig.test.json && node scripts/generate-discover-embeddings.cjs",
