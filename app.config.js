@@ -67,6 +67,28 @@ function resolveMapsKey(platformVariable) {
   );
 }
 
+/**
+ * Whether a missing Maps key should stop the run.
+ *
+ * Tooling such as `eas env:set` and `eas env:list` evaluates this config to
+ * find the project, and does so with EXPO_NO_DOTENV=1 and before any EAS
+ * environment variables are injected. Throwing there made every EAS env
+ * command fail with no way out: you could not set the variable because the
+ * variable was not set.
+ *
+ * So the keys are required exactly where a wrong key ships something broken —
+ * a local run that can read .env.local, and a real EAS build — and optional
+ * during metadata-only evaluation, which produces no artifact.
+ */
+function mapsKeyIsRequired() {
+  const easBuild = process.env.EAS_BUILD === 'true';
+  const dotenvAvailable = process.env.EXPO_NO_DOTENV !== '1';
+  return easBuild || dotenvAvailable;
+}
+
+/** Placeholder used only when no artifact is produced. Never reaches a build. */
+const METADATA_ONLY_PLACEHOLDER = 'metadata-only-no-key';
+
 module.exports = ({ config }) => {
   const androidGoogleMapsApiKey =
     resolveMapsKey(
@@ -78,13 +100,15 @@ module.exports = ({ config }) => {
       'GOOGLE_MAPS_IOS_API_KEY',
     );
 
-  if (!androidGoogleMapsApiKey) {
+  const keysRequired = mapsKeyIsRequired();
+
+  if (keysRequired && !androidGoogleMapsApiKey) {
     throw new Error(
       'GOOGLE_MAPS_ANDROID_API_KEY is missing. Add it to .env.local',
     );
   }
 
-  if (!iosGoogleMapsApiKey) {
+  if (keysRequired && !iosGoogleMapsApiKey) {
     throw new Error(
       'GOOGLE_MAPS_IOS_API_KEY is missing. Add it to .env.local',
     );
@@ -116,8 +140,13 @@ module.exports = ({ config }) => {
       [
         'react-native-maps',
         {
-          androidGoogleMapsApiKey,
-          iosGoogleMapsApiKey,
+          androidGoogleMapsApiKey:
+            androidGoogleMapsApiKey ??
+            METADATA_ONLY_PLACEHOLDER,
+
+          iosGoogleMapsApiKey:
+            iosGoogleMapsApiKey ??
+            METADATA_ONLY_PLACEHOLDER,
         },
       ],
     ],

@@ -762,6 +762,18 @@ Platform state:
 - Android location search depends on Google Maps and Places API (New) being enabled for the configured key.
 - Create Trip and Trip Details now share the native picker with Plan. Create Trip accepts only a confirmed map selection; Trip Details can explicitly replace or upgrade one existing destination record without changing its ID or position.
 - The Trip Map renders every destination that has valid saved coordinates as well as itinerary-stop markers. A multi-destination Trip is not silently reduced to its first destination.
+### Maps key config deadlocked EAS tooling — 2026-09-20
+
+Setting the new per-platform keys as EAS environment variables failed with `expo/bin/cli config --json exited with non-zero code: 1`. Reproduced locally with `EXPO_NO_DOTENV=1 npx expo config --json`.
+
+`eas env:set` evaluates the app config to resolve the project, and does so with `EXPO_NO_DOTENV=1` and before any EAS variables are injected. `app.config.js` threw on the missing key at that point, so the variable could not be set because the variable was not set. The same shape existed before the per-platform split; the split only made it visible.
+
+The keys are now required where a wrong key ships something broken — a local run that can read `.env.local`, and a real EAS build (`EAS_BUILD=true`) — and optional during metadata-only evaluation, which produces no artifact. A placeholder fills the plugin fields in that case and is asserted never to equal a build value.
+
+Verified in all three directions: metadata evaluation exits 0, an EAS build without keys exits 1, an EAS build with keys uses them. Four tests cover it, and the previous "fails closed" test was rewritten — its helper always set `EXPO_NO_DOTENV=1`, so it had silently become a test of the metadata path rather than of a developer machine with no `.env.local`.
+
+Checks: `tsc`, 457 tests, lint 48 warnings, `git diff --check`.
+
 ### Lint warning ceiling — 2026-09-19
 
 `npm run lint` is now `eslint . --max-warnings 48`. Plain `eslint .` exits 0 on warnings, so the 48 existing warnings were invisible to CI and a new one would have been too. The ceiling is the current count, so it blocks growth without demanding a cleanup first; lowering it as warnings are fixed is a ratchet, not a requirement.
